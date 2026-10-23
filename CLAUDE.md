@@ -16,7 +16,9 @@ Juego de combate de titanes en Unity (C#). Estas reglas aplican a todo el códig
 - `TitanController` (movimiento, habilidades, vida y estados) solo recibe órdenes por `SetMoveInput` y `BattleEvents.RaiseAbilityCastRequested`:
   jugador e IA lo controlan por la misma vía.
 - `ArenaManager`: isla flotante abierta, zonas de spawn tácticas (`SpawnZoneType`), cuenta atrás y derrota por caída (`fallLimitY`).
-  Activa `TitanAIController` solo en el titán de `aiControlledTitan` (Magma por defecto).
+  Activa `TitanAIController` solo en el titán de `aiControlledTitan` (Magma por defecto) y `PlayerInputController` en el otro.
+- `PlayerInputController`: nuevo Input System (`com.unity.inputsystem`). WASD/flechas/stick → `SetMoveInput` (relativo a cámara),
+  teclas 1–4 (o botones frontales del mando) → `RaiseAbilityCastRequested`. Acepta `InputActionReference` opcionales.
 - `TitanAIController`: observaciones [1, 12] → acciones [1, 6] (movimiento x/z + 4 puntuaciones de habilidad); heurística si no hay modelo.
 - `BattleHUD`: barra dividida (Azul izquierda / Rojo derecha, con rastro de daño) y 4 botones con cooldown radial del titán del jugador.
 

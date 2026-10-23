@@ -84,8 +84,8 @@ namespace TitanesAwa.Core
 
             frostTransform = frost.transform;
             magmaTransform = magma.transform;
-            ConfigureAI(frost, TitanId.Frost);
-            ConfigureAI(magma, TitanId.Magma);
+            ConfigureControl(frost, TitanId.Frost);
+            ConfigureControl(magma, TitanId.Magma);
 
             if (startOnPlay)
             {
@@ -182,15 +182,21 @@ namespace TitanesAwa.Core
             return controller;
         }
 
-        private void ConfigureAI(TitanController titan, TitanId id)
+        /// <summary>El titán de la IA usa TitanAIController; el otro, PlayerInputController.</summary>
+        private void ConfigureControl(TitanController titan, TitanId id)
         {
-            if (!titan.TryGetComponent(out TitanAIController ai))
+            bool aiControlled = id == aiControlledTitan;
+
+            if (titan.TryGetComponent(out TitanAIController ai))
             {
-                return;
+                ai.Initialize(this);
+                ai.enabled = aiControlled;
             }
 
-            ai.Initialize(this);
-            ai.enabled = id == aiControlledTitan;
+            if (titan.TryGetComponent(out PlayerInputController player))
+            {
+                player.enabled = !aiControlled;
+            }
         }
 
         private void PlaceAtSpawn(TitanController titan, TitanId owner)
