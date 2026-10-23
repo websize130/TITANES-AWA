@@ -16,6 +16,9 @@ Juego de combate de titanes en Unity (C#). Estas reglas aplican a todo el códig
 - `TitanController` (movimiento, habilidades, vida y estados) solo recibe órdenes por `SetMoveInput` y `BattleEvents.RaiseAbilityCastRequested`:
   jugador e IA lo controlan por la misma vía.
 - `ArenaManager`: isla flotante abierta, zonas de spawn tácticas (`SpawnZoneType`), cuenta atrás y derrota por caída (`fallLimitY`).
+  Activa `TitanAIController` solo en el titán de `aiControlledTitan` (Magma por defecto).
+- `TitanAIController`: observaciones [1, 12] → acciones [1, 6] (movimiento x/z + 4 puntuaciones de habilidad); heurística si no hay modelo.
+- `BattleHUD`: barra dividida (Azul izquierda / Rojo derecha, con rastro de daño) y 4 botones con cooldown radial del titán del jugador.
 
 ## 3. UnityPerformance60FPS
 - Comunicación con `System.Action` / eventos de C# y datos en `ScriptableObject`.
@@ -35,6 +38,8 @@ Juego de combate de titanes en Unity (C#). Estas reglas aplican a todo el códig
 - Paquete `huggingface/unity-api` (instalar por Git URL `https://github.com/huggingface/unity-api.git`) solo para llamadas
   remotas a la Inference API: siempre asíncronas, nunca dentro del bucle de combate ni en `Update()`.
   El token de API se configura en el editor y **nunca** se commitea.
+- La inferencia se activa con el define `TITANES_SENTIS` (Sentis 2.x) o `TITANES_INFERENCE_ENGINE` (Unity 6.2+);
+  sin define el proyecto compila y la IA usa la heurística.
 - La IA no mueve al titán directamente: usa `TitanController.SetMoveInput` y `BattleEvents.RaiseAbilityCastRequested`.
 - Inferencia sin basura: crear el `Worker` y los tensores una sola vez (`Awake`), reutilizarlos, ejecutar a frecuencia fija
   de decisión (5–10 Hz), no cada frame, y liberar con `Dispose()` en `OnDestroy`.

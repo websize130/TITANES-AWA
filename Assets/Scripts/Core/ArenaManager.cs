@@ -51,6 +51,10 @@ namespace TitanesAwa.Core
         [SerializeField, Min(0f)] private float countdownDuration = 3f;
         [SerializeField] private bool startOnPlay = true;
 
+        [Header("IA")]
+        [Tooltip("Titán controlado por TitanAIController; el otro queda para el jugador.")]
+        [SerializeField] private TitanId aiControlledTitan = TitanId.Magma;
+
         private TitanController frost;
         private TitanController magma;
         private Transform frostTransform;
@@ -80,6 +84,8 @@ namespace TitanesAwa.Core
 
             frostTransform = frost.transform;
             magmaTransform = magma.transform;
+            ConfigureAI(frost, TitanId.Frost);
+            ConfigureAI(magma, TitanId.Magma);
 
             if (startOnPlay)
             {
@@ -174,6 +180,17 @@ namespace TitanesAwa.Core
             }
 
             return controller;
+        }
+
+        private void ConfigureAI(TitanController titan, TitanId id)
+        {
+            if (!titan.TryGetComponent(out TitanAIController ai))
+            {
+                return;
+            }
+
+            ai.Initialize(this);
+            ai.enabled = id == aiControlledTitan;
         }
 
         private void PlaceAtSpawn(TitanController titan, TitanId owner)

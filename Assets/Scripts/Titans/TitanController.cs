@@ -48,6 +48,7 @@ namespace TitanesAwa.Titans
 
         public TitanId Id => data != null ? data.Id : default;
         public TitanData Data => data;
+        public Transform Opponent => opponent;
         public TitanState State { get; private set; } = TitanState.Idle;
         public float CurrentHealth => currentHealth;
         public bool IsInitialized => data != null;
