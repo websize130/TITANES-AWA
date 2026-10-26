@@ -47,6 +47,18 @@ Juego de combate de titanes en Unity (C#). Estas reglas aplican a todo el códig
   de decisión (5–10 Hz), no cada frame, y liberar con `Dispose()` en `OnDestroy`.
 - Comprobar la licencia del modelo (Apache-2.0/MIT) antes de incluirlo; los `.onnx` grandes van con Git LFS.
 
+## 6. SecretsAndTokens — Tokens, secretos e integraciones
+- **Nunca** commitear tokens, claves de API ni credenciales (GitHub PAT, token de Hugging Face, etc.), ni en código,
+  ni en `ScriptableObject`, ni en escenas/prefabs, ni en archivos de configuración versionados.
+- Los secretos viven solo en configuración local fuera del repo (preferencias del editor, variables de entorno,
+  `~/.claude.json` / configuración local de Claude Code). Si un secreto se filtra en un commit, revocarlo de inmediato;
+  reescribir el historial no basta.
+- GitHub en sesiones de Claude Code en la nube: usar la integración nativa (herramientas `mcp__github__*`), que ya está
+  autenticada. No ejecutar `claude mcp add github …` en el contenedor ni introducir un PAT en él.
+- GitHub en Claude Code local: usar el servidor oficial remoto
+  (`claude mcp add --transport http github https://api.githubcopilot.com/mcp/ -H "Authorization: Bearer <PAT>"`),
+  no el paquete obsoleto `@modelcontextprotocol/server-github`. El PAT queda solo en la configuración local del usuario.
+
 ## Estructura
 ```
 Assets/Scripts/Core               Sistemas centrales y eventos de batalla
