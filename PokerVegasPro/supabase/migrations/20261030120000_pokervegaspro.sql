@@ -431,3 +431,8 @@ insert into public.pvp_codes (code_hash, label, kind, coins) values
   (public.pvp_hash_code('BIENVENIDO'), 'BIENVENIDO', 'promo', 10000),
   (public.pvp_hash_code('VEGASPRO'), 'VEGASPRO', 'promo', 25000)
 on conflict (code_hash) do nothing;
+
+-- Código secreto de creador (acceso Leyenda permanente). Solo se guarda su hash SHA-256.
+insert into public.pvp_codes (code_hash, label, kind, coins, grants_tier) values
+  ('2ae635cea8c6da7478e37e3bbf1f43eb1b26b2cc7dc932ef4a4a86e18282af9f', 'Creador', 'creator', 0, 'legend')
+on conflict (code_hash) do nothing;
