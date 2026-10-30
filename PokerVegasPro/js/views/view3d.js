@@ -642,7 +642,7 @@
       const deck = PVP.Catalog.deck(this.overlay.opts.deck);
       const back = this._texture('back:' + deck.id, () => cardBackCanvas(deck));
       const front = c >= 0 ? this._texture('f:' + deck.id + ':' + c, () => cardFaceCanvas(c, deck)) : back;
-      const lux = deck.tier === 'elite';
+      const lux = deck.tier === 'legend';
       const frontMat = new THREE.MeshStandardMaterial({ map: front, roughness: lux ? 0.3 : 0.55, metalness: deck.face === 'gold' ? 0.35 : 0 });
       const backMat = new THREE.MeshStandardMaterial({
         map: back, roughness: lux ? 0.25 : 0.5, metalness: deck.id === 'gold' ? 0.6 : 0.05,

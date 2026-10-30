@@ -153,11 +153,11 @@
           </button>
           <button class="menu-item" data-go="stats">
             <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M3 21V10h4v11H3Zm7 0V4h4v17h-4Zm7 0v-7h4v7h-4Z"/></svg></span>
-            <span class="mi-text"><b>Estadísticas</b><small>Tu progreso · Tus logros</small></span><span class="mi-arrow">›</span>
+            <span class="mi-text"><b>Estadísticas</b><small>Tu progreso · Coach Pro</small></span><span class="mi-arrow">›</span>
           </button>
           <button class="menu-item" data-go="shop">
             <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5 12.5 3l3.6 12.3-8.5 2.5L4 5.5Zm10.9-1 4.7 1.4-3.6 12.3-1.3-.4 2.9-9.9-2.7-3.4Z"/></svg></span>
-            <span class="mi-text"><b>Tienda</b><small>Mesas · Barajas · Planes</small></span><span class="mi-arrow">›</span>
+            <span class="mi-text"><b>Tienda</b><small>Packs Élite y Leyenda · Mesas · Barajas</small></span><span class="mi-arrow">›</span>
           </button>
         </nav>
       </div>
@@ -259,7 +259,21 @@
       <div class="sub-wrap wide">
         <button class="back-btn" data-go="menu">‹ Menú</button>
         <h2 class="sub-title">Tienda</h2>
-        <div class="seg shop-tabs" id="shop-tabs"><button data-v="tables" class="on">Mesas</button><button data-v="decks">Cartas</button><button data-v="plans">Planes</button></div>
+        <div class="shop-top">
+          <div class="id-card glass-card">
+            <div><small>Tu ID de jugador</small><b id="shop-id">PVP-······</b></div>
+            <button class="ghost-btn sm" id="btn-copy-id" type="button">Copiar</button>
+            <p class="id-plan" id="shop-plan"></p>
+          </div>
+          <form class="redeem-bar glass-card" id="form-redeem" autocomplete="off">
+            <label for="redeem-input">Código promocional o de activación</label>
+            <div class="rb-row">
+              <input id="redeem-input" placeholder="Escribe o pega tu código" spellcheck="false" autocapitalize="characters" />
+              <button class="lux-btn sm" type="submit"><span>Canjear</span></button>
+            </div>
+          </form>
+        </div>
+        <div class="seg shop-tabs" id="shop-tabs"><button data-v="packs" class="on">Packs</button><button data-v="tables">Mesas</button><button data-v="decks">Cartas</button></div>
         <div id="shop-body" class="mt-6"></div>
       </div>
     </section>
@@ -373,7 +387,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="js/core.js"></script>
   <script src="js/catalog.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/vouchers.js"></script>
   <script src="js/store.js"></script>
+  <script src="js/stats.js"></script>
   <script src="js/poker/evaluator.js"></script>
   <script src="js/poker/engine.js"></script>
   <script src="js/poker/bots.js"></script>
@@ -382,6 +399,7 @@
   <script src="js/views/view3d.js"></script>
   <script src="js/game.js"></script>
   <script src="js/hud.js"></script>
+  <script src="js/coach-ui.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

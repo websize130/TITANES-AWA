@@ -4,11 +4,11 @@
 
   const PVP = (root.PVP = root.PVP || {});
 
-  // free < premium (4,99 €) < elite (9,99 €, acceso total).
+  // free < elite (Pack Élite, 4,99 €/mes) < legend (Pack Leyenda, 9,99 €/mes: acceso total + Coach).
   const TIERS = {
-    free: { id: 'free', name: 'Gratis', price: 0, rank: 0 },
-    premium: { id: 'premium', name: 'Premium', price: 4.99, rank: 1 },
-    elite: { id: 'elite', name: 'Élite · Acceso total', price: 9.99, rank: 2 },
+    free: { id: 'free', name: 'Gratis', short: 'Gratis', price: 0, rank: 0 },
+    elite: { id: 'elite', name: 'Pack Élite', short: 'Élite', price: 4.99, rank: 1 },
+    legend: { id: 'legend', name: 'Pack Leyenda', short: 'Leyenda', price: 9.99, rank: 2 },
   };
 
   /* Cada mesa define colores para la vista 2D (CSS) y la 3D (Three.js). */
@@ -29,44 +29,44 @@
       fx: 'fireflies', three: { felt: 0x365d2d, rim: 0x4a3018, accent: 0xc9e27a, fog: 0x06120a, floor: 0x0f1a0c },
     },
     {
-      id: 'space', name: 'Espacio', tier: 'premium', desc: 'Nebulosa violeta flotando entre estrellas.',
+      id: 'space', name: 'Espacio', tier: 'elite', desc: 'Nebulosa violeta flotando entre estrellas.',
       felt: ['#3b2a7a', '#120a33'], rim: ['#7f8aa3', '#2a2f3d'], accent: '#9ad7ff', bg: ['#140b33', '#020108'],
       fx: 'stars', three: { felt: 0x34246e, rim: 0x737d94, accent: 0x9ad7ff, fog: 0x05020f, floor: 0x0a0618 },
     },
     {
-      id: 'underwater', name: 'Bajo el Agua', tier: 'premium', desc: 'Arrecife y burbujas. Un tiburón cruza la mesa en cada All-In.',
+      id: 'underwater', name: 'Bajo el Agua', tier: 'elite', desc: 'Arrecife y burbujas. Un tiburón cruza la mesa en cada All-In.',
       felt: ['#0f6f8f', '#062a45'], rim: ['#3a8f8a', '#0e3b3f'], accent: '#7ff3ff', bg: ['#04406b', '#010d1f'],
       fx: 'bubbles', shark: true, three: { felt: 0x0d6280, rim: 0x2f7c78, accent: 0x7ff3ff, fog: 0x032a48, floor: 0x062038 },
     },
     {
-      id: 'balloon', name: 'Globo Aerostático', tier: 'elite', desc: 'Una mesa suspendida sobre las nubes al amanecer.',
+      id: 'balloon', name: 'Globo Aerostático', tier: 'legend', desc: 'Una mesa suspendida sobre las nubes al amanecer.',
       felt: ['#b8434d', '#5a1520'], rim: ['#c79a5b', '#6b4a22'], accent: '#ffe2a8', bg: ['#ffb58a', '#5f7fc4'],
       fx: 'clouds', three: { felt: 0xa63a45, rim: 0xb88a50, accent: 0xffe2a8, fog: 0x9fb6e0, floor: 0xf2e6d6 },
     },
     {
-      id: 'cyberpunk', name: 'Cyberpunk', tier: 'elite', desc: 'Neón magenta y cian sobre fibra de carbono.',
+      id: 'cyberpunk', name: 'Cyberpunk', tier: 'legend', desc: 'Neón magenta y cian sobre fibra de carbono.',
       felt: ['#1b1030', '#07040f'], rim: ['#16161d', '#050508'], accent: '#ff2bd6', bg: ['#1a0630', '#000000'],
       fx: 'grid', neon: true, three: { felt: 0x150c26, rim: 0x101016, accent: 0xff2bd6, fog: 0x0a0214, floor: 0x050208 },
     },
     {
-      id: 'royale', name: 'Vegas Royale', tier: 'elite', desc: 'Mesa VIP de acceso total: terciopelo negro y oro de 24K.',
+      id: 'royale', name: 'Vegas Royale', tier: 'legend', desc: 'Mesa VIP de acceso total: terciopelo negro y oro de 24K.',
       felt: ['#2a1a1f', '#0a0507'], rim: ['#d4a63a', '#6b4a10'], accent: '#ffd76a', bg: ['#2a0a18', '#050205'],
       fx: 'marquee', three: { felt: 0x24151a, rim: 0xc79a2e, accent: 0xffd76a, fog: 0x0a0306, floor: 0x0d0607 },
     },
   ];
 
-  /* Barajas: 2 gratuitas, 5 épicas (4,99 €) y 3 de lujo (9,99 €). */
+  /* Barajas: 2 gratuitas, 5 épicas (Pack Élite) y 3 de lujo (Pack Leyenda). */
   const DECKS = [
     { id: 'classic', name: 'Clásica', tier: 'free', rarity: 'Estándar', back: ['#b3122e', '#5e0716'], face: 'light' },
     { id: 'noir', name: 'Noir', tier: 'free', rarity: 'Estándar', back: ['#1d1d22', '#050506'], face: 'dark' },
-    { id: 'ruby', name: 'Rubí', tier: 'premium', rarity: 'Épica', back: ['#ff3d6e', '#7a0030'], face: 'light' },
-    { id: 'emerald', name: 'Esmeralda', tier: 'premium', rarity: 'Épica', back: ['#2fe39a', '#05613f'], face: 'light' },
-    { id: 'sapphire', name: 'Zafiro', tier: 'premium', rarity: 'Épica', back: ['#4d8bff', '#0b2a7a'], face: 'light' },
-    { id: 'amethyst', name: 'Amatista', tier: 'premium', rarity: 'Épica', back: ['#b06bff', '#3d0b7a'], face: 'light' },
-    { id: 'sunset', name: 'Atardecer', tier: 'premium', rarity: 'Épica', back: ['#ffb347', '#ff3d7f'], face: 'light' },
-    { id: 'gold', name: 'Oro 24K', tier: 'elite', rarity: 'Lujo', back: ['#ffe08a', '#a8740f'], face: 'gold', fx: 'Brillo dorado' },
-    { id: 'holo', name: 'Holográfica', tier: 'elite', rarity: 'Lujo', back: ['#9ff', '#f9f'], face: 'holo', fx: 'Reflejo holográfico' },
-    { id: 'neon', name: 'Neón', tier: 'elite', rarity: 'Lujo', back: ['#ff2bd6', '#00f0ff'], face: 'neon', fx: 'Brillo neón' },
+    { id: 'ruby', name: 'Rubí', tier: 'elite', rarity: 'Épica', back: ['#ff3d6e', '#7a0030'], face: 'light' },
+    { id: 'emerald', name: 'Esmeralda', tier: 'elite', rarity: 'Épica', back: ['#2fe39a', '#05613f'], face: 'light' },
+    { id: 'sapphire', name: 'Zafiro', tier: 'elite', rarity: 'Épica', back: ['#4d8bff', '#0b2a7a'], face: 'light' },
+    { id: 'amethyst', name: 'Amatista', tier: 'elite', rarity: 'Épica', back: ['#b06bff', '#3d0b7a'], face: 'light' },
+    { id: 'sunset', name: 'Atardecer', tier: 'elite', rarity: 'Épica', back: ['#ffb347', '#ff3d7f'], face: 'light' },
+    { id: 'gold', name: 'Oro 24K', tier: 'legend', rarity: 'Lujo', back: ['#ffe08a', '#a8740f'], face: 'gold', fx: 'Brillo dorado' },
+    { id: 'holo', name: 'Holográfica', tier: 'legend', rarity: 'Lujo', back: ['#9ff', '#f9f'], face: 'holo', fx: 'Reflejo holográfico' },
+    { id: 'neon', name: 'Neón', tier: 'legend', rarity: 'Lujo', back: ['#ff2bd6', '#00f0ff'], face: 'neon', fx: 'Brillo neón' },
   ];
 
   /* Mesas públicas (cash): compra de entrada con monedas. */

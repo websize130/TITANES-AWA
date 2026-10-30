@@ -56,8 +56,9 @@
     $('#tb-xp').style.width = Math.round(store.levelProgress() * 100) + '%';
     $('#tb-coins').textContent = U.fmt(p.coins);
     const tier = $('#tb-tier');
-    tier.textContent = p.guest ? 'Invitado' : C.TIERS[p.tier].name.split(' ·')[0];
-    tier.dataset.tier = p.guest ? 'guest' : p.tier;
+    const t = store.tier();
+    tier.textContent = t !== 'free' ? C.TIERS[t].short : p.guest ? 'Invitado' : 'Gratis';
+    tier.dataset.tier = t !== 'free' ? t : p.guest ? 'guest' : 'free';
     PVP.Sound.enabled = p.prefs.sound !== false;
   }
   store.on('change', renderTopbar);
@@ -323,40 +324,69 @@
     });
   });
 
-  /* ---------- tienda ---------- */
+  /* ---------- tienda: packs PayPal, códigos y catálogo ---------- */
 
-  let shopTab = 'tables';
+  let shopTab = 'packs';
   $('#shop-tabs').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-v]');
     if (!b) return;
-    shopTab = b.dataset.v;
-    $$('#shop-tabs button').forEach((x) => x.classList.toggle('on', x === b));
-    renderShop();
+    setShopTab(b.dataset.v);
   });
+
+  function setShopTab(tab) {
+    shopTab = tab;
+    $$('#shop-tabs button').forEach((x) => x.classList.toggle('on', x.dataset.v === tab));
+    renderShop();
+  }
+
+  const money = (n) => n.toFixed(2).replace('.', ',') + ' €';
 
   function tierLabel(tier) {
     return tier === 'free' ? '<span class="tier t-free">Gratis</span>'
-      : tier === 'premium' ? '<span class="tier t-premium">4,99 €</span>' : '<span class="tier t-elite">9,99 €</span>';
+      : `<span class="tier t-${tier}">${C.TIERS[tier].short}</span>`;
+  }
+
+  function planStatus() {
+    const p = store.profile;
+    const t = store.tier();
+    if (t === 'free') {
+      return p.tier !== 'free' && p.tierUntil ? `Tu ${C.TIERS[p.tier].name} caducó el ${new Date(p.tierUntil).toLocaleDateString('es-ES')}. Renueva para recuperarlo.` : 'Plan gratuito';
+    }
+    if (!p.tierUntil) return `${C.TIERS[t].name} · <b>permanente</b>${p.tierSource === 'creator' ? ' (código de creador)' : ''}`;
+    const days = Math.max(0, Math.ceil((p.tierUntil - Date.now()) / 86400000));
+    return `${C.TIERS[t].name} · activo hasta el <b>${new Date(p.tierUntil).toLocaleDateString('es-ES')}</b> (${days} día${days === 1 ? '' : 's'})`;
   }
 
   function renderShop() {
     const p = store.profile;
+    $('#shop-id').textContent = p.id;
+    $('#shop-plan').innerHTML = planStatus();
     const body = $('#shop-body');
-    if (shopTab === 'plans') {
-      const plans = [
-        { id: 'free', name: 'Gratis', price: '0 €', items: ['3 mesas: Casino Clásico, Playa, Bosque', '2 barajas estándar', 'Partidas públicas, salas privadas y torneos'] },
-        { id: 'premium', name: 'Premium', price: '4,99 €', items: ['+ Mesa Espacio', '+ Mesa Bajo el Agua (tiburón en All-In)', '+ 5 barajas épicas a todo color'] },
-        { id: 'elite', name: 'Élite', price: '9,99 €', items: ['Todo lo de Premium', '+ Globo Aerostático, Cyberpunk y Vegas Royale', '+ Barajas de lujo: Oro 24K, Holográfica y Neón', 'Acceso total a futuras mesas'] },
-      ];
-      body.innerHTML = `<div class="plan-grid">${plans.map((pl) => {
-        const owned = C.TIERS[p.tier].rank >= C.TIERS[pl.id].rank;
-        return `<article class="plan-card p-${pl.id}${p.tier === pl.id ? ' current' : ''}">
-          <h3>${pl.name}</h3><p class="plan-price">${pl.price}</p>
-          <ul>${pl.items.map((i) => `<li>${i}</li>`).join('')}</ul>
-          ${pl.id === 'free' ? '<span class="plan-own">Incluido</span>' : owned ? '<span class="plan-own">✓ Activo</span>' : `<button class="lux-btn w-full" data-buy="${pl.id}"><span>Comprar ${pl.price}</span></button>`}
+    if (shopTab === 'packs') {
+      const cur = store.tier();
+      const cards = ['elite', 'legend'].map((id) => {
+        const pk = PVP.Config.PACKS[id];
+        const active = cur === id;
+        const higher = C.TIERS[cur].rank > C.TIERS[id].rank;
+        return `<article class="plan-card p-${id}${active ? ' current' : ''}">
+          ${id === 'legend' ? '<span class="plan-ribbon">Acceso total</span>' : ''}
+          <h3>${pk.name}</h3>
+          <p class="plan-price">${money(pk.price)}<small> / mes</small></p>
+          <ul>${pk.perks.map((i) => `<li>${U.esc(i)}</li>`).join('')}</ul>
+          ${higher && p.tierUntil === 0 ? '<span class="plan-own">Incluido en tu plan</span>'
+            : `<a class="lux-btn w-full paypal-btn" data-pay="${id}" href="${PVP.Config.paypalLink(id)}" target="_blank" rel="noopener noreferrer">
+                <span>${active ? 'Renovar' : 'Pagar'} con PayPal · ${money(pk.price)}</span></a>`}
+          ${active ? '<span class="plan-active">✓ Activo</span>' : ''}
         </article>`;
-      }).join('')}</div>
-      <p class="text-[11px] text-white/40 mt-4">Pagos únicos. La pasarela de pago aún no está conectada (ver README): la compra se puede activar en modo demo.</p>`;
+      }).join('');
+      body.innerHTML = `
+        <div class="plan-grid two">${cards}</div>
+        <ol class="pay-steps glass-card">
+          <li><b>Paga con PayPal</b> el pack que quieras. En la nota del pago escribe tu ID: <code>${U.esc(p.id)}</code>.</li>
+          <li><b>Verificamos el pago</b> y te enviamos un código de activación personal (normalmente en menos de 24 h).</li>
+          <li><b>Canjéalo</b> en la barra de códigos de arriba: recibes las monedas del mes y el nivel se activa 30 días.</li>
+        </ol>
+        <p class="text-[11px] text-white/40 mt-3">Cada mes renuevas con un nuevo pago (no hay cargos automáticos). Las monedas son virtuales y no se pueden canjear por dinero.</p>`;
       return;
     }
     const items = shopTab === 'tables' ? C.TABLES : C.DECKS;
@@ -373,7 +403,7 @@
         <h4>${U.esc(it.name)}</h4><p>${U.esc(sub)}</p>
         ${equipped ? '<span class="si-state">✓ En uso</span>'
           : owned ? `<button class="ghost-btn sm w-full" data-equip="${prefKey}:${it.id}">Usar</button>`
-          : `<button class="lux-btn sm w-full" data-buy="${it.tier}"><span>🔒 ${it.tier === 'premium' ? 'Premium 4,99 €' : 'Élite 9,99 €'}</span></button>`}
+          : `<button class="lux-btn sm w-full" data-tab="packs"><span>🔒 ${PVP.Config.PACKS[it.tier].name} · ${money(PVP.Config.PACKS[it.tier].price)}/mes</span></button>`}
       </article>`;
     }).join('')}</div>`;
   }
@@ -386,21 +416,50 @@
       renderShop();
       return;
     }
-    const buy = e.target.closest('[data-buy]');
-    if (buy) purchase(buy.dataset.buy);
+    const tab = e.target.closest('[data-tab]');
+    if (tab) { setShopTab(tab.dataset.tab); return; }
+    const pay = e.target.closest('[data-pay]');
+    if (pay) {
+      // Copiamos el ID para pegarlo en la nota de PayPal.
+      copyText(store.profile.id).then(() => ui.toast(`ID <b>${store.profile.id}</b> copiado: pégalo en la nota del pago de PayPal.`, 5000));
+      if (store.profile.guest) {
+        e.preventDefault();
+        ui.confirm({
+          title: 'Primero, crea tu cuenta',
+          text: 'Juegas como invitado: si borras los datos del navegador, perderías lo que compres. Regístrate gratis (y recibe 50.000 monedas) antes de pagar.',
+          yes: 'Registrarme', no: 'Pagar igualmente',
+          onYes: () => { go('welcome'); authTab('register'); },
+          onNo: () => root.open(pay.href, '_blank', 'noopener'),
+        });
+      }
+    }
   });
 
-  function purchase(tier) {
-    const t = C.TIERS[tier];
-    ui.confirm({
-      title: `${t.name} · ${t.price.toFixed(2).replace('.', ',')} €`,
-      text: `La pasarela de pago todavía no está conectada.<br>Puedes activar el plan <b>${t.name}</b> en <b>modo demo</b> para probar todo su contenido en este navegador.`,
-      yes: 'Activar demo', no: 'Cancelar',
-      onYes: () => { store.unlockTier(tier); renderShop(); renderTopbar(); ui.toast(`✨ ${t.name} activado (demo)`); },
-    });
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); } catch (e) { /* sin portapapeles: el ID sigue visible */ }
   }
+  $('#btn-copy-id').addEventListener('click', () => copyText(store.profile.id).then(() => ui.toast('ID copiado')));
 
-  /* ---------- estadísticas ---------- */
+  /* Barra de códigos promocionales / activación / creador */
+  $('#form-redeem').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = $('#redeem-input');
+    const btn = $('#form-redeem button');
+    btn.disabled = true;
+    try {
+      const msg = await store.redeem(input.value);
+      input.value = '';
+      ui.toast(`🎉 ${msg}`, 4500);
+      if (PVP.Sound) PVP.Sound.win();
+      renderShop();
+    } catch (err) {
+      ui.toast(`⚠️ ${U.esc(err.message)}`, 4000);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  /* ---------- estadísticas + Coach ---------- */
 
   function renderStats() {
     const p = store.profile;
@@ -411,23 +470,28 @@
       ['Bote más grande', U.fmt(s.biggestPot)], ['Mejor mano', s.bestHandName || '—'], ['Eliminaciones (bounty)', U.fmt(s.knockouts)],
       ['Torneos jugados', U.fmt(s.tournaments)], ['Torneos ganados', U.fmt(s.tournamentWins)], ['En premios (ITM)', U.fmt(s.itm)],
     ];
+    const t = store.tier();
     $('#stats-body').innerHTML = `
       <div class="stats-head glass-card">
         <span class="pp-avatar big">${U.esc(U.initials(p.name))}</span>
-        <div><h3>${U.esc(p.name)}</h3><p>Nivel ${store.level()} · ${p.guest ? 'Invitado' : C.TIERS[p.tier].name}</p>
+        <div><h3>${U.esc(p.name)}</h3><p>Nivel ${store.level()} · ${p.guest ? 'Invitado' : C.TIERS[t].name} · ID <b class="text-white/80">${U.esc(p.id)}</b></p>
         <div class="pp-bar wide"><i style="width:${Math.round(store.levelProgress() * 100)}%"></i></div></div>
         <div class="sh-coins"><small>Monedas</small><b>${U.fmt(p.coins)}</b></div>
       </div>
       <div class="stat-grid">${tiles.map(([k, v]) => `<div class="stat-tile"><small>${k}</small><b>${v}</b></div>`).join('')}</div>
-      ${p.guest ? '<button class="lux-btn mt-6" id="btn-upgrade"><span>Registrarme y recibir 50.000 monedas</span></button>' : ''}`;
+      ${p.guest ? '<button class="lux-btn mt-6" id="btn-upgrade"><span>Registrarme y recibir 50.000 monedas</span></button>' : ''}
+      <section class="coach" id="coach"></section>`;
     const up = $('#btn-upgrade');
     if (up) up.addEventListener('click', () => { go('welcome'); authTab('register'); });
+    PVP.CoachUI.render($('#coach'), store, { onUnlock: () => { go('shop'); setShopTab('packs'); } });
   }
+
 
   /* ---------- partida ---------- */
 
   function startGame(cfg) {
     if (game) exitGame();
+    store.sanitizePrefs();
     go('game');
     $('#game-host').innerHTML = '';
     game = new PVP.GameController(cfg, { store, host: $('#game-host'), hud });
@@ -464,6 +528,17 @@
   /* ---------- arranque ---------- */
 
   if (store.restore()) { renderTopbar(); go('menu'); } else go('welcome');
+  // Enlace directo de canje: index.html#canjear=CÓDIGO
+  function handleRedeemHash() {
+    const m = location.hash.match(/#canjear=(.+)$/);
+    if (!m) return;
+    $('#redeem-input').value = decodeURIComponent(m[1]);
+    history.replaceState(null, '', location.pathname + location.search);
+    if (store.profile && !game) { go('shop'); ui.toast('Pulsa «Canjear» para activar tu código.'); }
+  }
+  handleRedeemHash();
+  root.addEventListener('hashchange', handleRedeemHash);
+  store.on('change', () => { if (current === 'shop') { $('#shop-plan').innerHTML = planStatus(); } });
   if (/#sala=/.test(location.hash) && store.profile) ui.toast('Invitación recibida: el multijugador online estará disponible con el servidor de salas.');
 
   PVP.app = { store, go, startGame };

@@ -34,6 +34,7 @@
       this.paused = false;
       this.nextId = 1;
       this.tPlaces = [];
+      this.tracker = new PVP.Stats.Tracker(this.store, HERO);
 
       this.engine = new PVP.PokerEngine({
         seats: cfg.seats, sb: cfg.sb, bb: cfg.bb,
@@ -171,6 +172,7 @@
     /* ---------- ciclo ---------- */
 
     start() {
+      this.tracker.startSession(this.cfg.mode, this.cfg.title);
       this.hud.log(`Mesa abierta · Ciegas ${U.fmt(this.engine.sb)}/${U.fmt(this.engine.bb)}`, 'sys');
       // Saludos humanizados
       for (const p of this.engine.players()) {
@@ -258,6 +260,7 @@
 
       switch (type) {
         case 'handStart':
+          this.tracker.handStart(this.engine);
           this.hud.hideActions();
           if (this.peek && !this.prefs.autoPeek) this.setPeek(false);
           break;
@@ -268,12 +271,14 @@
           this._onAction(payload);
           break;
         case 'street':
+          this.tracker.street(this.engine, payload.street);
           this.hud.log(`— ${{ flop: 'Flop', turn: 'Turn', river: 'River' }[payload.street]}: ${payload.board.map(PVP.Cards.cardLabel).join(' ')}`, 'street');
           break;
         case 'reveal':
           this.hud.log('All-in: se muestran las cartas', 'sys');
           break;
         case 'handEnd':
+          this.tracker.handEnd(this.engine, payload.result);
           this._onHandEnd(payload);
           break;
         case 'bust':
@@ -317,6 +322,7 @@
       this.timers.delete(this._heroTimeout);
       this.hud.hideActions();
       this.view.stopTimer();
+      this.tracker.decision(this.engine, action);
       this.engine.act(HERO, action);
     }
 
