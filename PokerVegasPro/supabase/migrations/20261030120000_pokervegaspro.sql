@@ -79,6 +79,15 @@ create table if not exists public.pvp_redemptions (
 );
 create index if not exists pvp_redemptions_code on public.pvp_redemptions (code_hash);
 
+-- Recompensa diaria semanal: lunes 4.000 y se duplica cada día hasta el domingo (256.000). Una por día (hora de España).
+create table if not exists public.pvp_daily_claims (
+  user_id    uuid not null references public.pvp_profiles (id) on delete cascade,
+  claim_date date not null,
+  amount     bigint not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, claim_date)
+);
+
 -- ===================== Utilidades =====================
 
 create or replace function public.pvp_is_admin()
@@ -241,7 +250,9 @@ begin
   select * into v_code from public.pvp_codes where code_hash = v_hash for update;
   if not found or not v_code.active then raise exception 'Código no válido' using errcode = 'P0001'; end if;
   if v_code.expires_at is not null and v_code.expires_at < now() then raise exception 'Este código ha caducado' using errcode = 'P0001'; end if;
-  if v_code.max_uses is not null and v_code.uses >= v_code.max_uses then raise exception 'Este código ya se ha agotado' using errcode = 'P0001'; end if;
+  if v_code.max_uses is not null and v_code.uses >= v_code.max_uses then
+    raise exception 'Este código ha expirado: ya se alcanzó su límite de % usos', v_code.max_uses using errcode = 'P0001';
+  end if;
   if exists (select 1 from public.pvp_redemptions where user_id = v_uid and code_hash = v_hash) then
     raise exception 'Ya canjeaste este código' using errcode = 'P0001';
   end if;
@@ -256,6 +267,46 @@ begin
      where id = v_uid;
   end if;
   return jsonb_build_object('kind', v_code.kind, 'coins', v_code.coins, 'tier', v_code.grants_tier);
+end $$;
+
+-- ===================== Recompensa diaria =====================
+
+create or replace function public.pvp_daily_amount(p_isodow integer)
+returns bigint language sql immutable set search_path = '' as $$
+  select (4000 * power(2, greatest(1, least(7, p_isodow)) - 1))::bigint;
+$$;
+
+-- Estado de la semana: día de hoy (1 = lunes), importes y días ya reclamados.
+create or replace function public.pvp_daily_status()
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_today date := (now() at time zone 'Europe/Madrid')::date;
+  v_monday date := v_today - (extract(isodow from v_today)::int - 1);
+begin
+  if auth.uid() is null then raise exception 'No autenticado' using errcode = '28000'; end if;
+  return jsonb_build_object(
+    'today', extract(isodow from v_today)::int,
+    'week_start', v_monday,
+    'claimed', coalesce((select jsonb_agg(extract(isodow from claim_date)::int order by claim_date)
+                           from public.pvp_daily_claims where user_id = auth.uid() and claim_date >= v_monday), '[]'::jsonb)
+  );
+end $$;
+
+create or replace function public.pvp_claim_daily()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_uid uuid := auth.uid();
+  v_today date := (now() at time zone 'Europe/Madrid')::date;
+  v_dow integer := extract(isodow from v_today)::int;
+  v_amount bigint := public.pvp_daily_amount(v_dow);
+  v_balance bigint;
+begin
+  if v_uid is null then raise exception 'No autenticado' using errcode = '28000'; end if;
+  insert into public.pvp_daily_claims (user_id, claim_date, amount) values (v_uid, v_today, v_amount)
+  on conflict do nothing;
+  if not found then raise exception 'Ya reclamaste la recompensa de hoy' using errcode = 'P0001'; end if;
+  v_balance := public.pvp__move_coins(v_uid, v_amount, 'daily_bonus', v_today::text);
+  return jsonb_build_object('day', v_dow, 'amount', v_amount, 'balance', v_balance);
 end $$;
 
 -- ===================== Confirmación de pagos =====================
@@ -364,6 +415,11 @@ alter table public.pvp_purchases   enable row level security;
 alter table public.pvp_coin_ledger enable row level security;
 alter table public.pvp_codes       enable row level security;
 alter table public.pvp_redemptions enable row level security;
+alter table public.pvp_daily_claims enable row level security;
+
+drop policy if exists pvp_daily_select on public.pvp_daily_claims;
+create policy pvp_daily_select on public.pvp_daily_claims for select to authenticated
+  using (user_id = (select auth.uid()) or (select public.pvp_is_admin()));
 
 drop policy if exists pvp_profiles_select on public.pvp_profiles;
 create policy pvp_profiles_select on public.pvp_profiles for select to authenticated
@@ -388,8 +444,8 @@ create policy pvp_redemptions_select on public.pvp_redemptions for select to aut
   using (user_id = (select auth.uid()) or (select public.pvp_is_admin()));
 
 -- Escrituras directas: solo columnas cosméticas del propio perfil.
-revoke all on public.pvp_profiles, public.pvp_purchases, public.pvp_coin_ledger, public.pvp_codes, public.pvp_redemptions from anon, authenticated;
-grant select on public.pvp_profiles, public.pvp_purchases, public.pvp_coin_ledger, public.pvp_codes, public.pvp_redemptions to authenticated;
+revoke all on public.pvp_profiles, public.pvp_purchases, public.pvp_coin_ledger, public.pvp_codes, public.pvp_redemptions, public.pvp_daily_claims from anon, authenticated;
+grant select on public.pvp_profiles, public.pvp_purchases, public.pvp_coin_ledger, public.pvp_codes, public.pvp_redemptions, public.pvp_daily_claims to authenticated;
 grant update (prefs, stats, adv, xp, updated_at) on public.pvp_profiles to authenticated;
 
 -- Funciones (solo las pvp_*; no se tocan las de otras apps): nada para anónimos salvo comprobar nombres;
@@ -405,7 +461,7 @@ begin
     if f.proname in ('pvp_is_admin', 'pvp_tier_rank', 'pvp_pack_info', 'pvp_ensure_profile', 'pvp_adjust_coins', 'pvp_create_purchase',
                      'pvp_cancel_purchase', 'pvp_redeem_code', 'pvp_username_available', 'pvp_admin_confirm_purchase',
                      'pvp_admin_reject_purchase', 'pvp_admin_grant_pack', 'pvp_admin_adjust_coins', 'pvp_admin_set_tier',
-                     'pvp_admin_create_code', 'pvp_admin_set_code_active') then
+                     'pvp_admin_create_code', 'pvp_admin_set_code_active', 'pvp_daily_status', 'pvp_claim_daily', 'pvp_daily_amount') then
       execute format('grant execute on function %s to authenticated', f.sig);
     end if;
     if f.proname in ('pvp_username_available', 'pvp_pack_info') then
@@ -432,7 +488,7 @@ insert into public.pvp_codes (code_hash, label, kind, coins) values
   (public.pvp_hash_code('VEGASPRO'), 'VEGASPRO', 'promo', 25000)
 on conflict (code_hash) do nothing;
 
--- Código secreto de creador (acceso Leyenda permanente). Solo se guarda su hash SHA-256.
-insert into public.pvp_codes (code_hash, label, kind, coins, grants_tier) values
-  ('2ae635cea8c6da7478e37e3bbf1f43eb1b26b2cc7dc932ef4a4a86e18282af9f', 'Creador', 'creator', 0, 'legend')
-on conflict (code_hash) do nothing;
+-- Código de creador «damaocho»: Pack Leyenda permanente, máximo 15 canjes en total. Solo se guarda su hash SHA-256.
+insert into public.pvp_codes (code_hash, label, kind, coins, grants_tier, max_uses) values
+  ('2ae635cea8c6da7478e37e3bbf1f43eb1b26b2cc7dc932ef4a4a86e18282af9f', 'Creador', 'creator', 0, 'legend', 15)
+on conflict (code_hash) do update set max_uses = 15, grants_tier = 'legend';

@@ -101,6 +101,9 @@
       this._err(error);
     },
 
+    dailyStatus() { return this.rpc('pvp_daily_status'); },
+    claimDaily() { return this.rpc('pvp_claim_daily'); },
+
     adjustCoins(delta, reason) { return this.rpc('pvp_adjust_coins', { p_delta: Math.round(delta), p_reason: reason }); },
     redeem(code) { return this.rpc('pvp_redeem_code', { p_code: code }); },
 

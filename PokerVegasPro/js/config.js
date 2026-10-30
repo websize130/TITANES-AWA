@@ -34,10 +34,14 @@
     /* Google AdSense (solo menú principal, solo con consentimiento). Ej.: client 'ca-pub-1234567890123456', slot '1234567890'. */
     ADSENSE: { client: '', slot: '' },
 
+    /* Recompensa diaria semanal: lunes 4.000 y ×2 cada día hasta el domingo. El ciclo empieza cada lunes (hora de España). */
+    DAILY: { base: 4000, factor: 2, timeZone: 'Europe/Madrid' },
+
     /* Modo invitado (sin cuenta): códigos que se validan en el navegador, solo por su hash SHA-256 en mayúsculas.
      * Con cuenta, los códigos se validan en Supabase (tabla pvp_codes). */
     LOCAL_CODES: [
-      { hash: '2ae635cea8c6da7478e37e3bbf1f43eb1b26b2cc7dc932ef4a4a86e18282af9f', kind: 'creator', tier: 'legend', coins: 0 },
+      // damaocho: Pack Leyenda permanente. Límite global de 15 canjes (en Supabase); sin servidor, 15 por dispositivo.
+      { hash: '2ae635cea8c6da7478e37e3bbf1f43eb1b26b2cc7dc932ef4a4a86e18282af9f', kind: 'creator', tier: 'legend', coins: 0, maxUses: 15 },
       { hash: 'ad0ca9c485746fef3e5dac765e05f2565d4c9e7ab4024aa2985ae3a301d0819b', kind: 'promo', coins: 10000 }, // BIENVENIDO
       { hash: '43e2816a707c1b39ccce4d11b297618acc302077086806d3c1c6751c8799b928', kind: 'promo', coins: 25000 }, // VEGASPRO
     ],

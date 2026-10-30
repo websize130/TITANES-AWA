@@ -12,6 +12,25 @@
   const SIGNUP_BONUS = 50000;
   const XP_PER_LEVEL = 600;
   const MAX_CREDIT = 6000000; // límite por movimiento de pvp_adjust_coins
+  const KEY_DAILY = 'pvp.daily.v1';
+  const KEY_CODE_USES = 'pvp.codeuses.v1';
+
+  /** Fecha de hoy (YYYY-MM-DD) y día ISO (1 = lunes … 7 = domingo) en la zona horaria del juego. */
+  function todayInfo() {
+    const tz = (PVP.Config.DAILY && PVP.Config.DAILY.timeZone) || undefined;
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }).formatToParts(new Date());
+    const get = (t) => parts.find((p) => p.type === t).value;
+    const date = `${get('year')}-${get('month')}-${get('day')}`;
+    const dow = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(get('weekday')) + 1;
+    const d = new Date(date + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() - (dow - 1));
+    return { date, dow, weekStart: d.toISOString().slice(0, 10) };
+  }
+
+  function dailyAmount(dow) {
+    const D = PVP.Config.DAILY || { base: 4000, factor: 2 };
+    return D.base * Math.pow(D.factor, dow - 1);
+  }
 
   function read(key, fallback) {
     try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (e) { return fallback; }
@@ -22,7 +41,7 @@
 
   function defaultPrefs() {
     return {
-      table: 'classic', deck: 'classic', view: '2d', orientation: 'auto', camera: 'player', sound: true, autoPeek: true, speed: 1,
+      table: 'classic', deck: 'classic', view: '2d', orientation: 'auto', camera: 'player', sound: true, music: true, autoPeek: true, speed: 1,
       look: { base: 'marco' }, avatarImg: null, v: 3,
     };
   }
@@ -258,6 +277,14 @@
         const c = (PVP.Config.LOCAL_CODES || []).find((x) => x.hash === hash);
         if (!c) throw new Error('Código no válido.');
         if (this.profile.redeemed.includes(hash)) throw new Error('Ya canjeaste este código.');
+        if (c.maxUses) {
+          // Los usos limitados se cuentan en el servidor: con servidor disponible hace falta cuenta.
+          if (this.backend && this.backend.available) throw new Error('Inicia sesión con tu cuenta para canjear este código: tiene un número limitado de usos.');
+          const uses = read(KEY_CODE_USES, {});
+          if ((uses[hash] || 0) >= c.maxUses) throw new Error(`Este código ha expirado: ya se alcanzó su límite de ${c.maxUses} usos.`);
+          uses[hash] = (uses[hash] || 0) + 1;
+          write(KEY_CODE_USES, uses);
+        }
         this.profile.redeemed.push(hash);
         this.profile.coins += c.coins || 0;
         if (c.tier && T[c.tier].rank > T[this.profile.tier].rank) this.profile.tier = c.tier;
@@ -272,6 +299,42 @@
       return parts.join(' · ') || 'Código aplicado';
     }
 
+    /* ---------- recompensa diaria semanal ---------- */
+
+    /** { today, claimed: [días ISO], amounts: [7 importes], canClaim } */
+    async dailyStatus() {
+      const amounts = [1, 2, 3, 4, 5, 6, 7].map(dailyAmount);
+      if (this.online) {
+        const s = await this.backend.dailyStatus();
+        const claimed = s.claimed || [];
+        return { today: s.today, claimed, amounts, canClaim: !claimed.includes(s.today) };
+      }
+      const t = todayInfo();
+      let d = read(KEY_DAILY, null);
+      if (!d || d.weekStart !== t.weekStart || d.player !== this.profile.id) d = { weekStart: t.weekStart, player: this.profile.id, claimed: [] };
+      return { today: t.dow, claimed: d.claimed, amounts, canClaim: !d.claimed.includes(t.dow) };
+    }
+
+    /** Reclama el premio de hoy. Devuelve el importe. */
+    async claimDaily() {
+      if (this.online) {
+        const r = await this.backend.claimDaily();
+        this.profile.coins = Number(r.balance);
+        this.emit('change', this.profile);
+        return Number(r.amount);
+      }
+      const t = todayInfo();
+      let d = read(KEY_DAILY, null);
+      if (!d || d.weekStart !== t.weekStart || d.player !== this.profile.id) d = { weekStart: t.weekStart, player: this.profile.id, claimed: [] };
+      if (d.claimed.includes(t.dow)) throw new Error('Ya reclamaste la recompensa de hoy');
+      d.claimed.push(t.dow);
+      write(KEY_DAILY, d);
+      const amount = dailyAmount(t.dow);
+      this.profile.coins += amount;
+      this.save();
+      return amount;
+    }
+
     /* ---------- compras (pago único) ---------- */
 
     async createPurchase(pack) {
@@ -283,6 +346,8 @@
   }
 
   PVP.Store = Store;
+  PVP.Store.todayInfo = todayInfo;
+  PVP.Store.dailyAmount = dailyAmount;
   PVP.Store.SIGNUP_BONUS = SIGNUP_BONUS;
   PVP.Store.GUEST_COINS = GUEST_COINS;
 })(typeof window !== 'undefined' ? window : globalThis);

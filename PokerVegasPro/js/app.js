@@ -32,8 +32,33 @@
     current = name;
     if (RENDER[name]) RENDER[name]();
     PVP.Legal.onScreen(name);
+    if (name === 'menu') PVP.DailyUI.autoOpen(store);
     root.scrollTo(0, 0);
   }
+
+  /* ---------- música, bonus diario y partículas ---------- */
+
+  function musicWanted() { return !store.profile || store.profile.prefs.music !== false; }
+  function syncMusicFab() {
+    const on = musicWanted();
+    const fab = $('#music-fab');
+    fab.classList.toggle('off', !on);
+    fab.setAttribute('aria-pressed', on ? 'true' : 'false');
+    fab.title = on ? 'Silenciar música' : 'Activar música';
+  }
+  // Los navegadores solo permiten audio tras una interacción: la música arranca con el primer toque.
+  document.addEventListener('pointerdown', function firstTouch() {
+    document.removeEventListener('pointerdown', firstTouch);
+    if (musicWanted()) PVP.Audio.startMusic();
+  });
+  $('#music-fab').addEventListener('click', () => {
+    const on = !musicWanted();
+    if (store.profile) store.setPref('music', on);
+    PVP.Audio.setMusic(on);
+    syncMusicFab();
+  });
+  $('#btn-daily').addEventListener('click', () => PVP.DailyUI.open(store));
+  PVP.Particles.start();
 
   $('#btn-profile').addEventListener('click', () => {
     PVP.ProfileUI.open(store, () => { renderTopbar(); if (current === 'stats') renderStats(); });
@@ -66,6 +91,7 @@
     tier.textContent = t !== 'free' ? C.TIERS[t].short : p.guest ? 'Invitado' : 'Gratis';
     tier.dataset.tier = t !== 'free' ? t : p.guest ? 'guest' : 'free';
     PVP.Sound.enabled = p.prefs.sound !== false;
+    syncMusicFab();
   }
   store.on('change', renderTopbar);
   store.on('levelUp', (lvl) => ui.toast(`⭐ ¡Subes a nivel ${lvl}!`));
@@ -137,6 +163,7 @@
   $$('#modal-settings [data-pref]').forEach((i) => i.addEventListener('change', () => {
     store.setPref(i.dataset.pref, i.checked);
     if (i.dataset.pref === 'autoPeek' && game) game.setPeek(i.checked);
+    if (i.dataset.pref === 'music') { PVP.Audio.setMusic(i.checked); syncMusicFab(); }
   }));
   $$('#modal-settings [data-pref-seg]').forEach((seg) => seg.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-v]');

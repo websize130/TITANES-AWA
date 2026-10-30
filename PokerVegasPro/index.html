@@ -143,6 +143,11 @@
         </div>
 
         <nav class="menu-list" aria-label="Menú principal">
+          <button class="menu-item daily" id="btn-daily" type="button">
+            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M4 9h16v3H4zM5 12h14v9H5zM11 9h2v12h-2zM12 9C9 9 6.5 7.6 7 5.5 7.6 3.3 10.6 4.4 12 9c1.4-4.6 4.4-5.7 5-3.5.5 2.1-2 3.5-5 3.5Z"/></svg></span>
+            <span class="mi-text"><b>Bonus diario</b><small>De 4.000 a 256.000 monedas · ×2 cada día</small></span>
+            <span class="daily-badge" id="daily-badge" hidden>¡Listo!</span><span class="mi-arrow">›</span>
+          </button>
           <button class="menu-item primary" data-go="public">
             <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M12 2C9 6 4 8.5 4 13a4 4 0 0 0 6.5 3.1L9 22h6l-1.5-5.9A4 4 0 0 0 20 13c0-4.5-5-7-8-11Z"/></svg></span>
             <span class="mi-text"><b>Jugar</b><small>Partidas públicas · Mesas cash</small></span><span class="mi-arrow">›</span>
@@ -360,7 +365,8 @@
   <div class="modal" id="modal-settings" role="dialog" aria-modal="true" aria-labelledby="st-title">
     <div class="modal-card">
       <h3 id="st-title" class="modal-title">Ajustes</h3>
-      <label class="toggle-field"><input type="checkbox" data-pref="sound" /><span class="tg"></span><span>Sonido</span></label>
+      <label class="toggle-field"><input type="checkbox" data-pref="sound" /><span class="tg"></span><span>Efectos de sonido</span></label>
+      <label class="toggle-field"><input type="checkbox" data-pref="music" /><span class="tg"></span><span>Música lounge de fondo</span></label>
       <label class="toggle-field"><input type="checkbox" data-pref="autoPeek" /><span class="tg"></span><span>Mostrar siempre mis cartas</span></label>
       <div class="mt-3"><span class="field-label">Vista por defecto</span><div class="seg wide" data-pref-seg="view"><button data-v="2d">2D Clásico</button><button data-v="3d">3D Inmersivo</button></div></div>
       <div class="mt-3"><span class="field-label">Orientación de la mesa</span><div class="seg wide" data-pref-seg="orientation"><button data-v="auto">Auto</button><button data-v="h">Horizontal</button><button data-v="v">Vertical</button></div></div>
@@ -439,6 +445,22 @@
     </div>
   </div>
 
+  <div class="modal" id="modal-daily" role="dialog" aria-modal="true" aria-labelledby="dl-title">
+    <div class="modal-card wide daily-card">
+      <p class="daily-kicker">Recompensa semanal</p>
+      <h3 class="modal-title" id="dl-title">Bonus diario</h3>
+      <p class="daily-sub">Entra cada día: el premio se duplica de lunes a domingo.</p>
+      <div class="daily-grid" id="daily-grid"></div>
+      <button class="lux-btn w-full mt-5" id="daily-claim" type="button"><span>Reclamar</span></button>
+      <p class="daily-total" id="daily-total"></p>
+      <button class="ghost-btn w-full mt-3" data-close type="button">Cerrar</button>
+    </div>
+  </div>
+
+  <button class="music-fab" id="music-fab" type="button" aria-pressed="true" title="Música de fondo">
+    <span class="mf-on">♫</span><span class="mf-off">🔇</span><i class="mf-eq"><b></b><b></b><b></b></i>
+  </button>
+
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
   <!-- Three.js r128 (build global) para la vista 3D -->
@@ -446,6 +468,7 @@
   <!-- Supabase JS v2 (cuentas, saldo y compras en tiempo real) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="js/core.js"></script>
+  <script src="js/audio.js"></script>
   <script src="js/catalog.js"></script>
   <script src="js/avatars.js"></script>
   <script src="js/config.js"></script>
@@ -464,6 +487,8 @@
   <script src="js/hud.js"></script>
   <script src="js/legal.js"></script>
   <script src="js/profile-ui.js"></script>
+  <script src="js/daily-ui.js"></script>
+  <script src="js/particles.js"></script>
   <script src="js/coach-ui.js"></script>
   <script src="js/app.js"></script>
 </body>

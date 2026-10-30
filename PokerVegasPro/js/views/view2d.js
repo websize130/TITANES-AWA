@@ -378,13 +378,15 @@
       const from = this.is3D && this.dealerScreen ? this.dealerScreen : this._dealerPoint();
       const r = el.getBoundingClientRect();
       const dx = from.x - (r.left + r.width / 2), dy = from.y - (r.top + r.height / 2);
+      // Deslizamiento en arco con un pequeño rebote al asentarse (solo transform/opacity: va por GPU).
       el.animate(
         [
-          { transform: `translate(${dx}px, ${dy}px) rotate(-160deg) scale(.45)`, opacity: 0 },
-          { opacity: 1, offset: 0.15 },
-          { transform: 'translate(0,0) rotate(0) scale(1)', opacity: 1 },
+          { transform: `translate3d(${dx}px, ${dy}px, 0) rotate(-160deg) scale(.45)`, opacity: 0 },
+          { opacity: 1, offset: 0.12 },
+          { transform: `translate3d(${dx * 0.12}px, ${dy * 0.12 - 10}px, 0) rotate(-8deg) scale(1.04)`, opacity: 1, offset: 0.82 },
+          { transform: 'translate3d(0,0,0) rotate(0) scale(1)', opacity: 1 },
         ],
-        { duration: dur, delay, easing: 'cubic-bezier(.2,.75,.25,1)', fill: 'backwards' }
+        { duration: dur * 1.15, delay, easing: 'cubic-bezier(.22,.8,.3,1)', fill: 'backwards' }
       );
     }
 
@@ -422,8 +424,11 @@
         document.body.appendChild(clone);
         const dx = pot.left + pot.width / 2 - (r.left + r.width / 2);
         const dy = pot.top + pot.height / 2 - (r.top + r.height / 2);
-        clone.animate([{ transform: 'translate(-50%,-50%)' }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.7)`, opacity: 0.2 }],
-          { duration: 420, easing: 'cubic-bezier(.4,0,.2,1)' }).onfinish = () => clone.remove();
+        clone.animate([
+          { transform: 'translate3d(-50%,-50%,0)' },
+          { transform: `translate3d(calc(-50% + ${dx * 0.55}px), calc(-50% + ${dy * 0.55 - 18}px), 0)`, offset: 0.55 },
+          { transform: `translate3d(calc(-50% + ${dx}px), calc(-50% + ${dy}px), 0) scale(.7)`, opacity: 0.15 },
+        ], { duration: 480, easing: 'cubic-bezier(.4,0,.2,1)' }).onfinish = () => clone.remove();
       }
       if (PVP.Sound) PVP.Sound.chip();
     }
@@ -443,8 +448,12 @@
         const dx = r.left + r.width / 2 - (pot.left + pot.width / 2);
         const dy = r.top + r.height / 2 - (pot.top + pot.height / 2);
         if (!chip.animate) { chip.remove(); return; }
-        chip.animate([{ transform: 'translate(-50%,-50%) scale(1.1)' }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.8)`, opacity: 0.3 }],
-          { duration: 650, delay: i * 120, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'backwards' }).onfinish = () => chip.remove();
+        // Las fichas viajan en arco hacia el ganador.
+        chip.animate([
+          { transform: 'translate3d(-50%,-50%,0) scale(1.1)' },
+          { transform: `translate3d(calc(-50% + ${dx * 0.5}px), calc(-50% + ${dy * 0.5 - 40}px), 0) scale(1.15)`, offset: 0.5 },
+          { transform: `translate3d(calc(-50% + ${dx}px), calc(-50% + ${dy}px), 0) scale(.8)`, opacity: 0.2 },
+        ], { duration: 760, delay: i * 120, easing: 'cubic-bezier(.45,.05,.3,1)', fill: 'backwards' }).onfinish = () => chip.remove();
       });
     }
 

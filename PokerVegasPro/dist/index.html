@@ -549,7 +549,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
   background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--felt1) 85%, #fff 15%) 0%, var(--felt1) 35%, var(--felt2) 100%);
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.65), inset 0 0 0 2px rgba(0, 0, 0, 0.35);
 }
-.t2d-felt::before { content: ''; position: absolute; inset: 0; opacity: 0.18; background-image: radial-gradient(rgba(255, 255, 255, 0.35) 0.5px, transparent 0.6px); background-size: 3px 3px; mix-blend-mode: overlay; }
+.t2d-felt::before { content: ''; position: absolute; inset: 0; opacity: 0.18; background-image: radial-gradient(rgba(255, 255, 255, 0.35) 0.5px, transparent 0.6px); background-size: 3px 3px; }
 .felt-line { position: absolute; inset: 16%; border-radius: 999px; border: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); }
 .felt-logo { position: absolute; left: 0; right: 0; bottom: 21%; text-align: center; font: 500 calc(var(--u) * 15px) Oswald; letter-spacing: 0.35em; text-transform: uppercase; color: var(--accent); opacity: 0.28; }
 .felt-logo b { font-weight: 700; }
@@ -942,7 +942,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
 
 /* ===================== Lujo: menú y navegación ===================== */
 .vb-sky::after {
-  content: ''; position: absolute; inset: 0; opacity: 0.07; mix-blend-mode: overlay;
+  content: ''; position: absolute; inset: 0; opacity: 0.05;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .menu-item {
@@ -987,6 +987,190 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
 .st-pending { background: rgba(243, 197, 96, 0.16); color: #f3c560; }
 .st-rejected, .st-cancelled { background: rgba(255, 90, 106, 0.14); color: #ff9aa5; }
 #app.booting { opacity: 0; }
+
+/* =====================================================================
+   VEGAS NEON — paleta vibrante: púrpura profundo, azul eléctrico, oro y neones magenta/cian
+   ===================================================================== */
+:root {
+  --neon-mag: #ff2bd6;
+  --neon-cyan: #00e5ff;
+  --elec: #3d6bff;
+  --purple: #2a0a52;
+  --purple-deep: #12022b;
+  --gold-hot: #ffd24a;
+  --neon-border: linear-gradient(120deg, #ff2bd6, #7a4dff 30%, #00e5ff 55%, #ffd24a 80%, #ff2bd6);
+  --glass: rgba(26, 10, 52, 0.72);
+  --line: rgba(255, 210, 74, 0.45);
+}
+body { background: var(--purple-deep); }
+.vb-sky {
+  background:
+    radial-gradient(70% 55% at 78% 8%, rgba(61, 107, 255, 0.55) 0%, transparent 60%),
+    radial-gradient(60% 50% at 12% 22%, rgba(255, 43, 214, 0.45) 0%, transparent 60%),
+    radial-gradient(90% 60% at 50% 110%, rgba(255, 170, 40, 0.28) 0%, transparent 60%),
+    linear-gradient(180deg, #140433 0%, #2a0a52 40%, #12022b 100%);
+}
+.vb-sky::before {
+  content: ''; position: absolute; inset: -20%;
+  background:
+    radial-gradient(30% 25% at 30% 40%, rgba(255, 43, 214, 0.22), transparent 70%),
+    radial-gradient(28% 24% at 72% 55%, rgba(0, 229, 255, 0.18), transparent 70%);
+  animation: haze 18s ease-in-out infinite alternate; will-change: transform;
+}
+@keyframes haze { to { transform: translate3d(4%, -3%, 0) scale(1.08); } }
+.vb-skyline { filter: drop-shadow(0 0 18px rgba(255, 43, 214, 0.35)); }
+.vb-water { background: linear-gradient(180deg, rgba(255, 43, 214, 0.18), rgba(0, 229, 255, 0.08) 30%, rgba(18, 2, 43, 0.96) 70%), repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 9px); }
+.vb-vignette { background: radial-gradient(120% 90% at 50% 40%, transparent 45%, rgba(6, 0, 18, 0.8) 100%); }
+.fx-particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.6s; }
+
+/* Barra superior y píldoras con borde neón */
+.profile-pill, .coin-pill, .icon-btn { background: rgba(22, 6, 46, 0.78); position: relative; }
+.profile-pill::before, .coin-pill::before {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; background: var(--neon-border);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0.7; pointer-events: none;
+}
+.coin-pill { box-shadow: 0 0 22px rgba(255, 210, 74, 0.25), 0 8px 24px rgba(0, 0, 0, 0.45); }
+.icon-btn { border-color: rgba(0, 229, 255, 0.45); box-shadow: 0 0 14px rgba(0, 229, 255, 0.25); }
+.icon-btn svg { fill: var(--gold-hot); }
+
+/* Logo con neón más intenso */
+.logo-glow { filter: drop-shadow(0 0 3px #ff6bd9) drop-shadow(0 0 24px rgba(255, 43, 214, 0.7)); }
+.logo-glow::after { content: ''; position: absolute; inset: 10% 5%; z-index: -1; border-radius: 40%; background: radial-gradient(closest-side, rgba(122, 77, 255, 0.45), transparent); }
+.logo-sign { background: radial-gradient(120% 90% at 50% 20%, #3a0a5c, #12022b 70%); }
+.logo-sign::before { background: linear-gradient(135deg, #ff2bd6, #7a4dff 40%, #00e5ff 70%, #ff2bd6); }
+.logo-script { color: #ff7ce6; text-shadow: 0 0 6px #ff2bd6, 0 0 18px #ff2bd6, 0 0 40px rgba(122, 77, 255, 0.8); }
+
+/* Menú: cristal púrpura, borde neón degradado y brillo al pasar */
+.menu-item {
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(255, 43, 214, 0.16), transparent 45%),
+    radial-gradient(120% 160% at 100% 100%, rgba(0, 229, 255, 0.12), transparent 50%),
+    linear-gradient(180deg, rgba(40, 14, 78, 0.92), rgba(16, 4, 36, 0.95));
+  box-shadow: 0 16px 40px rgba(6, 0, 20, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.menu-item::before { background: var(--neon-border); opacity: 0.85; }
+.menu-item:hover { box-shadow: 0 18px 46px rgba(6, 0, 20, 0.65), 0 0 28px rgba(255, 43, 214, 0.35), 0 0 46px rgba(0, 229, 255, 0.2); }
+.menu-item .mi-ico { background: radial-gradient(circle at 35% 30%, rgba(255, 43, 214, 0.35), rgba(61, 107, 255, 0.18)); box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.4), 0 0 16px rgba(255, 43, 214, 0.3); }
+.menu-item .mi-ico svg { fill: #ffe38a; filter: drop-shadow(0 0 6px rgba(255, 210, 74, 0.7)); }
+.mi-text small { color: rgba(186, 214, 255, 0.72); }
+.mi-arrow { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
+.menu-item.primary { background: linear-gradient(180deg, #fff3c2 0%, #ffd24a 32%, #f0a21c 70%, #b8690c 100%); box-shadow: 0 0 34px rgba(255, 210, 74, 0.55), 0 0 70px rgba(255, 43, 214, 0.25), 0 16px 40px rgba(0, 0, 0, 0.5); }
+.menu-item.primary::before { opacity: 0; }
+.menu-item.primary .mi-arrow { color: #2a1603; text-shadow: none; }
+.menu-item.primary .mi-ico svg { fill: #2a1603; filter: none; }
+/* Pulso de brillo con opacidad (compositor), sin repintar sombras. */
+.menu-item.primary .mi-text::after { content: ''; position: absolute; inset: -6px; border-radius: 18px; pointer-events: none; box-shadow: 0 0 40px rgba(255, 210, 74, 0.9); opacity: 0; animation: glowPulse 3.2s ease-in-out infinite; }
+@keyframes glowPulse { 50% { opacity: 0.6; } }
+.menu-item.daily { background: radial-gradient(120% 160% at 0% 0%, rgba(255, 210, 74, 0.25), transparent 50%), linear-gradient(180deg, #4a0f6e, #22053f); }
+.daily-badge { padding: 3px 10px; border-radius: 999px; font: 700 11px Inter; color: #2a1603; background: linear-gradient(90deg, #ffd24a, #ff9a3d); box-shadow: 0 0 14px rgba(255, 210, 74, 0.8); animation: badgeBounce 1.2s ease-in-out infinite; }
+.daily-badge[hidden] { display: none; }
+@keyframes badgeBounce { 50% { transform: translateY(-3px) scale(1.06); } }
+
+/* Títulos, tarjetas y botones */
+.sub-title { background: linear-gradient(90deg, #ffe38a, #ffd24a 35%, #ff8ad8 75%, #9fe9ff); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 0 14px rgba(255, 43, 214, 0.35)); }
+.glass-card, .stake-card, .tour-card, .shop-item, .plan-card, .stat-tile, .metric-tile, .modal-card {
+  background: linear-gradient(180deg, rgba(40, 14, 78, 0.85), rgba(16, 4, 36, 0.92));
+  border-color: rgba(122, 77, 255, 0.35);
+  box-shadow: 0 22px 50px rgba(6, 0, 20, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+.modal-card { border-color: rgba(255, 43, 214, 0.45); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), 0 0 40px rgba(255, 43, 214, 0.18); }
+.modal { background: rgba(8, 0, 22, 0.7); }
+.stake-card.on, .plan-card.current, .shop-item.equipped { border-color: var(--gold-hot); box-shadow: 0 0 0 1px var(--gold-hot), 0 0 30px rgba(255, 210, 74, 0.35), 0 20px 50px rgba(0, 0, 0, 0.5); }
+.lux-btn { background: linear-gradient(180deg, #fff3c2 0%, #ffd24a 35%, #f0a21c 75%, #b8690c 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), inset 0 -2px 0 rgba(0, 0, 0, 0.25), 0 0 0 1px #8a5208, 0 0 24px rgba(255, 210, 74, 0.4), 0 10px 26px rgba(0, 0, 0, 0.45); }
+.lux-btn:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px #8a5208, 0 0 38px rgba(255, 210, 74, 0.65), 0 0 60px rgba(255, 43, 214, 0.25); }
+.ghost-btn { color: #9fe9ff; border-color: rgba(0, 229, 255, 0.5); background: rgba(0, 229, 255, 0.06); box-shadow: 0 0 14px rgba(0, 229, 255, 0.15) inset; }
+.ghost-btn:hover { background: rgba(0, 229, 255, 0.14); border-color: var(--neon-cyan); box-shadow: 0 0 18px rgba(0, 229, 255, 0.35); }
+.seg { background: rgba(16, 4, 36, 0.7); border-color: rgba(122, 77, 255, 0.35); }
+.seg button.on { background: linear-gradient(180deg, #fff3c2, #ffd24a 40%, #f0a21c); box-shadow: 0 0 16px rgba(255, 210, 74, 0.5); }
+.field input, .field select, .rb-row input { background: rgba(10, 2, 26, 0.7); border-color: rgba(122, 77, 255, 0.4); }
+.toast { background: rgba(26, 8, 52, 0.96); border-color: rgba(255, 43, 214, 0.5); box-shadow: 0 0 26px rgba(255, 43, 214, 0.25), 0 10px 30px rgba(0, 0, 0, 0.5); }
+.tagline { background: rgba(22, 6, 46, 0.85); border-color: rgba(255, 43, 214, 0.5); box-shadow: 0 0 24px rgba(255, 43, 214, 0.25); }
+.tc-gem { box-shadow: 0 0 34px color-mix(in srgb, var(--t1) 70%, transparent), inset 0 0 0 2px rgba(255, 255, 255, 0.5); }
+
+/* Mesa 2D: fieltro de alta calidad e iluminación cenital cálida */
+.t2d::before { background: radial-gradient(70% 60% at 50% 42%, rgba(255, 196, 110, 0.16), transparent 60%), radial-gradient(90% 80% at 50% 45%, var(--bg1), var(--bg2)); }
+.t2d-felt {
+  background:
+    radial-gradient(55% 45% at 50% 40%, rgba(255, 228, 170, 0.22), transparent 70%),
+    radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--felt1) 82%, #fff 18%) 0%, var(--felt1) 38%, var(--felt2) 100%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.7), inset 0 0 0 2px rgba(0, 0, 0, 0.35), inset 0 18px 40px rgba(255, 220, 150, 0.06);
+}
+.t2d-felt::before {
+  opacity: 0.16; background-size: 220px 220px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+}
+.t2d-rim { box-shadow: 0 34px 90px rgba(0, 0, 0, 0.8), 0 0 50px rgba(255, 43, 214, 0.18), 0 0 0 2px rgba(0, 0, 0, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.22), inset 0 -6px 18px rgba(0, 0, 0, 0.5); }
+.t2d-rim::after { box-shadow: 0 0 0 2px var(--accent), 0 0 22px color-mix(in srgb, var(--accent) 70%, transparent), 0 0 46px color-mix(in srgb, var(--accent) 30%, transparent); }
+.pcard { will-change: transform; }
+.pc-face { box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.4); }
+.chip { box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(0, 0, 0, 0.6), 0 3px 6px rgba(0, 0, 0, 0.5); }
+.seat-plate { background: linear-gradient(180deg, rgba(40, 14, 78, 0.95), rgba(12, 3, 28, 0.96)); border-color: rgba(122, 77, 255, 0.4); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6); }
+.seat.acting .seat-plate { border-color: var(--neon-cyan); box-shadow: 0 0 0 1px var(--neon-cyan), 0 0 26px rgba(0, 229, 255, 0.55); }
+.t2d-pot { background: rgba(16, 4, 36, 0.75); border-color: rgba(255, 210, 74, 0.6); box-shadow: 0 0 18px rgba(255, 210, 74, 0.25); }
+.action-bar { border-color: rgba(255, 43, 214, 0.45); box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.55), 0 0 34px rgba(255, 43, 214, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08); background: linear-gradient(180deg, rgba(40, 14, 78, 0.94), rgba(10, 2, 26, 0.97)); }
+.ab-btn.check, .ab-btn.call { background: linear-gradient(180deg, #0fa7c4, #075a78); border-color: #3fe0ff; box-shadow: 0 0 18px rgba(0, 229, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+.ab-btn.fold { background: linear-gradient(180deg, #8a1a6a, #3c0630); border-color: #ff4fd8; box-shadow: 0 0 16px rgba(255, 43, 214, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2); }
+.ab-btn.raise { box-shadow: 0 0 22px rgba(255, 210, 74, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+
+/* Bonus diario */
+.daily-card { text-align: center; position: relative; overflow: hidden; }
+.daily-card::before { content: ''; position: absolute; inset: -40% -10% auto; height: 70%; background: radial-gradient(closest-side, rgba(255, 210, 74, 0.25), transparent); pointer-events: none; }
+.daily-kicker { font: 600 12px Oswald; letter-spacing: 0.3em; text-transform: uppercase; color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
+.daily-sub { color: rgba(220, 210, 255, 0.75); font-size: 14px; margin-top: -4px; }
+.daily-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 18px; }
+@media (max-width: 640px) { .daily-grid { grid-template-columns: repeat(4, 1fr); } .daily-day.jackpot { grid-column: span 2; } }
+.daily-day {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 4px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(58, 20, 104, 0.9), rgba(22, 6, 46, 0.95)); border: 1px solid rgba(122, 77, 255, 0.4);
+  animation: dayIn 0.5s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i) * 60ms);
+}
+@keyframes dayIn { from { opacity: 0; transform: translateY(12px) scale(0.92); } }
+.dd-name { font: 500 11px Oswald; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(220, 210, 255, 0.75); }
+.dd-chest { font-size: 26px; line-height: 1.1; filter: drop-shadow(0 0 8px rgba(255, 210, 74, 0.6)); }
+.dd-amt { font: 700 20px Oswald; color: var(--gold-hot); text-shadow: 0 0 12px rgba(255, 210, 74, 0.5); }
+.dd-x { font: 600 10px Inter; color: var(--neon-mag); }
+.dd-state { font: 500 10px Inter; color: rgba(255, 255, 255, 0.55); }
+.daily-day.today { border-color: var(--gold-hot); background: linear-gradient(180deg, rgba(120, 50, 150, 0.95), rgba(50, 10, 80, 0.95)); box-shadow: 0 0 0 1px var(--gold-hot), 0 0 28px rgba(255, 210, 74, 0.55); animation: dayIn 0.5s both, todayPulse 1.6s ease-in-out infinite 0.6s; }
+@keyframes todayPulse { 50% { box-shadow: 0 0 0 1px var(--gold-hot), 0 0 44px rgba(255, 210, 74, 0.85), 0 0 70px rgba(255, 43, 214, 0.35); } }
+.daily-day.claimed { border-color: rgba(62, 209, 107, 0.6); }
+.daily-day.claimed .dd-chest { color: #3ed16b; filter: drop-shadow(0 0 8px rgba(62, 209, 107, 0.7)); }
+.daily-day.missed, .daily-day.future { opacity: 0.6; }
+.daily-day.jackpot { background: linear-gradient(180deg, rgba(120, 70, 10, 0.9), rgba(60, 20, 70, 0.95)); border-color: rgba(255, 210, 74, 0.7); }
+.daily-total { margin-top: 10px; font-size: 12px; color: rgba(220, 210, 255, 0.6); }
+#daily-claim:disabled { filter: grayscale(0.7) brightness(0.7); cursor: default; }
+.coin-fly {
+  position: absolute; top: -20px; left: var(--x); width: 18px; height: 18px; border-radius: 50%; pointer-events: none; z-index: 5;
+  background: radial-gradient(circle at 35% 30%, #fff6c8, #ffd24a 45%, #b8690c); box-shadow: 0 0 10px rgba(255, 210, 74, 0.8);
+  animation: coinFall var(--d) cubic-bezier(.3, .1, .6, 1) forwards;
+}
+@keyframes coinFall { to { transform: translate3d(0, 520px, 0) rotate(var(--r)); opacity: 0; } }
+
+/* Botón flotante de música */
+.music-fab {
+  position: fixed; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 70; width: 50px; height: 50px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 20px; color: #2a1603; cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, #fff3c2, #ffd24a 50%, #c97a0c); box-shadow: 0 0 22px rgba(255, 210, 74, 0.6), 0 0 40px rgba(255, 43, 214, 0.3), 0 8px 20px rgba(0, 0, 0, 0.5);
+  transition: transform 0.15s;
+}
+.music-fab:hover { transform: scale(1.08); }
+.music-fab .mf-off { display: none; }
+.music-fab.off { background: radial-gradient(circle at 35% 30%, #5a3a7a, #2a0a52); box-shadow: 0 0 0 1px rgba(122, 77, 255, 0.5), 0 8px 20px rgba(0, 0, 0, 0.5); }
+.music-fab.off .mf-on, .music-fab.off .mf-eq { display: none; }
+.music-fab.off .mf-off { display: block; }
+.mf-eq { position: absolute; bottom: 9px; display: flex; gap: 2px; height: 8px; align-items: flex-end; }
+.mf-eq b { width: 3px; background: #2a1603; border-radius: 1px; animation: eq 0.9s ease-in-out infinite; }
+.mf-eq b:nth-child(2) { animation-delay: 0.2s; } .mf-eq b:nth-child(3) { animation-delay: 0.45s; }
+@keyframes eq { 0%, 100% { height: 2px; } 50% { height: 8px; } }
+.mf-on { margin-top: -6px; }
+body[data-screen='game'] .music-fab { top: 70px; bottom: auto; right: 12px; width: 40px; height: 40px; font-size: 16px; }
+@media (max-width: 640px) { body[data-screen='game'] .music-fab { top: 128px; } }
+body[data-screen='welcome'] .music-fab, body[data-screen='menu'] .music-fab { bottom: max(70px, env(safe-area-inset-bottom)); }
+
+/* Rendimiento: sin backdrop-filter sobre el canvas de partículas animado (obligaría a re-desenfocar cada frame). */
+.glass-card, .profile-pill, .coin-pill, .icon-btn, .modal, .tagline, .topbar, .cookie-banner { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.modal { background: rgba(8, 0, 22, 0.82); }
+.glass-card { background: linear-gradient(180deg, rgba(40, 14, 78, 0.94), rgba(16, 4, 36, 0.97)); }
+.profile-pill, .coin-pill { background: rgba(22, 6, 46, 0.92); }
 
 </style>
 </head>
@@ -1111,6 +1295,11 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
         </div>
 
         <nav class="menu-list" aria-label="Menú principal">
+          <button class="menu-item daily" id="btn-daily" type="button">
+            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M4 9h16v3H4zM5 12h14v9H5zM11 9h2v12h-2zM12 9C9 9 6.5 7.6 7 5.5 7.6 3.3 10.6 4.4 12 9c1.4-4.6 4.4-5.7 5-3.5.5 2.1-2 3.5-5 3.5Z"/></svg></span>
+            <span class="mi-text"><b>Bonus diario</b><small>De 4.000 a 256.000 monedas · ×2 cada día</small></span>
+            <span class="daily-badge" id="daily-badge" hidden>¡Listo!</span><span class="mi-arrow">›</span>
+          </button>
           <button class="menu-item primary" data-go="public">
             <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M12 2C9 6 4 8.5 4 13a4 4 0 0 0 6.5 3.1L9 22h6l-1.5-5.9A4 4 0 0 0 20 13c0-4.5-5-7-8-11Z"/></svg></span>
             <span class="mi-text"><b>Jugar</b><small>Partidas públicas · Mesas cash</small></span><span class="mi-arrow">›</span>
@@ -1328,7 +1517,8 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
   <div class="modal" id="modal-settings" role="dialog" aria-modal="true" aria-labelledby="st-title">
     <div class="modal-card">
       <h3 id="st-title" class="modal-title">Ajustes</h3>
-      <label class="toggle-field"><input type="checkbox" data-pref="sound" /><span class="tg"></span><span>Sonido</span></label>
+      <label class="toggle-field"><input type="checkbox" data-pref="sound" /><span class="tg"></span><span>Efectos de sonido</span></label>
+      <label class="toggle-field"><input type="checkbox" data-pref="music" /><span class="tg"></span><span>Música lounge de fondo</span></label>
       <label class="toggle-field"><input type="checkbox" data-pref="autoPeek" /><span class="tg"></span><span>Mostrar siempre mis cartas</span></label>
       <div class="mt-3"><span class="field-label">Vista por defecto</span><div class="seg wide" data-pref-seg="view"><button data-v="2d">2D Clásico</button><button data-v="3d">3D Inmersivo</button></div></div>
       <div class="mt-3"><span class="field-label">Orientación de la mesa</span><div class="seg wide" data-pref-seg="orientation"><button data-v="auto">Auto</button><button data-v="h">Horizontal</button><button data-v="v">Vertical</button></div></div>
@@ -1406,6 +1596,22 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
       <button class="lux-btn sm" id="cookie-accept" type="button"><span>Aceptar todo</span></button>
     </div>
   </div>
+
+  <div class="modal" id="modal-daily" role="dialog" aria-modal="true" aria-labelledby="dl-title">
+    <div class="modal-card wide daily-card">
+      <p class="daily-kicker">Recompensa semanal</p>
+      <h3 class="modal-title" id="dl-title">Bonus diario</h3>
+      <p class="daily-sub">Entra cada día: el premio se duplica de lunes a domingo.</p>
+      <div class="daily-grid" id="daily-grid"></div>
+      <button class="lux-btn w-full mt-5" id="daily-claim" type="button"><span>Reclamar</span></button>
+      <p class="daily-total" id="daily-total"></p>
+      <button class="ghost-btn w-full mt-3" data-close type="button">Cerrar</button>
+    </div>
+  </div>
+
+  <button class="music-fab" id="music-fab" type="button" aria-pressed="true" title="Música de fondo">
+    <span class="mf-on">♫</span><span class="mf-off">🔇</span><i class="mf-eq"><b></b><b></b><b></b></i>
+  </button>
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
@@ -1547,6 +1753,276 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
   PVP.Emitter = Emitter;
   PVP.util = util;
   PVP.Sound = Sound;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+  <script>/* js/audio.js */
+/* PokerVegasPro — audio: música lounge/jazz generada en tiempo real con WebAudio (sin archivos ni derechos de autor)
+ * y efectos de sonido (fichas, cartas, botones, premios). Todo pasa por un bus con compresor y reverberación suave.
+ */
+(function (root) {
+  'use strict';
+
+  const PVP = (root.PVP = root.PVP || {});
+
+  const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
+  // ii–V–I–VI en Do y su variante (voicings de jazz sin fundamental en la mano derecha).
+  const PROG = [
+    { root: 38, chord: [53, 57, 60, 64] }, // Dm9
+    { root: 43, chord: [53, 57, 59, 64] }, // G13
+    { root: 36, chord: [52, 55, 59, 62] }, // Cmaj9
+    { root: 45, chord: [55, 58, 61, 65] }, // A7(b13)
+    { root: 41, chord: [52, 57, 60, 64] }, // Fmaj7
+    { root: 40, chord: [50, 55, 59, 62] }, // Em7
+    { root: 38, chord: [53, 57, 60, 64] }, // Dm9
+    { root: 43, chord: [53, 56, 59, 65] }, // G7(b9)
+  ];
+  const BPM = 74;
+  const BEAT = 60 / BPM;
+  const SWING = 0.62; // corchea larga del swing
+
+  const Audio = {
+    ctx: null,
+    musicOn: true,
+    sfxOn: true,
+    playing: false,
+    _bar: 0,
+    _next: 0,
+    _timer: null,
+
+    _ensure() {
+      if (this.ctx) {
+        if (this.ctx.state === 'suspended' && !document.hidden) this.ctx.resume();
+        return this.ctx;
+      }
+      const AC = root.AudioContext || root.webkitAudioContext;
+      if (!AC) return null;
+      const ctx = (this.ctx = new AC());
+      this.master = ctx.createDynamicsCompressor();
+      this.master.threshold.value = -18;
+      this.master.ratio.value = 3;
+      this.master.connect(ctx.destination);
+      // Reverberación de sala pequeña generada por código.
+      this.reverb = ctx.createConvolver();
+      const len = Math.floor(ctx.sampleRate * 2.2);
+      const ir = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = ir.getChannelData(ch);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+      }
+      this.reverb.buffer = ir;
+      this.revGain = ctx.createGain();
+      this.revGain.gain.value = 0.22;
+      this.reverb.connect(this.revGain).connect(this.master);
+      this.musicBus = ctx.createGain();
+      this.musicBus.gain.value = 0;
+      this.musicBus.connect(this.master);
+      this.musicBus.connect(this.reverb);
+      this.sfxBus = ctx.createGain();
+      this.sfxBus.gain.value = 0.9;
+      this.sfxBus.connect(this.master);
+      this.sfxBus.connect(this.reverb);
+      document.addEventListener('visibilitychange', () => {
+        if (!this.ctx) return;
+        if (document.hidden) this.ctx.suspend(); else this.ctx.resume();
+      });
+      return ctx;
+    },
+
+    /* ---------- música ---------- */
+
+    startMusic() {
+      const ctx = this._ensure();
+      if (!ctx || this.playing) return;
+      this.playing = true;
+      this._next = ctx.currentTime + 0.1;
+      this.musicBus.gain.cancelScheduledValues(ctx.currentTime);
+      this.musicBus.gain.setTargetAtTime(0.32, ctx.currentTime, 1.2);
+      this._timer = setInterval(() => this._schedule(), 120);
+      this._schedule();
+    },
+
+    stopMusic() {
+      if (!this.ctx || !this.playing) return;
+      this.playing = false;
+      clearInterval(this._timer);
+      this.musicBus.gain.setTargetAtTime(0, this.ctx.currentTime, 0.4);
+    },
+
+    _schedule() {
+      const ctx = this.ctx;
+      while (this._next < ctx.currentTime + 0.6) {
+        this._playBar(this._bar % PROG.length, this._next);
+        this._next += BEAT * 4;
+        this._bar++;
+      }
+    },
+
+    _playBar(i, t) {
+      const c = PROG[i], nxt = PROG[(i + 1) % PROG.length];
+      // Piano eléctrico: acorde en el 1 y a veces anticipado en el «y» del 2.
+      this._rhodes(c.chord, t, BEAT * 2.4, 0.07);
+      if (Math.random() < 0.55) this._rhodes(c.chord.map((n) => n + (Math.random() < 0.3 ? 12 : 0)), t + BEAT * (1 + SWING), BEAT * 1.6, 0.045);
+      // Contrabajo caminando: fundamental, quinta/tercera y aproximación cromática al siguiente acorde.
+      const walk = [c.root, c.root + (Math.random() < 0.5 ? 7 : 4), c.root + (Math.random() < 0.5 ? 9 : 10), nxt.root + (Math.random() < 0.5 ? 1 : -1)];
+      walk.forEach((n, k) => this._bass(n, t + k * BEAT, BEAT * 0.9));
+      // Escobillas: barrido en 2 y 4, ride suave en corcheas con swing.
+      for (let k = 0; k < 4; k++) {
+        if (k % 2 === 1) this._noise(t + k * BEAT, 0.22, 900, 0.018, 'bandpass');
+        this._noise(t + k * BEAT, 0.06, 7000, 0.012, 'highpass');
+        this._noise(t + k * BEAT + BEAT * SWING, 0.05, 7000, 0.008, 'highpass');
+      }
+      // Melodía ocasional, muy suave.
+      if (i % 2 === 0 && Math.random() < 0.6) {
+        const scale = c.chord.map((n) => n + 12);
+        for (let k = 0; k < 3; k++) if (Math.random() < 0.7) this._bell(scale[Math.floor(Math.random() * scale.length)], t + BEAT * (k + (k ? SWING : 0)), 0.03);
+      }
+    },
+
+    _rhodes(notes, t, dur, vol) {
+      const ctx = this.ctx;
+      for (const n of notes) {
+        const f = midi(n);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
+        o1.type = 'sine'; o2.type = 'sine';
+        o1.frequency.value = f; o2.frequency.value = f * 2.001;
+        const g2 = ctx.createGain(); g2.gain.value = 0.18;
+        const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2400;
+        o1.connect(g); o2.connect(g2).connect(g);
+        g.connect(lp).connect(this.musicBus);
+        o1.start(t); o2.start(t); o1.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+      }
+    },
+
+    _bass(n, t, dur) {
+      const ctx = this.ctx;
+      const o = ctx.createOscillator();
+      o.type = 'triangle';
+      o.frequency.value = midi(n);
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(lp).connect(g).connect(this.musicBus);
+      o.start(t); o.stop(t + dur + 0.05);
+    },
+
+    _bell(n, t, vol) {
+      const ctx = this.ctx;
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = midi(n);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+      o.connect(g).connect(this.musicBus);
+      o.start(t); o.stop(t + 1.5);
+    },
+
+    _noise(t, dur, freq, vol, type, bus) {
+      const ctx = this.ctx;
+      if (!this._noiseBuf) {
+        const b = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+        const d = b.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        this._noiseBuf = b;
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = this._noiseBuf;
+      const f = ctx.createBiquadFilter(); f.type = type || 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + Math.min(0.03, dur / 3));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(f).connect(g).connect(bus || this.musicBus);
+      src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.02);
+      return f;
+    },
+
+    _tone(freq, t, dur, vol, type) {
+      const ctx = this.ctx;
+      const o = ctx.createOscillator();
+      o.type = type || 'sine';
+      o.frequency.value = freq;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(this.sfxBus);
+      o.start(t); o.stop(t + dur + 0.02);
+      return o;
+    },
+
+    /* ---------- efectos ---------- */
+
+    sfx(name, delay) {
+      if (!this.sfxOn) return;
+      const ctx = this._ensure();
+      if (!ctx) return;
+      const t = ctx.currentTime + (delay || 0);
+      switch (name) {
+        case 'chip': // ficha de cerámica: parciales inarmónicos muy cortos
+          for (const [f, v] of [[2650, 0.07], [4120, 0.05], [5830, 0.03]]) this._tone(f * (0.97 + Math.random() * 0.06), t, 0.07, v, 'sine');
+          this._noise(t, 0.03, 6000, 0.05, 'highpass', this.sfxBus);
+          break;
+        case 'chips': // pila de fichas cayendo al bote
+          for (let i = 0; i < 6; i++) this.sfx('chip', (delay || 0) + i * 0.035 + Math.random() * 0.02);
+          break;
+        case 'card': { // carta deslizándose sobre el tapete
+          const f = this._noise(t, 0.16, 1800, 0.09, 'bandpass', this.sfxBus);
+          f.frequency.setValueAtTime(3200, t);
+          f.frequency.exponentialRampToValueAtTime(900, t + 0.15);
+          break;
+        }
+        case 'flip':
+          this._noise(t, 0.06, 4200, 0.06, 'bandpass', this.sfxBus);
+          break;
+        case 'click':
+          this._tone(1800, t, 0.035, 0.03, 'triangle');
+          break;
+        case 'fold':
+          this._noise(t, 0.12, 600, 0.05, 'lowpass', this.sfxBus);
+          break;
+        case 'turn':
+          this._tone(880, t, 0.35, 0.05); this._tone(1320, t + 0.11, 0.4, 0.04);
+          break;
+        case 'win':
+          [523, 659, 784, 1046, 1318].forEach((f, i) => this._tone(f, t + i * 0.08, 0.5, 0.05, 'triangle'));
+          for (let i = 0; i < 8; i++) this._tone(2600 + Math.random() * 2400, t + 0.3 + i * 0.05, 0.25, 0.015);
+          break;
+        case 'coins':
+          for (let i = 0; i < 14; i++) this.sfx('chip', (delay || 0) + i * 0.05 + Math.random() * 0.03);
+          [784, 988, 1175, 1568].forEach((f, i) => this._tone(f, t + i * 0.07, 0.4, 0.04, 'triangle'));
+          break;
+        default:
+      }
+    },
+
+    setMusic(on) {
+      this.musicOn = on;
+      if (on) this.startMusic(); else this.stopMusic();
+    },
+  };
+
+  // Compatibilidad: el resto del juego usa PVP.Sound.
+  if (PVP.Sound) {
+    const S = PVP.Sound;
+    S.card = (d) => Audio.sfx('card', d);
+    S.chip = () => Audio.sfx('chips');
+    S.turn = () => Audio.sfx('turn');
+    S.fold = () => Audio.sfx('fold');
+    S.win = () => Audio.sfx('win');
+    S.click = () => Audio.sfx('click');
+    Object.defineProperty(S, 'enabled', { get: () => Audio.sfxOn, set: (v) => { Audio.sfxOn = !!v; }, configurable: true });
+  }
+
+  PVP.Audio = Audio;
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -1911,10 +2387,14 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
     /* Google AdSense (solo menú principal, solo con consentimiento). Ej.: client 'ca-pub-1234567890123456', slot '1234567890'. */
     ADSENSE: { client: '', slot: '' },
 
+    /* Recompensa diaria semanal: lunes 4.000 y ×2 cada día hasta el domingo. El ciclo empieza cada lunes (hora de España). */
+    DAILY: { base: 4000, factor: 2, timeZone: 'Europe/Madrid' },
+
     /* Modo invitado (sin cuenta): códigos que se validan en el navegador, solo por su hash SHA-256 en mayúsculas.
      * Con cuenta, los códigos se validan en Supabase (tabla pvp_codes). */
     LOCAL_CODES: [
-      { hash: '2ae635cea8c6da7478e37e3bbf1f43eb1b26b2cc7dc932ef4a4a86e18282af9f', kind: 'creator', tier: 'legend', coins: 0 },
+      // damaocho: Pack Leyenda permanente. Límite global de 15 canjes (en Supabase); sin servidor, 15 por dispositivo.
+      { hash: '2ae635cea8c6da7478e37e3bbf1f43eb1b26b2cc7dc932ef4a4a86e18282af9f', kind: 'creator', tier: 'legend', coins: 0, maxUses: 15 },
       { hash: 'ad0ca9c485746fef3e5dac765e05f2565d4c9e7ab4024aa2985ae3a301d0819b', kind: 'promo', coins: 10000 }, // BIENVENIDO
       { hash: '43e2816a707c1b39ccce4d11b297618acc302077086806d3c1c6751c8799b928', kind: 'promo', coins: 25000 }, // VEGASPRO
     ],
@@ -2031,6 +2511,9 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
       const { error } = await this.client.from('pvp_profiles').update(Object.assign({ updated_at: new Date().toISOString() }, fields)).eq('id', uid);
       this._err(error);
     },
+
+    dailyStatus() { return this.rpc('pvp_daily_status'); },
+    claimDaily() { return this.rpc('pvp_claim_daily'); },
 
     adjustCoins(delta, reason) { return this.rpc('pvp_adjust_coins', { p_delta: Math.round(delta), p_reason: reason }); },
     redeem(code) { return this.rpc('pvp_redeem_code', { p_code: code }); },
@@ -2159,6 +2642,25 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
   const SIGNUP_BONUS = 50000;
   const XP_PER_LEVEL = 600;
   const MAX_CREDIT = 6000000; // límite por movimiento de pvp_adjust_coins
+  const KEY_DAILY = 'pvp.daily.v1';
+  const KEY_CODE_USES = 'pvp.codeuses.v1';
+
+  /** Fecha de hoy (YYYY-MM-DD) y día ISO (1 = lunes … 7 = domingo) en la zona horaria del juego. */
+  function todayInfo() {
+    const tz = (PVP.Config.DAILY && PVP.Config.DAILY.timeZone) || undefined;
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }).formatToParts(new Date());
+    const get = (t) => parts.find((p) => p.type === t).value;
+    const date = `${get('year')}-${get('month')}-${get('day')}`;
+    const dow = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(get('weekday')) + 1;
+    const d = new Date(date + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() - (dow - 1));
+    return { date, dow, weekStart: d.toISOString().slice(0, 10) };
+  }
+
+  function dailyAmount(dow) {
+    const D = PVP.Config.DAILY || { base: 4000, factor: 2 };
+    return D.base * Math.pow(D.factor, dow - 1);
+  }
 
   function read(key, fallback) {
     try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (e) { return fallback; }
@@ -2169,7 +2671,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
 
   function defaultPrefs() {
     return {
-      table: 'classic', deck: 'classic', view: '2d', orientation: 'auto', camera: 'player', sound: true, autoPeek: true, speed: 1,
+      table: 'classic', deck: 'classic', view: '2d', orientation: 'auto', camera: 'player', sound: true, music: true, autoPeek: true, speed: 1,
       look: { base: 'marco' }, avatarImg: null, v: 3,
     };
   }
@@ -2405,6 +2907,14 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
         const c = (PVP.Config.LOCAL_CODES || []).find((x) => x.hash === hash);
         if (!c) throw new Error('Código no válido.');
         if (this.profile.redeemed.includes(hash)) throw new Error('Ya canjeaste este código.');
+        if (c.maxUses) {
+          // Los usos limitados se cuentan en el servidor: con servidor disponible hace falta cuenta.
+          if (this.backend && this.backend.available) throw new Error('Inicia sesión con tu cuenta para canjear este código: tiene un número limitado de usos.');
+          const uses = read(KEY_CODE_USES, {});
+          if ((uses[hash] || 0) >= c.maxUses) throw new Error(`Este código ha expirado: ya se alcanzó su límite de ${c.maxUses} usos.`);
+          uses[hash] = (uses[hash] || 0) + 1;
+          write(KEY_CODE_USES, uses);
+        }
         this.profile.redeemed.push(hash);
         this.profile.coins += c.coins || 0;
         if (c.tier && T[c.tier].rank > T[this.profile.tier].rank) this.profile.tier = c.tier;
@@ -2419,6 +2929,42 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
       return parts.join(' · ') || 'Código aplicado';
     }
 
+    /* ---------- recompensa diaria semanal ---------- */
+
+    /** { today, claimed: [días ISO], amounts: [7 importes], canClaim } */
+    async dailyStatus() {
+      const amounts = [1, 2, 3, 4, 5, 6, 7].map(dailyAmount);
+      if (this.online) {
+        const s = await this.backend.dailyStatus();
+        const claimed = s.claimed || [];
+        return { today: s.today, claimed, amounts, canClaim: !claimed.includes(s.today) };
+      }
+      const t = todayInfo();
+      let d = read(KEY_DAILY, null);
+      if (!d || d.weekStart !== t.weekStart || d.player !== this.profile.id) d = { weekStart: t.weekStart, player: this.profile.id, claimed: [] };
+      return { today: t.dow, claimed: d.claimed, amounts, canClaim: !d.claimed.includes(t.dow) };
+    }
+
+    /** Reclama el premio de hoy. Devuelve el importe. */
+    async claimDaily() {
+      if (this.online) {
+        const r = await this.backend.claimDaily();
+        this.profile.coins = Number(r.balance);
+        this.emit('change', this.profile);
+        return Number(r.amount);
+      }
+      const t = todayInfo();
+      let d = read(KEY_DAILY, null);
+      if (!d || d.weekStart !== t.weekStart || d.player !== this.profile.id) d = { weekStart: t.weekStart, player: this.profile.id, claimed: [] };
+      if (d.claimed.includes(t.dow)) throw new Error('Ya reclamaste la recompensa de hoy');
+      d.claimed.push(t.dow);
+      write(KEY_DAILY, d);
+      const amount = dailyAmount(t.dow);
+      this.profile.coins += amount;
+      this.save();
+      return amount;
+    }
+
     /* ---------- compras (pago único) ---------- */
 
     async createPurchase(pack) {
@@ -2430,6 +2976,8 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
   }
 
   PVP.Store = Store;
+  PVP.Store.todayInfo = todayInfo;
+  PVP.Store.dailyAmount = dailyAmount;
   PVP.Store.SIGNUP_BONUS = SIGNUP_BONUS;
   PVP.Store.GUEST_COINS = GUEST_COINS;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3976,13 +4524,15 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
       const from = this.is3D && this.dealerScreen ? this.dealerScreen : this._dealerPoint();
       const r = el.getBoundingClientRect();
       const dx = from.x - (r.left + r.width / 2), dy = from.y - (r.top + r.height / 2);
+      // Deslizamiento en arco con un pequeño rebote al asentarse (solo transform/opacity: va por GPU).
       el.animate(
         [
-          { transform: `translate(${dx}px, ${dy}px) rotate(-160deg) scale(.45)`, opacity: 0 },
-          { opacity: 1, offset: 0.15 },
-          { transform: 'translate(0,0) rotate(0) scale(1)', opacity: 1 },
+          { transform: `translate3d(${dx}px, ${dy}px, 0) rotate(-160deg) scale(.45)`, opacity: 0 },
+          { opacity: 1, offset: 0.12 },
+          { transform: `translate3d(${dx * 0.12}px, ${dy * 0.12 - 10}px, 0) rotate(-8deg) scale(1.04)`, opacity: 1, offset: 0.82 },
+          { transform: 'translate3d(0,0,0) rotate(0) scale(1)', opacity: 1 },
         ],
-        { duration: dur, delay, easing: 'cubic-bezier(.2,.75,.25,1)', fill: 'backwards' }
+        { duration: dur * 1.15, delay, easing: 'cubic-bezier(.22,.8,.3,1)', fill: 'backwards' }
       );
     }
 
@@ -4020,8 +4570,11 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
         document.body.appendChild(clone);
         const dx = pot.left + pot.width / 2 - (r.left + r.width / 2);
         const dy = pot.top + pot.height / 2 - (r.top + r.height / 2);
-        clone.animate([{ transform: 'translate(-50%,-50%)' }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.7)`, opacity: 0.2 }],
-          { duration: 420, easing: 'cubic-bezier(.4,0,.2,1)' }).onfinish = () => clone.remove();
+        clone.animate([
+          { transform: 'translate3d(-50%,-50%,0)' },
+          { transform: `translate3d(calc(-50% + ${dx * 0.55}px), calc(-50% + ${dy * 0.55 - 18}px), 0)`, offset: 0.55 },
+          { transform: `translate3d(calc(-50% + ${dx}px), calc(-50% + ${dy}px), 0) scale(.7)`, opacity: 0.15 },
+        ], { duration: 480, easing: 'cubic-bezier(.4,0,.2,1)' }).onfinish = () => clone.remove();
       }
       if (PVP.Sound) PVP.Sound.chip();
     }
@@ -4041,8 +4594,12 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
         const dx = r.left + r.width / 2 - (pot.left + pot.width / 2);
         const dy = r.top + r.height / 2 - (pot.top + pot.height / 2);
         if (!chip.animate) { chip.remove(); return; }
-        chip.animate([{ transform: 'translate(-50%,-50%) scale(1.1)' }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.8)`, opacity: 0.3 }],
-          { duration: 650, delay: i * 120, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'backwards' }).onfinish = () => chip.remove();
+        // Las fichas viajan en arco hacia el ganador.
+        chip.animate([
+          { transform: 'translate3d(-50%,-50%,0) scale(1.1)' },
+          { transform: `translate3d(calc(-50% + ${dx * 0.5}px), calc(-50% + ${dy * 0.5 - 40}px), 0) scale(1.15)`, offset: 0.5 },
+          { transform: `translate3d(calc(-50% + ${dx}px), calc(-50% + ${dy}px), 0) scale(.8)`, opacity: 0.2 },
+        ], { duration: 760, delay: i * 120, easing: 'cubic-bezier(.45,.05,.3,1)', fill: 'backwards' }).onfinish = () => chip.remove();
       });
     }
 
@@ -4267,7 +4824,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
       satin: new THREE.MeshStandardMaterial({ color: sh(L.suit, -0.45), roughness: 0.28, metalness: 0.25 }),
       shirt: new THREE.MeshStandardMaterial({ color: 0xf4f1ea, map: fabricTex(THREE), roughness: 0.7 }),
       // Un toque emisivo del propio tono simula la dispersión subsuperficial y evita la piel «gris».
-      skin: new THREE.MeshStandardMaterial({ color: sh(L.skin, -0.14), map: skinTex(THREE), roughness: 0.6, metalness: 0, emissive: new THREE.Color(sh(L.skin, -0.25)), emissiveIntensity: 0.16 }),
+      skin: new THREE.MeshStandardMaterial({ color: sh(L.skin, -0.26), map: skinTex(THREE), roughness: 0.62, metalness: 0, emissive: new THREE.Color(sh(L.skin, -0.3)), emissiveIntensity: 0.12 }),
       lip: new THREE.MeshStandardMaterial({ color: L.sex === 'f' ? sh('#a8404a', PVP.Avatars.SKIN.deep === L.skin ? -0.35 : 0) : sh(L.skin, -0.28), roughness: 0.45 }),
       hair: new THREE.MeshStandardMaterial({ color: L.hairColor, map: hairTex(THREE), roughness: 0.42, metalness: 0.08 }),
       sclera: new THREE.MeshStandardMaterial({ color: 0xf6f3ee, roughness: 0.2 }),
@@ -4327,6 +4884,15 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
     nose.scale.set(1, 1, 0.9);
     nose.rotation.x = -0.12;
     head.add(nose);
+    // Expresión: comisuras ligeramente hacia arriba (sonrisa contenida) y pestañas en los ojos femeninos.
+    const smile = mesh(THREE, geo('smile', () => new THREE.TorusGeometry(0.02, 0.0018, 6, 18, Math.PI * 0.8)), M.lip, 0, -0.052, 0.08);
+    smile.rotation.z = Math.PI + Math.PI * 0.1;
+    smile.scale.set(1, 0.45, 1);
+    head.add(smile);
+    if (f) {
+      const lash = geo('lash', () => new THREE.BoxGeometry(0.03, 0.0025, 0.004));
+      for (const s of [-1, 1]) { const l = mesh(THREE, lash, M.black, s * 0.032, 0.028, 0.092); l.rotation.z = s * -0.12; head.add(l); }
+    }
     const lipG = geo('lip', () => new THREE.SphereGeometry(0.018, 20, 10));
     const up = mesh(THREE, lipG, M.lip, 0, -0.054, 0.079); up.scale.set(f ? 1.05 : 1, f ? 0.32 : 0.22, 0.4); head.add(up);
     const lo = mesh(THREE, lipG, M.lip, 0, -0.063, 0.077); lo.scale.set(f ? 0.95 : 0.9, f ? 0.36 : 0.24, 0.42); head.add(lo);
@@ -4543,6 +5109,28 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
     }
     if (dealer) {
       g.add(mesh(THREE, geo('badge', () => new THREE.BoxGeometry(0.07, 0.018, 0.004)), M.gold, 0.11, H - 0.2, depth * 1.12));
+    }
+    if (!f) {
+      // Botones de la chaqueta, pañuelo de bolsillo y puntas del cuello de la camisa.
+      const btn = geo('button', () => new THREE.SphereGeometry(0.0085, 10, 8));
+      for (const y of [H - 0.37, H - 0.45]) g.add(mesh(THREE, btn, M.black, 0, y, depth * 1.1));
+      const sq = new THREE.Shape();
+      sq.moveTo(-0.022, 0); sq.lineTo(0.022, 0); sq.lineTo(0.012, 0.022); sq.lineTo(0, 0.012); sq.lineTo(-0.012, 0.024); sq.closePath();
+      const pocket = mesh(THREE, new THREE.ShapeGeometry(sq), L.acc === 'tie' || dealer ? M.shirt : M.gold, -0.115, H - 0.17, depth * 1.08);
+      pocket.rotation.y = -0.35;
+      g.add(pocket);
+      for (const s of [-1, 1]) {
+        const pt = new THREE.Shape();
+        pt.moveTo(0, 0); pt.lineTo(s * 0.04, -0.008); pt.lineTo(s * 0.012, -0.05); pt.closePath();
+        g.add(mesh(THREE, new THREE.ShapeGeometry(pt), M.shirt, s * 0.012, H - 0.006, depth * 1.135));
+      }
+    } else {
+      // Tirantes del vestido sobre los hombros.
+      for (const s of [-1, 1]) {
+        const strap = mesh(THREE, geo('strap', () => new THREE.BoxGeometry(0.022, 0.12, 0.012)), M.satin, s * 0.085, H - 0.03, depth * 0.95);
+        strap.rotation.z = s * 0.12;
+        g.add(strap);
+      }
     }
 
     // Cuello y cabeza
@@ -4794,7 +5382,12 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
       this.dealCtx = null;
 
       const r = (this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' }));
-      r.setPixelRatio(Math.min(root.devicePixelRatio || 1, 2));
+      // Calidad adaptativa: arranca con la resolución nativa (máx. 2) y baja si no se sostienen los 60 FPS.
+      this.maxRatio = Math.min(root.devicePixelRatio || 1, 2);
+      this.ratio = this.maxRatio;
+      this._ft = 16.7;
+      this._slow = 0;
+      r.setPixelRatio(this.ratio);
       r.outputEncoding = THREE.sRGBEncoding;
       r.toneMapping = THREE.ACESFilmicToneMapping;
       r.toneMappingExposure = 1.05;
@@ -4846,17 +5439,45 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
 
     _buildLights() {
       const THREE = this.T;
-      this.hemi = new THREE.HemisphereLight(0xfff1dd, 0x1a0f18, 0.55);
+      const mobile = Math.min(root.innerWidth, root.innerHeight) < 600;
+      this.hemi = new THREE.HemisphereLight(0xffe9d2, 0x2a0a40, 0.4);
       this.scene.add(this.hemi);
-      const spot = (this.spot = new THREE.SpotLight(0xffe2b8, 1.3, 40, 0.8, 0.7, 1.2));
-      spot.position.set(0, 13, 2);
+      // Luz cenital cálida de una lámpara colgante sobre la mesa: realza cartas, fichas y manos.
+      const spot = (this.spot = new THREE.SpotLight(0xffd59a, 1.55, 42, 0.62, 0.55, 1.3));
+      spot.position.set(0, 11.5, 0.6);
       spot.castShadow = true;
-      spot.shadow.mapSize.set(1024, 1024);
-      spot.shadow.bias = -0.0004;
+      spot.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
+      spot.shadow.bias = -0.0003;
+      spot.shadow.radius = 4;
       this.scene.add(spot, spot.target);
+      this._buildLamp();
       this.accentLight = new THREE.PointLight(0xe8b54a, 0.8, 30, 2);
       this.accentLight.position.set(0, 4, -8);
       this.scene.add(this.accentLight);
+      // Neones de ambiente (magenta y cian) en los laterales.
+      this.neonL = new THREE.PointLight(0xff2bd6, 0.9, 26, 2);
+      this.neonL.position.set(-11, 3, -2);
+      this.neonR = new THREE.PointLight(0x00e5ff, 0.75, 26, 2);
+      this.neonR.position.set(11, 3, -2);
+      this.scene.add(this.neonL, this.neonR);
+    }
+
+    /** Lámpara de casino: pantalla dorada con la cara interior emisiva. */
+    _buildLamp() {
+      const THREE = this.T;
+      const lamp = (this.lamp = new THREE.Group());
+      const gold = new THREE.MeshStandardMaterial({ color: 0xb98a2a, metalness: 0.9, roughness: 0.3, side: THREE.DoubleSide });
+      const shade = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 2.6, 1.1, 48, 1, true), gold);
+      const inner = new THREE.Mesh(new THREE.CylinderGeometry(1.08, 2.56, 1.08, 48, 1, true),
+        new THREE.MeshBasicMaterial({ color: 0xffe2a8, side: THREE.BackSide, transparent: true, opacity: 0.85 }));
+      const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 6, 8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+      cord.position.y = 3.5;
+      const glow = new THREE.Mesh(new THREE.CircleGeometry(2.5, 48), new THREE.MeshBasicMaterial({ color: 0xffd59a, transparent: true, opacity: 0.35 }));
+      glow.rotation.x = Math.PI / 2;
+      glow.position.y = -0.52;
+      lamp.add(shade, inner, cord, glow);
+      lamp.position.set(0, 9.2, 0);
+      this.scene.add(lamp);
     }
 
     _ellipseDims() {
@@ -4936,7 +5557,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
       const points = (count, spread, color, size, yMin, yMax) => {
         const pos = new Float32Array(count * 3);
         for (let i = 0; i < count; i++) {
-          const ang = Math.random() * Math.PI * 2, rad = 8 + Math.random() * spread;
+          const ang = Math.random() * Math.PI * 2, rad = 13 + Math.random() * spread;
           pos[i * 3] = Math.cos(ang) * rad;
           pos[i * 3 + 1] = U.rand(yMin, yMax);
           pos[i * 3 + 2] = Math.sin(ang) * rad - 4;
@@ -5090,7 +5711,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
       this.scene.fog = new THREE.Fog(t.three.fog, 16, 48);
       this.accentLight.color.setHex(t.three.accent);
       this.accentLight.intensity = t.neon ? 2.2 : 0.9;
-      this.hemi.intensity = t.id === 'balloon' || t.id === 'beach' ? 0.85 : 0.55;
+      this.hemi.intensity = t.id === 'balloon' || t.id === 'beach' ? 0.7 : 0.4;
       this._buildTable();
       this._buildFx();
     }
@@ -5416,8 +6037,11 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
 
     _loop(now) {
       this._raf = requestAnimationFrame(this._loop);
-      const dt = Math.min(0.05, (now - (this._last || now)) / 1000);
+      const frame = now - (this._last || now);
+      const dt = Math.min(0.05, frame / 1000);
       this._last = now;
+      this._adaptQuality(frame);
+      if (this.lamp) this.lamp.visible = this.opts.camera !== 'top';
       const time = now / 1000;
       this.tweens.update(now);
       if (this.fxUpdate) this.fxUpdate(dt, time);
@@ -5458,6 +6082,23 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
 
       this.renderer.render(this.scene, this.camera);
       this._project();
+    }
+
+    _adaptQuality(frame) {
+      if (!frame || frame > 250) return; // pestaña oculta o pausa
+      this._ft += (frame - this._ft) * 0.05;
+      if (this._ft > 20.5) this._slow++; else if (this._ft < 15) this._slow--; else this._slow *= 0.98;
+      if (this._slow > 90 && this.ratio > 0.75) {
+        this.ratio = Math.max(0.75, this.ratio - 0.25);
+        this.renderer.setPixelRatio(this.ratio);
+        this.resize();
+        this._slow = 0;
+      } else if (this._slow < -400 && this.ratio < this.maxRatio) {
+        this.ratio = Math.min(this.maxRatio, this.ratio + 0.25);
+        this.renderer.setPixelRatio(this.ratio);
+        this.resize();
+        this._slow = 0;
+      }
     }
 
     _toScreen(x, y, z) {
@@ -6633,6 +7274,197 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
 })(window);
 
 </script>
+  <script>/* js/daily-ui.js */
+/* PokerVegasPro — panel de recompensa diaria semanal (lunes 4.000 → domingo 256.000, ×2 cada día). */
+(function (root) {
+  'use strict';
+
+  const PVP = root.PVP;
+  const U = PVP.util;
+  const $ = (s, r) => (r || document).querySelector(s);
+  const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+  let store = null;
+  let status = null;
+
+  async function refresh(st) {
+    store = st || store;
+    try { status = await store.dailyStatus(); } catch (e) { status = null; }
+    const badge = $('#daily-badge');
+    if (badge) badge.hidden = !(status && status.canClaim);
+    return status;
+  }
+
+  function render() {
+    if (!status) return;
+    $('#daily-grid').innerHTML = status.amounts.map((amt, i) => {
+      const d = i + 1;
+      const claimed = status.claimed.includes(d);
+      const today = d === status.today;
+      const past = d < status.today && !claimed;
+      const cls = claimed ? 'claimed' : today ? 'today' : past ? 'missed' : 'future';
+      return `<div class="daily-day ${cls}${d === 7 ? ' jackpot' : ''}" style="--i:${i}">
+        <span class="dd-name">${DAYS[i]}</span>
+        <span class="dd-chest" aria-hidden="true">${claimed ? '✓' : d === 7 ? '👑' : '💰'}</span>
+        <b class="dd-amt">${U.short(amt)}</b>
+        <span class="dd-x">${i === 0 ? 'Base' : '×' + Math.pow(2, i)}</span>
+        <span class="dd-state">${claimed ? 'Cobrado' : today ? 'Hoy' : past ? 'Sin reclamar' : 'Próximamente'}</span>
+      </div>`;
+    }).join('');
+    const btn = $('#daily-claim');
+    btn.disabled = !status.canClaim;
+    btn.querySelector('span').textContent = status.canClaim
+      ? `Reclamar ${U.fmt(status.amounts[status.today - 1])} monedas`
+      : 'Vuelve mañana para el siguiente premio';
+    const total = status.claimed.reduce((t, d) => t + status.amounts[d - 1], 0);
+    $('#daily-total').textContent = `Esta semana llevas ${U.fmt(total)} monedas. El ciclo se reinicia cada lunes.`;
+  }
+
+  async function open(st) {
+    await refresh(st);
+    if (!status) return PVP.ui.toast('No se pudo cargar la recompensa diaria.');
+    render();
+    PVP.ui.open('modal-daily');
+  }
+
+  /** Abre el panel automáticamente una vez al día si hay premio pendiente. */
+  async function autoOpen(st) {
+    await refresh(st);
+    if (!status || !status.canClaim) return;
+    const key = 'pvp.daily.shown';
+    let shown = null;
+    try { shown = localStorage.getItem(key); } catch (e) { /* sin almacenamiento */ }
+    const stamp = store.profile.id + ':' + PVP.Store.todayInfo().date;
+    if (shown === stamp) return;
+    try { localStorage.setItem(key, stamp); } catch (e) { /* sin almacenamiento */ }
+    render();
+    PVP.ui.open('modal-daily');
+  }
+
+  document.addEventListener('click', async (e) => {
+    if (!e.target.closest('#daily-claim')) return;
+    const btn = $('#daily-claim');
+    btn.disabled = true;
+    try {
+      const amount = await store.claimDaily();
+      if (PVP.Audio) PVP.Audio.sfx('coins');
+      burst();
+      PVP.ui.toast(`💰 +${U.fmt(amount)} monedas de recompensa diaria`, 4000);
+      await refresh();
+      render();
+    } catch (err) {
+      PVP.ui.toast('⚠️ ' + U.esc(err.message));
+      btn.disabled = false;
+    }
+  });
+
+  /** Lluvia de monedas doradas al reclamar. */
+  function burst() {
+    const box = $('#modal-daily .modal-card');
+    for (let i = 0; i < 26; i++) {
+      const c = document.createElement('i');
+      c.className = 'coin-fly';
+      c.style.setProperty('--x', (Math.random() * 100).toFixed(1) + '%');
+      c.style.setProperty('--d', (0.9 + Math.random() * 0.8).toFixed(2) + 's');
+      c.style.setProperty('--r', Math.round(Math.random() * 720 - 360) + 'deg');
+      box.appendChild(c);
+      setTimeout(() => c.remove(), 1900);
+    }
+  }
+
+  PVP.DailyUI = { open, autoOpen, refresh };
+})(window);
+
+</script>
+  <script>/* js/particles.js */
+/* PokerVegasPro — partículas de ambiente (polvo estelar y chispas doradas, magenta y cian) en un canvas ligero.
+ * Se detienen dentro de las partidas, con la pestaña oculta y con «reducir movimiento».
+ */
+(function (root) {
+  'use strict';
+
+  const PVP = root.PVP;
+  const COLORS = [[255, 214, 110], [255, 236, 170], [255, 43, 214], [0, 240, 255], [255, 190, 80]];
+
+  const Particles = {
+    start() {
+      if (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const c = (this.canvas = document.createElement('canvas'));
+      c.className = 'fx-particles';
+      c.setAttribute('aria-hidden', 'true');
+      document.body.insertBefore(c, document.body.firstChild.nextSibling);
+      this.g = c.getContext('2d');
+      // Sprites precalculados (un degradado por color): dibujar es solo un drawImage por partícula.
+      this.sprites = COLORS.map(([r, gg, b]) => {
+        const sp = document.createElement('canvas');
+        sp.width = sp.height = 32;
+        const sg = sp.getContext('2d');
+        const grd = sg.createRadialGradient(16, 16, 0, 16, 16, 16);
+        grd.addColorStop(0, `rgba(${r},${gg},${b},1)`);
+        grd.addColorStop(0.35, `rgba(${r},${gg},${b},0.45)`);
+        grd.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+        sg.fillStyle = grd;
+        sg.fillRect(0, 0, 32, 32);
+        return sp;
+      });
+      this.resize();
+      root.addEventListener('resize', () => this.resize());
+      this.loop = this.loop.bind(this);
+      requestAnimationFrame(this.loop);
+    },
+
+    resize() {
+      const dpr = Math.min(root.devicePixelRatio || 1, 1.5);
+      this.w = root.innerWidth; this.h = root.innerHeight;
+      this.canvas.width = this.w * dpr; this.canvas.height = this.h * dpr;
+      this.canvas.style.width = this.w + 'px'; this.canvas.style.height = this.h + 'px';
+      this.g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const n = Math.round(Math.min(110, (this.w * this.h) / 14000));
+      this.p = Array.from({ length: n }, () => this.spawn(true));
+    },
+
+    spawn(any) {
+      const gold = Math.random() < 0.72;
+      return {
+        x: Math.random() * this.w, y: any ? Math.random() * this.h : this.h + 10,
+        r: gold ? 0.6 + Math.random() * 1.8 : 0.5 + Math.random() * 1.2,
+        vy: -(0.08 + Math.random() * 0.35), vx: (Math.random() - 0.5) * 0.15,
+        a: 0, life: 0, max: 400 + Math.random() * 700, tw: Math.random() * Math.PI * 2,
+        ci: gold ? (Math.random() < 0.5 ? 0 : Math.random() < 0.5 ? 1 : 4) : (Math.random() < 0.5 ? 2 : 3),
+      };
+    },
+
+    loop(t) {
+      requestAnimationFrame(this.loop);
+      // En partida, con la pestaña oculta o con una ventana modal abierta, no se dibuja nada.
+      const active = !document.hidden && document.body.dataset.screen !== 'game' && !document.querySelector('.modal.open');
+      this.canvas.style.opacity = active ? 1 : 0;
+      if (!active) return;
+      const g = this.g;
+      g.clearRect(0, 0, this.w, this.h);
+      g.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < this.p.length; i++) {
+        const p = this.p[i];
+        p.life++;
+        p.x += p.vx + Math.sin((p.life + p.tw * 50) / 90) * 0.12;
+        p.y += p.vy;
+        const k = p.life / p.max;
+        p.a = k < 0.15 ? k / 0.15 : k > 0.8 ? (1 - k) / 0.2 : 1;
+        const twinkle = 0.6 + 0.4 * Math.sin(t / 400 + p.tw);
+        if (p.life > p.max || p.y < -10) { this.p[i] = this.spawn(false); continue; }
+        const rad = p.r * 4;
+        g.globalAlpha = 0.9 * p.a * twinkle;
+        g.drawImage(this.sprites[p.ci], p.x - rad, p.y - rad, rad * 2, rad * 2);
+      }
+      g.globalAlpha = 1;
+      g.globalCompositeOperation = 'source-over';
+    },
+  };
+
+  PVP.Particles = Particles;
+})(window);
+
+</script>
   <script>/* js/coach-ui.js */
 /* PokerVegasPro — panel Coach Pro (exclusivo del Pack Leyenda): métricas, áreas de mejora y evolución. */
 (function (root) {
@@ -6870,8 +7702,33 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
     current = name;
     if (RENDER[name]) RENDER[name]();
     PVP.Legal.onScreen(name);
+    if (name === 'menu') PVP.DailyUI.autoOpen(store);
     root.scrollTo(0, 0);
   }
+
+  /* ---------- música, bonus diario y partículas ---------- */
+
+  function musicWanted() { return !store.profile || store.profile.prefs.music !== false; }
+  function syncMusicFab() {
+    const on = musicWanted();
+    const fab = $('#music-fab');
+    fab.classList.toggle('off', !on);
+    fab.setAttribute('aria-pressed', on ? 'true' : 'false');
+    fab.title = on ? 'Silenciar música' : 'Activar música';
+  }
+  // Los navegadores solo permiten audio tras una interacción: la música arranca con el primer toque.
+  document.addEventListener('pointerdown', function firstTouch() {
+    document.removeEventListener('pointerdown', firstTouch);
+    if (musicWanted()) PVP.Audio.startMusic();
+  });
+  $('#music-fab').addEventListener('click', () => {
+    const on = !musicWanted();
+    if (store.profile) store.setPref('music', on);
+    PVP.Audio.setMusic(on);
+    syncMusicFab();
+  });
+  $('#btn-daily').addEventListener('click', () => PVP.DailyUI.open(store));
+  PVP.Particles.start();
 
   $('#btn-profile').addEventListener('click', () => {
     PVP.ProfileUI.open(store, () => { renderTopbar(); if (current === 'stats') renderStats(); });
@@ -6904,6 +7761,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
     tier.textContent = t !== 'free' ? C.TIERS[t].short : p.guest ? 'Invitado' : 'Gratis';
     tier.dataset.tier = t !== 'free' ? t : p.guest ? 'guest' : 'free';
     PVP.Sound.enabled = p.prefs.sound !== false;
+    syncMusicFab();
   }
   store.on('change', renderTopbar);
   store.on('levelUp', (lvl) => ui.toast(`⭐ ¡Subes a nivel ${lvl}!`));
@@ -6975,6 +7833,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
   $$('#modal-settings [data-pref]').forEach((i) => i.addEventListener('change', () => {
     store.setPref(i.dataset.pref, i.checked);
     if (i.dataset.pref === 'autoPeek' && game) game.setPeek(i.checked);
+    if (i.dataset.pref === 'music') { PVP.Audio.setMusic(i.checked); syncMusicFab(); }
   }));
   $$('#modal-settings [data-pref-seg]').forEach((seg) => seg.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-v]');

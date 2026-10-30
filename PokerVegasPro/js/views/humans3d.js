@@ -121,7 +121,7 @@
       satin: new THREE.MeshStandardMaterial({ color: sh(L.suit, -0.45), roughness: 0.28, metalness: 0.25 }),
       shirt: new THREE.MeshStandardMaterial({ color: 0xf4f1ea, map: fabricTex(THREE), roughness: 0.7 }),
       // Un toque emisivo del propio tono simula la dispersión subsuperficial y evita la piel «gris».
-      skin: new THREE.MeshStandardMaterial({ color: sh(L.skin, -0.14), map: skinTex(THREE), roughness: 0.6, metalness: 0, emissive: new THREE.Color(sh(L.skin, -0.25)), emissiveIntensity: 0.16 }),
+      skin: new THREE.MeshStandardMaterial({ color: sh(L.skin, -0.26), map: skinTex(THREE), roughness: 0.62, metalness: 0, emissive: new THREE.Color(sh(L.skin, -0.3)), emissiveIntensity: 0.12 }),
       lip: new THREE.MeshStandardMaterial({ color: L.sex === 'f' ? sh('#a8404a', PVP.Avatars.SKIN.deep === L.skin ? -0.35 : 0) : sh(L.skin, -0.28), roughness: 0.45 }),
       hair: new THREE.MeshStandardMaterial({ color: L.hairColor, map: hairTex(THREE), roughness: 0.42, metalness: 0.08 }),
       sclera: new THREE.MeshStandardMaterial({ color: 0xf6f3ee, roughness: 0.2 }),
@@ -181,6 +181,15 @@
     nose.scale.set(1, 1, 0.9);
     nose.rotation.x = -0.12;
     head.add(nose);
+    // Expresión: comisuras ligeramente hacia arriba (sonrisa contenida) y pestañas en los ojos femeninos.
+    const smile = mesh(THREE, geo('smile', () => new THREE.TorusGeometry(0.02, 0.0018, 6, 18, Math.PI * 0.8)), M.lip, 0, -0.052, 0.08);
+    smile.rotation.z = Math.PI + Math.PI * 0.1;
+    smile.scale.set(1, 0.45, 1);
+    head.add(smile);
+    if (f) {
+      const lash = geo('lash', () => new THREE.BoxGeometry(0.03, 0.0025, 0.004));
+      for (const s of [-1, 1]) { const l = mesh(THREE, lash, M.black, s * 0.032, 0.028, 0.092); l.rotation.z = s * -0.12; head.add(l); }
+    }
     const lipG = geo('lip', () => new THREE.SphereGeometry(0.018, 20, 10));
     const up = mesh(THREE, lipG, M.lip, 0, -0.054, 0.079); up.scale.set(f ? 1.05 : 1, f ? 0.32 : 0.22, 0.4); head.add(up);
     const lo = mesh(THREE, lipG, M.lip, 0, -0.063, 0.077); lo.scale.set(f ? 0.95 : 0.9, f ? 0.36 : 0.24, 0.42); head.add(lo);
@@ -397,6 +406,28 @@
     }
     if (dealer) {
       g.add(mesh(THREE, geo('badge', () => new THREE.BoxGeometry(0.07, 0.018, 0.004)), M.gold, 0.11, H - 0.2, depth * 1.12));
+    }
+    if (!f) {
+      // Botones de la chaqueta, pañuelo de bolsillo y puntas del cuello de la camisa.
+      const btn = geo('button', () => new THREE.SphereGeometry(0.0085, 10, 8));
+      for (const y of [H - 0.37, H - 0.45]) g.add(mesh(THREE, btn, M.black, 0, y, depth * 1.1));
+      const sq = new THREE.Shape();
+      sq.moveTo(-0.022, 0); sq.lineTo(0.022, 0); sq.lineTo(0.012, 0.022); sq.lineTo(0, 0.012); sq.lineTo(-0.012, 0.024); sq.closePath();
+      const pocket = mesh(THREE, new THREE.ShapeGeometry(sq), L.acc === 'tie' || dealer ? M.shirt : M.gold, -0.115, H - 0.17, depth * 1.08);
+      pocket.rotation.y = -0.35;
+      g.add(pocket);
+      for (const s of [-1, 1]) {
+        const pt = new THREE.Shape();
+        pt.moveTo(0, 0); pt.lineTo(s * 0.04, -0.008); pt.lineTo(s * 0.012, -0.05); pt.closePath();
+        g.add(mesh(THREE, new THREE.ShapeGeometry(pt), M.shirt, s * 0.012, H - 0.006, depth * 1.135));
+      }
+    } else {
+      // Tirantes del vestido sobre los hombros.
+      for (const s of [-1, 1]) {
+        const strap = mesh(THREE, geo('strap', () => new THREE.BoxGeometry(0.022, 0.12, 0.012)), M.satin, s * 0.085, H - 0.03, depth * 0.95);
+        strap.rotation.z = s * 0.12;
+        g.add(strap);
+      }
     }
 
     // Cuello y cabeza

@@ -20,6 +20,8 @@ Pruebas (motor, botes laterales, manos simuladas, códigos firmados, packs y Coa
 ```bash
 node PokerVegasPro/tests/engine.test.js
 node PokerVegasPro/tests/store.test.js
+# Migración de Supabase en un Postgres local (opcional):
+npm i --no-save @electric-sql/pglite@0.3.7 && node PokerVegasPro/tests/migration.test.mjs
 ```
 
 > Los códigos firmados usan WebCrypto, que el navegador solo habilita en contexto seguro: **HTTPS**, `localhost` o `file://`.
@@ -39,7 +41,10 @@ node PokerVegasPro/tests/store.test.js
 | **Mesas (8)** | Gratis: Casino Clásico, Playa, Bosque · Pack Élite: Espacio, Bajo el Agua (**tiburón en cada All-In**) · Pack Leyenda: Globo Aerostático, Cyberpunk, Vegas Royale. |
 | **Barajas (10)** | 2 gratuitas, 5 épicas a color (Pack Élite) y 3 de lujo (Pack Leyenda): Oro 24K con brillo, Holográfica animada y Neón. |
 | **Packs (pago único)** | **Pack Élite 4,99 €**: 500.000 monedas, mesas Espacio y Bajo el Agua y las 5 barajas épicas. **Pack Leyenda 9,99 €**: 2.000.000 de monedas, todas las mesas y barajas, y el Coach Pro. Se paga por PayPal.me y se sincroniza con Supabase. |
-| **Códigos** | Barra en la Tienda para promos de fichas y el código de creador `damaocho` (acceso VIP Leyenda). Con cuenta los valida Supabase; como invitado, el navegador. |
+| **Bonus diario** | Recompensa semanal multiplicativa: lunes 4.000 y ×2 cada día hasta el domingo (256.000). Una por día (hora de España) y el ciclo se reinicia cada lunes. Con cuenta la valida Supabase. |
+| **Códigos** | Barra en la Tienda para promos de fichas y el código `damaocho`: Pack Leyenda permanente con un máximo de 15 canjes en total, contados en Supabase. A partir del 16º avisa de que ha expirado. |
+| **Audio** | Música lounge/jazz generada en tiempo real (sin archivos ni derechos de autor) con botón flotante para silenciarla, y efectos de fichas, cartas, botones y premios. |
+| **Visual** | Paleta Vegas Neón (púrpura, azul eléctrico, oro, magenta y cian), brillos, fieltro con textura, partículas de polvo estelar y, en 3D, lámpara cenital cálida con calidad adaptativa para sostener 60 FPS. |
 | **Admin** | `admin.html` (cuenta con `is_admin`): pagos pendientes en tiempo real con confirmación en un clic, usuarios, entrega de packs y monedas, códigos e historial exportable. |
 | **Personajes** | 10 modelos (7 hombres y 3 mujeres de distintas etnias) con vestuario personalizable (traje, peinado, color de pelo, accesorios, barba) o foto propia. En 3D se sientan a la mesa. |
 | **Legal** | Términos, privacidad y cookies; banner de consentimiento. AdSense solo en el menú principal y solo con consentimiento. |
@@ -61,6 +66,9 @@ PokerVegasPro/
 ├── js/avatars.js           Roster de 10 personajes, vestuario y retratos SVG
 ├── js/profile-ui.js        Editor de perfil (galería, vestuario, foto)
 ├── js/legal.js             Términos, privacidad, cookies y AdSense
+├── js/daily-ui.js          Panel del bonus diario semanal
+├── js/audio.js             Música lounge procedural y efectos de sonido (WebAudio)
+├── js/particles.js         Partículas de ambiente (sprites precalculados)
 ├── js/views/humans3d.js    Personajes 3D procedurales (crupier y jugadores)
 ├── supabase/migrations/    Esquema pvp_* con RLS y funciones
 ├── js/store.js             Perfil: cuenta online (Supabase) o invitado (localStorage), saldo, compras y canjes

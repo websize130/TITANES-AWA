@@ -212,7 +212,12 @@
       this.dealCtx = null;
 
       const r = (this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' }));
-      r.setPixelRatio(Math.min(root.devicePixelRatio || 1, 2));
+      // Calidad adaptativa: arranca con la resolución nativa (máx. 2) y baja si no se sostienen los 60 FPS.
+      this.maxRatio = Math.min(root.devicePixelRatio || 1, 2);
+      this.ratio = this.maxRatio;
+      this._ft = 16.7;
+      this._slow = 0;
+      r.setPixelRatio(this.ratio);
       r.outputEncoding = THREE.sRGBEncoding;
       r.toneMapping = THREE.ACESFilmicToneMapping;
       r.toneMappingExposure = 1.05;
@@ -264,17 +269,45 @@
 
     _buildLights() {
       const THREE = this.T;
-      this.hemi = new THREE.HemisphereLight(0xfff1dd, 0x1a0f18, 0.55);
+      const mobile = Math.min(root.innerWidth, root.innerHeight) < 600;
+      this.hemi = new THREE.HemisphereLight(0xffe9d2, 0x2a0a40, 0.4);
       this.scene.add(this.hemi);
-      const spot = (this.spot = new THREE.SpotLight(0xffe2b8, 1.3, 40, 0.8, 0.7, 1.2));
-      spot.position.set(0, 13, 2);
+      // Luz cenital cálida de una lámpara colgante sobre la mesa: realza cartas, fichas y manos.
+      const spot = (this.spot = new THREE.SpotLight(0xffd59a, 1.55, 42, 0.62, 0.55, 1.3));
+      spot.position.set(0, 11.5, 0.6);
       spot.castShadow = true;
-      spot.shadow.mapSize.set(1024, 1024);
-      spot.shadow.bias = -0.0004;
+      spot.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
+      spot.shadow.bias = -0.0003;
+      spot.shadow.radius = 4;
       this.scene.add(spot, spot.target);
+      this._buildLamp();
       this.accentLight = new THREE.PointLight(0xe8b54a, 0.8, 30, 2);
       this.accentLight.position.set(0, 4, -8);
       this.scene.add(this.accentLight);
+      // Neones de ambiente (magenta y cian) en los laterales.
+      this.neonL = new THREE.PointLight(0xff2bd6, 0.9, 26, 2);
+      this.neonL.position.set(-11, 3, -2);
+      this.neonR = new THREE.PointLight(0x00e5ff, 0.75, 26, 2);
+      this.neonR.position.set(11, 3, -2);
+      this.scene.add(this.neonL, this.neonR);
+    }
+
+    /** Lámpara de casino: pantalla dorada con la cara interior emisiva. */
+    _buildLamp() {
+      const THREE = this.T;
+      const lamp = (this.lamp = new THREE.Group());
+      const gold = new THREE.MeshStandardMaterial({ color: 0xb98a2a, metalness: 0.9, roughness: 0.3, side: THREE.DoubleSide });
+      const shade = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 2.6, 1.1, 48, 1, true), gold);
+      const inner = new THREE.Mesh(new THREE.CylinderGeometry(1.08, 2.56, 1.08, 48, 1, true),
+        new THREE.MeshBasicMaterial({ color: 0xffe2a8, side: THREE.BackSide, transparent: true, opacity: 0.85 }));
+      const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 6, 8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+      cord.position.y = 3.5;
+      const glow = new THREE.Mesh(new THREE.CircleGeometry(2.5, 48), new THREE.MeshBasicMaterial({ color: 0xffd59a, transparent: true, opacity: 0.35 }));
+      glow.rotation.x = Math.PI / 2;
+      glow.position.y = -0.52;
+      lamp.add(shade, inner, cord, glow);
+      lamp.position.set(0, 9.2, 0);
+      this.scene.add(lamp);
     }
 
     _ellipseDims() {
@@ -354,7 +387,7 @@
       const points = (count, spread, color, size, yMin, yMax) => {
         const pos = new Float32Array(count * 3);
         for (let i = 0; i < count; i++) {
-          const ang = Math.random() * Math.PI * 2, rad = 8 + Math.random() * spread;
+          const ang = Math.random() * Math.PI * 2, rad = 13 + Math.random() * spread;
           pos[i * 3] = Math.cos(ang) * rad;
           pos[i * 3 + 1] = U.rand(yMin, yMax);
           pos[i * 3 + 2] = Math.sin(ang) * rad - 4;
@@ -508,7 +541,7 @@
       this.scene.fog = new THREE.Fog(t.three.fog, 16, 48);
       this.accentLight.color.setHex(t.three.accent);
       this.accentLight.intensity = t.neon ? 2.2 : 0.9;
-      this.hemi.intensity = t.id === 'balloon' || t.id === 'beach' ? 0.85 : 0.55;
+      this.hemi.intensity = t.id === 'balloon' || t.id === 'beach' ? 0.7 : 0.4;
       this._buildTable();
       this._buildFx();
     }
@@ -834,8 +867,11 @@
 
     _loop(now) {
       this._raf = requestAnimationFrame(this._loop);
-      const dt = Math.min(0.05, (now - (this._last || now)) / 1000);
+      const frame = now - (this._last || now);
+      const dt = Math.min(0.05, frame / 1000);
       this._last = now;
+      this._adaptQuality(frame);
+      if (this.lamp) this.lamp.visible = this.opts.camera !== 'top';
       const time = now / 1000;
       this.tweens.update(now);
       if (this.fxUpdate) this.fxUpdate(dt, time);
@@ -876,6 +912,23 @@
 
       this.renderer.render(this.scene, this.camera);
       this._project();
+    }
+
+    _adaptQuality(frame) {
+      if (!frame || frame > 250) return; // pestaña oculta o pausa
+      this._ft += (frame - this._ft) * 0.05;
+      if (this._ft > 20.5) this._slow++; else if (this._ft < 15) this._slow--; else this._slow *= 0.98;
+      if (this._slow > 90 && this.ratio > 0.75) {
+        this.ratio = Math.max(0.75, this.ratio - 0.25);
+        this.renderer.setPixelRatio(this.ratio);
+        this.resize();
+        this._slow = 0;
+      } else if (this._slow < -400 && this.ratio < this.maxRatio) {
+        this.ratio = Math.min(this.maxRatio, this.ratio + 0.25);
+        this.renderer.setPixelRatio(this.ratio);
+        this.resize();
+        this._slow = 0;
+      }
     }
 
     _toScreen(x, y, z) {

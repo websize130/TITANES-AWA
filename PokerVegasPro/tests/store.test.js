@@ -28,6 +28,8 @@ function fakeBackend() {
     async updateProfile(uid, fields) { calls.push(['update', Object.keys(fields).sort().join(',')]); },
     async adjustCoins(delta, reason) { calls.push(['adjust', delta, reason]); row.coins += delta; return row.coins; },
     async redeem(code) { calls.push(['redeem', code]); if (code === 'DAMAOCHO') { row.tier = 'legend'; return { kind: 'creator', coins: 0, tier: 'legend' }; } throw new Error('Código no válido'); },
+    async dailyStatus() { return { today: 3, claimed: [1] }; },
+    async claimDaily() { row.coins += 16000; return { day: 3, amount: 16000, balance: row.coins }; },
     async createPurchase(pack) { calls.push(['purchase', pack]); return { id: 'p1', pack, amount: pack === 'elite' ? 4.99 : 9.99, reference: 'PV-XYZ234', status: 'pending' }; },
     async myPurchases() { return []; },
     subscribe(uid, onProfile, onPurchase) { b.onProfile = onProfile; b.onPurchase = onPurchase; },
@@ -55,6 +57,35 @@ function fakeBackend() {
   const reloaded = new Store({ available: false });
   assert.ok(await reloaded.restore(), 'el invitado se restaura de localStorage');
   assert.strictEqual(reloaded.profile.tier, 'legend');
+
+  // Recompensa diaria (invitado): escala ×2 de lunes a domingo, una vez al día.
+  assert.deepStrictEqual([1, 2, 3, 4, 5, 6, 7].map(Store.dailyAmount), [4000, 8000, 16000, 32000, 64000, 128000, 256000]);
+  const st = await reloaded.dailyStatus();
+  assert.ok(st.canClaim && st.today >= 1 && st.today <= 7);
+  const before = reloaded.profile.coins;
+  const got = await reloaded.claimDaily();
+  assert.strictEqual(got, Store.dailyAmount(st.today));
+  assert.strictEqual(reloaded.profile.coins, before + got);
+  await assert.rejects(reloaded.claimDaily(), /Ya reclamaste/);
+  assert.ok(!(await reloaded.dailyStatus()).canClaim);
+
+  // damaocho sin servidor: 15 canjes por dispositivo y después «expirado»
+  mem.delete('pvp.codeuses.v1');
+  for (let i = 0; i < 15; i++) {
+    mem.delete('pvp.guest.v1');
+    const g = new Store({ available: false });
+    g.playAsGuest();
+    await g.redeem('damaocho');
+  }
+  mem.delete('pvp.guest.v1');
+  const g16 = new Store({ available: false });
+  g16.playAsGuest();
+  await assert.rejects(g16.redeem('damaocho'), /expirado/);
+  // Con servidor disponible, el invitado debe iniciar sesión (los usos se cuentan en Supabase)
+  mem.delete('pvp.guest.v1');
+  const g2 = new Store({ available: true });
+  g2.playAsGuest();
+  await assert.rejects(g2.redeem('damaocho'), /Inicia sesión/);
 
   // --- Cuenta online (Supabase simulado) ---
   mem.clear();
@@ -87,6 +118,11 @@ function fakeBackend() {
   assert.strictEqual(up, 'legend');
   assert.ok(s.hasCoach());
 
+  // Recompensa diaria online: la valida el servidor
+  const ds = await s.dailyStatus();
+  assert.ok(ds.canClaim && ds.today === 3);
+  assert.strictEqual(await s.claimDaily(), 16000);
+
   // Código de creador con cuenta: lo valida el servidor
   const s2 = new Store(fakeBackend());
   await s2.login('j@example.com', 'secreto1');
@@ -99,5 +135,5 @@ function fakeBackend() {
   assert.ok(Avatars.portraitSVG({ base: 'amara', acc: 'pearls' }).startsWith('<svg'));
   assert.strictEqual(Avatars.resolve({ base: 'sofia', suit: '#123456' }).suit, '#123456');
 
-  console.log('OK — invitado (damaocho, promos), cuenta online simulada (saldo, compras, tiempo real) y avatares.');
+  console.log('OK — invitado (damaocho 15 usos, promos, bonus diario), cuenta online simulada (saldo, compras, tiempo real) y avatares.');
 })().catch((e) => { console.error(e); process.exit(1); });
