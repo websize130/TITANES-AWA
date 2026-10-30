@@ -1,0 +1,122 @@
+/* PokerVegasPro — arte vectorial compartido: crupier, cartas, fichas y avatares (DOM/SVG). */
+(function (root) {
+  'use strict';
+
+  const PVP = (root.PVP = root.PVP || {});
+  const U = PVP.util;
+
+  /** Crupier con traje formal (SVG animado por CSS: respiración, parpadeo y brazo de reparto). */
+  function dealerSVG() {
+    return `
+<svg class="dealer-svg" viewBox="0 0 220 190" aria-label="Crupier" role="img">
+  <defs>
+    <linearGradient id="dl-jacket" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26262c"/><stop offset="1" stop-color="#08080a"/></linearGradient>
+    <linearGradient id="dl-satin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a4a55"/><stop offset=".5" stop-color="#16161b"/><stop offset="1" stop-color="#3a3a44"/></linearGradient>
+    <linearGradient id="dl-skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1c7a2"/><stop offset="1" stop-color="#d49f78"/></linearGradient>
+    <linearGradient id="dl-hair" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a2618"/><stop offset="1" stop-color="#120a05"/></linearGradient>
+    <linearGradient id="dl-vest" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8f1d2c"/><stop offset="1" stop-color="#4a0b14"/></linearGradient>
+    <linearGradient id="dl-gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a8740f"/><stop offset=".5" stop-color="#ffe08a"/><stop offset="1" stop-color="#a8740f"/></linearGradient>
+  </defs>
+  <g class="dl-body">
+    <!-- torso y chaqueta -->
+    <path d="M30 190 C34 140 58 120 88 112 L132 112 C162 120 186 140 190 190 Z" fill="url(#dl-jacket)"/>
+    <path d="M92 112 L110 168 L128 112 Z" fill="#f6f3ee"/>
+    <path d="M96 128 L110 168 L124 128 L118 190 L102 190 Z" fill="url(#dl-vest)"/>
+    <path d="M88 112 L110 172 L96 190 L70 190 L76 132 Z" fill="url(#dl-satin)" opacity=".95"/>
+    <path d="M132 112 L110 172 L124 190 L150 190 L144 132 Z" fill="url(#dl-satin)" opacity=".95"/>
+    <circle cx="110" cy="150" r="1.6" fill="#d9b25a"/><circle cx="110" cy="160" r="1.6" fill="#d9b25a"/>
+    <rect x="138" y="140" width="30" height="9" rx="2" fill="url(#dl-gold)"/>
+    <text x="153" y="147" font-size="6" text-anchor="middle" fill="#2a1a05" font-family="Oswald, sans-serif" letter-spacing=".5">DEALER</text>
+    <!-- cuello y pajarita -->
+    <rect x="99" y="96" width="22" height="20" rx="6" fill="url(#dl-skin)"/>
+    <path d="M94 110 L110 116 L126 110 L126 116 L110 122 L94 116 Z" fill="#f6f3ee"/>
+    <path d="M96 114 L108 119 L96 125 Z M124 114 L112 119 L124 125 Z" fill="#0b0b0e"/>
+    <rect x="106" y="116" width="8" height="6" rx="2" fill="#1d1d22"/>
+    <!-- cabeza -->
+    <g class="dl-head">
+      <ellipse cx="82" cy="72" rx="5" ry="8" fill="#e2b089"/>
+      <ellipse cx="138" cy="72" rx="5" ry="8" fill="#e2b089"/>
+      <ellipse cx="110" cy="68" rx="27" ry="33" fill="url(#dl-skin)"/>
+      <path d="M82 62 C80 34 98 26 112 27 C130 27 142 38 139 62 C134 48 124 42 108 43 C96 44 88 50 82 62 Z" fill="url(#dl-hair)"/>
+      <path d="M96 56 Q102 53 106 56 M114 56 Q119 53 125 56" stroke="#2a1a10" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <g class="dl-eyes">
+        <ellipse cx="101" cy="65" rx="3.4" ry="3.8" fill="#fff"/><circle cx="101.5" cy="65.5" r="2" fill="#2a1a10"/>
+        <ellipse cx="119" cy="65" rx="3.4" ry="3.8" fill="#fff"/><circle cx="119.5" cy="65.5" r="2" fill="#2a1a10"/>
+      </g>
+      <path d="M110 68 Q107 78 110 80 Q112 81 113 79" stroke="#b9805a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <path d="M100 87 Q110 94 120 87" stroke="#8a3b2e" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <path d="M97 84 Q110 88 123 84" stroke="#2a1a10" stroke-width="1.2" fill="none" opacity=".35"/>
+    </g>
+  </g>
+  <!-- brazo izquierdo con la baraja -->
+  <g class="dl-arm-l">
+    <path d="M52 150 C60 170 78 178 92 176" stroke="url(#dl-jacket)" stroke-width="20" fill="none" stroke-linecap="round"/>
+    <rect x="84" y="168" width="12" height="12" rx="3" fill="#f6f3ee"/>
+    <rect x="92" y="164" width="22" height="14" rx="2" fill="#7a0d1e" stroke="#e8b54a" stroke-width="1"/>
+    <rect x="93" y="162" width="22" height="14" rx="2" fill="#a3132b" stroke="#e8b54a" stroke-width="1"/>
+    <ellipse cx="100" cy="174" rx="8" ry="6" fill="url(#dl-skin)"/>
+  </g>
+  <!-- brazo derecho: reparte -->
+  <g class="dl-arm-r">
+    <path d="M168 150 C162 170 146 178 132 178" stroke="url(#dl-jacket)" stroke-width="20" fill="none" stroke-linecap="round"/>
+    <rect x="124" y="171" width="12" height="12" rx="3" fill="#f6f3ee"/>
+    <ellipse cx="122" cy="177" rx="8" ry="6" fill="url(#dl-skin)"/>
+    <rect class="dl-card" x="108" y="170" width="13" height="18" rx="2" fill="#a3132b" stroke="#e8b54a" stroke-width="1"/>
+  </g>
+</svg>`;
+  }
+
+  /** Carta HTML. `c` < 0 = carta desconocida (nunca se pone su valor en el DOM). */
+  function cardHTML(c, deckId, faceUp, extra) {
+    const known = c >= 0;
+    let front = '';
+    let red = '';
+    if (known) {
+      const i = PVP.Cards.cardInfo(c);
+      red = i.red ? ' red' : '';
+      front = `<span class="pc-corner tl">${i.rank}<i>${i.symbol}</i></span><span class="pc-pip">${i.symbol}</span><span class="pc-corner br">${i.rank}<i>${i.symbol}</i></span>`;
+    }
+    return `<div class="pcard deck-${deckId}${red}${faceUp && known ? ' up' : ''}${extra ? ' ' + extra : ''}" data-c="${known ? c : ''}">
+      <div class="pc-inner"><div class="pc-face pc-front">${front}</div><div class="pc-face pc-back"><span class="pc-emblem">♠</span></div></div></div>`;
+  }
+
+  /** Mini vista previa de una mesa para el catálogo. */
+  function tableSwatch(t) {
+    return `<div class="swatch-table" style="--f1:${t.felt[0]};--f2:${t.felt[1]};--r1:${t.rim[0]};--r2:${t.rim[1]};--acc:${t.accent};--bg1:${t.bg[0]};--bg2:${t.bg[1]}">
+      <div class="swatch-felt"><span>♠</span></div></div>`;
+  }
+
+  const CHIP_COLORS = [
+    [1e6, '#1c1c1c', '#ffd76a'], [1e5, '#7a1fa2', '#fff'], [1e4, '#e8b54a', '#2a1a05'],
+    [1e3, '#111', '#e8b54a'], [500, '#6b2bd9', '#fff'], [100, '#1d1d22', '#fff'],
+    [25, '#1f8a4c', '#fff'], [5, '#c1121f', '#fff'], [0, '#eaeaea', '#c1121f'],
+  ];
+  function chipColor(v) {
+    for (const [min, bg, fg] of CHIP_COLORS) if (v >= min) return [bg, fg];
+    return CHIP_COLORS[CHIP_COLORS.length - 1].slice(1);
+  }
+
+  /** Pila de fichas proporcional a la cantidad apostada. */
+  function chipStackHTML(amount) {
+    if (!amount) return '';
+    const n = U.clamp(Math.ceil(Math.log10(amount + 1) * 1.4), 1, 6);
+    const [bg, fg] = chipColor(amount / 4);
+    let chips = '';
+    for (let i = 0; i < n; i++) chips += `<i class="chip" style="--cb:${bg};--cf:${fg};--i:${i}"></i>`;
+    return `<span class="chip-stack">${chips}</span><span class="chip-amt">${U.short(amount)}</span>`;
+  }
+
+  function avatarHTML(p, isHero) {
+    const hue = isHero ? 42 : p.hue || 200;
+    return `<div class="avatar${isHero ? ' hero' : ''}" style="--h:${hue}"><span>${U.esc(U.initials(p.name))}</span></div>`;
+  }
+
+  /** Tiburón SVG para la animación de All-In en la mesa "Bajo el Agua". */
+  function sharkSVG() {
+    return `<svg viewBox="0 0 300 120" class="shark-svg"><path d="M10 64 C60 30 150 26 220 46 L262 18 L254 54 C270 58 284 64 296 72 C284 80 270 84 254 88 L262 110 L222 92 C150 108 70 104 10 64 Z" fill="#5d7f97"/>
+      <path d="M40 70 C100 92 170 94 230 84 C170 100 90 96 40 70 Z" fill="#dfeaf2"/><path d="M130 40 L150 6 L168 40 Z" fill="#4c6a80"/>
+      <circle cx="52" cy="58" r="3.5" fill="#0b1a24"/><path d="M30 72 L54 76 L36 80" stroke="#fff" stroke-width="2" fill="none"/></svg>`;
+  }
+
+  PVP.Art = { dealerSVG, cardHTML, tableSwatch, chipStackHTML, chipColor, avatarHTML, sharkSVG };
+})(typeof window !== 'undefined' ? window : globalThis);

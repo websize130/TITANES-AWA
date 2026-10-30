@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07040a" />
+  <meta name="description" content="PokerVegasPro: Texas Hold'em de estética Las Vegas con vista 2D y 3D, bots humanizados, salas privadas y torneos." />
+  <title>PokerVegasPro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Great+Vibes&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { display: ['Oswald', 'sans-serif'], script: ['"Great Vibes"', 'cursive'], body: ['Inter', 'sans-serif'] },
+          colors: { gold: { 300: '#ffe08a', 400: '#f3c560', 500: '#e8b54a', 600: '#b98a2a' }, ink: { 900: '#07040a', 800: '#0f0a12', 700: '#17111b' } },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body class="font-body text-white bg-ink-900 antialiased">
+
+  <!-- Fondo nocturno de Las Vegas (CSS + SVG, sin imágenes externas) -->
+  <div class="vegas-bg" aria-hidden="true">
+    <div class="vb-sky"></div>
+    <div class="vb-bokeh"></div>
+    <svg class="vb-skyline" viewBox="0 0 1600 420" preserveAspectRatio="xMidYMax slice">
+      <defs>
+        <linearGradient id="sk-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1430"/><stop offset="1" stop-color="#0b0610"/></linearGradient>
+        <linearGradient id="sk-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcf6a"/><stop offset="1" stop-color="#b8611d"/></linearGradient>
+        <pattern id="sk-w" width="14" height="18" patternUnits="userSpaceOnUse"><rect x="3" y="4" width="6" height="8" fill="#ffc96a" opacity=".55"/></pattern>
+      </defs>
+      <g fill="url(#sk-b)">
+        <rect x="0" y="210" width="120" height="210"/><rect x="130" y="150" width="90" height="270"/><rect x="230" y="250" width="150" height="170"/>
+        <rect x="400" y="120" width="70" height="300"/><path d="M520 420 L560 60 L600 420 Z"/><rect x="640" y="190" width="160" height="230"/>
+        <rect x="820" y="90" width="110" height="330"/><rect x="950" y="230" width="140" height="190"/><circle cx="1150" cy="230" r="70"/>
+        <rect x="1230" y="140" width="120" height="280"/><rect x="1370" y="200" width="100" height="220"/><rect x="1480" y="160" width="120" height="260"/>
+      </g>
+      <g fill="url(#sk-w)">
+        <rect x="130" y="160" width="90" height="250"/><rect x="400" y="130" width="70" height="280"/><rect x="820" y="100" width="110" height="310"/>
+        <rect x="1230" y="150" width="120" height="260"/><rect x="1480" y="170" width="120" height="240"/>
+      </g>
+      <path d="M560 60 L560 20" stroke="url(#sk-g)" stroke-width="4"/>
+      <path d="M528 380 L560 90 L592 380" stroke="url(#sk-g)" stroke-width="3" fill="none" opacity=".85"/>
+      <circle cx="1150" cy="230" r="70" fill="none" stroke="#4d8bff" stroke-width="5" opacity=".8"/>
+      <path d="M1080 230 Q1150 190 1220 230" stroke="#ff3d6e" stroke-width="5" fill="none" opacity=".8"/>
+      <rect x="640" y="186" width="160" height="6" fill="#ff2bd6" opacity=".8"/><rect x="950" y="226" width="140" height="5" fill="#00e1ff" opacity=".7"/>
+    </svg>
+    <div class="vb-water"></div>
+    <div class="vb-vignette"></div>
+  </div>
+
+  <!-- Barra superior (perfil y monedas) -->
+  <header id="topbar" class="topbar hidden">
+    <button class="profile-pill" data-go="stats" aria-label="Ver perfil y estadísticas">
+      <span class="pp-avatar" id="tb-avatar">P</span>
+      <span class="pp-text">
+        <span class="pp-name" id="tb-name">Player_01</span>
+        <span class="pp-level"><span id="tb-level">Nivel 1</span><span class="pp-bar"><i id="tb-xp"></i></span></span>
+      </span>
+    </button>
+    <div class="flex items-center gap-2 sm:gap-3">
+      <span class="tier-badge" id="tb-tier">Gratis</span>
+      <div class="coin-pill">
+        <span class="coin-ico">$</span><span id="tb-coins">0</span>
+        <button class="plus-btn" data-go="shop" aria-label="Tienda">+</button>
+      </div>
+      <button class="icon-btn" data-modal="settings" aria-label="Ajustes">
+        <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm8.94-2.5.06-1-.06-1 2.03-1.58-2-3.46-2.39.96a7.97 7.97 0 0 0-1.73-1L16.5 2h-4l-.35 2.42c-.62.25-1.2.59-1.73 1l-2.39-.96-2 3.46L8.06 11l-.06 1 .06 1-2.03 1.58 2 3.46 2.39-.96c.53.41 1.11.75 1.73 1L12.5 22h4l.35-2.42c.62-.25 1.2-.59 1.73-1l2.39.96 2-3.46L20.94 13Z" transform="translate(-2.5 0)"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="app">
+
+    <!-- ===================== BIENVENIDA ===================== -->
+    <section id="screen-welcome" class="screen">
+      <div class="welcome-wrap">
+        <div class="logo-wrap">
+          <div class="logo-cards"><span>A<i>♠</i></span><span class="r">A<i>♥</i></span><span>A<i>♣</i></span><span class="r">A<i>♦</i></span></div>
+          <div class="logo-glow"><div class="logo-sign">
+            <div class="logo-bulbs"></div>
+            <h1 class="logo-title">POKER</h1>
+            <p class="logo-script">Vegas Pro</p>
+            <span class="logo-crown">♛</span>
+          </div></div>
+        </div>
+
+        <div class="glass-card auth-card">
+          <div class="auth-tabs" role="tablist">
+            <button class="active" data-auth="start" role="tab">Entrar</button>
+            <button data-auth="register" role="tab">Registrarse</button>
+            <button data-auth="login" role="tab">Iniciar sesión</button>
+          </div>
+
+          <div class="auth-pane active" data-pane="start">
+            <p class="text-white/70 text-sm mb-4">Texas Hold'em No-Limit con la elegancia del Strip. Elige cómo quieres jugar.</p>
+            <button class="lux-btn w-full mb-3" id="btn-register-cta">
+              <span>Crear cuenta</span><em class="bonus-chip">+50.000 monedas</em>
+            </button>
+            <button class="ghost-btn w-full" id="btn-guest">Jugar como invitado</button>
+            <p class="text-[11px] text-white/40 mt-3 text-center">Los invitados empiezan con 10.000 monedas. Si te registras más tarde, conservas tu progreso y recibes el bono.</p>
+          </div>
+
+          <form class="auth-pane" data-pane="register" id="form-register" autocomplete="on">
+            <div class="bonus-banner"><b>🎁 Bono de bienvenida</b> Te regalamos <b>50.000 monedas</b> al registrarte.</div>
+            <label class="field"><span>Usuario</span><input name="user" required minlength="3" maxlength="16" autocomplete="username" placeholder="VegasAce" /></label>
+            <label class="field"><span>Correo</span><input name="email" type="email" required autocomplete="email" placeholder="tu@correo.com" /></label>
+            <label class="field"><span>Contraseña</span><input name="pass" type="password" required minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres" /></label>
+            <p class="form-error" data-error></p>
+            <button class="lux-btn w-full" type="submit"><span>Registrarme y reclamar bono</span></button>
+          </form>
+
+          <form class="auth-pane" data-pane="login" id="form-login" autocomplete="on">
+            <label class="field"><span>Usuario</span><input name="user" required autocomplete="username" /></label>
+            <label class="field"><span>Contraseña</span><input name="pass" type="password" required autocomplete="current-password" /></label>
+            <p class="form-error" data-error></p>
+            <button class="lux-btn w-full" type="submit"><span>Entrar</span></button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MENÚ PRINCIPAL ===================== -->
+    <section id="screen-menu" class="screen">
+      <div class="menu-grid">
+        <div class="logo-wrap big">
+          <div class="logo-cards"><span>A<i>♠</i></span><span class="r">A<i>♥</i></span><span>A<i>♣</i></span><span class="r">A<i>♦</i></span></div>
+          <div class="logo-glow"><div class="logo-sign">
+            <div class="logo-bulbs"></div>
+            <h1 class="logo-title">POKER</h1>
+            <p class="logo-script">Vegas Pro</p>
+            <span class="logo-crown">♛</span>
+          </div></div>
+        </div>
+
+        <nav class="menu-list" aria-label="Menú principal">
+          <button class="menu-item primary" data-go="public">
+            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M12 2C9 6 4 8.5 4 13a4 4 0 0 0 6.5 3.1L9 22h6l-1.5-5.9A4 4 0 0 0 20 13c0-4.5-5-7-8-11Z"/></svg></span>
+            <span class="mi-text"><b>Jugar</b><small>Partidas públicas · Bots · Cash</small></span><span class="mi-arrow">›</span>
+          </button>
+          <button class="menu-item" data-go="tournaments">
+            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M7 3h10v2h4v3a5 5 0 0 1-5 5h-.3A5 5 0 0 1 13 15.9V18h3v3H8v-3h3v-2.1A5 5 0 0 1 8.3 13H8a5 5 0 0 1-5-5V5h4V3Zm0 4H5v1a3 3 0 0 0 2 2.8V7Zm10 0v3.8A3 3 0 0 0 19 8V7h-2Z"/></svg></span>
+            <span class="mi-text"><b>Torneos</b><small>Bronce · Plata · Oro · Diamante</small></span><span class="mi-arrow">›</span>
+          </button>
+          <button class="menu-item" data-go="private">
+            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM1 20c0-3.3 3.6-6 8-6s8 2.7 8 6v1H1v-1Zm17.5 1v-1c0-1.9-.8-3.6-2.1-4.9 3.5.2 6.6 2.3 6.6 4.9v1h-4.5Z"/></svg></span>
+            <span class="mi-text"><b>Salas privadas</b><small>3 a 10 jugadores · Tus reglas</small></span><span class="mi-arrow">›</span>
+          </button>
+          <button class="menu-item" data-go="stats">
+            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M3 21V10h4v11H3Zm7 0V4h4v17h-4Zm7 0v-7h4v7h-4Z"/></svg></span>
+            <span class="mi-text"><b>Estadísticas</b><small>Tu progreso · Tus logros</small></span><span class="mi-arrow">›</span>
+          </button>
+          <button class="menu-item" data-go="shop">
+            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5 12.5 3l3.6 12.3-8.5 2.5L4 5.5Zm10.9-1 4.7 1.4-3.6 12.3-1.3-.4 2.9-9.9-2.7-3.4Z"/></svg></span>
+            <span class="mi-text"><b>Tienda</b><small>Mesas · Barajas · Planes</small></span><span class="mi-arrow">›</span>
+          </button>
+        </nav>
+      </div>
+      <div class="tagline"><span class="tl-ico">♠</span><span>Grandes jugadores<br>hacen grandes historias</span></div>
+      <div class="menu-felt" aria-hidden="true">
+        <div class="mf-chips"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="mf-cards"><span>A<i>♠</i></span><span>A<i>♣</i></span><span class="r">A<i>♥</i></span><span>A<i>♣</i></span><span class="r">A<i>♦</i></span></div>
+      </div>
+    </section>
+
+    <!-- ===================== PARTIDAS PÚBLICAS ===================== -->
+    <section id="screen-public" class="screen sub">
+      <div class="sub-wrap">
+        <button class="back-btn" data-go="menu">‹ Menú</button>
+        <h2 class="sub-title">Partidas públicas</h2>
+        <p class="sub-desc">Mesas cash con bots humanizados. Margen de espera de 1 minuto para completar la mesa; si no se llena, la completan bots.</p>
+
+        <h3 class="sec-label">Mesa</h3>
+        <div class="stake-grid" id="stake-grid"></div>
+
+        <div class="grid sm:grid-cols-2 gap-4 mt-6">
+          <div>
+            <h3 class="sec-label">Dificultad de los bots</h3>
+            <div class="seg wide" id="pub-level">
+              <button data-v="easy">Fácil</button><button data-v="medium" class="on">Medio</button><button data-v="hard">Difícil</button><button data-v="mixed">Mixto</button>
+            </div>
+          </div>
+          <div>
+            <h3 class="sec-label">Jugadores</h3>
+            <div class="seg wide" id="pub-size">
+              <button data-v="6" class="on">6-max</button><button data-v="9">9 jugadores</button><button data-v="2">Heads-up</button>
+            </div>
+          </div>
+        </div>
+        <button class="lux-btn mt-8 w-full sm:w-auto" id="btn-find"><span>Buscar mesa</span></button>
+      </div>
+    </section>
+
+    <!-- ===================== SALAS PRIVADAS ===================== -->
+    <section id="screen-private" class="screen sub">
+      <div class="sub-wrap">
+        <button class="back-btn" data-go="menu">‹ Menú</button>
+        <h2 class="sub-title">Sala privada</h2>
+        <p class="sub-desc">Configura tus reglas. Fichas de juego (no se gastan monedas). Los puestos libres se pueden ocupar con bots en cualquier momento.</p>
+
+        <form id="form-private" class="priv-grid">
+          <div class="glass-card p-4">
+            <label class="field"><span>Nombre de la sala</span><input name="name" maxlength="28" value="Mesa VIP" /></label>
+            <div class="room-code"><span>Código</span><b id="room-code">------</b><button type="button" class="ghost-btn sm" id="btn-copy-code">Copiar invitación</button></div>
+            <p class="text-[11px] text-white/45 mt-2">El juego online con amigos necesita el servidor multijugador (ver README). Mientras, los asientos los ocupan bots.</p>
+          </div>
+
+          <div class="glass-card p-4 space-y-4">
+            <label class="range-field"><span>Asientos de la mesa <b data-out="seats">6</b></span><input type="range" name="seats" min="3" max="10" value="6" /></label>
+            <label class="range-field"><span>Jugadores al empezar <b data-out="players">6</b></span><input type="range" name="players" min="2" max="6" value="6" /></label>
+            <div>
+              <span class="field-label">Bots</span>
+              <div class="seg wide" data-name="botLevel"><button type="button" data-v="easy">Fácil</button><button type="button" data-v="medium" class="on">Medio</button><button type="button" data-v="hard">Difícil</button><button type="button" data-v="mixed">Mixto</button></div>
+            </div>
+          </div>
+
+          <div class="glass-card p-4 space-y-4">
+            <label class="field"><span>Ciegas iniciales</span>
+              <select name="blinds"><option value="10">10 / 20</option><option value="25">25 / 50</option><option value="50" selected>50 / 100</option><option value="100">100 / 200</option><option value="500">500 / 1.000</option></select>
+            </label>
+            <label class="range-field"><span>Stack inicial <b data-out="bbs">100 BB</b></span><input type="range" name="bbs" min="20" max="300" step="10" value="100" /></label>
+            <label class="range-field"><span>Subida de ciegas cada <b data-out="minutes">20 min</b></span><input type="range" name="minutes" min="10" max="40" step="5" value="20" /></label>
+          </div>
+
+          <div class="glass-card p-4 space-y-4">
+            <label class="range-field"><span>Recompras por jugador <b data-out="rebuys">2</b></span><input type="range" name="rebuys" min="0" max="5" value="2" /></label>
+            <label class="toggle-field"><input type="checkbox" name="bountyOn" /><span class="tg"></span><span>Bounty (recompensa por eliminación)</span></label>
+            <label class="field" data-bounty><span>Recompensa por cabeza</span>
+              <select name="bounty"><option value="250">250 monedas</option><option value="500" selected>500 monedas</option><option value="1000">1.000 monedas</option><option value="5000">5.000 monedas</option></select>
+            </label>
+            <label class="field"><span>Tiempo por turno</span>
+              <select name="turn"><option value="15">15 s</option><option value="30" selected>30 s</option><option value="45">45 s</option><option value="60">60 s</option></select>
+            </label>
+          </div>
+
+          <div class="priv-summary glass-card p-4" id="priv-summary"></div>
+          <button class="lux-btn priv-submit" type="submit"><span>Crear sala y sentarse</span></button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===================== TORNEOS ===================== -->
+    <section id="screen-tournaments" class="screen sub">
+      <div class="sub-wrap">
+        <button class="back-btn" data-go="menu">‹ Menú</button>
+        <h2 class="sub-title">Torneos por rangos</h2>
+        <p class="sub-desc">Sit &amp; Go con ciegas que suben cada pocas manos. Pagan los 3 primeros puestos (60% · 25% · 15%).</p>
+        <div class="tour-grid" id="tour-grid"></div>
+      </div>
+    </section>
+
+    <!-- ===================== TIENDA ===================== -->
+    <section id="screen-shop" class="screen sub">
+      <div class="sub-wrap wide">
+        <button class="back-btn" data-go="menu">‹ Menú</button>
+        <h2 class="sub-title">Tienda</h2>
+        <div class="seg shop-tabs" id="shop-tabs"><button data-v="tables" class="on">Mesas</button><button data-v="decks">Cartas</button><button data-v="plans">Planes</button></div>
+        <div id="shop-body" class="mt-6"></div>
+      </div>
+    </section>
+
+    <!-- ===================== ESTADÍSTICAS ===================== -->
+    <section id="screen-stats" class="screen sub">
+      <div class="sub-wrap">
+        <button class="back-btn" data-go="menu">‹ Menú</button>
+        <h2 class="sub-title">Estadísticas</h2>
+        <div id="stats-body"></div>
+      </div>
+    </section>
+
+    <!-- ===================== MESA ===================== -->
+    <section id="screen-game" class="screen game">
+      <div class="game-top">
+        <button class="ghost-btn sm" id="btn-leave">‹ Salir</button>
+        <div class="gt-info"><b id="game-mode">Partida</b><span id="game-level">Nivel 1</span></div>
+        <div class="gt-tools">
+          <div class="seg mini" id="seg-view" title="Vista"><button data-v="2d">2D</button><button data-v="3d">3D</button></div>
+          <div class="seg mini" id="seg-orient" title="Orientación de la mesa">
+            <button data-v="h" aria-label="Horizontal"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="5"/></svg></button>
+            <button data-v="v" aria-label="Vertical"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="5"/></svg></button>
+          </div>
+          <div class="seg mini" id="seg-cam" title="Cámara 3D"><button data-v="player">Jugador</button><button data-v="top">Cenital</button><button data-v="cinema">Cine</button></div>
+          <button class="icon-btn sm" id="btn-skin" aria-label="Mesa y cartas">🎨</button>
+          <button class="icon-btn sm" id="btn-chat" aria-label="Chat">💬<i class="dot" id="chat-dot"></i></button>
+        </div>
+      </div>
+
+      <div class="game-host" id="game-host"></div>
+
+      <button class="peek-btn" id="btn-peek" aria-pressed="false"><span class="eye">👁</span><span class="lbl">Mirar cartas</span></button>
+
+      <div class="action-bar" id="action-bar" aria-live="polite">
+        <div class="ab-raise">
+          <div class="ab-presets">
+            <button data-preset="half">½ Bote</button><button data-preset="pot">Bote</button><button data-preset="allin" class="allin">All-In</button>
+          </div>
+          <div class="ab-slider">
+            <button data-step="-1" aria-label="Menos">−</button>
+            <input type="range" id="raise-range" min="0" max="100" value="0" aria-label="Cantidad de la subida" />
+            <button data-step="1" aria-label="Más">+</button>
+          </div>
+        </div>
+        <div class="ab-main">
+          <button class="ab-btn fold" data-act="fold">Fold<kbd>F</kbd></button>
+          <button class="ab-btn check" data-act="check">Check<kbd>C</kbd></button>
+          <button class="ab-btn call" data-act="call">Call <b id="call-amt"></b><kbd>C</kbd></button>
+          <button class="ab-btn raise" data-act="raise"><span id="raise-label">Subir a</span> <b id="raise-amt"></b><kbd>R</kbd></button>
+        </div>
+      </div>
+
+      <aside class="chat-panel" id="chat-panel" aria-label="Chat de la mesa">
+        <div class="cp-head"><b>Mesa</b><button class="icon-btn sm" id="btn-chat-close" aria-label="Cerrar">×</button></div>
+        <div class="cp-log" id="chat-log"></div>
+        <div class="cp-emotes" id="emote-row"></div>
+        <form class="cp-input" id="chat-form"><input id="chat-input" maxlength="140" placeholder="Escribe un mensaje…" autocomplete="off" /><button aria-label="Enviar">➤</button></form>
+      </aside>
+
+      <div class="skin-pop" id="skin-pop">
+        <h4>Mesa</h4><div class="skin-row" id="skin-tables"></div>
+        <h4>Cartas</h4><div class="skin-row" id="skin-decks"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== MODALES ===================== -->
+  <div class="modal" id="modal-settings" role="dialog" aria-modal="true" aria-labelledby="st-title">
+    <div class="modal-card">
+      <h3 id="st-title" class="modal-title">Ajustes</h3>
+      <label class="toggle-field"><input type="checkbox" data-pref="sound" /><span class="tg"></span><span>Sonido</span></label>
+      <label class="toggle-field"><input type="checkbox" data-pref="autoPeek" /><span class="tg"></span><span>Mostrar siempre mis cartas</span></label>
+      <div class="mt-3"><span class="field-label">Vista por defecto</span><div class="seg wide" data-pref-seg="view"><button data-v="2d">2D Clásico</button><button data-v="3d">3D Inmersivo</button></div></div>
+      <div class="mt-3"><span class="field-label">Orientación de la mesa</span><div class="seg wide" data-pref-seg="orientation"><button data-v="auto">Auto</button><button data-v="h">Horizontal</button><button data-v="v">Vertical</button></div></div>
+      <div class="mt-3"><span class="field-label">Velocidad de juego</span><div class="seg wide" data-pref-seg="speed"><button data-v="0.75">Relajada</button><button data-v="1">Normal</button><button data-v="1.5">Rápida</button><button data-v="2">Turbo</button></div></div>
+      <div class="flex gap-3 mt-6">
+        <button class="ghost-btn flex-1" id="btn-logout">Cerrar sesión</button>
+        <button class="lux-btn flex-1" data-close><span>Listo</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-match" role="dialog" aria-modal="true">
+    <div class="modal-card center">
+      <h3 class="modal-title">Buscando jugadores…</h3>
+      <div class="mm-ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54"/><circle class="mm-prog" cx="60" cy="60" r="54"/></svg><b id="mm-time">60</b></div>
+      <p class="text-white/60 text-sm" id="mm-info">Margen de espera: 1 minuto.</p>
+      <ul class="mm-list" id="mm-list"></ul>
+      <div class="flex gap-3 mt-5">
+        <button class="ghost-btn flex-1" id="mm-cancel">Cancelar</button>
+        <button class="lux-btn flex-1" id="mm-start"><span>Empezar ya</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-confirm" role="dialog" aria-modal="true">
+    <div class="modal-card center">
+      <h3 class="modal-title" id="cf-title"></h3>
+      <div class="text-white/75 text-sm" id="cf-text"></div>
+      <div class="flex gap-3 mt-6">
+        <button class="ghost-btn flex-1" id="cf-no">Salir</button>
+        <button class="lux-btn flex-1" id="cf-yes"><span>Aceptar</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- Three.js r128 (build global) para la vista 3D -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/poker/evaluator.js"></script>
+  <script src="js/poker/engine.js"></script>
+  <script src="js/poker/bots.js"></script>
+  <script src="js/views/art.js"></script>
+  <script src="js/views/view2d.js"></script>
+  <script src="js/views/view3d.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/hud.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
