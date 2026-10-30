@@ -31,8 +31,14 @@
     document.body.dataset.screen = name;
     current = name;
     if (RENDER[name]) RENDER[name]();
+    PVP.Legal.onScreen(name);
     root.scrollTo(0, 0);
   }
+
+  $('#btn-profile').addEventListener('click', () => {
+    PVP.ProfileUI.open(store, () => { renderTopbar(); if (current === 'stats') renderStats(); });
+  });
+  PVP.Legal.init();
 
   document.addEventListener('click', (e) => {
     const g = e.target.closest('[data-go]');
@@ -51,7 +57,7 @@
     const p = store.profile;
     if (!p) return;
     $('#tb-name').textContent = p.name;
-    $('#tb-avatar').textContent = U.initials(p.name);
+    $('#tb-avatar').innerHTML = PVP.Avatars.avatarHTML(p.prefs.look, p.prefs.avatarImg);
     $('#tb-level').textContent = 'Nivel ' + store.level();
     $('#tb-xp').style.width = Math.round(store.levelProgress() * 100) + '%';
     $('#tb-coins').textContent = U.fmt(p.coins);
@@ -96,14 +102,22 @@
   }
 
   bindForm('#form-register', async (d) => {
-    const bonus = await store.register(d.user, d.email, d.pass);
+    const res = await store.register(d.user, d.email, d.pass);
+    if (res.confirm) {
+      authTab('login');
+      ui.confirm({
+        title: 'Confirma tu correo', hideNo: true, yes: 'Entendido',
+        text: `Te hemos enviado un enlace a <b>${U.esc(d.email)}</b>. Ábrelo y después inicia sesión: recibirás <b>50.000 monedas</b> de bienvenida.`,
+      });
+      return;
+    }
     renderTopbar();
     go('menu');
-    ui.toast(`🎁 ¡Cuenta creada! +${U.fmt(bonus)} monedas de bienvenida.`, 4000);
+    ui.toast(`🎁 ¡Cuenta creada! +${U.fmt(res.bonus)} monedas de bienvenida.`, 4000);
   });
 
   bindForm('#form-login', async (d) => {
-    await store.login(d.user, d.pass);
+    await store.login(d.email, d.pass);
     renderTopbar();
     go('menu');
     ui.toast(`Hola de nuevo, <b>${U.esc(store.profile.name)}</b>.`);
@@ -134,9 +148,9 @@
     if (game && key === 'orientation') game.setOrientation(v);
     syncSettings();
   }));
-  $('#btn-logout').addEventListener('click', () => {
+  $('#btn-logout').addEventListener('click', async () => {
     if (game) exitGame();
-    store.logout();
+    await store.logout();
     ui.close('modal-settings');
     go('welcome');
   });
@@ -181,7 +195,7 @@
     }
     const size = +segVal('#pub-size');
     matchmaking(size, segVal('#pub-level'), () => {
-      if (!store.spend(stake.buyIn)) return ui.toast('Monedas insuficientes.');
+      if (!store.spend(stake.buyIn, 'buy_in')) return ui.toast('Monedas insuficientes.');
       startGame({
         mode: 'public', title: `Mesa ${stake.name} · ${U.short(stake.sb)}/${U.short(stake.bb)}`,
         seats: size, players: size, sb: stake.sb, bb: stake.bb, stack: stake.buyIn, buyIn: stake.buyIn,
@@ -198,9 +212,9 @@
     const circ = 2 * Math.PI * 54;
     prog.style.strokeDasharray = circ;
     const names = [store.profile.name];
-    list.innerHTML = `<li class="me">${U.esc(store.profile.name)} <em>Tú</em></li>`;
+    list.innerHTML = `<li class="me">${PVP.Avatars.avatarHTML(store.profile.prefs.look, store.profile.prefs.avatarImg, 'mm-av')}${U.esc(store.profile.name)} <em>Tú</em></li>`;
     for (let i = 1; i < size; i++) list.innerHTML += '<li class="wait">Esperando jugador…</li>';
-    $('#mm-info').textContent = `Margen de espera: 1 minuto. Si la mesa no se llena, la completamos con bots.`;
+    $('#mm-info').textContent = `Margen de espera: 1 minuto. Si no hay suficientes jugadores conectados, completamos la mesa con rivales virtuales.`;
     ui.open('modal-match');
 
     const t0 = Date.now();
@@ -216,7 +230,7 @@
         names.push(persona.name);
         const li = list.children[joined];
         li.className = 'joined';
-        li.innerHTML = `${U.esc(persona.name)} <em>IA</em>`;
+        li.innerHTML = `${PVP.Avatars.avatarHTML(persona.look, null, 'mm-av')}${U.esc(persona.name)}`;
         joined++;
         nextJoin = el + U.rand(2, 9);
         if (PVP.Sound) PVP.Sound.click();
@@ -316,7 +330,7 @@
     const b = e.target.closest('[data-tour]');
     if (!b) return;
     const t = C.TOURNAMENTS.find((x) => x.id === b.dataset.tour);
-    if (!store.spend(t.fee)) return ui.toast(`Necesitas ${U.fmt(t.fee)} monedas.`);
+    if (!store.spend(t.fee, 'tournament_fee')) return ui.toast(`Necesitas ${U.fmt(t.fee)} monedas.`);
     startGame({
       mode: 'tournament', title: `Torneo ${t.name}`, tournament: t,
       seats: t.players, players: t.players, sb: t.sb, bb: t.sb * 2, stack: t.stack,
@@ -349,12 +363,36 @@
   function planStatus() {
     const p = store.profile;
     const t = store.tier();
-    if (t === 'free') {
-      return p.tier !== 'free' && p.tierUntil ? `Tu ${C.TIERS[p.tier].name} caducó el ${new Date(p.tierUntil).toLocaleDateString('es-ES')}. Renueva para recuperarlo.` : 'Plan gratuito';
-    }
-    if (!p.tierUntil) return `${C.TIERS[t].name} · <b>permanente</b>${p.tierSource === 'creator' ? ' (código de creador)' : ''}`;
-    const days = Math.max(0, Math.ceil((p.tierUntil - Date.now()) / 86400000));
-    return `${C.TIERS[t].name} · activo hasta el <b>${new Date(p.tierUntil).toLocaleDateString('es-ES')}</b> (${days} día${days === 1 ? '' : 's'})`;
+    const tierTxt = t === 'free' ? 'Plan gratuito' : `${C.TIERS[t].name} · <strong>desbloqueado para siempre</strong>`;
+    if (!store.online) return p.guest ? `${tierTxt} · Invitado: <strong>crea una cuenta</strong> para comprar y guardar tu progreso` : tierTxt;
+    return tierTxt;
+  }
+
+  const STATUS_ES = { pending: 'Pendiente de confirmar', paid: 'Pagado · activado', rejected: 'Rechazado', cancelled: 'Cancelado' };
+
+  async function renderPurchases() {
+    const box = $('#purchases');
+    if (!box) return;
+    if (!store.online) { box.innerHTML = ''; return; }
+    let rows = [];
+    try { rows = await store.myPurchases(); } catch (e) { box.innerHTML = `<p class="coach-note">${U.esc(e.message)}</p>`; return; }
+    const pending = rows.filter((r) => r.status === 'pending');
+    box.innerHTML = (pending.length ? pending.map((r) => `
+        <div class="pending-card glass-card">
+          <div><small>Pago pendiente · ${U.esc(PVP.Config.PACKS[r.pack].name)} · ${money(Number(r.amount))}</small>
+            <b>Referencia: <code>${U.esc(r.reference)}</code></b>
+            <p>Escribe esta referencia en la nota de PayPal. En cuanto confirmemos el pago se activará aquí automáticamente.</p></div>
+          <div class="pc-actions">
+            <a class="lux-btn sm" href="${PVP.Config.paypalLink(r.pack)}" target="_blank" rel="noopener noreferrer"><span>Abrir PayPal</span></a>
+            <button class="ghost-btn sm" data-copy-ref="${U.esc(r.reference)}">Copiar referencia</button>
+            <button class="ghost-btn sm" data-cancel="${r.id}">Cancelar</button>
+          </div>
+        </div>`).join('') : '') +
+      (rows.length ? `<details class="glass-card my-purchases"><summary>Tus compras (${rows.length})</summary>
+        <table class="sess-table"><thead><tr><th>Fecha</th><th>Pack</th><th>Importe</th><th>Referencia</th><th>Estado</th></tr></thead><tbody>
+        ${rows.map((r) => `<tr><td>${new Date(r.created_at).toLocaleDateString('es-ES')}</td><td>${U.esc(PVP.Config.PACKS[r.pack].name)}</td><td>${money(Number(r.amount))}</td>
+          <td><code>${U.esc(r.reference)}</code></td><td><span class="st st-${r.status}">${STATUS_ES[r.status]}</span></td></tr>`).join('')}
+        </tbody></table></details>` : '');
   }
 
   function renderShop() {
@@ -366,27 +404,26 @@
       const cur = store.tier();
       const cards = ['elite', 'legend'].map((id) => {
         const pk = PVP.Config.PACKS[id];
-        const active = cur === id;
-        const higher = C.TIERS[cur].rank > C.TIERS[id].rank;
-        return `<article class="plan-card p-${id}${active ? ' current' : ''}">
+        const owned = C.TIERS[cur].rank >= C.TIERS[id].rank;
+        return `<article class="plan-card p-${id}${cur === id ? ' current' : ''}">
           ${id === 'legend' ? '<span class="plan-ribbon">Acceso total</span>' : ''}
           <h3>${pk.name}</h3>
-          <p class="plan-price">${money(pk.price)}<small> / mes</small></p>
+          <p class="plan-price">${money(pk.price)}<small> · pago único</small></p>
           <ul>${pk.perks.map((i) => `<li>${U.esc(i)}</li>`).join('')}</ul>
-          ${higher && p.tierUntil === 0 ? '<span class="plan-own">Incluido en tu plan</span>'
-            : `<a class="lux-btn w-full paypal-btn" data-pay="${id}" href="${PVP.Config.paypalLink(id)}" target="_blank" rel="noopener noreferrer">
-                <span>${active ? 'Renovar' : 'Pagar'} con PayPal · ${money(pk.price)}</span></a>`}
-          ${active ? '<span class="plan-active">✓ Activo</span>' : ''}
+          ${owned ? '<span class="plan-own">✓ Desbloqueado para siempre</span>'
+            : `<button class="lux-btn w-full paypal-btn" data-buy="${id}"><span>Comprar con PayPal · ${money(pk.price)}</span></button>`}
         </article>`;
       }).join('');
       body.innerHTML = `
+        <div id="purchases"></div>
         <div class="plan-grid two">${cards}</div>
         <ol class="pay-steps glass-card">
-          <li><b>Paga con PayPal</b> el pack que quieras. En la nota del pago escribe tu ID: <code>${U.esc(p.id)}</code>.</li>
-          <li><b>Verificamos el pago</b> y te enviamos un código de activación personal (normalmente en menos de 24 h).</li>
-          <li><b>Canjéalo</b> en la barra de códigos de arriba: recibes las monedas del mes y el nivel se activa 30 días.</li>
+          <li><b>Pulsa «Comprar con PayPal».</b> Te damos una referencia de compra y se abre PayPal con el importe.</li>
+          <li><b>Escribe la referencia</b> (por ejemplo <code>PV-7K3Q9M</code>) en la nota del pago.</li>
+          <li><b>Listo:</b> cuando el pago se confirma, las monedas y los desbloqueos aparecen solos en tu cuenta, sin códigos.</li>
         </ol>
-        <p class="text-[11px] text-white/40 mt-3">Cada mes renuevas con un nuevo pago (no hay cargos automáticos). Las monedas son virtuales y no se pueden canjear por dinero.</p>`;
+        <p class="text-[11px] text-white/40 mt-3">Pago único y permanente, sin suscripciones. Las monedas son virtuales y no se pueden canjear por dinero. <a href="#" data-legal="terms" class="underline">Condiciones de compra</a>.</p>`;
+      renderPurchases();
       return;
     }
     const items = shopTab === 'tables' ? C.TABLES : C.DECKS;
@@ -403,12 +440,38 @@
         <h4>${U.esc(it.name)}</h4><p>${U.esc(sub)}</p>
         ${equipped ? '<span class="si-state">✓ En uso</span>'
           : owned ? `<button class="ghost-btn sm w-full" data-equip="${prefKey}:${it.id}">Usar</button>`
-          : `<button class="lux-btn sm w-full" data-tab="packs"><span>🔒 ${PVP.Config.PACKS[it.tier].name} · ${money(PVP.Config.PACKS[it.tier].price)}/mes</span></button>`}
+          : `<button class="lux-btn sm w-full" data-tab="packs"><span>🔒 ${PVP.Config.PACKS[it.tier].name} · ${money(PVP.Config.PACKS[it.tier].price)}</span></button>`}
       </article>`;
     }).join('')}</div>`;
   }
 
-  $('#shop-body').addEventListener('click', (e) => {
+  async function buy(pack, btn) {
+    if (!store.online) {
+      return ui.confirm({
+        title: 'Crea tu cuenta para comprar',
+        text: 'Las compras se guardan en tu cuenta para que no las pierdas nunca. Regístrate gratis y recibe 50.000 monedas de bienvenida.',
+        yes: 'Registrarme', no: 'Ahora no',
+        onYes: () => { go('welcome'); authTab('register'); },
+      });
+    }
+    // Abrimos la pestaña en el mismo clic para que el navegador no la bloquee.
+    const win = root.open('about:blank', '_blank');
+    btn.disabled = true;
+    try {
+      const purchase = await store.createPurchase(pack);
+      PVP.Payments.current().checkout(purchase, win);
+      copyText(purchase.reference);
+      ui.toast(`Referencia <b>${U.esc(purchase.reference)}</b> copiada: pégala en la nota del pago de PayPal.`, 6000);
+      renderPurchases();
+    } catch (e) {
+      if (win) win.close();
+      ui.toast('⚠️ ' + U.esc(e.message), 4500);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  $('#shop-body').addEventListener('click', async (e) => {
     const eq = e.target.closest('[data-equip]');
     if (eq) {
       const [k, id] = eq.dataset.equip.split(':');
@@ -418,20 +481,13 @@
     }
     const tab = e.target.closest('[data-tab]');
     if (tab) { setShopTab(tab.dataset.tab); return; }
-    const pay = e.target.closest('[data-pay]');
-    if (pay) {
-      // Copiamos el ID para pegarlo en la nota de PayPal.
-      copyText(store.profile.id).then(() => ui.toast(`ID <b>${store.profile.id}</b> copiado: pégalo en la nota del pago de PayPal.`, 5000));
-      if (store.profile.guest) {
-        e.preventDefault();
-        ui.confirm({
-          title: 'Primero, crea tu cuenta',
-          text: 'Juegas como invitado: si borras los datos del navegador, perderías lo que compres. Regístrate gratis (y recibe 50.000 monedas) antes de pagar.',
-          yes: 'Registrarme', no: 'Pagar igualmente',
-          onYes: () => { go('welcome'); authTab('register'); },
-          onNo: () => root.open(pay.href, '_blank', 'noopener'),
-        });
-      }
+    const b = e.target.closest('[data-buy]');
+    if (b) return buy(b.dataset.buy, b);
+    const cr = e.target.closest('[data-copy-ref]');
+    if (cr) { copyText(cr.dataset.copyRef).then(() => ui.toast('Referencia copiada')); return; }
+    const cancel = e.target.closest('[data-cancel]');
+    if (cancel) {
+      try { await store.cancelPurchase(cancel.dataset.cancel); renderPurchases(); } catch (err) { ui.toast('⚠️ ' + U.esc(err.message)); }
     }
   });
 
@@ -473,7 +529,7 @@
     const t = store.tier();
     $('#stats-body').innerHTML = `
       <div class="stats-head glass-card">
-        <span class="pp-avatar big">${U.esc(U.initials(p.name))}</span>
+        <span class="pp-avatar big">${PVP.Avatars.avatarHTML(p.prefs.look, p.prefs.avatarImg)}</span>
         <div><h3>${U.esc(p.name)}</h3><p>Nivel ${store.level()} · ${p.guest ? 'Invitado' : C.TIERS[t].name} · ID <b class="text-white/80">${U.esc(p.id)}</b></p>
         <div class="pp-bar wide"><i style="width:${Math.round(store.levelProgress() * 100)}%"></i></div></div>
         <div class="sh-coins"><small>Monedas</small><b>${U.fmt(p.coins)}</b></div>
@@ -527,7 +583,24 @@
 
   /* ---------- arranque ---------- */
 
-  if (store.restore()) { renderTopbar(); go('menu'); } else go('welcome');
+  store.on('error', (msg) => ui.toast('⚠️ ' + U.esc(msg), 4500));
+  store.on('tierUp', (tier) => {
+    ui.toast(`✨ ¡${C.TIERS[tier].name} activado! Tus desbloqueos ya están disponibles.`, 6000);
+    if (PVP.Sound) PVP.Sound.win();
+  });
+  store.on('purchase', (row) => {
+    if (row && row.status === 'rejected') ui.toast('Tu pago no se ha podido verificar. Escríbenos si crees que es un error.', 6000);
+    if (current === 'shop') renderPurchases();
+  });
+
+  PVP.Backend.init();
+  $('#app').classList.add('booting');
+  PVP.Backend.probe().then(() => store.restore()).then((ok) => {
+    $('#app').classList.remove('booting');
+    document.body.classList.toggle('offline-mode', !PVP.Backend.available);
+    if (ok) { renderTopbar(); go('menu'); } else go('welcome');
+    handleRedeemHash();
+  });
   // Enlace directo de canje: index.html#canjear=CÓDIGO
   function handleRedeemHash() {
     const m = location.hash.match(/#canjear=(.+)$/);
@@ -536,7 +609,6 @@
     history.replaceState(null, '', location.pathname + location.search);
     if (store.profile && !game) { go('shop'); ui.toast('Pulsa «Canjear» para activar tu código.'); }
   }
-  handleRedeemHash();
   root.addEventListener('hashchange', handleRedeemHash);
   store.on('change', () => { if (current === 'shop') { $('#shop-plan').innerHTML = planStatus(); } });
   if (/#sala=/.test(location.hash) && store.profile) ui.toast('Invitación recibida: el multijugador online estará disponible con el servidor de salas.');

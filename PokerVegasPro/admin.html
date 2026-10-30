@@ -18,124 +18,77 @@
     <header class="adm-head">
       <div>
         <h1 class="sub-title">Panel de administración</h1>
-        <p class="sub-desc">Gestión manual de pagos de PayPal: verifica el pago, busca al jugador y activa su pack.</p>
+        <p class="sub-desc">Pagos de PayPal: comprueba el pago y la referencia de la nota, y confírmalo. El jugador recibe el pack al instante.</p>
       </div>
       <div class="flex gap-2 items-center">
         <a class="ghost-btn sm" href="https://www.paypal.com/myaccount/activities" target="_blank" rel="noopener noreferrer">Ver pagos en PayPal</a>
-        <button class="ghost-btn sm hidden" id="btn-logout">Cerrar sesión</button>
+        <button class="ghost-btn sm hidden" id="btn-logout" type="button">Cerrar sesión</button>
       </div>
     </header>
 
-    <!-- ===== Configuración inicial ===== -->
-    <section class="glass-card adm-card hidden" id="sec-setup">
-      <h2>Configuración inicial</h2>
-      <p class="adm-note">Se genera en tu navegador una <b>llave de firma</b>, que queda cifrada con tu contraseña.
-        También se calcula el <b>hash del código de creador</b>. Ningún secreto sale de este equipo ni se guarda en texto plano.</p>
-      <form id="form-setup" class="adm-grid">
-        <label class="field"><span>Contraseña del panel (mín. 12 caracteres)</span><input name="pass" type="password" minlength="12" autocomplete="new-password" /></label>
-        <label class="field"><span>Repite la contraseña</span><input name="pass2" type="password" autocomplete="new-password" /></label>
-        <label class="field"><span>Código secreto de creador (mín. 8 caracteres, opcional)</span><input name="creator" minlength="8" autocomplete="off" placeholder="Para ti y tus amigos: acceso total gratis" /></label>
-        <p class="form-error" data-error></p>
-        <button class="lux-btn" type="submit"><span>Generar configuración</span></button>
-      </form>
-      <div id="setup-out" class="hidden">
-        <h3>1 · Pega esto en la configuración del juego</h3>
-        <p class="adm-note">Busca las líneas <code>ADMIN: null,</code> y <code>CREATOR_CODE: null,</code> y sustitúyelas por este bloque.
-          Están en <code>js/config.js</code> o, si usas la versión de un solo archivo, dentro de <code>index.html</code> (y también de <code>admin.html</code>).
-          Después publica el cambio. Ambos valores se pueden publicar sin riesgo.</p>
-        <textarea id="setup-snippet" class="adm-code" readonly rows="8"></textarea>
-        <div class="flex flex-wrap gap-2 mt-2">
-          <button class="ghost-btn sm" id="btn-copy-snippet">Copiar</button>
-          <button class="ghost-btn sm" id="btn-apply-local">Aplicar solo en este navegador (pruebas)</button>
-        </div>
-        <p class="adm-note mt-3">⚠️ Guarda bien la contraseña: sin ella no se pueden crear códigos. Si la pierdes, repite la configuración y publica el nuevo valor.
-          Los códigos emitidos con la llave anterior dejarán de valer.</p>
-      </div>
-    </section>
-
-    <!-- ===== Acceso ===== -->
     <section class="glass-card adm-card adm-login hidden" id="sec-login">
       <h2>Acceso privado</h2>
+      <p class="adm-note">Entra con tu cuenta de jugador marcada como administrador en Supabase.</p>
       <form id="form-login">
+        <label class="field"><span>Correo</span><input name="email" type="email" autocomplete="email" required /></label>
         <label class="field"><span>Contraseña</span><input name="pass" type="password" autocomplete="current-password" required /></label>
         <p class="form-error" data-error></p>
         <button class="lux-btn w-full" type="submit"><span>Entrar</span></button>
       </form>
-      <button class="adm-link" id="btn-show-setup">Reconfigurar llaves o código de creador</button>
     </section>
 
-    <!-- ===== Panel ===== -->
+    <section class="glass-card adm-card hidden" id="sec-offline">
+      <h2>Servidor no disponible</h2>
+      <p class="adm-note">No se pudo conectar con las tablas <code>pvp_*</code> de Supabase. Aplica la migración
+        <code>supabase/migrations/20261030120000_pokervegaspro.sql</code> en el SQL Editor de tu proyecto y recarga esta página.</p>
+    </section>
+
     <div id="sec-panel" class="hidden adm-panel">
       <section class="glass-card adm-card">
-        <h2>Activar un pago</h2>
-        <p class="adm-note">1) Comprueba en PayPal el pago y el ID que escribió en la nota. 2) Genera su código de activación. 3) Envíaselo: lo canjea en Tienda → «Canjear».</p>
-        <form id="form-voucher" class="adm-grid">
-          <label class="field"><span>ID del jugador</span><input name="uid" required placeholder="PVP-XXXXXX" pattern="[Pp][Vv][Pp]-[A-Za-z0-9]{6}" autocomplete="off" /></label>
-          <label class="field"><span>Nombre / nota (para tu registro)</span><input name="note" placeholder="Usuario o referencia del pago" autocomplete="off" /></label>
-          <label class="field"><span>Pack</span>
-            <select name="pack">
-              <option value="elite">Pack Élite · 4,99 € · 500.000 monedas + 30 días</option>
-              <option value="legend">Pack Leyenda · 9,99 € · 2.000.000 monedas + 30 días</option>
-              <option value="friend">Amigo / creador · Leyenda permanente (sin monedas)</option>
-              <option value="coins">Solo monedas</option>
-            </select>
-          </label>
-          <label class="field"><span>Monedas</span><input name="coins" type="number" min="0" step="1000" value="500000" /></label>
-          <label class="field"><span>El código caduca en (días, 0 = nunca)</span><input name="expires" type="number" min="0" value="30" /></label>
-          <button class="lux-btn" type="submit"><span>Generar código</span></button>
-        </form>
-        <div class="voucher-out hidden" id="voucher-out">
-          <textarea class="adm-code" id="voucher-code" readonly rows="3"></textarea>
-          <div class="flex flex-wrap gap-2 mt-2">
-            <button class="ghost-btn sm" data-copy="code">Copiar código</button>
-            <button class="ghost-btn sm" data-copy="link">Copiar enlace de canje</button>
-            <button class="lux-btn sm" data-copy="msg"><span>Copiar mensaje para el jugador</span></button>
-          </div>
-        </div>
+        <div class="adm-row"><h2>Pagos pendientes <span class="adm-count" id="pending-count">0</span></h2>
+          <input class="adm-search" id="pending-search" placeholder="Buscar referencia, usuario o ID" autocomplete="off" /></div>
+        <p class="adm-note">Busca en PayPal un pago del mismo importe con la referencia <code>PV-…</code> en la nota.
+          Si coincide, pulsa «Confirmar» (puedes pegar el ID de transacción de PayPal para tu registro).</p>
+        <div class="table-wrap"><table class="adm-table" id="pending-table"></table></div>
       </section>
 
       <section class="glass-card adm-card">
-        <h2>Código promocional de fichas</h2>
-        <p class="adm-note">Código genérico: cualquier jugador puede canjearlo, una sola vez por cuenta.</p>
-        <form id="form-promo" class="adm-grid">
-          <label class="field"><span>Monedas</span><input name="coins" type="number" min="1000" step="1000" value="25000" required /></label>
-          <label class="field"><span>Válido hasta (opcional)</span><input name="until" type="date" /></label>
-          <button class="lux-btn" type="submit"><span>Crear código promo</span></button>
-        </form>
-        <div class="voucher-out hidden" id="promo-out">
-          <textarea class="adm-code" id="promo-code" readonly rows="3"></textarea>
-          <div class="flex flex-wrap gap-2 mt-2"><button class="ghost-btn sm" data-copy="promo">Copiar código</button><button class="ghost-btn sm" data-copy="promolink">Copiar enlace</button></div>
-        </div>
-      </section>
-
-      <section class="glass-card adm-card">
-        <div class="adm-row">
-          <h2>Usuarios registrados</h2>
-          <input class="adm-search" id="user-search" placeholder="Buscar por nombre, correo o ID" autocomplete="off" />
-        </div>
-        <p class="adm-note">Esta lista muestra las cuentas guardadas <b>en este navegador</b> y los cambios se aplican al instante.
-          Para jugadores en otros dispositivos, usa «Generar código» (en su fila o arriba).</p>
+        <div class="adm-row"><h2>Usuarios</h2>
+          <input class="adm-search" id="user-search" placeholder="Buscar por nombre o ID (PVP-…)" autocomplete="off" /></div>
         <div class="table-wrap"><table class="adm-table" id="user-table"></table></div>
       </section>
 
       <section class="glass-card adm-card">
-        <div class="adm-row">
-          <h2>Registro de activaciones</h2>
-          <input class="adm-search" id="ledger-search" placeholder="Buscar por ID, nombre o pack" autocomplete="off" />
-          <button class="ghost-btn sm" id="btn-export">Exportar CSV</button>
-        </div>
-        <div class="table-wrap"><table class="adm-table" id="ledger-table"></table></div>
+        <h2>Códigos</h2>
+        <p class="adm-note">Solo se guarda el hash del código: anótalo antes de crearlo.</p>
+        <form id="form-code" class="adm-grid">
+          <label class="field"><span>Código</span><input name="code" required minlength="4" autocomplete="off" placeholder="VERANO2026" /></label>
+          <label class="field"><span>Tipo</span>
+            <select name="kind"><option value="promo">Promo de monedas</option><option value="creator">Creador / amigos (acceso VIP)</option></select></label>
+          <label class="field"><span>Monedas</span><input name="coins" type="number" min="0" step="1000" value="25000" /></label>
+          <label class="field"><span>Desbloquea</span>
+            <select name="tier"><option value="">Nada</option><option value="elite">Pack Élite</option><option value="legend">Pack Leyenda</option></select></label>
+          <label class="field"><span>Usos máximos (vacío = ilimitado)</span><input name="max" type="number" min="1" /></label>
+          <label class="field"><span>Caduca (opcional)</span><input name="until" type="date" /></label>
+          <button class="lux-btn" type="submit"><span>Crear código</span></button>
+        </form>
+        <div class="table-wrap mt-3"><table class="adm-table" id="code-table"></table></div>
+      </section>
+
+      <section class="glass-card adm-card">
+        <div class="adm-row"><h2>Historial de compras</h2><button class="ghost-btn sm" id="btn-export" type="button">Exportar CSV</button></div>
+        <div class="table-wrap"><table class="adm-table" id="history-table"></table></div>
       </section>
     </div>
   </main>
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="js/core.js"></script>
   <script src="js/catalog.js"></script>
   <script src="js/config.js"></script>
-  <script src="js/vouchers.js"></script>
-  <script src="js/store.js"></script>
+  <script src="js/backend.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>

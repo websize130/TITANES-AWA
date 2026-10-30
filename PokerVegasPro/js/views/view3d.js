@@ -63,6 +63,15 @@
     g.closePath();
   }
 
+  /** Dibuja un palo vectorial centrado en (cx, cy) con el tamaño indicado. */
+  function drawSuit(g, suit, cx, cy, size) {
+    g.save();
+    g.translate(cx - size / 2, cy - size / 2);
+    g.scale(size / 100, size / 100);
+    for (const d of PVP.Art.SUIT_PATHS[suit]) g.fill(new Path2D(d));
+    g.restore();
+  }
+
   function cardFaceCanvas(c, deck) {
     const cv = canvas(256, 360);
     const g = cv.getContext('2d');
@@ -99,10 +108,8 @@
     g.textBaseline = 'middle';
     g.font = 'bold 64px Georgia, serif';
     g.fillText(info.rank, 44, 52);
-    g.font = '50px Georgia, serif';
-    g.fillText(info.symbol, 44, 108);
-    g.font = '150px Georgia, serif';
-    g.fillText(info.symbol, 128, 200);
+    drawSuit(g, PVP.Cards.suitOf(c), 44, 106, 42);
+    drawSuit(g, PVP.Cards.suitOf(c), 128, 205, 122);
     g.save();
     g.translate(212, 308);
     g.rotate(Math.PI);
@@ -136,8 +143,7 @@
     g.fillStyle = deck.face === 'neon' ? '#fff' : '#f3d27a';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.font = '110px Georgia, serif';
-    g.fillText('♠', 128, 180);
+    drawSuit(g, 0, 128, 180, 90);
     return cv;
   }
 
@@ -234,6 +240,7 @@
       this.potGroup = new THREE.Group();
       this.dynamic.add(this.potGroup);
 
+      this.figScale = 3.3; // 1 m del personaje ≈ 3,3 unidades de la mesa
       this.setOrientation(this.opts.orientation || 'h', true);
       this.setTable(this.opts.table);
       this._buildDealer();
@@ -259,7 +266,7 @@
       const THREE = this.T;
       this.hemi = new THREE.HemisphereLight(0xfff1dd, 0x1a0f18, 0.55);
       this.scene.add(this.hemi);
-      const spot = (this.spot = new THREE.SpotLight(0xffe2b8, 1.6, 40, 0.75, 0.65, 1.2));
+      const spot = (this.spot = new THREE.SpotLight(0xffe2b8, 1.3, 40, 0.8, 0.7, 1.2));
       spot.position.set(0, 13, 2);
       spot.castShadow = true;
       spot.shadow.mapSize.set(1024, 1024);
@@ -429,122 +436,59 @@
       this.scene.add(g);
     }
 
+    /** Crupier: personaje procedural con esmoquin, chaleco burdeos, pajarita y baraja en la mano. */
     _buildDealer() {
       const THREE = this.T;
-      const d = (this.dealer = new THREE.Group());
-      const black = new THREE.MeshStandardMaterial({ color: 0x0d0d10, roughness: 0.55, metalness: 0.1 });
-      const satin = new THREE.MeshStandardMaterial({ color: 0x24242b, roughness: 0.25, metalness: 0.3 });
-      const white = new THREE.MeshStandardMaterial({ color: 0xf6f3ee, roughness: 0.6 });
-      const skin = new THREE.MeshStandardMaterial({ color: 0xe9b995, roughness: 0.7 });
-      const hair = new THREE.MeshStandardMaterial({ color: 0x23160c, roughness: 0.45, metalness: 0.1 });
-      const gold = new THREE.MeshStandardMaterial({ color: 0xe8b54a, roughness: 0.3, metalness: 0.9 });
-
-      // Torso: perfil girado (chaqueta entallada)
-      const prof = [[0, 0], [0.82, 0], [0.86, 0.5], [0.9, 1.05], [0.98, 1.38], [0.9, 1.55], [0.55, 1.7], [0.2, 1.76], [0, 1.77]]
-        .map(([x, y]) => new THREE.Vector2(x, y));
-      const torso = new THREE.Mesh(new THREE.LatheGeometry(prof, 40), black);
-      torso.scale.set(1, 1, 0.58);
-      torso.castShadow = true;
-      d.add(torso);
-
-      // Camisa, solapas y pajarita
-      const vShape = new THREE.Shape();
-      vShape.moveTo(-0.26, 1.72); vShape.lineTo(0.26, 1.72); vShape.lineTo(0, 0.7); vShape.closePath();
-      const shirt = new THREE.Mesh(new THREE.ShapeGeometry(vShape), white);
-      shirt.position.z = 0.505;
-      d.add(shirt);
-      for (const side of [-1, 1]) {
-        const lap = new THREE.Shape();
-        lap.moveTo(side * 0.26, 1.72); lap.lineTo(side * 0.42, 1.6); lap.lineTo(side * 0.08, 0.72); lap.lineTo(0, 0.7); lap.closePath();
-        const m = new THREE.Mesh(new THREE.ShapeGeometry(lap), satin);
-        m.position.z = 0.51;
-        d.add(m);
-        const bow = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.2, 4), black);
-        bow.rotation.z = side * Math.PI / 2;
-        bow.position.set(side * 0.1, 1.66, 0.53);
-        d.add(bow);
-      }
-      const badge = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.07, 0.02), gold);
-      badge.position.set(0.42, 1.22, 0.47);
-      badge.rotation.y = 0.35;
-      d.add(badge);
-
-      // Cabeza
-      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.25, 16), skin);
-      neck.position.y = 1.85;
-      d.add(neck);
-      const head = (this.dealerHead = new THREE.Group());
-      head.position.y = 2.28;
-      const skull = new THREE.Mesh(new THREE.SphereGeometry(0.36, 32, 24), skin);
-      skull.scale.set(0.92, 1.12, 0.98);
-      skull.castShadow = true;
-      head.add(skull);
-      const hairMesh = new THREE.Mesh(new THREE.SphereGeometry(0.375, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.5), hair);
-      hairMesh.scale.set(0.95, 0.9, 1.02);
-      hairMesh.position.set(0, 0.07, -0.02);
-      hairMesh.rotation.x = -0.2;
-      head.add(hairMesh);
-      this.eyes = [];
-      for (const side of [-1, 1]) {
-        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 8), new THREE.MeshStandardMaterial({ color: 0x1a120c }));
-        eye.position.set(side * 0.12, 0.05, 0.32);
-        head.add(eye);
-        this.eyes.push(eye);
-        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8), skin);
-        ear.scale.set(0.5, 1, 0.8);
-        ear.position.set(side * 0.33, 0, 0);
-        head.add(ear);
-      }
-      const smile = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.012, 6, 16, Math.PI), new THREE.MeshStandardMaterial({ color: 0x8a3b2e }));
-      smile.position.set(0, -0.16, 0.32);
-      smile.rotation.z = Math.PI;
-      head.add(smile);
-      d.add(head);
-
-      // Brazos: hombro → antebrazo → mano con puño blanco
-      const makeArm = (side) => {
-        const shoulder = new THREE.Group();
-        shoulder.position.set(side * 0.85, 1.45, 0);
-        const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.8, 16), black);
-        upper.position.y = -0.4;
-        shoulder.add(upper);
-        const elbow = new THREE.Group();
-        elbow.position.y = -0.8;
-        const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.75, 16), black);
-        fore.position.y = -0.37;
-        elbow.add(fore);
-        const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.1, 16), white);
-        cuff.position.y = -0.75;
-        elbow.add(cuff);
-        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), skin);
-        hand.scale.set(1, 1.2, 0.7);
-        hand.position.y = -0.88;
-        elbow.add(hand);
-        shoulder.add(elbow);
-        shoulder.rotation.x = -0.9;
-        shoulder.rotation.z = side * 0.25;
-        elbow.rotation.x = -0.9;
-        d.add(shoulder);
-        return { shoulder, elbow, hand };
-      };
-      this.armL = makeArm(-1);
-      this.armR = makeArm(1);
-      // Baraja en la mano izquierda
-      const deckMesh = new THREE.Mesh(new THREE.BoxGeometry(CARD_W * 0.7, 0.12, CARD_H * 0.7), new THREE.MeshStandardMaterial({ color: 0xa3132b, roughness: 0.5 }));
-      deckMesh.position.set(0, -0.92, 0.12);
-      deckMesh.rotation.x = 0.9;
+      const H = PVP.Humans.create(THREE, { base: 'marco', suit: '#0c0c10', hair: 'slick', acc: 'bowtie', hairColor: '#24160c' }, { role: 'dealer' });
+      this.dealerFig = H;
+      this.dealer = H.group;
+      this.dealerHead = H.head;
+      this.armL = H.armL;
+      this.armR = H.armR;
+      const deckMesh = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.02, 0.09), new THREE.MeshStandardMaterial({ color: 0xa3132b, roughness: 0.5 }));
+      deckMesh.position.set(0, -0.35, 0.03);
+      deckMesh.castShadow = true;
       this.armL.elbow.add(deckMesh);
-
-      d.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-      this.scene.add(d);
+      this.scene.add(this.dealer);
       this._placeDealer();
+    }
+
+    /** Rivales sentados a la mesa (el héroe no: la cámara está en su lugar). */
+    _syncFigures(snap) {
+      if (!this.figures) this.figures = new Map();
+      const { a, b } = this._ellipseDims();
+      const seen = new Set();
+      for (let i = 0; i < snap.seats.length; i++) {
+        const p = snap.seats[i];
+        if (!p || i === this.opts.heroSeat || !this.overlay.angles) continue;
+        const key = p.id + ':' + JSON.stringify(p.look || {});
+        seen.add(key);
+        let fig = this.figures.get(key);
+        if (!fig) {
+          fig = PVP.Humans.create(this.T, p.look || PVP.Avatars.randomLook(), { role: 'player' });
+          fig.group.scale.setScalar(this.figScale);
+          fig.group.rotation.order = 'YXZ';
+          this.dynamic.add(fig.group);
+          this.figures.set(key, fig);
+        }
+        const ang = (this.overlay.angles[i] * Math.PI) / 180;
+        const x = Math.sin(ang) * (a + 1.2), z = -Math.cos(ang) * (b + 1.2);
+        fig.group.position.set(x, -0.5, z);
+        fig.group.rotation.y = Math.atan2(-x, -z);
+        fig.folded = p.inHand && p.folded;
+        fig.seat = i;
+      }
+      for (const [key, fig] of this.figures) {
+        if (!seen.has(key)) { this.dynamic.remove(fig.group); this.figures.delete(key); }
+      }
     }
 
     _placeDealer() {
       if (!this.dealer) return;
       const { b } = this._ellipseDims();
-      this.dealer.position.set(0, -1.15, -b - 1.05);
-      this.dealer.scale.setScalar(this.orientation === 'v' ? 1.05 : 1.15);
+      this.dealer.position.set(0, -0.55, -b - 0.95);
+      if (this.figures) for (const f of this.figures.values()) f.group.scale.setScalar(this.figScale);
+      this.dealer.scale.setScalar(this.figScale);
     }
 
     _dealerHand() {
@@ -755,14 +699,15 @@
       }
       this.dealCtx = null;
       this._syncChips(snap);
+      this._syncFigures(snap);
     }
 
     _gesture(target) {
       // El crupier gira cabeza y brazo hacia donde reparte.
       const ang = Math.atan2(target.x, target.z + 6);
-      this.tweens.to(this.armR.shoulder.rotation, { x: -1.35, y: ang * 0.6 }, 0.18);
+      this.tweens.to(this.armR.shoulder.rotation, { x: -1.05, y: ang * 0.6 }, 0.18);
       clearTimeout(this._gT);
-      this._gT = setTimeout(() => this.tweens.to(this.armR.shoulder.rotation, { x: -0.9, y: 0 }, 0.5, { ease: 'inOut' }), 450);
+      this._gT = setTimeout(() => this.tweens.to(this.armR.shoulder.rotation, { x: -0.42, y: 0 }, 0.5, { ease: 'inOut' }), 450);
     }
 
     /* ----- fichas ----- */
@@ -896,10 +841,16 @@
       if (this.fxUpdate) this.fxUpdate(dt, time);
 
       // Crupier: respiración, parpadeo y mirada al jugador en turno.
+      if (this.figures) {
+        for (const fig of this.figures.values()) {
+          fig.update(time);
+          // Los que se retiran se echan hacia atrás; el que habla mira hacia el bote.
+          const lean = fig.folded ? -0.12 : this.snap && this.snap.toAct === fig.seat ? 0.06 : 0;
+          fig.torso.parent.rotation.x += (lean - fig.torso.parent.rotation.x) * Math.min(1, dt * 3);
+        }
+      }
       if (this.dealer) {
-        this.dealer.children[0].scale.y = 1 + Math.sin(time * 1.6) * 0.008;
-        const blink = time % 4 < 0.12 ? 0.1 : 1;
-        for (const e of this.eyes) e.scale.y = blink;
+        this.dealerFig.update(time);
         const s = this.snap;
         let look = 0;
         if (s && s.toAct >= 0 && this.overlay.angles) {

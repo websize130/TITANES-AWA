@@ -8,19 +8,27 @@
   const U = PVP.util;
   const Art = () => PVP.Art;
 
-  const GAP = 64; // grados libres en la parte superior para el crupier
+  const GAP = 64; // grados libres en la parte superior para el crupier (más en vertical: la mesa es estrecha)
 
   /** Ángulos (0 = arriba, sentido horario) de cada asiento; el asiento 0 (héroe) siempre abajo en el centro. */
-  function seatAngles(n) {
+  /**
+   * Ángulos (0 = arriba, sentido horario) de cada asiento; el asiento 0 (héroe) siempre abajo en el centro.
+   * gapTop deja sitio al crupier y heroGap separa a los vecinos de las cartas grandes del héroe.
+   */
+  function seatAngles(n, gapTop, heroGap) {
+    gapTop = gapTop || GAP;
     if (n <= 1) return [180];
-    const s = (360 - GAP) / n;
+    const even = (360 - gapTop) / n;
+    const gb = Math.max(even, heroGap || 0);
+    const arc = 360 - gapTop - gb;
+    const start = 180 + gb / 2;
+    const leftLen = 360 - gapTop / 2 - start;
     const out = [180];
     for (let k = 1; k < n; k++) {
-      let a = 180 + k * s;
-      if (k * s > 180 - GAP / 2 + 0.01) a += GAP;
-      out.push(a % 360);
+      const u = ((k - 0.5) * arc) / (n - 1);
+      out.push(u <= leftLen + 0.01 ? start + u : gapTop / 2 + (u - leftLen));
     }
-    return out;
+    return out.map((x) => x % 360);
   }
 
   function polar(angle, rx, ry) {
@@ -87,7 +95,7 @@
 
     build(nSeats) {
       this.n = nSeats;
-      this.angles = seatAngles(nSeats);
+      this.angles = seatAngles(nSeats, this.orientation === 'v' ? 96 : GAP, this.orientation === 'v' ? 92 : 0);
       const seats = this.$('.t2d-seats');
       const bets = this.$('.t2d-bets');
       seats.innerHTML = '';
@@ -123,15 +131,21 @@
     }
 
     layout() {
-      if (!this.seatEls || this.is3D) return;
+      if (!this.seatEls) return;
       const v = this.orientation === 'v';
+      this.angles = seatAngles(this.n, v ? 96 : GAP, v ? 92 : 0);
+      if (this.is3D) return;
+      const sw = Math.max(1, this.stage.clientWidth), sh = Math.max(1, this.stage.clientHeight);
       for (let i = 0; i < this.n; i++) {
         const a = this.angles[i];
-        const p = polar(a, v ? 42 : 45, v ? 44 : 42);
-        const b = polar(a, v ? 26 : 30, v ? 27 : 25);
-        // Mantener las placas dentro del escenario (en móvil la mesa ocupa todo el ancho).
-        const half = (this.u * 72 * 100) / Math.max(1, this.stage.clientWidth);
-        p.x = U.clamp(p.x, half, 100 - half);
+        const hero = i === this.opts.heroSeat;
+        const p = polar(a, v ? 40 : 45, v ? 41 : 42);
+        const b = polar(a, v ? 25 : 30, v ? 26 : 25);
+        // Mantener placa y cartas dentro del escenario: nada se corta ni se monta sobre los bordes.
+        const halfW = (this.u * 72 * 100) / sw;
+        const halfH = (this.u * (hero ? 74 : 52) * 100) / sh;
+        p.x = U.clamp(p.x, halfW, 100 - halfW);
+        p.y = U.clamp(p.y, halfH, 100 - halfH);
         this._place(this.seatEls[i], p.x, p.y, '%');
         this._place(this.betEls[i], b.x, b.y, '%');
         this.seatEls[i].classList.toggle('upper', p.y < 45);
@@ -264,7 +278,7 @@
           st.pid = p.id;
           el.querySelector('.seat-avatar').innerHTML = Art().avatarHTML(p, i === hero);
           el.querySelector('.seat-name').textContent = p.name;
-          el.querySelector('.seat-tag').textContent = p.isBot ? 'IA · ' + (PVP.Bots.LEVELS[p.level] || {}).label : '';
+          el.querySelector('.seat-tag').textContent = '';
           el.classList.toggle('kickable', !!(this.opts.isPrivate && p.isBot));
         }
         el.querySelector('.seat-stack').textContent = p.stack > 0 || p.inHand ? U.fmt(p.stack) : 'Sin fichas';

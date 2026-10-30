@@ -19,7 +19,7 @@ Pruebas (motor, botes laterales, manos simuladas, códigos firmados, packs y Coa
 
 ```bash
 node PokerVegasPro/tests/engine.test.js
-node PokerVegasPro/tests/monetization.test.js
+node PokerVegasPro/tests/store.test.js
 ```
 
 > Los códigos firmados usan WebCrypto, que el navegador solo habilita en contexto seguro: **HTTPS**, `localhost` o `file://`.
@@ -38,9 +38,11 @@ node PokerVegasPro/tests/monetization.test.js
 | **Torneos** | Bronce, Plata, Oro y **Diamante (10M de premio)**. Las ciegas suben cada pocas manos y pagan los 3 primeros puestos (60/25/15 %). |
 | **Mesas (8)** | Gratis: Casino Clásico, Playa, Bosque · Pack Élite: Espacio, Bajo el Agua (**tiburón en cada All-In**) · Pack Leyenda: Globo Aerostático, Cyberpunk, Vegas Royale. |
 | **Barajas (10)** | 2 gratuitas, 5 épicas a color (Pack Élite) y 3 de lujo (Pack Leyenda): Oro 24K con brillo, Holográfica animada y Neón. |
-| **Packs mensuales** | **Pack Élite 4,99 €/mes**: 500.000 monedas, mesas Espacio y Bajo el Agua y las 5 barajas épicas. **Pack Leyenda 9,99 €/mes**: 2.000.000 de monedas, todas las mesas y barajas, y el Coach Pro. Se paga por PayPal.me. |
-| **Códigos** | Una barra en la Tienda canjea promos de fichas, códigos de activación firmados por el admin y el código secreto de creador (Leyenda permanente). |
-| **Admin** | `admin.html`, protegido con contraseña: genera códigos para cualquier ID de jugador, gestiona las cuentas de ese navegador, crea promos y lleva un registro exportable a CSV. |
+| **Packs (pago único)** | **Pack Élite 4,99 €**: 500.000 monedas, mesas Espacio y Bajo el Agua y las 5 barajas épicas. **Pack Leyenda 9,99 €**: 2.000.000 de monedas, todas las mesas y barajas, y el Coach Pro. Se paga por PayPal.me y se sincroniza con Supabase. |
+| **Códigos** | Barra en la Tienda para promos de fichas y el código de creador `damaocho` (acceso VIP Leyenda). Con cuenta los valida Supabase; como invitado, el navegador. |
+| **Admin** | `admin.html` (cuenta con `is_admin`): pagos pendientes en tiempo real con confirmación en un clic, usuarios, entrega de packs y monedas, códigos e historial exportable. |
+| **Personajes** | 10 modelos (7 hombres y 3 mujeres de distintas etnias) con vestuario personalizable (traje, peinado, color de pelo, accesorios, barba) o foto propia. En 3D se sientan a la mesa. |
+| **Legal** | Términos, privacidad y cookies; banner de consentimiento. AdSense solo en el menú principal y solo con consentimiento. |
 | **Coach Pro** | VPIP, PFR, 3-bet, factor de agresividad, WTSD, W$SD, VPIP por posición, porcentaje de aciertos (equidad Monte Carlo frente a pot odds), áreas de mejora, últimos errores y evolución por sesión. |
 | **Usuarios** | Puedes jugar como invitado (10.000 monedas) o registrarte (**+50.000 monedas de bono**). Si un invitado se registra, conserva su progreso. Hay niveles/XP y estadísticas. |
 
@@ -52,10 +54,16 @@ PokerVegasPro/
 ├── css/app.css             Estética de lujo, mesa 2D, cartas y temas
 ├── js/core.js              Espacio de nombres, emisor de eventos, utilidades y sonido WebAudio
 ├── js/catalog.js           Mesas, barajas, niveles de pago, apuestas, torneos y escalera de ciegas
-├── admin.html              Panel privado de administración (pagos manuales)
+├── admin.html              Panel privado de administración (Supabase)
 ├── js/config.js            PayPal, packs, promos y datos públicos de las llaves (ADMIN, CREATOR_CODE)
-├── js/vouchers.js          Firmas ECDSA, hash PBKDF2 del código de creador y llave admin cifrada (AES-GCM)
-├── js/store.js             Cuentas, sesión, monedas, packs con caducidad, canjes y preferencias (localStorage)
+├── js/backend.js           Supabase: Auth, perfil, RPC pvp_*, tiempo real y consultas de admin
+├── js/payments.js          Proveedores de pago (PayPal.me; preparado para Stripe)
+├── js/avatars.js           Roster de 10 personajes, vestuario y retratos SVG
+├── js/profile-ui.js        Editor de perfil (galería, vestuario, foto)
+├── js/legal.js             Términos, privacidad, cookies y AdSense
+├── js/views/humans3d.js    Personajes 3D procedurales (crupier y jugadores)
+├── supabase/migrations/    Esquema pvp_* con RLS y funciones
+├── js/store.js             Perfil: cuenta online (Supabase) o invitado (localStorage), saldo, compras y canjes
 ├── js/stats.js             Rastreador de decisiones y métricas/recomendaciones del Coach
 ├── js/coach-ui.js          Panel Coach Pro con gráficos SVG interactivos
 ├── js/admin.js             Lógica del panel de administración
@@ -74,51 +82,45 @@ PokerVegasPro/
 El motor (`PokerEngine`) es una máquina de estados pura que publica eventos (`handStart`, `deal`, `turn`, `action`, `street`, `showdown`, `handEnd`…).
 Las vistas y el HUD solo escuchan esos eventos. El jugador y los bots actúan por la misma vía (`engine.act`).
 
-## Monetización con PayPal (sin backend ni APIs de pago)
+## Supabase y pagos
 
-### Configuración inicial (una sola vez)
+### Puesta en marcha (una vez)
 
-1. Abre `admin.html` (no está enlazado desde el juego y no se indexa).
-2. En **Configuración inicial** elige una contraseña de al menos 12 caracteres y, si quieres, tu **código secreto de creador**.
-3. Copia el bloque generado y sustituye en `js/config.js` las líneas `ADMIN: null,` y `CREATOR_CODE: null,`. Publica el cambio.
-   - `ADMIN` contiene la llave pública y la llave privada **cifrada** con tu contraseña.
-   - `CREATOR_CODE` es solo un hash PBKDF2.
-   - Ninguno revela secretos, así que se pueden publicar.
-   - Para probar antes de publicar, pulsa «Aplicar solo en este navegador».
+1. En Supabase → **SQL Editor**, ejecuta `supabase/migrations/20261030120000_pokervegaspro.sql`.
+   Crea solo tablas y funciones `pvp_*`, con RLS; no toca otras tablas del proyecto.
+2. Regístrate en el juego y marca tu cuenta como administradora:
+   ```sql
+   update public.pvp_profiles set is_admin = true where username = 'TuUsuario';
+   ```
+3. Opcional: en Authentication → Providers → Email decide si exiges confirmar el correo. Si lo exiges, el jugador confirma y luego inicia sesión.
 
-### Flujo de un pago
+La URL del proyecto y la clave publicable están en `js/config.js`. Son públicas por diseño: la seguridad la dan RLS y las funciones del servidor.
 
-1. El jugador pulsa **Pagar con PayPal**. Se abre `paypal.me/Josue2698/4.99EUR` (o `9.99EUR`) y su ID (`PVP-XXXXXX`) se copia para pegarlo en la nota.
-2. Compruebas el pago en PayPal. En `admin.html` introduces su ID, eliges el pack y generas el código.
-   El botón «Copiar mensaje para el jugador» prepara el texto con el enlace de canje.
-3. El jugador lo canjea en **Tienda → Canjear** (o abriendo el enlace). Recibe las monedas del mes y el nivel se activa 30 días. Si lo renueva, se suman otros 30.
-4. Si el jugador usa el mismo navegador que el panel (por ejemplo, el tuyo o un amigo en tu equipo), también puedes aplicarle el pack directamente desde «Usuarios registrados».
+### Flujo de compra (pago único)
+
+1. El jugador pulsa **Comprar con PayPal**. Se crea una compra pendiente con una referencia `PV-XXXXXX` y se abre `paypal.me/Josue2698/4.99EUR` (o `9.99EUR`).
+2. El jugador escribe la referencia en la nota del pago.
+3. En `admin.html` ves la compra en «Pagos pendientes». Compruebas en PayPal que el importe y la referencia coinciden y pulsas **Confirmar**.
+4. El servidor suma las monedas, desbloquea el nivel y el jugador lo ve al instante (tiempo real), sin códigos.
+
+PayPal.me no notifica los pagos, así que el paso 3 es un clic manual. Para automatizarlo:
+- Cambia a Stripe Checkout o PayPal Checkout (`PAYMENT_PROVIDER` en `config.js` y un proveedor en `js/payments.js`).
+- Añade una Edge Function con el webhook que llame a `pvp_confirm_purchase_internal` con la `service_role`.
+- La tabla de compras ya guarda `provider` y `provider_ref`, y la confirmación es idempotente.
 
 ### Seguridad
 
-- **Códigos de activación:** van firmados con ECDSA P-256 y atados al ID del jugador. Son de un solo uso y pueden caducar.
-  Sin tu contraseña nadie puede fabricar uno válido, y un código alterado se rechaza.
-- **Código de creador:** solo se publica su hash PBKDF2 (250.000 iteraciones). El texto no aparece en el código fuente.
-- **Llave privada:** solo existe descifrada en memoria mientras el panel está abierto.
+- **Lo que puede cambiar el jugador:** solo lee su perfil y edita columnas cosméticas (preferencias, estadísticas y XP).
+- **Lo que no puede cambiar:** monedas, nivel, compras y códigos. Solo cambian mediante funciones `SECURITY DEFINER`, que validan y lo dejan todo registrado en `pvp_coin_ledger`.
+- **Límite de las partidas:** contra rivales virtuales la partida se juega en el navegador, así que el servidor no puede verificar cada mano. Aplica límites por movimiento y lo registra todo.
+- **Códigos:** solo se guarda su hash.
 
-### Limitaciones de un modelo sin servidor
+## Pendiente
 
-- **Saldo en el navegador:** monedas y niveles viven en el `localStorage` del jugador. Alguien con conocimientos técnicos podría editarlos a mano en su propio navegador.
-  Las firmas impiden falsificar códigos, no editar datos locales.
-- **Lista de usuarios limitada:** el panel solo ve las cuentas de su navegador. Para jugadores de otros dispositivos se trabaja con su ID y un código.
-- **Sin cobro automático:** PayPal.me no hace cargos recurrentes, así que cada mes el jugador vuelve a pagar y recibe un código nuevo.
-
-Para validar saldos en servidor y ver a todos los usuarios, el siguiente paso sería un backend con plan gratuito (por ejemplo Supabase o Firebase Spark),
-reutilizando el mismo formato de códigos.
-
-## Pendiente para producción
-
-Esta versión es **100 % cliente**:
-
-- **Cuentas y monedas** se guardan en `localStorage` (la contraseña va con hash SHA-256, pero sigue siendo una demo).
-  En producción necesitan un backend con autenticación real y saldo validado en servidor.
-- **Pagos**: son manuales, con PayPal.me y códigos firmados (ver arriba). Para automatizarlos haría falta un servidor que reciba los avisos de pago (webhooks) de PayPal.
-- **Multijugador online**: la estructura de salas (código e invitación por enlace) ya está.
-  Falta un servidor autoritativo (WebSocket) que ejecute `PokerEngine` y reparta el estado a cada jugador sin filtrar las cartas ocultas.
-  Hasta entonces, los asientos se completan con bots.
-- **Juego responsable**: las monedas son virtuales y no se pueden canjear por dinero.
+- **Multijugador real con prioridad para personas:** las mesas deben llenarse primero con jugadores conectados, y los rivales virtuales solo ocupar los huecos.
+  Para que nadie vea cartas ajenas ni se invente fichas, la mano se tiene que repartir y resolver en el servidor:
+  Edge Functions de Supabase con `PokerEngine` y una tabla de mesas en tiempo real.
+- **Pagos automáticos:** Stripe o PayPal Checkout con webhook (ver arriba).
+- **Textos legales:** completa `LEGAL` en `js/config.js` (titular y correo) y haz que los revise un profesional.
+- **AdSense:** pon tu `client` y `slot` en `ADSENSE` (`js/config.js`). Desactiva los «anuncios automáticos» en AdSense para que no aparezcan dentro de las partidas.
+- **Juego responsable:** las monedas son virtuales y no se pueden canjear por dinero.

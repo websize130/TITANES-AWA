@@ -54,6 +54,9 @@
         if (PVP.Sound) PVP.Sound.click();
       });
       this.range.addEventListener('input', () => this._setRaise(+this.range.value));
+      this.input = $('#raise-input');
+      this.input.addEventListener('change', () => this._setRaise(+this.input.value || 0));
+      this.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { this._setRaise(+this.input.value || 0); this._act('raise'); } });
 
       $('#btn-peek').addEventListener('click', () => this.game && this.game.setPeek(!this.game.peek));
       $('#btn-chat').addEventListener('click', () => this.toggleChat());
@@ -132,6 +135,7 @@
       this.engine = engine;
       const bar = this.bar;
       bar.classList.add('show');
+      $('#screen-game').classList.add('bar-open');
       $('[data-act="check"]', bar).style.display = legal.canCheck ? '' : 'none';
       $('[data-act="call"]', bar).style.display = legal.canCheck ? 'none' : '';
       $('#call-amt').textContent = U.fmt(legal.toCall);
@@ -140,6 +144,11 @@
       $('.ab-raise', bar).style.display = legal.canRaise ? '' : 'none';
       $('[data-act="raise"]', bar).style.display = legal.canRaise ? '' : 'none';
       $('#raise-label').textContent = legal.isBet ? 'Apostar' : 'Subir a';
+      $('#ab-pot').textContent = U.fmt(legal.pot);
+      $('#ab-tocall').textContent = legal.toCall ? U.fmt(legal.toCall) : '—';
+      $('#ab-odds').textContent = legal.toCall ? `Necesitas ${Math.round((legal.toCall / (legal.pot + legal.toCall)) * 100)}% de equidad` : 'Puedes pasar gratis';
+      this.input.min = legal.minTo;
+      this.input.max = legal.maxTo;
       this.range.min = legal.minTo;
       this.range.max = legal.maxTo;
       this.range.step = 1;
@@ -149,6 +158,7 @@
     hideActions() {
       this.legal = null;
       this.bar.classList.remove('show');
+      $('#screen-game').classList.remove('bar-open');
     }
 
     _setRaise(v) {
@@ -159,6 +169,7 @@
       v = U.clamp(v, l.minTo, l.maxTo);
       this.raiseTo = v;
       this.range.value = v;
+      this.input.value = v;
       const pct = l.maxTo > l.minTo ? ((v - l.minTo) / (l.maxTo - l.minTo)) * 100 : 100;
       this.range.style.setProperty('--pct', pct + '%');
       const all = v >= l.maxTo;
@@ -170,7 +181,8 @@
       const l = this.legal, e = this.engine;
       if (!l) return;
       if (kind === 'allin') return this._setRaise(l.maxTo);
-      const f = kind === 'half' ? 0.5 : 1;
+      if (kind === 'min') return this._setRaise(l.minTo);
+      const f = kind === 'half' ? 0.5 : kind === 'twothirds' ? 2 / 3 : 1;
       // Subida "a bote": igualar y después apostar el bote resultante × f.
       this._setRaise(e.currentBet + (l.pot + l.toCall) * f);
     }

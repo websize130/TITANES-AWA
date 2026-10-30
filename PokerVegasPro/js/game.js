@@ -43,6 +43,7 @@
 
       const hero = this.engine.sit(HERO, {
         id: 'hero', name: this.store.profile.name, isBot: false, stack: cfg.stack, bounty: cfg.bounty || 0,
+        look: this.prefs.look || { base: 'marco' }, img: this.prefs.avatarImg || null,
       });
       hero.isHero = true;
       const taken = [hero.name];
@@ -308,12 +309,13 @@
         return;
       }
       const decision = PVP.Bots.decide(this.engine, seat);
-      this.view.startTimer(seat, decision.delay + 400);
+      // El anillo muestra el tiempo de turno completo, igual que para el jugador.
+      this.view.startTimer(seat, (this.cfg.turnSeconds || 30) * 1000);
       const hand = this.engine.handNo;
       this._later(() => {
         if (this.engine.handNo !== hand || this.engine.toAct !== seat) return;
         this.engine.act(seat, decision);
-      }, decision.delay / (this.prefs.speed || 1));
+      }, decision.delay);
     }
 
     heroAct(action) {
@@ -449,7 +451,7 @@
           text: can ? `Recargar ${U.fmt(cfg.buyIn)} monedas para seguir jugando.` : 'No tienes monedas suficientes para recargar.',
           canYes: can,
           onYes: () => {
-            if (!this.store.spend(cfg.buyIn)) return this.leave();
+            if (!this.store.spend(cfg.buyIn, 'rebuy')) return this.leave();
             this.reloads = (this.reloads || 0) + 1;
             this.engine.seats[HERO].stack = cfg.buyIn;
             this._nextHand();
@@ -470,7 +472,7 @@
         prize = Math.round(t.prize * PVP.Catalog.PAYOUTS[place - 1]);
         st.itm++;
         if (place === 1) st.tournamentWins++;
-        this.store.addCoins(prize);
+        this.store.addCoins(prize, 'tournament_prize');
       }
       this.store.addXp(place === 1 ? 400 : place && place <= 3 ? 150 : 40);
       this.store.save();
@@ -552,10 +554,10 @@
       const hero = this.engine.seats[HERO];
       if (this.cfg.mode === 'public' && hero) {
         // Si está en mitad de una mano, lo apostado se pierde (como en una mesa real).
-        this.store.addCoins(hero.stack);
+        this.store.addCoins(hero.stack, 'cash_out');
         this.store.profile.stats.net += hero.stack - this.cfg.buyIn * (1 + (this.reloads || 0));
       }
-      if (this.bountyCoins) this.store.addCoins(this.bountyCoins);
+      if (this.bountyCoins) this.store.addCoins(this.bountyCoins, 'bounty');
       if (this.cfg.mode === 'tournament' && !this.over) {
         this.store.profile.stats.tournaments++;
       }

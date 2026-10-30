@@ -1,8 +1,10 @@
 /* PokerVegasPro — genera la versión de un solo archivo (dist/index.html y dist/admin.html).
  *
- *   node tools/build-single.js [--three ruta/three.min.js] [--tailwind ruta/tailwind.css]
+ *   node tools/build-single.js [--three ruta/three.min.js] [--tailwind ruta/tailwind.css] [--supabase ruta/supabase.js]
  *
- * Sin opciones, Three.js y Tailwind se siguen cargando desde su CDN.
+ * Sin opciones, Three.js, Tailwind y Supabase JS se siguen cargando desde su CDN.
+ * Nota: el build UMD de supabase-js no funciona incrustado (calcula su ruta pública a partir del src del script),
+ * así que lo normal es dejarlo en CDN: las cuentas necesitan conexión de todos modos.
  * Con ellas quedan incrustados y el juego funciona sin conexión (salvo las fuentes de Google, que tienen respaldo).
  * Para compilar Tailwind:  npx tailwindcss@3.4.16 -c tools/tailwind.config.js -o /tmp/tailwind.css --minify
  */
@@ -16,6 +18,7 @@ const args = process.argv.slice(2);
 const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : null; };
 const threePath = opt('--three');
 const twPath = opt('--tailwind');
+const sbPath = opt('--supabase');
 
 // Evita que el contenido incrustado cierre la etiqueta o abra comentarios HTML.
 const safeJs = (src) => src.replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--');
@@ -37,6 +40,11 @@ function build(file) {
   if (threePath) {
     html = html.replace(/<script src="https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/three\.js\/r128\/three\.min\.js"><\/script>/, () =>
       `<script>/* three.js r128 */\n${fs.readFileSync(threePath, 'utf8').replace(/<\/script/gi, '<\\/script')}\n</script>`);
+  }
+
+  if (sbPath) {
+    html = html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+"><\/script>/, () =>
+      `<script>/* @supabase/supabase-js (MIT) */\n${fs.readFileSync(sbPath, 'utf8').replace(/<\/script/gi, '<\\/script')}\n</script>`);
   }
 
   html = html.replace(/<script src="(js\/[^"]+)"><\/script>/g, (m, src) =>

@@ -66,6 +66,23 @@
 </svg>`;
   }
 
+  /* Palos vectoriales en una caja de 100×100 (♠ ♥ ♦ ♣, mismo orden que PVP.Cards.SUITS).
+   * Las fuentes del sistema dibujan el trébol con proporciones distintas en cada plataforma; estos trazados no. */
+  const SUIT_PATHS = [
+    ['M50 4 C58 18 72 28 84 40 C96 52 97 70 84 79 C74 86 61 83 54 74 C55 84 58 91 66 96 L34 96 C42 91 45 84 46 74 C39 83 26 86 16 79 C3 70 4 52 16 40 C28 28 42 18 50 4 Z'],
+    ['M50 92 C38 80 6 62 6 34 C6 17 19 6 32 6 C41 6 47 11 50 18 C53 11 59 6 68 6 C81 6 94 17 94 34 C94 62 62 80 50 92 Z'],
+    ['M50 3 C59 18 72 35 88 50 C72 65 59 82 50 97 C41 82 28 65 12 50 C28 35 41 18 50 3 Z'],
+    [
+      'M31 27 a19 19 0 1 0 38 0 a19 19 0 1 0 -38 0 Z', 'M8 58 a19 19 0 1 0 38 0 a19 19 0 1 0 -38 0 Z',
+      'M54 58 a19 19 0 1 0 38 0 a19 19 0 1 0 -38 0 Z', 'M50 30 L28 60 L72 60 Z',
+      'M46.5 56 C46.5 76 42 88 32 96 L68 96 C58 88 53.5 76 53.5 56 Z',
+    ],
+  ];
+
+  function suitSVG(suit, cls) {
+    return `<svg class="suit${cls ? ' ' + cls : ''}" viewBox="0 0 100 100" aria-hidden="true">${SUIT_PATHS[suit].map((d) => `<path d="${d}"/>`).join('')}</svg>`;
+  }
+
   /** Carta HTML. `c` < 0 = carta desconocida (nunca se pone su valor en el DOM). */
   function cardHTML(c, deckId, faceUp, extra) {
     const known = c >= 0;
@@ -73,11 +90,13 @@
     let red = '';
     if (known) {
       const i = PVP.Cards.cardInfo(c);
+      const s = PVP.Cards.suitOf(c);
       red = i.red ? ' red' : '';
-      front = `<span class="pc-corner tl">${i.rank}<i>${i.symbol}</i></span><span class="pc-pip">${i.symbol}</span><span class="pc-corner br">${i.rank}<i>${i.symbol}</i></span>`;
+      const label = `${i.rank} de ${['picas', 'corazones', 'diamantes', 'tréboles'][s]}`;
+      front = `<span class="pc-corner tl">${i.rank}${suitSVG(s)}</span><span class="pc-pip">${suitSVG(s)}</span><span class="pc-corner br">${i.rank}${suitSVG(s)}</span><span class="sr-only">${label}</span>`;
     }
     return `<div class="pcard deck-${deckId}${red}${faceUp && known ? ' up' : ''}${extra ? ' ' + extra : ''}" data-c="${known ? c : ''}">
-      <div class="pc-inner"><div class="pc-face pc-front">${front}</div><div class="pc-face pc-back"><span class="pc-emblem">♠</span></div></div></div>`;
+      <div class="pc-inner"><div class="pc-face pc-front">${front}</div><div class="pc-face pc-back"><span class="pc-emblem">${suitSVG(0)}</span></div></div></div>`;
   }
 
   /** Mini vista previa de una mesa para el catálogo. */
@@ -107,6 +126,7 @@
   }
 
   function avatarHTML(p, isHero) {
+    if (PVP.Avatars && (p.look || p.img)) return PVP.Avatars.avatarHTML(p.look, p.img, 'avatar' + (isHero ? ' hero' : ''));
     const hue = isHero ? 42 : p.hue || 200;
     return `<div class="avatar${isHero ? ' hero' : ''}" style="--h:${hue}"><span>${U.esc(U.initials(p.name))}</span></div>`;
   }
@@ -118,5 +138,5 @@
       <circle cx="52" cy="58" r="3.5" fill="#0b1a24"/><path d="M30 72 L54 76 L36 80" stroke="#fff" stroke-width="2" fill="none"/></svg>`;
   }
 
-  PVP.Art = { dealerSVG, cardHTML, tableSwatch, chipStackHTML, chipColor, avatarHTML, sharkSVG };
+  PVP.Art = { SUIT_PATHS, suitSVG, dealerSVG, cardHTML, tableSwatch, chipStackHTML, chipColor, avatarHTML, sharkSVG };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -11,15 +11,15 @@
   const LEVELS = {
     easy: {
       label: 'Fácil', iters: 70, noise: 0.16, bluff: 0.03, aggr: 0.25, loose: 0.1,
-      raiseRel: 1.9, reraiseRel: 2.4, slowplay: 0, think: [700, 2100], mistake: 0.12,
+      raiseRel: 1.9, reraiseRel: 2.4, slowplay: 0, think: [2000, 4800], mistake: 0.12,
     },
     medium: {
       label: 'Medio', iters: 160, noise: 0.07, bluff: 0.07, aggr: 0.45, loose: 0.03,
-      raiseRel: 1.6, reraiseRel: 2.0, slowplay: 0.05, think: [900, 2700], mistake: 0.04,
+      raiseRel: 1.6, reraiseRel: 2.0, slowplay: 0.05, think: [2200, 5400], mistake: 0.04,
     },
     hard: {
       label: 'Difícil', iters: 380, noise: 0.025, bluff: 0.12, aggr: 0.65, loose: 0,
-      raiseRel: 1.42, reraiseRel: 1.8, slowplay: 0.14, think: [1100, 3500], mistake: 0,
+      raiseRel: 1.42, reraiseRel: 1.8, slowplay: 0.14, think: [2400, 6000], mistake: 0,
     },
   };
 
@@ -61,6 +61,7 @@
       isBot: true,
       level,
       hue: U.randInt(0, 359),
+      look: PVP.Avatars ? PVP.Avatars.randomLook() : null,
       chatty: Math.random(),
     };
   }
@@ -151,15 +152,14 @@
     return U.clamp(U.roundTo(base * mult * extra, engine.sb), legal.minTo, legal.maxTo);
   }
 
-  /** Tiempo de reflexión "humano": más largo en decisiones caras, a veces instantáneo en checks triviales. */
+  /** Tiempo de reflexión humano: siempre entre 2 y 6 s; más largo en decisiones caras o all-in. */
   function thinkTime(prof, legal, p, action) {
     let t = U.rand(prof.think[0], prof.think[1]);
     const pressure = legal.toCall / Math.max(1, p.stack);
-    if (pressure > 0.3) t *= 1.5;
-    if (action.type === 'allin') t *= 1.3;
-    if (action.type === 'check' && Math.random() < 0.35) t *= 0.45;
-    if (action.type === 'fold' && pressure < 0.05 && Math.random() < 0.5) t *= 0.6;
-    return Math.round(t);
+    if (pressure > 0.3) t *= 1.25;
+    if (action.type === 'allin') t *= 1.15;
+    if (action.type === 'check' && Math.random() < 0.3) t *= 0.75;
+    return Math.round(U.clamp(t, 2000, 6000));
   }
 
   function chatLine(kind) { return U.pick(CHAT[kind] || CHAT.reply); }

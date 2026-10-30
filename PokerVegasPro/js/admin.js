@@ -1,290 +1,225 @@
-/* PokerVegasPro — panel de administración: configuración de llaves, códigos de activación, promos,
- * gestión directa de cuentas de este navegador y registro de activaciones.
- * La llave privada solo vive en memoria mientras la sesión está abierta.
+/* PokerVegasPro — panel de administración sobre Supabase.
+ * Solo funciona con una cuenta con is_admin = true: las funciones pvp_admin_* lo comprueban en el servidor.
  */
 (function (root) {
   'use strict';
 
   const PVP = root.PVP;
   const U = PVP.util;
-  const V = PVP.Vouchers;
-  const C = PVP.Config;
+  const B = PVP.Backend;
   const T = PVP.Catalog.TIERS;
   const $ = (s, r) => (r || document).querySelector(s);
-  const LEDGER = 'pvp.admin.ledger';
-  const DAY = 86400000;
+  const money = (n) => Number(n).toFixed(2).replace('.', ',') + ' €';
+  const STATUS = { pending: 'Pendiente', paid: 'Pagado', rejected: 'Rechazado', cancelled: 'Cancelado' };
 
-  let privateKey = null;
-  let lastVoucher = null;
-  let lastPromo = null;
+  let purchases = [];
 
   function toast(msg, ms) {
     const t = document.createElement('div');
     t.className = 'toast';
     t.innerHTML = msg;
     $('#toasts').appendChild(t);
-    setTimeout(() => t.classList.add('out'), ms || 2600);
-    setTimeout(() => t.remove(), (ms || 2600) + 400);
+    setTimeout(() => t.classList.add('out'), ms || 2800);
+    setTimeout(() => t.remove(), (ms || 2800) + 400);
   }
-
-  async function copy(text, label) {
-    try { await navigator.clipboard.writeText(text); toast((label || 'Copiado') + ' ✓'); } catch (e) { toast('No se pudo copiar: selecciónalo a mano.'); }
-  }
-
-  const show = (id, on) => $(id).classList.toggle('hidden', !on);
+  const fail = (e) => toast('⚠️ ' + U.esc(e.message || e), 4500);
 
   function view(name) {
-    show('#sec-setup', name === 'setup');
-    show('#sec-login', name === 'login');
-    show('#sec-panel', name === 'panel');
-    show('#btn-logout', name === 'panel');
+    for (const s of ['login', 'panel', 'offline']) $('#sec-' + s).classList.toggle('hidden', s !== name);
+    $('#btn-logout').classList.toggle('hidden', name !== 'panel');
   }
 
-  /* ---------- configuración inicial ---------- */
+  /* ---------- acceso ---------- */
 
-  $('#form-setup').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const f = e.target;
-    const err = $('[data-error]', f);
-    err.textContent = '';
-    const out = {};
-    try {
-      if (f.pass.value || !C.ADMIN) {
-        if (f.pass.value !== f.pass2.value) throw new Error('Las contraseñas no coinciden.');
-        const res = await V.createAdmin(f.pass.value);
-        out.ADMIN = res.admin;
-        privateKey = res.privateKey;
-      }
-      if (f.creator.value) {
-        if (f.creator.value.trim().length < 8) throw new Error('El código de creador debe tener al menos 8 caracteres.');
-        if (V.isSigned(f.creator.value)) throw new Error('El código de creador no puede empezar por «PVP1-».');
-        out.CREATOR_CODE = await V.hashSecret(f.creator.value);
-      }
-    } catch (ex) {
-      err.textContent = ex.message;
+  async function enter() {
+    const s = await B.session();
+    if (!s) return view('login');
+    const prof = await B.ensureProfile('');
+    if (!prof.is_admin) {
+      view('login');
+      $('#sec-login [data-error]').textContent = `La cuenta ${s.user.email} no es administradora. Márcala con is_admin = true en la tabla pvp_profiles.`;
       return;
     }
-    const lines = [];
-    if (out.ADMIN) lines.push('    ADMIN: ' + JSON.stringify(out.ADMIN) + ',');
-    if (out.CREATOR_CODE) lines.push('    CREATOR_CODE: ' + JSON.stringify(out.CREATOR_CODE) + ',');
-    $('#setup-snippet').value = lines.join('\n');
-    $('#setup-out')._cfg = out;
-    show('#setup-out', true);
-    f.reset();
-    toast('Configuración generada');
-  });
-
-  $('#btn-copy-snippet').addEventListener('click', () => copy($('#setup-snippet').value, 'Configuración copiada'));
-  $('#btn-apply-local').addEventListener('click', () => {
-    const cfg = $('#setup-out')._cfg || {};
-    let cur = {};
-    try { cur = JSON.parse(localStorage.getItem(C.LOCAL_KEY) || '{}') || {}; } catch (e) { cur = {}; }
-    localStorage.setItem(C.LOCAL_KEY, JSON.stringify(Object.assign(cur, cfg)));
-    toast('Aplicado en este navegador. Recargando…');
-    setTimeout(() => location.reload(), 900);
-  });
-  $('#btn-show-setup').addEventListener('click', () => view('setup'));
-
-  /* ---------- acceso ---------- */
+    view('panel');
+    B.subscribeAdmin(() => loadPurchases());
+    await Promise.all([loadPurchases(), loadUsers(), loadCodes()]);
+  }
 
   $('#form-login').addEventListener('submit', async (e) => {
     e.preventDefault();
     const err = $('[data-error]', e.target);
     err.textContent = '';
-    const btn = $('button', e.target);
-    btn.disabled = true;
     try {
-      privateKey = await V.unlockAdmin(e.target.pass.value, C.ADMIN);
+      await B.signIn(e.target.email.value.trim(), e.target.pass.value);
       e.target.reset();
-      openPanel();
-    } catch (ex) {
-      err.textContent = ex.message;
-    } finally {
-      btn.disabled = false;
-    }
+      await enter();
+    } catch (ex) { err.textContent = ex.message; }
   });
 
-  $('#btn-logout').addEventListener('click', () => { privateKey = null; view('login'); });
+  $('#btn-logout').addEventListener('click', async () => { await B.signOut(); view('login'); });
 
-  function openPanel() {
-    view('panel');
-    renderUsers();
-    renderLedger();
+  /* ---------- pagos ---------- */
+
+  async function loadPurchases() {
+    try { purchases = await B.adminPurchases(); } catch (e) { return fail(e); }
+    renderPending();
+    renderHistory();
   }
 
-  /* ---------- códigos ---------- */
+  const who = (r) => r.pvp_profiles || {};
 
-  const PACK_PRESET = {
-    elite: { t: 'elite', d: 30, c: C.PACKS.elite.coins, label: 'Pack Élite' },
-    legend: { t: 'legend', d: 30, c: C.PACKS.legend.coins, label: 'Pack Leyenda' },
-    friend: { t: 'legend', d: 0, c: 0, label: 'Leyenda permanente' },
-    coins: { t: '', d: 0, c: 100000, label: 'Monedas' },
-  };
-
-  $('#form-voucher').pack.addEventListener('change', (e) => { e.target.form.coins.value = PACK_PRESET[e.target.value].c; });
-
-  async function issue({ uid, note, pack, coins, expiresDays }) {
-    if (!privateKey) throw new Error('Sesión cerrada.');
-    const pr = PACK_PRESET[pack];
-    uid = String(uid).trim().toUpperCase();
-    if (!/^PVP-[A-Z0-9]{6}$/.test(uid)) throw new Error('El ID debe tener el formato PVP-XXXXXX.');
-    const code = await V.sign(privateKey, {
-      k: pr.t ? 'pack' : 'coins', u: uid, t: pr.t, d: pr.d, c: Math.max(0, Math.round(coins)),
-      x: expiresDays ? Date.now() + expiresDays * DAY : 0,
-    });
-    addLedger({ uid, note, pack: pr.label, coins: Math.round(coins), days: pr.d, kind: 'código', ref: code.slice(-10) });
-    return code;
-  }
-
-  function redeemLink(code) {
-    return location.href.replace(/admin\.html.*$/, 'index.html') + '#canjear=' + encodeURIComponent(code);
-  }
-
-  $('#form-voucher').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const f = e.target;
-    try {
-      const code = await issue({ uid: f.uid.value, note: f.note.value, pack: f.pack.value, coins: +f.coins.value, expiresDays: +f.expires.value });
-      lastVoucher = { code, pack: PACK_PRESET[f.pack.value], coins: +f.coins.value };
-      $('#voucher-code').value = code;
-      show('#voucher-out', true);
-      toast('Código generado');
-      renderLedger();
-    } catch (ex) {
-      toast('⚠️ ' + U.esc(ex.message), 4000);
-    }
-  });
-
-  $('#form-promo').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const f = e.target;
-    if (!privateKey) return;
-    const until = f.until.value ? new Date(f.until.value + 'T23:59:59').getTime() : 0;
-    const code = await V.sign(privateKey, { k: 'coins', u: '*', t: '', d: 0, c: Math.round(+f.coins.value), x: until });
-    lastPromo = code;
-    $('#promo-code').value = code;
-    show('#promo-out', true);
-    addLedger({ uid: '*', note: 'Promo', pack: 'Promo de fichas', coins: Math.round(+f.coins.value), days: 0, kind: 'promo', ref: code.slice(-10) });
-    renderLedger();
-  });
-
-  document.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-copy]');
-    if (!b) return;
-    const k = b.dataset.copy;
-    if (k === 'code' && lastVoucher) copy(lastVoucher.code, 'Código copiado');
-    if (k === 'link' && lastVoucher) copy(redeemLink(lastVoucher.code), 'Enlace copiado');
-    if (k === 'msg' && lastVoucher) {
-      const pr = lastVoucher.pack;
-      const what = [pr.t ? `${T[pr.t].name}${pr.d ? ' (' + pr.d + ' días)' : ' permanente'}` : '', lastVoucher.coins ? U.fmt(lastVoucher.coins) + ' monedas' : ''].filter(Boolean).join(' + ');
-      copy(`¡Gracias por tu apoyo en PokerVegasPro! 🎰\nTu activación: ${what}.\n\nCanjéala aquí: ${redeemLink(lastVoucher.code)}\n\nO en Tienda → «Canjear» pega este código:\n${lastVoucher.code}`, 'Mensaje copiado');
-    }
-    if (k === 'promo' && lastPromo) copy(lastPromo, 'Código copiado');
-    if (k === 'promolink' && lastPromo) copy(redeemLink(lastPromo), 'Enlace copiado');
-  });
-
-  /* ---------- usuarios de este navegador ---------- */
-
-  function tierText(p) {
-    const t = PVP.Store.effectiveTier(p);
-    if (t === 'free') return p.tier !== 'free' && p.tierUntil ? `Gratis <small>(caducó ${new Date(p.tierUntil).toLocaleDateString('es-ES')})</small>` : 'Gratis';
-    return `<span class="tier static t-${t}">${T[t].short}</span> <small>${p.tierUntil ? 'hasta ' + new Date(p.tierUntil).toLocaleDateString('es-ES') : 'permanente'}</small>`;
-  }
-
-  function renderUsers() {
-    const q = $('#user-search').value.trim().toLowerCase();
-    const list = PVP.Store.listAccounts().filter((a) => !q || [a.profile.name, a.profile.id, a.email].some((x) => String(x || '').toLowerCase().includes(q)));
-    $('#user-table').innerHTML = `<thead><tr><th>Jugador</th><th>ID</th><th>Monedas</th><th>Nivel</th><th>Acciones</th></tr></thead><tbody>${
-      list.map((a) => `<tr data-key="${U.esc(a.key)}" data-uid="${U.esc(a.profile.id)}" data-name="${U.esc(a.profile.name)}">
-        <td><b>${U.esc(a.profile.name)}</b>${a.key === '@guest' ? ' <small>(invitado)</small>' : ''}<br><small>${U.esc(a.email || '')}</small></td>
-        <td><code>${U.esc(a.profile.id)}</code></td>
-        <td>${U.fmt(a.profile.coins)}</td>
-        <td>${tierText(a.profile)}</td>
-        <td class="adm-actions">
-          <button class="lux-btn sm" data-act="elite"><span>Élite +500K</span></button>
-          <button class="lux-btn sm" data-act="legend"><span>Leyenda +2M</span></button>
-          <button class="ghost-btn sm" data-act="coins">+ Monedas</button>
-          <button class="ghost-btn sm" data-act="friend">Leyenda ∞</button>
-          <button class="ghost-btn sm" data-act="revoke">Quitar nivel</button>
-          <button class="ghost-btn sm" data-act="code">Código</button>
-        </td></tr>`).join('') || '<tr><td colspan="5">No hay cuentas que coincidan en este navegador.</td></tr>'
+  function renderPending() {
+    const q = $('#pending-search').value.trim().toLowerCase();
+    const rows = purchases.filter((r) => r.status === 'pending' && (!q || [r.reference, who(r).username, who(r).player_code].some((x) => String(x || '').toLowerCase().includes(q))));
+    $('#pending-count').textContent = purchases.filter((r) => r.status === 'pending').length;
+    $('#pending-table').innerHTML = `<thead><tr><th>Fecha</th><th>Jugador</th><th>Pack</th><th>Importe</th><th>Referencia</th><th>ID PayPal (opcional)</th><th></th></tr></thead><tbody>${
+      rows.map((r) => `<tr data-id="${r.id}">
+        <td>${new Date(r.created_at).toLocaleString('es-ES')}</td>
+        <td><b>${U.esc(who(r).username || '?')}</b><br><small>${U.esc(who(r).player_code || '')}</small></td>
+        <td>${U.esc(PVP.Config.PACKS[r.pack].name)}</td><td><b>${money(r.amount)}</b></td>
+        <td><code>${U.esc(r.reference)}</code></td>
+        <td><input class="adm-search sm" data-ref placeholder="Ej. 5TY12345AB678901C" /></td>
+        <td class="adm-actions"><button class="lux-btn sm" data-act="confirm"><span>Confirmar</span></button><button class="ghost-btn sm" data-act="reject">Rechazar</button></td>
+      </tr>`).join('') || '<tr><td colspan="7">No hay pagos pendientes.</td></tr>'
     }</tbody>`;
   }
-  $('#user-search').addEventListener('input', renderUsers);
+  $('#pending-search').addEventListener('input', renderPending);
 
-  $('#user-table').addEventListener('click', (e) => {
+  $('#pending-table').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-act]');
     if (!b) return;
     const row = b.closest('tr');
-    const key = row.dataset.key, uid = row.dataset.uid, name = row.dataset.name;
-    const act = b.dataset.act;
-    const S = PVP.Store;
+    const id = row.dataset.id;
+    const p = purchases.find((x) => x.id === id);
+    b.disabled = true;
     try {
-      if (act === 'elite' || act === 'legend' || act === 'friend') {
-        const pr = PACK_PRESET[act];
-        S.updateAccount(key, (p) => S.grantPack(p, pr.t, pr.d, pr.c, act === 'friend' ? 'creator' : 'paypal'));
-        addLedger({ uid, note: name, pack: pr.label, coins: pr.c, days: pr.d, kind: 'directo' });
-        toast(`✓ ${pr.label} aplicado a ${U.esc(name)}`);
-      } else if (act === 'coins') {
-        const n = Math.round(+prompt(`¿Cuántas monedas sumar a ${name}?`, '100000'));
-        if (!n) return;
-        S.updateAccount(key, (p) => S.grantPack(p, null, 0, n));
-        addLedger({ uid, note: name, pack: 'Monedas', coins: n, days: 0, kind: 'directo' });
-        toast(`✓ +${U.fmt(n)} monedas a ${U.esc(name)}`);
-      } else if (act === 'revoke') {
-        if (!confirm(`¿Quitar el nivel de pago de ${name}?`)) return;
-        S.updateAccount(key, (p) => { p.tier = 'free'; p.tierUntil = 0; p.tierSource = ''; });
-        addLedger({ uid, note: name, pack: 'Nivel retirado', coins: 0, days: 0, kind: 'directo' });
-        toast(`Nivel retirado a ${U.esc(name)}`);
-      } else if (act === 'code') {
-        const f = $('#form-voucher');
-        f.uid.value = uid;
-        f.note.value = name;
-        f.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
+      if (b.dataset.act === 'confirm') {
+        if (!confirm(`¿Confirmar el pago de ${money(p.amount)} de ${who(p).username} (${p.reference})?`)) return;
+        await B.adminConfirm(id, $('[data-ref]', row).value.trim());
+        toast(`✓ ${PVP.Config.PACKS[p.pack].name} activado para ${U.esc(who(p).username)}`);
+      } else {
+        const note = prompt('Motivo del rechazo (opcional):', 'Pago no encontrado');
+        if (note === null) return;
+        await B.adminReject(id, note);
+        toast('Compra rechazada');
       }
-    } catch (ex) {
-      toast('⚠️ ' + U.esc(ex.message));
-    }
-    renderUsers();
-    renderLedger();
+      await Promise.all([loadPurchases(), loadUsers()]);
+    } catch (ex) { fail(ex); } finally { b.disabled = false; }
   });
 
-  /* ---------- registro de activaciones ---------- */
-
-  function ledger() {
-    try { return JSON.parse(localStorage.getItem(LEDGER) || '[]'); } catch (e) { return []; }
-  }
-
-  function addLedger(entry) {
-    const l = ledger();
-    l.unshift(Object.assign({ t: Date.now() }, entry));
-    localStorage.setItem(LEDGER, JSON.stringify(l.slice(0, 2000)));
-  }
-
-  function renderLedger() {
-    const q = $('#ledger-search').value.trim().toLowerCase();
-    const rows = ledger().filter((r) => !q || [r.uid, r.note, r.pack].some((x) => String(x || '').toLowerCase().includes(q)));
-    $('#ledger-table').innerHTML = `<thead><tr><th>Fecha</th><th>ID</th><th>Nota</th><th>Activación</th><th>Monedas</th><th>Vía</th></tr></thead><tbody>${
-      rows.slice(0, 300).map((r) => `<tr><td>${new Date(r.t).toLocaleString('es-ES')}</td><td><code>${U.esc(r.uid)}</code></td><td>${U.esc(r.note || '')}</td>
-        <td>${U.esc(r.pack)}${r.days ? ` · ${r.days} días` : ''}</td><td>${r.coins ? U.fmt(r.coins) : '—'}</td><td>${U.esc(r.kind)}</td></tr>`).join('')
-      || '<tr><td colspan="6">Sin activaciones todavía.</td></tr>'
+  function renderHistory() {
+    $('#history-table').innerHTML = `<thead><tr><th>Fecha</th><th>Jugador</th><th>Pack</th><th>Importe</th><th>Vía</th><th>Referencia</th><th>ID PayPal</th><th>Estado</th></tr></thead><tbody>${
+      purchases.map((r) => `<tr><td>${new Date(r.created_at).toLocaleString('es-ES')}</td><td>${U.esc(who(r).username || '?')}</td>
+        <td>${U.esc(PVP.Config.PACKS[r.pack].name)}</td><td>${money(r.amount)}</td><td>${U.esc(r.provider)}</td>
+        <td><code>${U.esc(r.reference)}</code></td><td>${U.esc(r.provider_ref || '')}</td><td><span class="st st-${r.status}">${STATUS[r.status]}</span></td></tr>`).join('')
+      || '<tr><td colspan="8">Sin compras todavía.</td></tr>'
     }</tbody>`;
   }
-  $('#ledger-search').addEventListener('input', renderLedger);
 
   $('#btn-export').addEventListener('click', () => {
     const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-    const csv = ['fecha,id,nota,activacion,dias,monedas,via']
-      .concat(ledger().map((r) => [new Date(r.t).toISOString(), r.uid, r.note, r.pack, r.days, r.coins, r.kind].map(esc).join(',')))
+    const csv = ['fecha,usuario,id_jugador,pack,importe,via,referencia,id_paypal,estado']
+      .concat(purchases.map((r) => [r.created_at, who(r).username, who(r).player_code, r.pack, r.amount, r.provider, r.reference, r.provider_ref, r.status].map(esc).join(',')))
       .join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = 'pokervegaspro-activaciones.csv';
+    a.download = 'pokervegaspro-compras.csv';
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   });
 
+  /* ---------- usuarios ---------- */
+
+  let searchT = null;
+  $('#user-search').addEventListener('input', () => { clearTimeout(searchT); searchT = setTimeout(loadUsers, 300); });
+
+  async function loadUsers() {
+    let users = [];
+    try { users = await B.adminUsers($('#user-search').value); } catch (e) { return fail(e); }
+    $('#user-table').innerHTML = `<thead><tr><th>Jugador</th><th>ID</th><th>Monedas</th><th>Nivel</th><th>Alta</th><th>Acciones</th></tr></thead><tbody>${
+      users.map((u) => `<tr data-uid="${u.id}" data-name="${U.esc(u.username)}">
+        <td><b>${U.esc(u.username)}</b>${u.is_admin ? ' <small>(admin)</small>' : ''}</td><td><code>${U.esc(u.player_code)}</code></td>
+        <td>${U.fmt(u.coins)}</td><td>${u.tier === 'free' ? 'Gratis' : `<span class="tier static t-${u.tier}">${T[u.tier].short}</span>`}</td>
+        <td>${new Date(u.created_at).toLocaleDateString('es-ES')}</td>
+        <td class="adm-actions">
+          <button class="lux-btn sm" data-act="elite"><span>Pack Élite</span></button>
+          <button class="lux-btn sm" data-act="legend"><span>Pack Leyenda</span></button>
+          <button class="ghost-btn sm" data-act="coins">± Monedas</button>
+          <select class="adm-select" data-act="tier" aria-label="Nivel"><option value="">Nivel…</option><option value="free">Gratis</option><option value="elite">Élite</option><option value="legend">Leyenda</option></select>
+        </td></tr>`).join('') || '<tr><td colspan="6">Sin resultados.</td></tr>'
+    }</tbody>`;
+  }
+
+  $('#user-table').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-act]');
+    if (!b) return;
+    const row = b.closest('tr');
+    const uid = row.dataset.uid, name = row.dataset.name;
+    try {
+      if (b.dataset.act === 'elite' || b.dataset.act === 'legend') {
+        const pk = PVP.Config.PACKS[b.dataset.act];
+        if (!confirm(`¿Entregar ${pk.name} (${U.fmt(pk.coins)} monedas + desbloqueos) a ${name}? Se registra como compra manual.`)) return;
+        await B.adminGrant(uid, b.dataset.act, 'Entrega manual desde el panel');
+        toast(`✓ ${pk.name} entregado a ${U.esc(name)}`);
+      } else if (b.dataset.act === 'coins') {
+        const n = Math.round(+prompt(`Monedas a sumar a ${name} (negativo para restar):`, '100000'));
+        if (!n) return;
+        await B.adminCoins(uid, n, 'Ajuste manual');
+        toast(`✓ ${n > 0 ? '+' : ''}${U.fmt(n)} monedas a ${U.esc(name)}`);
+      }
+      await Promise.all([loadUsers(), loadPurchases()]);
+    } catch (ex) { fail(ex); }
+  });
+
+  $('#user-table').addEventListener('change', async (e) => {
+    const s = e.target.closest('select[data-act="tier"]');
+    if (!s || !s.value) return;
+    const row = s.closest('tr');
+    try {
+      await B.adminTier(row.dataset.uid, s.value);
+      toast(`Nivel de ${U.esc(row.dataset.name)}: ${T[s.value].name}`);
+      loadUsers();
+    } catch (ex) { fail(ex); }
+  });
+
+  /* ---------- códigos ---------- */
+
+  async function loadCodes() {
+    let codes = [];
+    try { codes = await B.adminCodes(); } catch (e) { return fail(e); }
+    $('#code-table').innerHTML = `<thead><tr><th>Etiqueta</th><th>Tipo</th><th>Monedas</th><th>Desbloquea</th><th>Usos</th><th>Caduca</th><th>Activo</th></tr></thead><tbody>${
+      codes.map((c) => `<tr data-hash="${c.code_hash}"><td>${U.esc(c.label || c.code_hash.slice(0, 10) + '…')}</td><td>${c.kind === 'creator' ? 'Creador' : 'Promo'}</td>
+        <td>${U.fmt(c.coins)}</td><td>${c.grants_tier ? T[c.grants_tier].name : '—'}</td><td>${c.uses}${c.max_uses ? ' / ' + c.max_uses : ''}</td>
+        <td>${c.expires_at ? new Date(c.expires_at).toLocaleDateString('es-ES') : '—'}</td>
+        <td><label class="toggle-field"><input type="checkbox" data-active ${c.active ? 'checked' : ''}/><span class="tg"></span></label></td></tr>`).join('')
+      || '<tr><td colspan="7">Sin códigos.</td></tr>'
+    }</tbody>`;
+  }
+
+  $('#code-table').addEventListener('change', async (e) => {
+    const c = e.target.closest('[data-active]');
+    if (!c) return;
+    try { await B.adminCodeActive(c.closest('tr').dataset.hash, c.checked); toast(c.checked ? 'Código activado' : 'Código desactivado'); } catch (ex) { fail(ex); }
+  });
+
+  $('#form-code').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const creator = f.kind.value === 'creator';
+    try {
+      await B.adminCreateCode({
+        code: f.code.value, kind: f.kind.value, coins: +f.coins.value || 0, tier: f.tier.value || (creator ? 'legend' : null),
+        maxUses: f.max.value ? +f.max.value : null, expires: f.until.value ? new Date(f.until.value + 'T23:59:59').toISOString() : null,
+        // Los códigos de creador no se etiquetan con su texto (es secreto).
+        label: creator ? 'Creador' : f.code.value.trim().toUpperCase(),
+      });
+      toast('Código creado');
+      f.reset();
+      loadCodes();
+    } catch (ex) { fail(ex); }
+  });
+
   /* ---------- arranque ---------- */
-  view(C.ADMIN ? 'login' : 'setup');
+  B.init();
+  B.probe().then((ok) => (ok ? enter() : view('offline'))).catch(() => view('offline'));
 })(window);
