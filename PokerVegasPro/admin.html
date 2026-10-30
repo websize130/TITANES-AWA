@@ -39,8 +39,10 @@
         <button class="lux-btn" type="submit"><span>Generar configuración</span></button>
       </form>
       <div id="setup-out" class="hidden">
-        <h3>1 · Pega esto en <code>js/config.js</code></h3>
-        <p class="adm-note">Sustituye las líneas <code>ADMIN: null,</code> y <code>CREATOR_CODE: null,</code>, y publica el cambio. Ambos valores se pueden publicar sin riesgo.</p>
+        <h3>1 · Pega esto en la configuración del juego</h3>
+        <p class="adm-note">Busca las líneas <code>ADMIN: null,</code> y <code>CREATOR_CODE: null,</code> y sustitúyelas por este bloque.
+          Están en <code>js/config.js</code> o, si usas la versión de un solo archivo, dentro de <code>index.html</code> (y también de <code>admin.html</code>).
+          Después publica el cambio. Ambos valores se pueden publicar sin riesgo.</p>
         <textarea id="setup-snippet" class="adm-code" readonly rows="8"></textarea>
         <div class="flex flex-wrap gap-2 mt-2">
           <button class="ghost-btn sm" id="btn-copy-snippet">Copiar</button>
