@@ -43,7 +43,7 @@
   function defaultPrefs() {
     return {
       table: 'classic', deck: 'classic', orientation: 'auto', sound: true, music: true, musicStyle: 'lounge', autoPeek: true, speed: 1,
-      look: { base: 'marco' }, avatarImg: null, v: 3,
+      look: { base: 'marco' }, avatarImg: null, v: 4,
     };
   }
   function defaultStats() {
@@ -59,7 +59,8 @@
   /** Normaliza un perfil (local o remoto) a la forma que usa el juego. */
   function normalize(p) {
     p.prefs = Object.assign(defaultPrefs(), p.prefs || {});
-    if (p.prefs.v !== 3) { p.prefs.autoPeek = true; p.prefs.v = 3; }
+    if ((p.prefs.v || 0) < 3) p.prefs.autoPeek = true;
+    if ((p.prefs.v || 0) < 4) { p.prefs.orientation = 'auto'; p.prefs.v = 4; } // la mesa se adapta sola al girar el móvil
     delete p.prefs.view; delete p.prefs.camera; // la vista 3D ya no existe
     p.stats = Object.assign(defaultStats(), p.stats || {});
     if (!PVP.Catalog.TIERS[p.tier]) p.tier = 'free';

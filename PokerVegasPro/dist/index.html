@@ -484,9 +484,8 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
 }
 .peek-btn.on { background: var(--gold-grad); color: #2a1a05; }
 .peek-btn .eye { font-size: 16px; }
-.bar-open .peek-btn { bottom: 196px; }
-@media (min-width: 900px) { .bar-open .peek-btn { bottom: max(14px, env(safe-area-inset-bottom)); } }
-@media (max-width: 640px) { .bar-open .peek-btn { bottom: 250px; } .peek-btn .lbl { display: none; } }
+.bar-open .peek-btn { bottom: calc(var(--reserve, 0px) + 4px); }
+@media (max-width: 640px) { .peek-btn .lbl { display: none; } }
 
 .chat-panel {
   position: absolute; top: 60px; right: 0; bottom: 0; z-index: 30; width: min(340px, 92vw); display: flex; flex-direction: column;
@@ -530,14 +529,11 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
 }
 
 /* ===================== Mesa 2D ===================== */
-.game-host { --reserve: 150px; }
-.t2d { position: absolute; inset: 0 0 var(--reserve) 0; display: grid; place-items: center; --u: 1; z-index: 1; }
-@media (min-width: 1100px) and (min-height: 700px) { .game-host { --reserve: 178px; } }
-@media (max-width: 640px) { .game-host { --reserve: 214px; } }
+.t2d { position: absolute; inset: 0 var(--gutter, 0px) var(--reserve) 0; display: grid; place-items: center; --u: 1; z-index: 1; }
 .t2d::before { content: ''; position: absolute; inset: 0; background: radial-gradient(90% 80% at 50% 45%, var(--bg1), var(--bg2)); opacity: 0.92; }
 .t2d-stage { position: relative; transition: width 0.4s, height 0.4s; }
-.t2d-table { position: absolute; inset: 9% 7% 8%; }
-.orient-v .t2d-table { inset: 9% 12% 9%; }
+.t2d-table { position: absolute; inset: 11% 6% 7%; }
+.orient-v .t2d-table { inset: 10% 8% 8%; }
 .t2d-rim {
   position: absolute; inset: 0; border-radius: 999px;
   background: radial-gradient(ellipse at 50% 30%, var(--rim1), var(--rim2));
@@ -557,8 +553,8 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius
 .neon .felt-line { border-color: #00f0ff; box-shadow: 0 0 12px #00f0ff; }
 
 /* Crupier */
-.t2d-dealer { position: absolute; left: 50%; top: 9%; width: calc(var(--u) * 150px); transform: translate(-50%, -78%); z-index: 2; pointer-events: none; }
-.orient-v .t2d-dealer { top: 8%; width: calc(var(--u) * 140px); }
+.t2d-dealer { position: absolute; left: 50%; top: 11%; width: calc(var(--u) * 150px); transform: translate(-50%, -74%); z-index: 2; pointer-events: none; }
+.orient-v .t2d-dealer { top: 9%; }
 .dealer-svg { width: 100%; display: block; overflow: visible; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.6)); }
 .dl-body { transform-origin: 50% 100%; animation: breathe 4s ease-in-out infinite; }
 @keyframes breathe { 50% { transform: scaleY(1.012) translateY(-1px); } }
@@ -1275,14 +1271,14 @@ body[data-screen='menu'] .vegas-bg { opacity: 0; }
 .mv-btn > * { position: relative; z-index: 1; }
 .mv-btn:hover, .mv-btn:focus-visible { transform: translateX(-0.4cqw); filter: drop-shadow(0 0 1.2cqw rgba(255, 196, 80, 0.55)) drop-shadow(0 0.5cqw 1cqw rgba(0, 0, 0, 0.6)); outline: none; }
 .mv-btn:active { transform: translateX(-0.4cqw) scale(0.99); }
-.mv-btn.b-play { top: 12%; height: 11%; background: linear-gradient(180deg, #ffe7a3, #e2a93a 40%, #a8700f); filter: drop-shadow(0 0 1.6cqw rgba(255, 190, 60, 0.6)) drop-shadow(0 0.5cqw 1cqw rgba(0, 0, 0, 0.6)); }
+.mv-btn.b-play { top: 13%; height: 12%; background: linear-gradient(180deg, #ffe7a3, #e2a93a 40%, #a8700f); filter: drop-shadow(0 0 1.6cqw rgba(255, 190, 60, 0.6)) drop-shadow(0 0.5cqw 1cqw rgba(0, 0, 0, 0.6)); }
 .mv-btn.b-play::before { inset: 0.2cqw; background: linear-gradient(180deg, #6e4a14 0%, #3e2708 55%, #241503 100%); }
 .mv-btn.b-play::after { inset: 0.2cqw; background: radial-gradient(90% 160% at 30% 0%, rgba(255, 214, 120, 0.45), transparent 65%); }
-.mv-btn.b-tour { top: 24.6%; height: 9.2%; }
-.mv-btn.b-priv { top: 35.4%; height: 9.2%; }
-.mv-btn.b-stats { top: 46.2%; height: 9.2%; }
-.mv-btn.b-shop { top: 57%; height: 9.2%; }
-.mv-btn.b-daily { top: 67.8%; height: 9.2%; }
+.mv-btn.b-tour { top: 27.2%; height: 10%; }
+.mv-btn.b-priv { top: 39.4%; height: 10%; }
+.mv-btn.b-stats { top: 51.6%; height: 10%; }
+.mv-btn.b-shop { top: 63.8%; height: 10%; }
+.mv-btn.b-daily { top: 76%; height: 10%; }
 .mv-btn.b-daily::before { background: linear-gradient(180deg, #241326 0%, #0e0710 100%); }
 .mv-ico { width: 3.6cqw; height: 3.6cqw; flex: none; display: grid; place-items: center; }
 .mv-ico svg { width: 100%; height: 100%; fill: #e2b25a; filter: drop-shadow(0 0.15cqw 0.25cqw rgba(0, 0, 0, 0.6)); }
@@ -1299,19 +1295,9 @@ body[data-screen='menu'] .vegas-bg { opacity: 0; }
 .mv-footer nav { gap: 1.6cqw; margin-bottom: 0.2cqw; font-size: 0.8cqw; }
 #screen-menu .ad-slot { position: absolute; left: 14%; bottom: 6%; width: 46%; min-height: 0; margin: 0; z-index: 2; }
 
-/* Panel translúcido detrás de la columna de botones y campo de código rápido. */
+/* Panel translúcido detrás de la columna de botones. */
 .mv-panel { position: absolute; left: 63%; top: 0; right: 0; bottom: 0; z-index: 1; pointer-events: none;
   background: linear-gradient(90deg, rgba(6, 3, 12, 0) 0%, rgba(6, 3, 12, 0.55) 22%, rgba(6, 3, 12, 0.78) 100%); }
-.mv-code { position: absolute; left: 67%; top: 79.6%; width: 30%; height: 7.4%; z-index: 2; display: flex; gap: 0.7cqw; }
-.mv-code input { flex: 1; min-width: 0; border-radius: 0.8cqw; padding: 0 1.2cqw; font: 500 1.15cqw Inter, sans-serif; letter-spacing: 0.06em; color: #fff;
-  background: rgba(10, 6, 16, 0.85); border: 1px solid rgba(232, 181, 74, 0.45); box-shadow: inset 0 0 1.2cqw rgba(0, 0, 0, 0.6); }
-.mv-code input::placeholder { color: rgba(255, 255, 255, 0.45); letter-spacing: 0.02em; }
-.mv-code input:focus { outline: none; border-color: #ffd36a; box-shadow: 0 0 0 0.2cqw rgba(255, 211, 106, 0.25); }
-.mv-code button { flex: none; padding: 0 1.4cqw; border-radius: 0.8cqw; font: 600 1.1cqw Oswald, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: #2a1802;
-  background: linear-gradient(180deg, #ffe7a3, #e2a93a 55%, #b07a18); box-shadow: 0 0.3cqw 1cqw rgba(255, 190, 60, 0.35); }
-.mv-code button:hover { filter: brightness(1.1); }
-.mv-code-msg { position: absolute; left: 67%; top: 87.6%; width: 30%; z-index: 2; font: 500 0.95cqw Inter; color: rgba(255, 255, 255, 0.7); text-align: center; }
-.mv-code-msg.ok { color: #7dff9a; } .mv-code-msg.err { color: #ff8a8a; }
 
 /* Escritorio/horizontal: la barra superior real es la de la escena. */
 body[data-screen='menu'] #topbar { display: none; }
@@ -1339,13 +1325,9 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
   .mv-txt small, .mv-btn.b-daily .mv-txt small { font-size: 11px; }
   .mv-arrow { font-size: 28px; }
   .mv-btn .daily-badge { font-size: 11px; padding: 3px 9px; }
-  .mv-footer { position: relative; left: auto; right: auto; bottom: auto; margin-top: 18px; font-size: 11px; }
+  #screen-menu .mv-footer { position: relative; left: auto; right: auto; bottom: auto; margin-top: 18px; font-size: 11px; padding-bottom: 64px; }
   .mv-footer nav { font-size: 12px; gap: 18px; }
   .mv-panel { display: none; }
-  .mv-code, .mv-code-msg { position: relative; left: auto; top: auto; width: 100%; height: 52px; margin-top: 12px; gap: 8px; }
-  .mv-code-msg { height: auto; margin-top: 6px; font-size: 12px; }
-  .mv-code input { font-size: 15px; border-radius: 12px; padding: 0 14px; }
-  .mv-code button { font-size: 14px; padding: 0 18px; border-radius: 12px; }
   #screen-menu .ad-slot { position: relative; left: auto; bottom: auto; width: 100%; margin-top: 16px; }
   body[data-screen='menu'] .music-fab { left: auto; right: 14px; }
 }
@@ -1507,6 +1489,116 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
 .icon-btn[hidden] { display: none !important; }
 .felt-emblem:not(:empty) + .felt-logo { display: none; }
 
+/* Caras de carta en SVG: índice grande y pips en posición real */
+.pc-front .cface { position: absolute; inset: 0; width: 100%; height: 100%; fill: currentColor; }
+.cface .ci-r { font: 700 52px/1 Georgia, 'Times New Roman', serif; fill: currentColor; letter-spacing: -2px; }
+.cface .cc-l { font: 700 76px/1 Georgia, 'Times New Roman', serif; fill: currentColor; }
+.cface .cc-bg { fill: var(--court-bg, #f3e7c9); stroke: currentColor; stroke-width: 2.5; }
+.cface .cc-crown { fill: var(--court-gold, #d4a12a); stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.pcard.red .cface .cc-bg { fill: var(--court-bg-r, #fbe4df); }
+.deck-noir .cface .cc-bg { fill: #2c2c35; } .deck-neon .cface .cc-bg { fill: #140a24; }
+.deck-gold .cface .cc-bg { fill: #f7e3a1; }
+.pc-front .pc-corner, .pc-front .pc-pip { display: none; }
+
+
+/* =====================================================================
+   MESA A PANTALLA COMPLETA — barra superior compacta y panel de acciones medido
+   ===================================================================== */
+#screen-game { --reserve: 170px; background: radial-gradient(120% 90% at 50% 40%, #1b0c26, #05020a); }
+.game-top { flex-wrap: nowrap; gap: 8px; padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 6px max(10px, env(safe-area-inset-left)); }
+.gt-tools { flex-wrap: nowrap; flex: none; }
+.bar-open .peek-btn { transition: bottom 0.35s; }
+@media (max-width: 640px) {
+  .gt-tools { width: auto; overflow: visible; gap: 5px; }
+  .game-top .icon-btn.sm { width: 34px; height: 34px; font-size: 15px; }
+  .gt-info b { font-size: 14px; } .gt-info span { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #btn-leave { padding: 7px 10px; font-size: 12px; }
+  .ab-presets [data-preset='twothirds'] { display: none; }
+}
+@media (max-width: 380px) { .game-top .icon-btn.sm { width: 30px; height: 30px; font-size: 13px; } .gt-tools { gap: 3px; } }
+
+/* Móvil en horizontal: panel de acciones vertical a la derecha y la mesa ocupa el resto. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .game-top { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: 4px; }
+  .game-top .icon-btn.sm { width: 32px; height: 32px; font-size: 14px; }
+  .gt-info b { font-size: 14px; } .gt-info span { font-size: 11px; }
+  #btn-leave { padding: 6px 10px; font-size: 12px; }
+  .action-bar {
+    left: auto; right: max(6px, env(safe-area-inset-right)); top: auto; bottom: max(6px, env(safe-area-inset-bottom));
+    width: 178px; max-height: calc(100% - 52px); overflow-y: auto; padding: 8px; gap: 6px; border-radius: 16px;
+    transform: translateX(115%); align-content: end;
+  }
+  .action-bar.show { transform: none; }
+  .ab-info { flex-direction: column; align-items: stretch; gap: 1px; font-size: 10.5px; padding: 0 2px; }
+  .ab-info span { display: flex; justify-content: space-between; }
+  .ab-odds { display: none; }
+  .ab-raise { grid-template-columns: 1fr; gap: 6px; padding: 6px; }
+  .ab-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .ab-presets button { padding: 6px 2px; font-size: 11.5px; }
+  .ab-presets [data-preset='twothirds'] { display: none; }
+  .ab-slider { flex-wrap: wrap; gap: 4px; }
+  .ab-slider button { width: 30px; height: 30px; font-size: 16px; }
+  .ab-slider input[type='range'] { min-width: 0; flex: 1; }
+  #raise-input { width: 100%; padding: 6px 8px; font-size: 15px; }
+  .ab-main { grid-template-columns: 1fr; gap: 6px; }
+  .ab-btn { min-height: 42px; padding: 6px; font-size: 15px; }
+  .ab-btn .ab-k, .ab-btn kbd { display: none; }
+  .peek-btn { left: max(8px, env(safe-area-inset-left)); bottom: max(8px, env(safe-area-inset-bottom)); padding: 8px 11px; }
+  .peek-btn .lbl { display: none; }
+  .bar-open .peek-btn { bottom: max(8px, env(safe-area-inset-bottom)); }
+  .chat-panel { top: 46px; }
+}
+
+/* En horizontal, tus cartas van junto a tu asiento (no hacia el centro de la mesa). */
+.orient-h .seat.hero { flex-direction: row-reverse; align-items: center; }
+.orient-h .seat.hero .seat-cards { height: calc(var(--u) * 46px * 1.3 * 1.4); margin: 0 0 0 calc(var(--u) * 6px); }
+.orient-h .seat.hero .seat-cards .pcard:first-child { transform: rotate(-4deg); }
+.orient-h .seat.hero .seat-cards .pcard:last-child { transform: rotate(4deg); }
+.seat.hero .seat-cards .pcard { margin: 0 calc(var(--u) * 1px); }
+
+/* Volver siempre visible en las secciones (fijo bajo la barra superior al desplazarse). */
+.back-btn {
+  position: sticky; top: calc(max(10px, env(safe-area-inset-top)) + 62px); z-index: 25; display: inline-flex; align-items: center; gap: 4px;
+  padding: 8px 14px; border-radius: 999px; background: rgba(14, 6, 24, 0.94); border: 1px solid rgba(232, 181, 74, 0.35); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* Franja de información bajo la mesa (tu mano y el turno) en el hueco del panel de acciones. */
+.hand-dock {
+  position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 22;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 18px; border-radius: 14px; text-align: center;
+  background: rgba(12, 6, 20, 0.85); border: 1px solid rgba(232, 181, 74, 0.28); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.25s; pointer-events: none; max-width: calc(100% - 140px);
+}
+.hand-dock:has(.hd-hand:empty):has(.hd-status:empty) { opacity: 0; }
+.hd-hand { font: 400 13px Inter, sans-serif; color: rgba(255, 255, 255, 0.75); }
+.hd-hand b { font: 600 16px Oswald, sans-serif; letter-spacing: 0.03em; color: #ffd36a; }
+.hd-status { font: 500 12px Inter, sans-serif; color: rgba(255, 255, 255, 0.6); }
+.hd-hand:empty, .hd-status:empty { display: none; }
+.bar-open .hand-dock { opacity: 0; }
+@media (max-width: 640px) {
+  .ab-info { display: none; }
+  .ab-btn { min-height: 48px; }
+}
+@media (orientation: landscape) and (max-height: 540px) {
+  .hand-dock { left: auto; right: max(6px, env(safe-area-inset-right)); transform: none; width: 178px; max-width: none; bottom: max(6px, env(safe-area-inset-bottom)); }
+}
+@media (orientation: landscape) and (max-height: 420px) {
+  .ab-info { display: none; }
+  .ab-btn { min-height: 36px; font-size: 14px; }
+  .ab-presets button { padding: 4px 2px; }
+  .action-bar { gap: 5px; padding: 6px; }
+  .ab-raise { gap: 4px; padding: 4px; }
+  #raise-input { padding: 4px 8px; }
+}
+
+/* Legibilidad mínima en pantallas pequeñas */
+.seat-name { font-size: max(11.5px, calc(var(--u) * 14px)); max-width: max(76px, calc(var(--u) * 96px)); }
+.seat-stack { font-size: max(12px, calc(var(--u) * 15px)); }
+.seat-badge { font-size: max(9.5px, calc(var(--u) * 10px)) !important; }
+.chip-amt { font-size: max(11px, calc(var(--u) * 12px)) !important; }
+
+body:not([data-screen='menu']):not([data-screen='welcome']) .topbar { background: linear-gradient(180deg, rgba(8, 3, 16, 0.98) 70%, rgba(8, 3, 16, 0)); }
+
 </style>
 </head>
 <body class="font-body text-white bg-ink-900 antialiased">
@@ -1664,11 +1756,6 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
             <span class="mv-txt"><b>Bonus diario</b><small>Hasta 256.000 monedas</small></span><span class="daily-badge" id="daily-badge" hidden>¡Listo!</span><span class="mv-arrow" aria-hidden="true">›</span>
           </button>
         </nav>
-        <form class="mv-code" id="mv-code" autocomplete="off">
-          <input name="code" maxlength="32" placeholder="¿Tienes un código?" aria-label="Código promocional" autocapitalize="off" spellcheck="false" />
-          <button type="submit">Canjear</button>
-        </form>
-        <p class="mv-code-msg" id="mv-code-msg" aria-live="polite"></p>
 
         <aside class="ad-slot" id="ad-menu" hidden aria-label="Publicidad"></aside>
         <footer class="site-footer mv-footer">
@@ -1813,10 +1900,6 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
         <button class="ghost-btn sm" id="btn-leave">‹ Salir</button>
         <div class="gt-info"><b id="game-mode">Partida</b><span id="game-level">Nivel 1</span></div>
         <div class="gt-tools">
-          <div class="seg mini" id="seg-orient" title="Orientación de la mesa">
-            <button data-v="h" aria-label="Horizontal"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="5"/></svg></button>
-            <button data-v="v" aria-label="Vertical"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="5"/></svg></button>
-          </div>
           <button class="icon-btn sm" id="btn-share" aria-label="Invitar a la sala" title="Invitar amigos" hidden>➕</button>
           <button class="icon-btn sm" id="btn-skin" aria-label="Mesa y cartas" title="Mesa y cartas">🎨</button>
           <button class="icon-btn sm" id="btn-music" aria-label="Música" title="Música">♫</button>
@@ -1827,6 +1910,7 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
 
       <div class="game-host" id="game-host"></div>
 
+      <div class="hand-dock" id="hand-dock" aria-live="polite"><span class="hd-hand" id="hd-hand"></span><span class="hd-status" id="hd-status"></span></div>
       <button class="peek-btn" id="btn-peek" aria-pressed="false"><span class="eye">👁</span><span class="lbl">Mirar cartas</span></button>
 
       <div class="action-bar" id="action-bar" aria-live="polite">
@@ -2457,44 +2541,133 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
 
     /* ---------- efectos ---------- */
 
+    /* ---------- muestras de efectos generadas una vez (fichas de arcilla y naipes) ----------
+     * Síntesis física sencilla: modos resonantes amortiguados para el «clac» de la ficha y ruido filtrado con
+     * textura de papel para el roce y el golpe de la carta sobre el tapete. Se reproducen secas (sin eco). */
+    _buffers() {
+      if (this._sfxBufs) return this._sfxBufs;
+      const ctx = this.ctx, sr = ctx.sampleRate;
+      const make = (dur, fill) => {
+        const b = ctx.createBuffer(1, Math.floor(sr * dur), sr);
+        fill(b.getChannelData(0), sr);
+        let peak = 0;
+        const d = b.getChannelData(0);
+        for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+        if (peak) for (let i = 0; i < d.length; i++) d[i] /= peak;
+        return b;
+      };
+      // Ficha contra ficha: transitorio muy corto + 4 modos (2,5–7,5 kHz) que se apagan en 10–30 ms.
+      const clack = (seed) => make(0.09, (d, sr) => {
+        const modes = [[2350, 1, 0.016], [3720, 0.8, 0.012], [5180, 0.55, 0.009], [7400, 0.3, 0.006], [1450, 0.35, 0.02]]
+          .map(([f, a, t]) => [f * (0.94 + ((seed * 7919 + f) % 97) / 97 * 0.12), a, t]);
+        let lp = 0;
+        for (let i = 0; i < d.length; i++) {
+          const t = i / sr;
+          let v = 0;
+          for (const [f, a, tau] of modes) v += a * Math.sin(2 * Math.PI * f * t) * Math.exp(-t / tau);
+          const n = Math.random() * 2 - 1;
+          lp += 0.35 * (n - lp);
+          v += (n - lp) * 1.4 * Math.exp(-t / 0.0012); // chasquido inicial (ruido agudo)
+          d[i] = v;
+        }
+      });
+      // Carta: roce de papel (ruido paso banda con grano) y golpe suave sobre el fieltro al final.
+      const card = (len) => make(len, (d, sr) => {
+        let lp1 = 0, lp2 = 0, lpT = 0;
+        const slide = len - 0.03;
+        for (let i = 0; i < d.length; i++) {
+          const t = i / sr;
+          const n = Math.random() * 2 - 1;
+          lp1 += 0.55 * (n - lp1);
+          lp2 += 0.12 * (lp1 - lp2);
+          const band = lp1 - lp2; // ~1,5–6 kHz
+          const env = t < 0.004 ? t / 0.004 : Math.exp(-(t - 0.004) / (slide * 0.45));
+          const grain = 0.65 + 0.35 * Math.sin(t * 2 * Math.PI * 180 + Math.sin(t * 900) * 2);
+          let v = band * env * grain * (t < slide ? 1 : Math.exp(-(t - slide) / 0.006));
+          // golpe sordo en el tapete
+          const tt = t - slide;
+          if (tt >= 0) { lpT += 0.08 * (n - lpT); v += lpT * 3.2 * Math.exp(-tt / 0.012); }
+          d[i] = v;
+        }
+      });
+      // Voltear carta: chasquido seco de cartulina.
+      const snap = make(0.05, (d, sr) => {
+        let lp = 0;
+        for (let i = 0; i < d.length; i++) {
+          const t = i / sr, n = Math.random() * 2 - 1;
+          lp += 0.25 * (n - lp);
+          d[i] = (n - lp) * Math.exp(-t / 0.006) + Math.sin(2 * Math.PI * 1900 * t) * 0.25 * Math.exp(-t / 0.004);
+        }
+      });
+      // Retirarse: cartas deslizándose boca abajo sobre el tapete.
+      const muck = make(0.22, (d, sr) => {
+        let lp = 0;
+        for (let i = 0; i < d.length; i++) {
+          const t = i / sr, n = Math.random() * 2 - 1;
+          lp += 0.18 * (n - lp);
+          d[i] = lp * Math.min(1, t / 0.02) * Math.exp(-t / 0.07);
+        }
+      });
+      this._sfxBufs = { clack: [0, 1, 2, 3, 4].map(clack), card: [card(0.13), card(0.16), card(0.11)], snap, muck };
+      return this._sfxBufs;
+    },
+
+    _play(buf, t, vol, rate, lowpass) {
+      const ctx = this.ctx;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = rate || 1;
+      const g = ctx.createGain();
+      g.gain.value = vol;
+      let node = src;
+      if (lowpass) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lowpass; node = src.connect(f); }
+      node.connect(g).connect(this.sfxDry);
+      src.start(t);
+    },
+
     sfx(name, delay) {
       if (!this.sfxOn) return;
       const ctx = this._ensure();
       if (!ctx) return;
+      if (!this.sfxDry) { this.sfxDry = ctx.createGain(); this.sfxDry.gain.value = 0.85; this.sfxDry.connect(this.master); }
+      const B = this._buffers();
       const t = ctx.currentTime + (delay || 0);
+      const r = () => 0.94 + Math.random() * 0.12;
       switch (name) {
-        case 'chip': // ficha de cerámica: parciales inarmónicos muy cortos
-          for (const [f, v] of [[2650, 0.07], [4120, 0.05], [5830, 0.03]]) this._tone(f * (0.97 + Math.random() * 0.06), t, 0.07, v, 'sine');
-          this._noise(t, 0.03, 6000, 0.05, 'highpass', this.sfxBus);
+        case 'chip': // una ficha
+          this._play(B.clack[Math.floor(Math.random() * B.clack.length)], t, 0.32, r());
           break;
-        case 'chips': // pila de fichas cayendo al bote
-          for (let i = 0; i < 6; i++) this.sfx('chip', (delay || 0) + i * 0.035 + Math.random() * 0.02);
-          break;
-        case 'card': { // carta deslizándose sobre el tapete
-          const f = this._noise(t, 0.16, 1800, 0.09, 'bandpass', this.sfxBus);
-          f.frequency.setValueAtTime(3200, t);
-          f.frequency.exponentialRampToValueAtTime(900, t + 0.15);
+        case 'chips': { // apuesta: 3–5 fichas que caen una sobre otra, cada vez más suaves
+          const n = 3 + Math.floor(Math.random() * 3);
+          let at = 0;
+          for (let i = 0; i < n; i++) {
+            this._play(B.clack[(i + Math.floor(Math.random() * 5)) % 5], t + at, 0.34 * Math.pow(0.82, i), r());
+            at += 0.028 + Math.random() * 0.03;
+          }
           break;
         }
+        case 'card':
+          this._play(B.card[Math.floor(Math.random() * B.card.length)], t, 0.42, r(), 7000);
+          break;
         case 'flip':
-          this._noise(t, 0.06, 4200, 0.06, 'bandpass', this.sfxBus);
+          this._play(B.snap, t, 0.3, r());
           break;
         case 'click':
-          this._tone(1800, t, 0.035, 0.03, 'triangle');
+          this._tone(1800, t, 0.03, 0.025, 'triangle');
           break;
         case 'fold':
-          this._noise(t, 0.12, 600, 0.05, 'lowpass', this.sfxBus);
+          this._play(B.muck, t, 0.3, r(), 3500);
           break;
         case 'turn':
           this._tone(880, t, 0.35, 0.05); this._tone(1320, t + 0.11, 0.4, 0.04);
           break;
         case 'win':
           [523, 659, 784, 1046, 1318].forEach((f, i) => this._tone(f, t + i * 0.08, 0.5, 0.05, 'triangle'));
-          for (let i = 0; i < 8; i++) this._tone(2600 + Math.random() * 2400, t + 0.3 + i * 0.05, 0.25, 0.015);
+          for (let i = 0; i < 10; i++) this._play(B.clack[i % 5], t + 0.35 + i * 0.045 + Math.random() * 0.02, 0.22 * Math.pow(0.9, i), r());
           break;
-        case 'coins':
-          for (let i = 0; i < 14; i++) this.sfx('chip', (delay || 0) + i * 0.05 + Math.random() * 0.03);
-          [784, 988, 1175, 1568].forEach((f, i) => this._tone(f, t + i * 0.07, 0.4, 0.04, 'triangle'));
+        case 'coins': // lluvia de fichas al cobrar
+          for (let i = 0; i < 16; i++) this._play(B.clack[i % 5], t + i * 0.04 + Math.random() * 0.03, 0.26 * Math.pow(0.93, i), r());
+          [784, 988, 1175, 1568].forEach((f, i) => this._tone(f, t + i * 0.07, 0.4, 0.035, 'triangle'));
           break;
         default:
       }
@@ -2510,6 +2683,7 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
   if (PVP.Sound) {
     const S = PVP.Sound;
     S.card = (d) => Audio.sfx('card', d);
+    S.flip = (d) => Audio.sfx('flip', d);
     S.chip = () => Audio.sfx('chips');
     S.turn = () => Audio.sfx('turn');
     S.fold = () => Audio.sfx('fold');
@@ -3172,7 +3346,7 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
   function defaultPrefs() {
     return {
       table: 'classic', deck: 'classic', orientation: 'auto', sound: true, music: true, musicStyle: 'lounge', autoPeek: true, speed: 1,
-      look: { base: 'marco' }, avatarImg: null, v: 3,
+      look: { base: 'marco' }, avatarImg: null, v: 4,
     };
   }
   function defaultStats() {
@@ -3188,7 +3362,8 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
   /** Normaliza un perfil (local o remoto) a la forma que usa el juego. */
   function normalize(p) {
     p.prefs = Object.assign(defaultPrefs(), p.prefs || {});
-    if (p.prefs.v !== 3) { p.prefs.autoPeek = true; p.prefs.v = 3; }
+    if ((p.prefs.v || 0) < 3) p.prefs.autoPeek = true;
+    if ((p.prefs.v || 0) < 4) { p.prefs.orientation = 'auto'; p.prefs.v = 4; } // la mesa se adapta sola al girar el móvil
     delete p.prefs.view; delete p.prefs.camera; // la vista 3D ya no existe
     p.stats = Object.assign(defaultStats(), p.stats || {});
     if (!PVP.Catalog.TIERS[p.tier]) p.tier = 'free';
@@ -4650,6 +4825,60 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
     return `<svg class="suit${cls ? ' ' + cls : ''}" viewBox="0 0 100 100" aria-hidden="true">${SUIT_PATHS[suit].map((d) => `<path d="${d}"/>`).join('')}</svg>`;
   }
 
+  /* ---------- caras de carta reales (SVG 200×280) ----------
+   * Índice grande en dos esquinas para leerse en móvil y pips en la disposición estándar de una baraja de casino:
+   * los de la mitad inferior van invertidos, como en las cartas reales. */
+  const PIP_LAYOUT = {
+    2: [[0.5, 0], [0.5, 1]],
+    3: [[0.5, 0], [0.5, 0.5], [0.5, 1]],
+    4: [[0, 0], [1, 0], [0, 1], [1, 1]],
+    5: [[0, 0], [1, 0], [0.5, 0.5], [0, 1], [1, 1]],
+    6: [[0, 0], [1, 0], [0, 0.5], [1, 0.5], [0, 1], [1, 1]],
+    7: [[0, 0], [1, 0], [0.5, 0.25], [0, 0.5], [1, 0.5], [0, 1], [1, 1]],
+    8: [[0, 0], [1, 0], [0.5, 0.25], [0, 0.5], [1, 0.5], [0.5, 0.75], [0, 1], [1, 1]],
+    9: [[0, 0], [1, 0], [0, 1 / 3], [1, 1 / 3], [0.5, 0.5], [0, 2 / 3], [1, 2 / 3], [0, 1], [1, 1]],
+    10: [[0, 0], [1, 0], [0.5, 1 / 6], [0, 1 / 3], [1, 1 / 3], [0, 2 / 3], [1, 2 / 3], [0.5, 5 / 6], [0, 1], [1, 1]],
+  };
+  const suitPaths = (suit) => SUIT_PATHS[suit].map((d) => `<path d="${d}"/>`).join('');
+  /** Palo centrado en (cx, cy) con tamaño `size`; `flip` lo gira 180° (mitad inferior). */
+  function pip(suit, cx, cy, size, flip) {
+    const k = size / 100;
+    const rot = flip ? ` rotate(180 ${cx} ${cy})` : '';
+    return `<g transform="${rot ? rot.trim() + ' ' : ''}translate(${(cx - size / 2).toFixed(2)} ${(cy - size / 2).toFixed(2)}) scale(${k.toFixed(4)})">${suitPaths(suit)}</g>`;
+  }
+  const COURT = {
+    K: '<path d="M70 92 L64 62 L84 76 L100 52 L116 76 L136 62 L130 92 Z"/><circle cx="64" cy="58" r="5"/><circle cx="100" cy="47" r="5"/><circle cx="136" cy="58" r="5"/>',
+    Q: '<path d="M74 92 L70 70 L86 80 L100 62 L114 80 L130 70 L126 92 Z"/><circle cx="100" cy="56" r="6"/><circle cx="70" cy="66" r="4"/><circle cx="130" cy="66" r="4"/>',
+    J: '<path d="M82 92 C82 74 92 62 104 56 C98 66 100 76 108 80 C114 72 118 66 118 58 C126 70 122 84 118 92 Z"/>',
+  };
+  const faceCache = new Map();
+  function cardFaceSVG(rank, suit) {
+    const key = rank + suit;
+    if (faceCache.has(key)) return faceCache.get(key);
+    const tx = rank === '10' ? 'textLength="50" lengthAdjust="spacingAndGlyphs"' : '';
+    const index = `<text x="27" y="56" text-anchor="middle" class="ci-r" ${tx}>${rank}</text>${pip(suit, 27, 82, 30, false)}`;
+    let body = '';
+    if (rank === 'A') {
+      body = pip(suit, 100, 140, suit === 0 ? 104 : 88, false);
+      if (suit === 0) body += '<ellipse cx="100" cy="140" rx="66" ry="66" fill="none" stroke="currentColor" stroke-width="2" opacity=".35"/>';
+    } else if (COURT[rank]) {
+      // Figura: marco con fondo propio, corona/emblema y letra grande (diseño original, sin arte de terceros).
+      body = `<rect x="52" y="34" width="96" height="212" rx="8" class="cc-bg"/>` +
+        `<rect x="58" y="40" width="84" height="200" rx="5" fill="none" stroke="currentColor" stroke-width="2" opacity=".55"/>` +
+        `<g class="cc-crown">${COURT[rank]}</g>` +
+        `<text x="100" y="166" text-anchor="middle" class="cc-l">${rank}</text>` +
+        pip(suit, 100, 206, 34, false) +
+        `<g transform="rotate(180 100 140)" opacity=".18"><g class="cc-crown">${COURT[rank]}</g></g>`;
+    } else {
+      const pts = PIP_LAYOUT[rank];
+      const x0 = 68, x1 = 132, y0 = 52, y1 = 228, size = rank === '10' ? 28 : rank === '9' ? 31 : 36;
+      body = pts.map(([px, py]) => pip(suit, x0 + (x1 - x0) * px, y0 + (y1 - y0) * py, size, py > 0.5)).join('');
+    }
+    const svg = `<svg class="cface" viewBox="0 0 200 280" aria-hidden="true">${index}<g transform="rotate(180 100 140)">${index}</g>${body}</svg>`;
+    faceCache.set(key, svg);
+    return svg;
+  }
+
   /** Carta HTML. `c` < 0 = carta desconocida (nunca se pone su valor en el DOM). */
   function cardHTML(c, deckId, faceUp, extra) {
     const known = c >= 0;
@@ -4660,7 +4889,7 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
       const s = PVP.Cards.suitOf(c);
       red = i.red ? ' red' : '';
       const label = `${i.rank} de ${['picas', 'corazones', 'diamantes', 'tréboles'][s]}`;
-      front = `<span class="pc-corner tl">${i.rank}${suitSVG(s)}</span><span class="pc-pip">${suitSVG(s)}</span><span class="pc-corner br">${i.rank}${suitSVG(s)}</span><span class="sr-only">${label}</span>`;
+      front = `${cardFaceSVG(i.rank, s)}<span class="sr-only">${label}</span>`;
     }
     return `<div class="pcard deck-${deckId}${red}${faceUp && known ? ' up' : ''}${extra ? ' ' + extra : ''}" data-c="${known ? c : ''}">
       <div class="pc-inner"><div class="pc-face pc-front">${front}</div><div class="pc-face pc-back"><span class="pc-emblem">${suitSVG(0)}</span></div></div></div>`;
@@ -4719,7 +4948,7 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
       <circle cx="52" cy="58" r="3.5" fill="#0b1a24"/><path d="M30 72 L54 76 L36 80" stroke="#fff" stroke-width="2" fill="none"/></svg>`;
   }
 
-  PVP.Art = { SUIT_PATHS, suitSVG, dealerSVG, cardHTML, tableSwatch, tableEmblem, chipStackHTML, chipColor, avatarHTML, sharkSVG };
+  PVP.Art = { SUIT_PATHS, suitSVG, dealerSVG, cardHTML, cardFaceSVG, tableSwatch, tableEmblem, chipStackHTML, chipColor, avatarHTML, sharkSVG };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -4818,7 +5047,7 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
 
       this.u = 1;
       this._onResize = () => { this.fit(); this.layout(); };
-      if (root.ResizeObserver) { this._ro = new ResizeObserver(this._onResize); this._ro.observe(host); }
+      if (root.ResizeObserver) { this._ro = new ResizeObserver(this._onResize); this._ro.observe(this.root); }
       else root.addEventListener('resize', this._onResize);
 
       this.setTable(this.opts.table);
@@ -4875,8 +5104,12 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
         const p = polar(a, v ? 40 : 45, v ? 41 : 42);
         const b = polar(a, v ? 25 : 30, v ? 26 : 25);
         // Mantener placa y cartas dentro del escenario: nada se corta ni se monta sobre los bordes.
-        const halfW = (this.u * 72 * 100) / sw;
-        const halfH = (this.u * (hero ? 74 : 52) * 100) / sh;
+        // Caja real del asiento (o una estimación si aún no se ha pintado): nada se sale del escenario.
+        const el = this.seatEls[i];
+        const sideHero = hero && !v;
+        const estW = this.u * (sideHero ? 150 : 72), estH = this.u * (sideHero ? 48 : hero ? 74 : 52);
+        const halfW = (Math.max(estW, el.offsetWidth / 2) * 100) / sw;
+        const halfH = (Math.max(estH, el.offsetHeight / 2) * 100) / sh;
         p.x = U.clamp(p.x, halfW, 100 - halfW);
         p.y = U.clamp(p.y, halfH, 100 - halfH);
         this._place(this.seatEls[i], p.x, p.y, '%');
@@ -4964,18 +5197,24 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
     fit() {
       const w = this.root.clientWidth, h = this.root.clientHeight;
       if (!w || !h) return;
-      const ratio = this.orientation === 'v' ? 0.66 : 1.85;
+      // La mesa ocupa todo el espacio disponible (con proporciones razonables para que no se deforme).
+      const [lo, hi] = this.orientation === 'v' ? [0.56, 0.86] : [1.35, 2.1];
+      const ratio = U.clamp(w / h, lo, hi);
       let sw = w, sh = w / ratio;
       if (sh > h) { sh = h; sw = h * ratio; }
       this.stage.style.width = sw + 'px';
       this.stage.style.height = sh + 'px';
       this._scale(sw, sh);
+      // Crupier: siempre entero (la cabeza nunca queda bajo la barra superior).
+      const above = (h - sh) / 2 + sh * (this.orientation === 'v' ? 0.09 : 0.11);
+      const dw = U.clamp(above / (0.74 * 0.864), 64, 150 * this.u);
+      this.dealerEl.style.width = dw.toFixed(1) + 'px';
     }
 
     _scale(sw, sh) {
       // Escala de los elementos según el tamaño real de la mesa (cartas, placas).
-      const base = this.orientation === 'v' ? Math.min(sw / 430, sh / 700) : Math.min(sh / 520, sw / 980);
-      this.u = U.clamp(base, 0.55, 1.35);
+      const base = this.orientation === 'v' ? Math.min(sw / 400, sh / 640) : Math.min(sh / 440, sw / 860);
+      this.u = U.clamp(base, 0.66, 1.35);
       this.root.style.setProperty('--u', this.u.toFixed(3));
     }
 
@@ -5127,7 +5366,7 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
       }
       added.forEach((card, idx) => {
         this._flyFromDealer(card, idx * 140, 420);
-        setTimeout(() => card.classList.add('up'), 360 + idx * 140);
+        setTimeout(() => { card.classList.add('up'); if (PVP.Sound && PVP.Sound.flip) PVP.Sound.flip(); }, 360 + idx * 140);
         if (PVP.Sound) PVP.Sound.card(idx * 0.14);
       });
     }
@@ -5898,6 +6137,7 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
       if (this.isClient) this._syncHeroSeat();
       const snap = this.snap();
       this.view.onEvent(type, payload, snap);
+      this._dock(type, payload);
 
       switch (type) {
         case 'handStart':
@@ -5927,6 +6167,25 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
           break;
         default:
       }
+    }
+
+    /** Franja informativa bajo la mesa: tu mejor mano en cada momento y de quién es el turno. */
+    _dock(type, payload) {
+      const E = this.engine, me = E.seats[this.hero];
+      let hand = '';
+      if (me && me.inHand && !me.folded && me.cards.length === 2 && me.cards[0] >= 0) {
+        const C = PVP.Cards;
+        const r = me.cards.slice().sort((x, y) => C.rankOf(y) - C.rankOf(x)).map((c) => C.cardInfo(c).rank);
+        const sc = C.evaluate(me.cards.concat(E.board));
+        hand = E.board.length ? C.handName(sc) : (r[0] === r[1] ? 'Pareja de ' + r[0] : r.join('-') + (C.suitOf(me.cards[0]) === C.suitOf(me.cards[1]) ? ' del mismo palo' : ''));
+      } else if (me && me.inHand && me.folded) hand = 'Te has retirado';
+      let status = '';
+      if (type === 'turn' && payload) {
+        const p = E.seats[payload.seat];
+        status = p && p.isHero ? '¡Te toca!' : p ? 'Turno de ' + p.name : '';
+      } else if (type === 'handEnd') status = 'Mano terminada';
+      else if (type === 'handStart') status = 'Repartiendo…';
+      this.hud.dock(hand, status);
     }
 
     _onTurn(seat) {
@@ -6642,9 +6901,10 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
         const b = e.target.closest('button[data-v]');
         if (b && this.game) fn(b.dataset.v);
       });
-      seg('#seg-orient', (v) => this.game.setOrientation(v));
 
       document.addEventListener('keydown', (e) => this._key(e));
+      root.addEventListener('resize', () => this.layoutBar());
+      if (root.visualViewport) root.visualViewport.addEventListener('resize', () => this.layoutBar());
 
       // Panel de sala online
       $('#btn-share').addEventListener('click', () => this.game && this.game.showRoom());
@@ -6660,6 +6920,11 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
         const link = PVP.Net.inviteLink(this.room.code);
         navigator.share({ title: 'PokerVegasPro', text: PVP.Net.shareText(this.room.code, this.room.title).replace(/\nEntra directo:.*$/m, ''), url: link || undefined }).catch(() => {});
       });
+    }
+
+    dock(hand, status) {
+      $('#hd-hand').innerHTML = hand ? 'Tu mano: <b>' + U.esc(hand) + '</b>' : '';
+      if (status !== undefined) $('#hd-status').textContent = status;
     }
 
     /* ----- sala online ----- */
@@ -6697,6 +6962,8 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
       this.syncPeek(game.peek);
       $('#btn-share').hidden = !game.net;
       this.hideRoom();
+      this.dock('', '');
+      this.layoutBar();
       const names = { public: 'Partida pública', private: 'Sala privada', tournament: 'Torneo' };
       $('#game-mode').textContent = game.cfg.title || names[game.cfg.mode];
       this.setLevel('');
@@ -6712,7 +6979,6 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
     syncToggles() {
       if (!this.game) return;
       const mark = (id, v) => $$(id + ' button').forEach((b) => b.classList.toggle('on', b.dataset.v === String(v)));
-      mark('#seg-orient', this.game._orientation());
     }
 
     syncPeek(on) {
@@ -6739,7 +7005,8 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
       $('#call-amt').textContent = U.fmt(legal.toCall);
       const allInCall = !legal.canCheck && legal.toCall >= engine.seats[this.game ? this.game.hero : 0].stack;
       $('[data-act="call"]', bar).classList.toggle('is-allin', allInCall);
-      $('.ab-raise', bar).style.display = legal.canRaise ? '' : 'none';
+      // visibility (no display) para que el panel no cambie de tamaño y la mesa no salte.
+      $('.ab-raise', bar).style.visibility = legal.canRaise ? '' : 'hidden';
       $('[data-act="raise"]', bar).style.display = legal.canRaise ? '' : 'none';
       $('#raise-label').textContent = legal.isBet ? 'Apostar' : 'Subir a';
       $('#ab-pot').textContent = U.fmt(legal.pot);
@@ -6751,6 +7018,19 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
       this.range.max = legal.maxTo;
       this.range.step = 1;
       this._setRaise(legal.minTo);
+    }
+
+    /**
+     * Reserva el sitio exacto del panel de acciones: abajo (vertical / escritorio) o a la derecha en móviles en
+     * horizontal, donde la altura es escasa. Así la mesa usa todo el espacio restante sin quedar tapada.
+     */
+    layoutBar() {
+      const scr = $('#screen-game');
+      const side = root.matchMedia && root.matchMedia('(orientation: landscape) and (max-height: 540px)').matches;
+      const bar = this.bar;
+      scr.style.setProperty('--reserve', side ? '0px' : bar.offsetHeight + 12 + 'px');
+      scr.style.setProperty('--gutter', side ? bar.offsetWidth + 10 + 'px' : '0px');
+      scr.classList.toggle('side-bar', !!side);
     }
 
     hideActions() {
@@ -7531,8 +7811,15 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
     stats: renderStats,
   };
 
-  function go(name) {
+  function go(name, opts) {
     if (!store.profile && name !== 'welcome') name = 'welcome';
+    // Historial del navegador: el botón/gesto «atrás» del móvil vuelve al menú en lugar de salir del juego.
+    if (!(opts && opts.pop) && name !== current) {
+      try {
+        if (name === 'menu' || name === 'welcome') history.replaceState({ s: name }, '');
+        else history.pushState({ s: name }, '');
+      } catch (e) { /* visores sin historial */ }
+    }
     $$('.screen').forEach((s) => s.classList.toggle('active', s.id === 'screen-' + name));
     $('#topbar').classList.toggle('hidden', name === 'welcome' || name === 'game');
     document.body.dataset.screen = name;
@@ -7994,6 +8281,16 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
     joinRoom(m[1]);
   }
   root.addEventListener('hashchange', handleRoomHash);
+  root.addEventListener('popstate', () => {
+    const open = document.querySelector('.modal.open:not(#modal-confirm):not(#modal-join)');
+    if (current === 'game' && game) {
+      try { history.pushState({ s: 'game' }, ''); } catch (e) { /* sin historial */ }
+      if (open) open.classList.remove('open'); else $('#btn-leave').click();
+      return;
+    }
+    if (open) open.classList.remove('open');
+    if (current !== 'menu' && current !== 'welcome') go('menu', { pop: true });
+  });
   root.addEventListener('pagehide', () => { if (game && game.net) game.leave(); });
   function segValIn(form, name) {
     const b = $(`[data-name="${name}"] button.on`, form);
@@ -8212,12 +8509,6 @@ body[data-screen='menu'] .music-fab { left: 14px; right: auto; bottom: max(14px,
     e.preventDefault();
     const input = $('#redeem-input');
     if (await redeemCode(input.value, $('#form-redeem button'))) input.value = '';
-  });
-  $('#mv-code').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = e.target.code;
-    if (!input.value.trim()) return input.focus();
-    if (await redeemCode(input.value, $('#mv-code button'), $('#mv-code-msg'))) input.value = '';
   });
 
   /* ---------- estadísticas + Coach ---------- */

@@ -321,44 +321,133 @@
 
     /* ---------- efectos ---------- */
 
+    /* ---------- muestras de efectos generadas una vez (fichas de arcilla y naipes) ----------
+     * Síntesis física sencilla: modos resonantes amortiguados para el «clac» de la ficha y ruido filtrado con
+     * textura de papel para el roce y el golpe de la carta sobre el tapete. Se reproducen secas (sin eco). */
+    _buffers() {
+      if (this._sfxBufs) return this._sfxBufs;
+      const ctx = this.ctx, sr = ctx.sampleRate;
+      const make = (dur, fill) => {
+        const b = ctx.createBuffer(1, Math.floor(sr * dur), sr);
+        fill(b.getChannelData(0), sr);
+        let peak = 0;
+        const d = b.getChannelData(0);
+        for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+        if (peak) for (let i = 0; i < d.length; i++) d[i] /= peak;
+        return b;
+      };
+      // Ficha contra ficha: transitorio muy corto + 4 modos (2,5–7,5 kHz) que se apagan en 10–30 ms.
+      const clack = (seed) => make(0.09, (d, sr) => {
+        const modes = [[2350, 1, 0.016], [3720, 0.8, 0.012], [5180, 0.55, 0.009], [7400, 0.3, 0.006], [1450, 0.35, 0.02]]
+          .map(([f, a, t]) => [f * (0.94 + ((seed * 7919 + f) % 97) / 97 * 0.12), a, t]);
+        let lp = 0;
+        for (let i = 0; i < d.length; i++) {
+          const t = i / sr;
+          let v = 0;
+          for (const [f, a, tau] of modes) v += a * Math.sin(2 * Math.PI * f * t) * Math.exp(-t / tau);
+          const n = Math.random() * 2 - 1;
+          lp += 0.35 * (n - lp);
+          v += (n - lp) * 1.4 * Math.exp(-t / 0.0012); // chasquido inicial (ruido agudo)
+          d[i] = v;
+        }
+      });
+      // Carta: roce de papel (ruido paso banda con grano) y golpe suave sobre el fieltro al final.
+      const card = (len) => make(len, (d, sr) => {
+        let lp1 = 0, lp2 = 0, lpT = 0;
+        const slide = len - 0.03;
+        for (let i = 0; i < d.length; i++) {
+          const t = i / sr;
+          const n = Math.random() * 2 - 1;
+          lp1 += 0.55 * (n - lp1);
+          lp2 += 0.12 * (lp1 - lp2);
+          const band = lp1 - lp2; // ~1,5–6 kHz
+          const env = t < 0.004 ? t / 0.004 : Math.exp(-(t - 0.004) / (slide * 0.45));
+          const grain = 0.65 + 0.35 * Math.sin(t * 2 * Math.PI * 180 + Math.sin(t * 900) * 2);
+          let v = band * env * grain * (t < slide ? 1 : Math.exp(-(t - slide) / 0.006));
+          // golpe sordo en el tapete
+          const tt = t - slide;
+          if (tt >= 0) { lpT += 0.08 * (n - lpT); v += lpT * 3.2 * Math.exp(-tt / 0.012); }
+          d[i] = v;
+        }
+      });
+      // Voltear carta: chasquido seco de cartulina.
+      const snap = make(0.05, (d, sr) => {
+        let lp = 0;
+        for (let i = 0; i < d.length; i++) {
+          const t = i / sr, n = Math.random() * 2 - 1;
+          lp += 0.25 * (n - lp);
+          d[i] = (n - lp) * Math.exp(-t / 0.006) + Math.sin(2 * Math.PI * 1900 * t) * 0.25 * Math.exp(-t / 0.004);
+        }
+      });
+      // Retirarse: cartas deslizándose boca abajo sobre el tapete.
+      const muck = make(0.22, (d, sr) => {
+        let lp = 0;
+        for (let i = 0; i < d.length; i++) {
+          const t = i / sr, n = Math.random() * 2 - 1;
+          lp += 0.18 * (n - lp);
+          d[i] = lp * Math.min(1, t / 0.02) * Math.exp(-t / 0.07);
+        }
+      });
+      this._sfxBufs = { clack: [0, 1, 2, 3, 4].map(clack), card: [card(0.13), card(0.16), card(0.11)], snap, muck };
+      return this._sfxBufs;
+    },
+
+    _play(buf, t, vol, rate, lowpass) {
+      const ctx = this.ctx;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = rate || 1;
+      const g = ctx.createGain();
+      g.gain.value = vol;
+      let node = src;
+      if (lowpass) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lowpass; node = src.connect(f); }
+      node.connect(g).connect(this.sfxDry);
+      src.start(t);
+    },
+
     sfx(name, delay) {
       if (!this.sfxOn) return;
       const ctx = this._ensure();
       if (!ctx) return;
+      if (!this.sfxDry) { this.sfxDry = ctx.createGain(); this.sfxDry.gain.value = 0.85; this.sfxDry.connect(this.master); }
+      const B = this._buffers();
       const t = ctx.currentTime + (delay || 0);
+      const r = () => 0.94 + Math.random() * 0.12;
       switch (name) {
-        case 'chip': // ficha de cerámica: parciales inarmónicos muy cortos
-          for (const [f, v] of [[2650, 0.07], [4120, 0.05], [5830, 0.03]]) this._tone(f * (0.97 + Math.random() * 0.06), t, 0.07, v, 'sine');
-          this._noise(t, 0.03, 6000, 0.05, 'highpass', this.sfxBus);
+        case 'chip': // una ficha
+          this._play(B.clack[Math.floor(Math.random() * B.clack.length)], t, 0.32, r());
           break;
-        case 'chips': // pila de fichas cayendo al bote
-          for (let i = 0; i < 6; i++) this.sfx('chip', (delay || 0) + i * 0.035 + Math.random() * 0.02);
-          break;
-        case 'card': { // carta deslizándose sobre el tapete
-          const f = this._noise(t, 0.16, 1800, 0.09, 'bandpass', this.sfxBus);
-          f.frequency.setValueAtTime(3200, t);
-          f.frequency.exponentialRampToValueAtTime(900, t + 0.15);
+        case 'chips': { // apuesta: 3–5 fichas que caen una sobre otra, cada vez más suaves
+          const n = 3 + Math.floor(Math.random() * 3);
+          let at = 0;
+          for (let i = 0; i < n; i++) {
+            this._play(B.clack[(i + Math.floor(Math.random() * 5)) % 5], t + at, 0.34 * Math.pow(0.82, i), r());
+            at += 0.028 + Math.random() * 0.03;
+          }
           break;
         }
+        case 'card':
+          this._play(B.card[Math.floor(Math.random() * B.card.length)], t, 0.42, r(), 7000);
+          break;
         case 'flip':
-          this._noise(t, 0.06, 4200, 0.06, 'bandpass', this.sfxBus);
+          this._play(B.snap, t, 0.3, r());
           break;
         case 'click':
-          this._tone(1800, t, 0.035, 0.03, 'triangle');
+          this._tone(1800, t, 0.03, 0.025, 'triangle');
           break;
         case 'fold':
-          this._noise(t, 0.12, 600, 0.05, 'lowpass', this.sfxBus);
+          this._play(B.muck, t, 0.3, r(), 3500);
           break;
         case 'turn':
           this._tone(880, t, 0.35, 0.05); this._tone(1320, t + 0.11, 0.4, 0.04);
           break;
         case 'win':
           [523, 659, 784, 1046, 1318].forEach((f, i) => this._tone(f, t + i * 0.08, 0.5, 0.05, 'triangle'));
-          for (let i = 0; i < 8; i++) this._tone(2600 + Math.random() * 2400, t + 0.3 + i * 0.05, 0.25, 0.015);
+          for (let i = 0; i < 10; i++) this._play(B.clack[i % 5], t + 0.35 + i * 0.045 + Math.random() * 0.02, 0.22 * Math.pow(0.9, i), r());
           break;
-        case 'coins':
-          for (let i = 0; i < 14; i++) this.sfx('chip', (delay || 0) + i * 0.05 + Math.random() * 0.03);
-          [784, 988, 1175, 1568].forEach((f, i) => this._tone(f, t + i * 0.07, 0.4, 0.04, 'triangle'));
+        case 'coins': // lluvia de fichas al cobrar
+          for (let i = 0; i < 16; i++) this._play(B.clack[i % 5], t + i * 0.04 + Math.random() * 0.03, 0.26 * Math.pow(0.93, i), r());
+          [784, 988, 1175, 1568].forEach((f, i) => this._tone(f, t + i * 0.07, 0.4, 0.035, 'triangle'));
           break;
         default:
       }
@@ -374,6 +463,7 @@
   if (PVP.Sound) {
     const S = PVP.Sound;
     S.card = (d) => Audio.sfx('card', d);
+    S.flip = (d) => Audio.sfx('flip', d);
     S.chip = () => Audio.sfx('chips');
     S.turn = () => Audio.sfx('turn');
     S.fold = () => Audio.sfx('fold');

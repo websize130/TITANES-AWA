@@ -92,7 +92,7 @@
 
       this.u = 1;
       this._onResize = () => { this.fit(); this.layout(); };
-      if (root.ResizeObserver) { this._ro = new ResizeObserver(this._onResize); this._ro.observe(host); }
+      if (root.ResizeObserver) { this._ro = new ResizeObserver(this._onResize); this._ro.observe(this.root); }
       else root.addEventListener('resize', this._onResize);
 
       this.setTable(this.opts.table);
@@ -149,8 +149,12 @@
         const p = polar(a, v ? 40 : 45, v ? 41 : 42);
         const b = polar(a, v ? 25 : 30, v ? 26 : 25);
         // Mantener placa y cartas dentro del escenario: nada se corta ni se monta sobre los bordes.
-        const halfW = (this.u * 72 * 100) / sw;
-        const halfH = (this.u * (hero ? 74 : 52) * 100) / sh;
+        // Caja real del asiento (o una estimación si aún no se ha pintado): nada se sale del escenario.
+        const el = this.seatEls[i];
+        const sideHero = hero && !v;
+        const estW = this.u * (sideHero ? 150 : 72), estH = this.u * (sideHero ? 48 : hero ? 74 : 52);
+        const halfW = (Math.max(estW, el.offsetWidth / 2) * 100) / sw;
+        const halfH = (Math.max(estH, el.offsetHeight / 2) * 100) / sh;
         p.x = U.clamp(p.x, halfW, 100 - halfW);
         p.y = U.clamp(p.y, halfH, 100 - halfH);
         this._place(this.seatEls[i], p.x, p.y, '%');
@@ -238,18 +242,24 @@
     fit() {
       const w = this.root.clientWidth, h = this.root.clientHeight;
       if (!w || !h) return;
-      const ratio = this.orientation === 'v' ? 0.66 : 1.85;
+      // La mesa ocupa todo el espacio disponible (con proporciones razonables para que no se deforme).
+      const [lo, hi] = this.orientation === 'v' ? [0.56, 0.86] : [1.35, 2.1];
+      const ratio = U.clamp(w / h, lo, hi);
       let sw = w, sh = w / ratio;
       if (sh > h) { sh = h; sw = h * ratio; }
       this.stage.style.width = sw + 'px';
       this.stage.style.height = sh + 'px';
       this._scale(sw, sh);
+      // Crupier: siempre entero (la cabeza nunca queda bajo la barra superior).
+      const above = (h - sh) / 2 + sh * (this.orientation === 'v' ? 0.09 : 0.11);
+      const dw = U.clamp(above / (0.74 * 0.864), 64, 150 * this.u);
+      this.dealerEl.style.width = dw.toFixed(1) + 'px';
     }
 
     _scale(sw, sh) {
       // Escala de los elementos según el tamaño real de la mesa (cartas, placas).
-      const base = this.orientation === 'v' ? Math.min(sw / 430, sh / 700) : Math.min(sh / 520, sw / 980);
-      this.u = U.clamp(base, 0.55, 1.35);
+      const base = this.orientation === 'v' ? Math.min(sw / 400, sh / 640) : Math.min(sh / 440, sw / 860);
+      this.u = U.clamp(base, 0.66, 1.35);
       this.root.style.setProperty('--u', this.u.toFixed(3));
     }
 
@@ -401,7 +411,7 @@
       }
       added.forEach((card, idx) => {
         this._flyFromDealer(card, idx * 140, 420);
-        setTimeout(() => card.classList.add('up'), 360 + idx * 140);
+        setTimeout(() => { card.classList.add('up'); if (PVP.Sound && PVP.Sound.flip) PVP.Sound.flip(); }, 360 + idx * 140);
         if (PVP.Sound) PVP.Sound.card(idx * 0.14);
       });
     }

@@ -177,11 +177,6 @@
             <span class="mv-txt"><b>Bonus diario</b><small>Hasta 256.000 monedas</small></span><span class="daily-badge" id="daily-badge" hidden>¡Listo!</span><span class="mv-arrow" aria-hidden="true">›</span>
           </button>
         </nav>
-        <form class="mv-code" id="mv-code" autocomplete="off">
-          <input name="code" maxlength="32" placeholder="¿Tienes un código?" aria-label="Código promocional" autocapitalize="off" spellcheck="false" />
-          <button type="submit">Canjear</button>
-        </form>
-        <p class="mv-code-msg" id="mv-code-msg" aria-live="polite"></p>
 
         <aside class="ad-slot" id="ad-menu" hidden aria-label="Publicidad"></aside>
         <footer class="site-footer mv-footer">
@@ -326,10 +321,6 @@
         <button class="ghost-btn sm" id="btn-leave">‹ Salir</button>
         <div class="gt-info"><b id="game-mode">Partida</b><span id="game-level">Nivel 1</span></div>
         <div class="gt-tools">
-          <div class="seg mini" id="seg-orient" title="Orientación de la mesa">
-            <button data-v="h" aria-label="Horizontal"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="5"/></svg></button>
-            <button data-v="v" aria-label="Vertical"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="5"/></svg></button>
-          </div>
           <button class="icon-btn sm" id="btn-share" aria-label="Invitar a la sala" title="Invitar amigos" hidden>➕</button>
           <button class="icon-btn sm" id="btn-skin" aria-label="Mesa y cartas" title="Mesa y cartas">🎨</button>
           <button class="icon-btn sm" id="btn-music" aria-label="Música" title="Música">♫</button>
@@ -340,6 +331,7 @@
 
       <div class="game-host" id="game-host"></div>
 
+      <div class="hand-dock" id="hand-dock" aria-live="polite"><span class="hd-hand" id="hd-hand"></span><span class="hd-status" id="hd-status"></span></div>
       <button class="peek-btn" id="btn-peek" aria-pressed="false"><span class="eye">👁</span><span class="lbl">Mirar cartas</span></button>
 
       <div class="action-bar" id="action-bar" aria-live="polite">

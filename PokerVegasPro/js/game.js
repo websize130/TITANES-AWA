@@ -272,6 +272,7 @@
       if (this.isClient) this._syncHeroSeat();
       const snap = this.snap();
       this.view.onEvent(type, payload, snap);
+      this._dock(type, payload);
 
       switch (type) {
         case 'handStart':
@@ -301,6 +302,25 @@
           break;
         default:
       }
+    }
+
+    /** Franja informativa bajo la mesa: tu mejor mano en cada momento y de quién es el turno. */
+    _dock(type, payload) {
+      const E = this.engine, me = E.seats[this.hero];
+      let hand = '';
+      if (me && me.inHand && !me.folded && me.cards.length === 2 && me.cards[0] >= 0) {
+        const C = PVP.Cards;
+        const r = me.cards.slice().sort((x, y) => C.rankOf(y) - C.rankOf(x)).map((c) => C.cardInfo(c).rank);
+        const sc = C.evaluate(me.cards.concat(E.board));
+        hand = E.board.length ? C.handName(sc) : (r[0] === r[1] ? 'Pareja de ' + r[0] : r.join('-') + (C.suitOf(me.cards[0]) === C.suitOf(me.cards[1]) ? ' del mismo palo' : ''));
+      } else if (me && me.inHand && me.folded) hand = 'Te has retirado';
+      let status = '';
+      if (type === 'turn' && payload) {
+        const p = E.seats[payload.seat];
+        status = p && p.isHero ? '¡Te toca!' : p ? 'Turno de ' + p.name : '';
+      } else if (type === 'handEnd') status = 'Mano terminada';
+      else if (type === 'handStart') status = 'Repartiendo…';
+      this.hud.dock(hand, status);
     }
 
     _onTurn(seat) {

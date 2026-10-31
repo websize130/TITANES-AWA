@@ -80,9 +80,10 @@
         const b = e.target.closest('button[data-v]');
         if (b && this.game) fn(b.dataset.v);
       });
-      seg('#seg-orient', (v) => this.game.setOrientation(v));
 
       document.addEventListener('keydown', (e) => this._key(e));
+      root.addEventListener('resize', () => this.layoutBar());
+      if (root.visualViewport) root.visualViewport.addEventListener('resize', () => this.layoutBar());
 
       // Panel de sala online
       $('#btn-share').addEventListener('click', () => this.game && this.game.showRoom());
@@ -98,6 +99,11 @@
         const link = PVP.Net.inviteLink(this.room.code);
         navigator.share({ title: 'PokerVegasPro', text: PVP.Net.shareText(this.room.code, this.room.title).replace(/\nEntra directo:.*$/m, ''), url: link || undefined }).catch(() => {});
       });
+    }
+
+    dock(hand, status) {
+      $('#hd-hand').innerHTML = hand ? 'Tu mano: <b>' + U.esc(hand) + '</b>' : '';
+      if (status !== undefined) $('#hd-status').textContent = status;
     }
 
     /* ----- sala online ----- */
@@ -135,6 +141,8 @@
       this.syncPeek(game.peek);
       $('#btn-share').hidden = !game.net;
       this.hideRoom();
+      this.dock('', '');
+      this.layoutBar();
       const names = { public: 'Partida pública', private: 'Sala privada', tournament: 'Torneo' };
       $('#game-mode').textContent = game.cfg.title || names[game.cfg.mode];
       this.setLevel('');
@@ -150,7 +158,6 @@
     syncToggles() {
       if (!this.game) return;
       const mark = (id, v) => $$(id + ' button').forEach((b) => b.classList.toggle('on', b.dataset.v === String(v)));
-      mark('#seg-orient', this.game._orientation());
     }
 
     syncPeek(on) {
@@ -177,7 +184,8 @@
       $('#call-amt').textContent = U.fmt(legal.toCall);
       const allInCall = !legal.canCheck && legal.toCall >= engine.seats[this.game ? this.game.hero : 0].stack;
       $('[data-act="call"]', bar).classList.toggle('is-allin', allInCall);
-      $('.ab-raise', bar).style.display = legal.canRaise ? '' : 'none';
+      // visibility (no display) para que el panel no cambie de tamaño y la mesa no salte.
+      $('.ab-raise', bar).style.visibility = legal.canRaise ? '' : 'hidden';
       $('[data-act="raise"]', bar).style.display = legal.canRaise ? '' : 'none';
       $('#raise-label').textContent = legal.isBet ? 'Apostar' : 'Subir a';
       $('#ab-pot').textContent = U.fmt(legal.pot);
@@ -189,6 +197,19 @@
       this.range.max = legal.maxTo;
       this.range.step = 1;
       this._setRaise(legal.minTo);
+    }
+
+    /**
+     * Reserva el sitio exacto del panel de acciones: abajo (vertical / escritorio) o a la derecha en móviles en
+     * horizontal, donde la altura es escasa. Así la mesa usa todo el espacio restante sin quedar tapada.
+     */
+    layoutBar() {
+      const scr = $('#screen-game');
+      const side = root.matchMedia && root.matchMedia('(orientation: landscape) and (max-height: 540px)').matches;
+      const bar = this.bar;
+      scr.style.setProperty('--reserve', side ? '0px' : bar.offsetHeight + 12 + 'px');
+      scr.style.setProperty('--gutter', side ? bar.offsetWidth + 10 + 'px' : '0px');
+      scr.classList.toggle('side-bar', !!side);
     }
 
     hideActions() {
