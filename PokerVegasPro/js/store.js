@@ -310,25 +310,45 @@
         return { today: s.today, claimed, amounts, canClaim: !claimed.includes(s.today) };
       }
       const t = todayInfo();
-      let d = read(KEY_DAILY, null);
-      if (!d || d.weekStart !== t.weekStart || d.player !== this.profile.id) d = { weekStart: t.weekStart, player: this.profile.id, claimed: [] };
-      return { today: t.dow, claimed: d.claimed, amounts, canClaim: !d.claimed.includes(t.dow) };
+      const d = this._localDaily(t);
+      return { today: t.dow, claimed: d.claimed.slice(), amounts, canClaim: !d.claimed.includes(t.dow) };
+    }
+
+    /**
+     * Estado del bonus del invitado. Vive en el propio perfil (en memoria y guardado con él), así que aunque el
+     * navegador no permita guardar datos (modo privado, visores de archivos) no se puede cobrar dos veces en la sesión.
+     */
+    _localDaily(t) {
+      const p = this.profile;
+      let d = p.daily;
+      if (!d) {
+        const old = read(KEY_DAILY, null); // versión anterior: estado fuera del perfil
+        if (old && old.player === p.id) d = { weekStart: old.weekStart, claimed: old.claimed || [] };
+      }
+      if (!d || d.weekStart !== t.weekStart) d = { weekStart: t.weekStart, claimed: [] };
+      p.daily = d;
+      return d;
     }
 
     /** Reclama el premio de hoy. Devuelve el importe. */
     async claimDaily() {
       if (this.online) {
-        const r = await this.backend.claimDaily();
-        this.profile.coins = Number(r.balance);
-        this.emit('change', this.profile);
-        return Number(r.amount);
+        if (this._claiming) throw new Error('Un momento…');
+        this._claiming = true;
+        try {
+          const r = await this.backend.claimDaily();
+          this.profile.coins = Number(r.balance);
+          this.emit('change', this.profile);
+          return Number(r.amount);
+        } finally {
+          this._claiming = false;
+        }
       }
+      if (this._claiming) throw new Error('Un momento…');
       const t = todayInfo();
-      let d = read(KEY_DAILY, null);
-      if (!d || d.weekStart !== t.weekStart || d.player !== this.profile.id) d = { weekStart: t.weekStart, player: this.profile.id, claimed: [] };
+      const d = this._localDaily(t);
       if (d.claimed.includes(t.dow)) throw new Error('Ya reclamaste la recompensa de hoy');
       d.claimed.push(t.dow);
-      write(KEY_DAILY, d);
       const amount = dailyAmount(t.dow);
       this.profile.coins += amount;
       this.save();

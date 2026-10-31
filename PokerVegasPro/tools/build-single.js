@@ -34,8 +34,14 @@ function build(file) {
     html = html.replace(/(\s*)<link rel="stylesheet" href="css\/app\.css" \/>/, (m, ws) => `${ws}<style>/* Tailwind CSS compilado */\n${safeCss(tw)}\n</style>${m}`);
   }
 
+  // Las imágenes referenciadas desde el CSS (../assets/…) se incrustan como data URI.
+  const inlineAssets = (css) => css.replace(/url\((['"]?)\.\.\/(assets\/[^'")]+)\1\)/g, (m, q, rel) => {
+    const file = path.join(ROOT, rel);
+    const mime = { webp: 'image/webp', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', svg: 'image/svg+xml' }[rel.split('.').pop()];
+    return `url("data:${mime};base64,${fs.readFileSync(file).toString('base64')}")`;
+  });
   html = html.replace(/<link rel="stylesheet" href="(css\/[^"]+)" \/>/g, (m, href) =>
-    `<style>/* ${href} */\n${safeCss(fs.readFileSync(path.join(ROOT, href), 'utf8'))}\n</style>`);
+    `<style>/* ${href} */\n${safeCss(inlineAssets(fs.readFileSync(path.join(ROOT, href), 'utf8')))}\n</style>`);
 
   if (threePath) {
     html = html.replace(/<script src="https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/three\.js\/r128\/three\.min\.js"><\/script>/, () =>

@@ -130,56 +130,59 @@
     </section>
 
     <!-- ===================== MENÚ PRINCIPAL ===================== -->
-    <section id="screen-menu" class="screen">
-      <div class="menu-grid">
-        <div class="logo-wrap big">
-          <div class="logo-cards"><span>A<i>♠</i></span><span class="r">A<i>♥</i></span><span>A<i>♣</i></span><span class="r">A<i>♦</i></span></div>
-          <div class="logo-glow"><div class="logo-sign">
-            <div class="logo-bulbs"></div>
-            <h1 class="logo-title">POKER</h1>
-            <p class="logo-script">Vegas Pro</p>
-            <span class="logo-crown">♛</span>
-          </div></div>
+    <!-- Escena con la proporción exacta de la imagen (3:2): los controles reales se alinean sobre los dibujados. -->
+    <section id="screen-menu" class="screen menu-v2">
+      <div class="mv-backdrop" aria-hidden="true"></div>
+      <div class="mv-scene" id="mv-scene">
+        <div class="mv-img" aria-hidden="true"></div>
+        <div class="mv-fx" aria-hidden="true">
+          <i class="fx-neon"></i><i class="fx-sweep"></i><i class="fx-fountain"></i><i class="fx-fountain f2"></i>
+          <i class="fx-tower"></i><i class="fx-balloon"></i><i class="fx-water"></i>
         </div>
 
-        <nav class="menu-list" aria-label="Menú principal">
-          <button class="menu-item daily" id="btn-daily" type="button">
-            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M4 9h16v3H4zM5 12h14v9H5zM11 9h2v12h-2zM12 9C9 9 6.5 7.6 7 5.5 7.6 3.3 10.6 4.4 12 9c1.4-4.6 4.4-5.7 5-3.5.5 2.1-2 3.5-5 3.5Z"/></svg></span>
-            <span class="mi-text"><b>Bonus diario</b><small>De 4.000 a 256.000 monedas · ×2 cada día</small></span>
-            <span class="daily-badge" id="daily-badge" hidden>¡Listo!</span><span class="mi-arrow">›</span>
+        <button class="mv-profile" id="mv-profile" type="button" aria-label="Editar perfil y avatar">
+          <span class="mv-avatar" id="mv-avatar"></span>
+          <span class="mv-pinfo"><b id="mv-name">Jugador</b><span><em id="mv-level">Nivel 1</em><i class="mv-xp"><i id="mv-xp"></i></i></span></span>
+        </button>
+        <div class="mv-pill mv-coins"><span class="mv-chip" aria-hidden="true"></span><b id="mv-coins">0</b><button class="mv-plus" data-go="shop" type="button" aria-label="Comprar monedas">+</button></div>
+        <div class="mv-pill mv-tier"><span class="mv-gold" aria-hidden="true">$</span><b id="mv-tier">Gratis</b><button class="mv-plus" data-go="shop" type="button" aria-label="Tienda">+</button></div>
+        <button class="mv-gear" data-modal="settings" type="button" aria-label="Ajustes">
+          <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm8.94-2.5.06-1-.06-1 2.03-1.58-2-3.46-2.39.96a7.97 7.97 0 0 0-1.73-1L16.5 2h-4l-.35 2.42c-.62.25-1.2.59-1.73 1l-2.39-.96-2 3.46L8.06 11l-.06 1 .06 1-2.03 1.58 2 3.46 2.39-.96c.53.41 1.11.75 1.73 1L12.5 22h4l.35-2.42c.62-.25 1.2-.59 1.73-1l2.39.96 2-3.46L20.94 13Z" transform="translate(-2.5 0)"/></svg>
+        </button>
+
+        <nav class="mv-menu" aria-label="Menú principal">
+          <button class="mv-btn b-play primary" data-go="public" type="button">
+            <span class="mv-ico"><svg viewBox="0 0 24 24"><path d="M12 2C9 6 4 8.5 4 13a4 4 0 0 0 6.5 3.1L9 22h6l-1.5-5.9A4 4 0 0 0 20 13c0-4.5-5-7-8-11Z"/></svg></span>
+            <span class="mv-txt"><b>Jugar</b><small>Partidas rápidas · Torneos · Cash</small></span><span class="mv-arrow" aria-hidden="true">›</span>
           </button>
-          <button class="menu-item primary" data-go="public">
-            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M12 2C9 6 4 8.5 4 13a4 4 0 0 0 6.5 3.1L9 22h6l-1.5-5.9A4 4 0 0 0 20 13c0-4.5-5-7-8-11Z"/></svg></span>
-            <span class="mi-text"><b>Jugar</b><small>Partidas públicas · Mesas cash</small></span><span class="mi-arrow">›</span>
+          <button class="mv-btn b-tour" data-go="tournaments" type="button">
+            <span class="mv-ico"><svg viewBox="0 0 24 24"><path d="M7 3h10v2h4v3a5 5 0 0 1-5 5h-.3A5 5 0 0 1 13 15.9V18h3v3H8v-3h3v-2.1A5 5 0 0 1 8.3 13H8a5 5 0 0 1-5-5V5h4V3Zm0 4H5v1a3 3 0 0 0 2 2.8V7Zm10 0v3.8A3 3 0 0 0 19 8V7h-2Z"/></svg></span>
+            <span class="mv-txt"><b>Torneos</b><small>Compite · Gana · Demuestra</small></span><span class="mv-arrow" aria-hidden="true">›</span>
           </button>
-          <button class="menu-item" data-go="tournaments">
-            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M7 3h10v2h4v3a5 5 0 0 1-5 5h-.3A5 5 0 0 1 13 15.9V18h3v3H8v-3h3v-2.1A5 5 0 0 1 8.3 13H8a5 5 0 0 1-5-5V5h4V3Zm0 4H5v1a3 3 0 0 0 2 2.8V7Zm10 0v3.8A3 3 0 0 0 19 8V7h-2Z"/></svg></span>
-            <span class="mi-text"><b>Torneos</b><small>Bronce · Plata · Oro · Diamante</small></span><span class="mi-arrow">›</span>
+          <button class="mv-btn b-priv" data-go="private" type="button">
+            <span class="mv-ico"><svg viewBox="0 0 24 24"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM1 20c0-3.3 3.6-6 8-6s8 2.7 8 6v1H1v-1Zm17.5 1v-1c0-1.9-.8-3.6-2.1-4.9 3.5.2 6.6 2.3 6.6 4.9v1h-4.5Z"/></svg></span>
+            <span class="mv-txt"><b>Salas privadas</b><small>Juega con tus amigos</small></span><span class="mv-arrow" aria-hidden="true">›</span>
           </button>
-          <button class="menu-item" data-go="private">
-            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM1 20c0-3.3 3.6-6 8-6s8 2.7 8 6v1H1v-1Zm17.5 1v-1c0-1.9-.8-3.6-2.1-4.9 3.5.2 6.6 2.3 6.6 4.9v1h-4.5Z"/></svg></span>
-            <span class="mi-text"><b>Salas privadas</b><small>3 a 10 jugadores · Tus reglas</small></span><span class="mi-arrow">›</span>
+          <button class="mv-btn b-stats" data-go="stats" type="button">
+            <span class="mv-ico"><svg viewBox="0 0 24 24"><path d="M3 21V12h4v9H3Zm7 0V8h4v13h-4Zm7 0V4h4v17h-4ZM2 9l6-5 5 3 7-5" fill-rule="evenodd"/></svg></span>
+            <span class="mv-txt"><b>Estadísticas</b><small>Tu progreso · Tus logros</small></span><span class="mv-arrow" aria-hidden="true">›</span>
           </button>
-          <button class="menu-item" data-go="stats">
-            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M3 21V10h4v11H3Zm7 0V4h4v17h-4Zm7 0v-7h4v7h-4Z"/></svg></span>
-            <span class="mi-text"><b>Estadísticas</b><small>Tu progreso · Coach Pro</small></span><span class="mi-arrow">›</span>
+          <button class="mv-btn b-shop" data-go="shop" type="button">
+            <span class="mv-ico"><svg viewBox="0 0 24 24"><path d="M3.5 6.2 11 4.4l3.3 13.4-7.5 1.8L3.5 6.2Zm9.6-2.6 7.6 2.2-3.9 13.2-2-.6L17.6 7l-4.5-3.4ZM8.2 10.8c-.9 1.4-2.3 2.3-1.8 3.6.3.8 1.2 1.1 1.9.7l-.2 1.8 1.9-.5-.9-1.6c.8.2 1.6-.3 1.7-1.2.2-1.4-1.6-1.8-2.6-2.8Z"/></svg></span>
+            <span class="mv-txt"><b>Tienda</b><small>Mejora tu experiencia</small></span><span class="mv-arrow" aria-hidden="true">›</span>
           </button>
-          <button class="menu-item" data-go="shop">
-            <span class="mi-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5 12.5 3l3.6 12.3-8.5 2.5L4 5.5Zm10.9-1 4.7 1.4-3.6 12.3-1.3-.4 2.9-9.9-2.7-3.4Z"/></svg></span>
-            <span class="mi-text"><b>Tienda</b><small>Packs Élite y Leyenda · Mesas · Barajas</small></span><span class="mi-arrow">›</span>
+          <button class="mv-btn b-daily" id="btn-daily" type="button">
+            <span class="mv-ico"><svg viewBox="0 0 24 24"><path d="M4 9h16v3H4zM5 12h14v9H5zM11 9h2v12h-2zM12 9C9 9 6.5 7.6 7 5.5 7.6 3.3 10.6 4.4 12 9c1.4-4.6 4.4-5.7 5-3.5.5 2.1-2 3.5-5 3.5Z"/></svg></span>
+            <span class="mv-txt"><b>Bonus diario</b><small>Hasta 256.000 monedas</small></span><span class="daily-badge" id="daily-badge" hidden>¡Listo!</span><span class="mv-arrow" aria-hidden="true">›</span>
           </button>
         </nav>
+
+        <aside class="ad-slot" id="ad-menu" hidden aria-label="Publicidad"></aside>
+        <footer class="site-footer mv-footer">
+          <nav><a href="#" data-legal="terms">Términos</a><a href="#" data-legal="privacy">Privacidad</a><a href="#" data-legal="cookies">Cookies</a></nav>
+          <p>Juego social +18 · Sin apuestas con dinero real · Monedas virtuales sin valor económico</p>
+        </footer>
       </div>
-      <aside class="ad-slot" id="ad-menu" hidden aria-label="Publicidad"></aside>
-      <div class="tagline"><span class="tl-ico">♠</span><span>Grandes jugadores<br>hacen grandes historias</span></div>
-      <div class="menu-felt" aria-hidden="true">
-        <div class="mf-chips"><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="mf-cards"><span>A<i>♠</i></span><span>A<i>♣</i></span><span class="r">A<i>♥</i></span><span>A<i>♣</i></span><span class="r">A<i>♦</i></span></div>
-      </div>
-      <footer class="site-footer">
-        <nav><a href="#" data-legal="terms">Términos</a><a href="#" data-legal="privacy">Privacidad</a><a href="#" data-legal="cookies">Cookies</a></nav>
-        <p>© 2026 PokerVegasPro · Juego social para mayores de 18 años · Sin apuestas con dinero real · Monedas virtuales sin valor económico</p>
-      </footer>
     </section>
 
     <!-- ===================== PARTIDAS PÚBLICAS ===================== -->

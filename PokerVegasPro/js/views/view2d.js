@@ -148,11 +148,46 @@
         p.y = U.clamp(p.y, halfH, 100 - halfH);
         this._place(this.seatEls[i], p.x, p.y, '%');
         this._place(this.betEls[i], b.x, b.y, '%');
+        (this._seatPos || (this._seatPos = []))[i] = p;
         this.seatEls[i].classList.toggle('upper', p.y < 45);
         this.seatEls[i].classList.toggle('left', p.x < 35);
         this.seatEls[i].classList.toggle('right', p.x > 65);
       }
+      this._placeBets();
       this._placeDealerButton();
+    }
+
+    /**
+     * Coloca cada apuesta justo fuera de la caja real del asiento (cartas + placa), en la dirección del centro
+     * de la mesa: las fichas nunca quedan debajo de las cartas.
+     */
+    _placeBets() {
+      if (!this.seatEls || this.is3D) return;
+      const W = this.stage.clientWidth, H = this.stage.clientHeight;
+      if (!W || !this._seatPos) return;
+      const cx = W / 2, cy = H / 2;
+      const gap = 10 + 22 * this.u;
+      for (let i = 0; i < this.n; i++) {
+        // Centro desde la posición asignada (no la medida: puede estar en plena transición) y tamaño real.
+        const el = this.seatEls[i], p = this._seatPos[i];
+        const r = { width: el.offsetWidth, height: el.offsetHeight };
+        if (!r.width || !p) continue;
+        const sx = (p.x / 100) * W, sy = (p.y / 100) * H;
+        let ux = cx - sx, uy = cy - sy;
+        const len = Math.hypot(ux, uy) || 1;
+        ux /= len; uy /= len;
+        const t = Math.min(Math.abs(ux) > 1e-3 ? r.width / 2 / Math.abs(ux) : Infinity, Math.abs(uy) > 1e-3 ? r.height / 2 / Math.abs(uy) : Infinity);
+        const d = Math.min(t + gap, len * 0.72);
+        this._place(this.betEls[i], ((sx + ux * d) / W) * 100, ((sy + uy * d) / H) * 100, '%');
+      }
+    }
+
+    /** Posición (px dentro del escenario) del borde superior central de un asiento. */
+    _seatAnchor(seat) {
+      const el = this.seatEls && this.seatEls[seat];
+      if (!el) return null;
+      const sr = this.stage.getBoundingClientRect(), r = el.getBoundingClientRect();
+      return { x: r.left - sr.left + r.width / 2, top: r.top - sr.top, cy: r.top - sr.top + r.height / 2, h: r.height };
     }
 
     _place(el, x, y, unit) {
@@ -267,10 +302,12 @@
       this.snap = snap;
       if (!this.seatEls) return;
       const hero = this.opts.heroSeat;
+      let seatsChanged = false;
       for (let i = 0; i < this.n; i++) {
         const p = snap.seats[i];
         const el = this.seatEls[i];
         const st = this.seatState[i];
+        if (el.classList.contains('empty') !== !p) seatsChanged = true;
         el.classList.toggle('empty', !p);
         if (!p) { this._setCards(i, [], false); this.betEls[i].innerHTML = ''; st.pid = null; continue; }
 
@@ -311,6 +348,7 @@
           betEl.innerHTML = Art().chipStackHTML(p.bet);
         }
       }
+      if (seatsChanged) this._placeBets();
       this._renderBoard(snap.board);
       this.potAmt.textContent = U.fmt(snap.potTotal);
       this.potEl.classList.toggle('show', snap.potTotal > 0);
@@ -504,24 +542,38 @@
       this._timerSeat = null;
     }
 
+    /* Emotes y mensajes van en la capa flotante superior: ninguna carta ni ficha puede taparlos. */
     emote(seat, emoji) {
-      const el = this.seatEls && this.seatEls[seat];
-      if (!el) return;
+      const a = this._seatAnchor(seat);
+      if (!a) return;
       const f = document.createElement('span');
       f.className = 'emote-float';
       f.textContent = emoji;
-      el.appendChild(f);
+      f.style.left = a.x + 'px';
+      f.style.top = a.cy + 'px';
+      this.floatEl.appendChild(f);
       setTimeout(() => f.remove(), 2400);
     }
 
     bubble(seat, text) {
-      const el = this.seatEls && this.seatEls[seat];
-      if (!el) return;
-      const b = el.querySelector('.seat-bubble');
+      const a = this._seatAnchor(seat);
+      if (!a) return;
+      this.bubbles = this.bubbles || {};
+      let b = this.bubbles[seat];
+      if (!b) {
+        b = this.bubbles[seat] = document.createElement('div');
+        b.className = 'seat-bubble float';
+        this.floatEl.appendChild(b);
+      }
       b.textContent = text;
+      // Encima del asiento; si no cabe arriba, debajo.
+      const below = a.top < 46;
+      b.classList.toggle('below', below);
+      b.style.left = U.clamp(a.x, 70, this.stage.clientWidth - 70) + 'px';
+      b.style.top = (below ? a.top + a.h + 6 : a.top - 6) + 'px';
       b.classList.add('show');
       clearTimeout(b._t);
-      b._t = setTimeout(() => b.classList.remove('show'), 3200);
+      b._t = setTimeout(() => b.classList.remove('show'), 3400);
     }
 
     shark() {

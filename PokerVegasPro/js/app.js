@@ -60,6 +60,20 @@
   $('#btn-daily').addEventListener('click', () => PVP.DailyUI.open(store));
   PVP.Particles.start();
 
+  // Paralaje suave de la escena del menú con el ratón (solo transform, una vez por frame).
+  (function parallax() {
+    if (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const scene = $('#mv-scene');
+    let raf = 0, tx = 0, ty = 0;
+    $('#screen-menu').addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      tx = (e.clientX / root.innerWidth - 0.5) * -10;
+      ty = (e.clientY / root.innerHeight - 0.5) * -6;
+      if (!raf) raf = requestAnimationFrame(() => { raf = 0; scene.style.setProperty('--px', tx.toFixed(1) + 'px'); scene.style.setProperty('--py', ty.toFixed(1) + 'px'); });
+    });
+  })();
+  $('#mv-profile').addEventListener('click', () => $('#btn-profile').click());
+
   $('#btn-profile').addEventListener('click', () => {
     PVP.ProfileUI.open(store, () => { renderTopbar(); if (current === 'stats') renderStats(); });
   });
@@ -92,6 +106,17 @@
     tier.dataset.tier = t !== 'free' ? t : p.guest ? 'guest' : 'free';
     PVP.Sound.enabled = p.prefs.sound !== false;
     syncMusicFab();
+    // Barra integrada en la escena del menú.
+    $('#mv-name').textContent = p.name;
+    $('#mv-level').textContent = 'Nivel ' + store.level();
+    $('#mv-xp').style.width = Math.round(store.levelProgress() * 100) + '%';
+    $('#mv-coins').textContent = U.fmt(p.coins);
+    $('#mv-tier').textContent = t !== 'free' ? C.TIERS[t].short : p.guest ? 'Invitado' : 'Gratis';
+    const avKey = JSON.stringify(p.prefs.look) + (p.prefs.avatarImg ? p.prefs.avatarImg.length : 0);
+    if ($('#mv-avatar').dataset.k !== avKey) {
+      $('#mv-avatar').dataset.k = avKey;
+      $('#mv-avatar').innerHTML = PVP.Avatars.avatarHTML(p.prefs.look, p.prefs.avatarImg);
+    }
   }
   store.on('change', renderTopbar);
   store.on('levelUp', (lvl) => ui.toast(`⭐ ¡Subes a nivel ${lvl}!`));
@@ -178,7 +203,7 @@
   $('#btn-logout').addEventListener('click', async () => {
     if (game) exitGame();
     await store.logout();
-    ui.close('modal-settings');
+    document.querySelectorAll('.modal.open').forEach((m) => m.classList.remove('open'));
     go('welcome');
   });
 
@@ -337,7 +362,6 @@
   function renderTournaments() {
     $('#tour-grid').innerHTML = C.TOURNAMENTS.map((t) => {
       const can = store.profile.coins >= t.fee;
-      const lvl = t.bot === 'mixed' ? 'Mixto' : PVP.Bots.LEVELS[t.bot].label;
       return `<article class="tour-card" style="--t1:${t.color[0]};--t2:${t.color[1]}">
         <div class="tc-gem"><span>${t.name[0]}</span></div>
         <h3>${t.name}</h3>
@@ -347,7 +371,7 @@
           <li><span>Jugadores</span><b>${t.players}</b></li>
           <li><span>Stack</span><b>${U.short(t.stack)}</b></li>
           <li><span>Ciegas</span><b>${U.short(t.sb)}/${U.short(t.sb * 2)} · +cada ${t.handsPerLevel} manos</b></li>
-          <li><span>Rivales</span><b>IA ${lvl}</b></li>
+          <li><span>Premios</span><b>3 primeros puestos</b></li>
         </ul>
         <button class="lux-btn w-full${can ? '' : ' disabled'}" data-tour="${t.id}"><span>${can ? 'Inscribirse' : 'Monedas insuficientes'}</span></button>
       </article>`;
@@ -640,5 +664,5 @@
   store.on('change', () => { if (current === 'shop') { $('#shop-plan').innerHTML = planStatus(); } });
   if (/#sala=/.test(location.hash) && store.profile) ui.toast('Invitación recibida: el multijugador online estará disponible con el servidor de salas.');
 
-  PVP.app = { store, go, startGame };
+  PVP.app = { store, go, startGame, get game() { return game; } };
 })(window);

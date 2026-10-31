@@ -174,6 +174,24 @@
     return cv;
   }
 
+  /** Moqueta de casino: rombos y volutas doradas sobre burdeos (o el color del suelo de la mesa). */
+  function carpetCanvas(t) {
+    const cv = canvas(128, 128);
+    const g = cv.getContext('2d');
+    const base = '#' + new (root.THREE.Color)(t.three.floor).lerp(new (root.THREE.Color)(0x3a0a1c), 0.55).getHexString();
+    g.fillStyle = base;
+    g.fillRect(0, 0, 128, 128);
+    g.strokeStyle = 'rgba(232, 181, 74, 0.22)';
+    g.lineWidth = 3;
+    g.beginPath(); g.moveTo(64, 4); g.lineTo(124, 64); g.lineTo(64, 124); g.lineTo(4, 64); g.closePath(); g.stroke();
+    g.fillStyle = 'rgba(232, 181, 74, 0.18)';
+    g.beginPath(); g.arc(64, 64, 9, 0, Math.PI * 2); g.fill();
+    for (const [x, y] of [[0, 0], [128, 0], [0, 128], [128, 128]]) { g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.fill(); }
+    g.strokeStyle = 'rgba(120, 30, 160, 0.35)';
+    g.beginPath(); g.arc(64, 64, 22, 0, Math.PI * 2); g.stroke();
+    return cv;
+  }
+
   function gradientCanvas(top, bottom) {
     const cv = canvas(16, 512);
     const g = cv.getContext('2d');
@@ -369,7 +387,12 @@
       const ped = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 2.1, 3.4, 40), new THREE.MeshStandardMaterial({ color: 0x0c0a0a, roughness: 0.4, metalness: 0.5 }));
       ped.position.y = -1.95;
       g.add(ped);
-      const floor = new THREE.Mesh(new THREE.CircleGeometry(40, 64), new THREE.MeshStandardMaterial({ color: t.three.floor, roughness: 0.85, metalness: 0.1 }));
+      const carpet = new THREE.CanvasTexture(carpetCanvas(t));
+      carpet.encoding = THREE.sRGBEncoding;
+      carpet.wrapS = carpet.wrapT = THREE.RepeatWrapping;
+      carpet.repeat.set(30, 30);
+      carpet.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+      const floor = new THREE.Mesh(new THREE.CircleGeometry(40, 64), new THREE.MeshStandardMaterial({ map: carpet, roughness: 0.92, metalness: 0 }));
       floor.rotation.x = -Math.PI / 2;
       floor.position.y = -3.6;
       floor.receiveShadow = true;
@@ -501,6 +524,8 @@
           fig = PVP.Humans.create(this.T, p.look || PVP.Avatars.randomLook(), { role: 'player' });
           fig.group.scale.setScalar(this.figScale);
           fig.group.rotation.order = 'YXZ';
+          // Sin sombras proyectadas de los personajes: ensucian el suelo y cuestan rendimiento.
+          fig.group.traverse((o) => { if (o.isMesh) o.castShadow = false; });
           this.dynamic.add(fig.group);
           this.figures.set(key, fig);
         }
@@ -650,7 +675,7 @@
       const { a, b } = this._ellipseDims();
       const ang = (this.overlay.angles[seat] * Math.PI) / 180;
       const hero = seat === this.opts.heroSeat;
-      const rr = hero ? 0.66 : 0.72;
+      const rr = hero ? 0.8 : 0.72;
       const cx = Math.sin(ang) * a * rr, cz = -Math.cos(ang) * b * rr;
       // Desplazamiento tangencial para separar las dos cartas.
       const tx = Math.cos(ang), tz = Math.sin(ang);
@@ -662,7 +687,8 @@
     }
 
     _boardTarget(k) {
-      return { x: (k - 2) * (CARD_W + 0.1), y: 0.02, z: this.orientation === 'v' ? 0.1 : 0.05, ry: 0, rx: 0 };
+      const BS = 1.3; // las comunitarias son el centro de atención: algo más grandes
+      return { x: (k - 2) * (CARD_W * BS + 0.12), y: 0.02, z: this.orientation === 'v' ? 0.05 : 0.1, ry: 0, rx: 0 };
     }
 
     /** Sincroniza las mallas con el estado del motor. */
@@ -707,6 +733,7 @@
           this.cards.set(key, m);
           m.userData.up = w.up;
           if (w.hero) m.scale.setScalar(1.45);
+          if (w.board) m.scale.setScalar(1.3);
           if (animate) {
             m.position.set(hand.x, hand.y, hand.z);
             m.rotation.set(0, 0, Math.PI);
@@ -745,10 +772,25 @@
 
     /* ----- fichas ----- */
 
+    /** Materiales de ficha: canto con franjas blancas y cara con aro interior (como las de casino). */
     _chipMat(css) {
       let m = this.chipMats.get(css);
       if (!m) {
-        m = new this.T.MeshStandardMaterial({ color: new this.T.Color(css), roughness: 0.35, metalness: 0.15 });
+        const T = this.T;
+        const side = canvas(128, 16), sg = side.getContext('2d');
+        sg.fillStyle = css; sg.fillRect(0, 0, 128, 16);
+        sg.fillStyle = '#f4f1ea';
+        for (let i = 0; i < 8; i++) sg.fillRect(i * 16 + 4, 0, 7, 16);
+        const face = canvas(64, 64), fg2 = face.getContext('2d');
+        fg2.fillStyle = css; fg2.fillRect(0, 0, 64, 64);
+        fg2.strokeStyle = '#f4f1ea'; fg2.lineWidth = 3; fg2.setLineDash([6, 5]);
+        fg2.beginPath(); fg2.arc(32, 32, 27, 0, Math.PI * 2); fg2.stroke();
+        fg2.setLineDash([]); fg2.strokeStyle = 'rgba(255,255,255,.55)'; fg2.lineWidth = 1.5;
+        fg2.beginPath(); fg2.arc(32, 32, 17, 0, Math.PI * 2); fg2.stroke();
+        const tex = (c) => { const x = new T.CanvasTexture(c); x.encoding = T.sRGBEncoding; return x; };
+        const sideMat = new T.MeshStandardMaterial({ map: tex(side), roughness: 0.4, metalness: 0.05 });
+        const faceMat = new T.MeshStandardMaterial({ map: tex(face), roughness: 0.35, metalness: 0.05 });
+        m = [sideMat, faceMat, faceMat];
         this.chipMats.set(css, m);
       }
       return m;
@@ -763,7 +805,7 @@
       for (let c = 0; c < cols; c++) {
         const per = c === 0 ? n : Math.max(1, n - c * 2);
         for (let i = 0; i < per; i++) {
-          const chip = new this.T.Mesh(this.chipGeo, this._chipMat(i % 3 === 2 ? fg : bg));
+          const chip = new this.T.Mesh(this.chipGeo, this._chipMat(c === 2 || i % 4 === 3 ? fg : bg));
           chip.position.set((c - (cols - 1) / 2) * 0.36, i * 0.058 + 0.03, c === 1 ? 0.18 : 0);
           chip.rotation.y = Math.random();
           chip.castShadow = true;
@@ -778,7 +820,7 @@
       return { x: Math.sin(ang) * a * 0.48, y: 0, z: -Math.cos(ang) * b * 0.45 };
     }
 
-    _potPos() { return { x: 0, y: 0, z: this.orientation === 'v' ? -1.3 : -0.95 }; }
+    _potPos() { return { x: 0, y: 0, z: this.orientation === 'v' ? -1.55 : -1.15 }; }
 
     _syncChips(snap) {
       for (let i = 0; i < snap.seats.length; i++) {
@@ -814,8 +856,8 @@
       }
       if (snap.dealer >= 0) {
         const { a, b } = this._ellipseDims();
-        const ang = ((this.overlay.angles[snap.dealer] + 16) * Math.PI) / 180;
-        this.tweens.to(this.dbtn.position, { x: Math.sin(ang) * a * 0.62, y: 0.03, z: -Math.cos(ang) * b * 0.6 }, 0.6, { ease: 'inOut' });
+        const ang = ((this.overlay.angles[snap.dealer] + 24) * Math.PI) / 180;
+        this.tweens.to(this.dbtn.position, { x: Math.sin(ang) * a * 0.84, y: 0.03, z: -Math.cos(ang) * b * 0.8 }, 0.6, { ease: 'inOut' });
       }
     }
 
@@ -945,14 +987,16 @@
         const ang = (ov.angles[i] * Math.PI) / 180;
         const hero = i === this.opts.heroSeat;
         const k = hero ? 1.0 : 1.12;
-        const s = this._toScreen(Math.sin(ang) * (a + 0.4) * k, 0.4, -Math.cos(ang) * (b + 0.4) * k + (hero ? 0.6 : 0));
+        const s = hero
+          ? this._toScreen(0, 0.2, b + 0.95)
+          : this._toScreen(Math.sin(ang) * (a + 0.5), 0.18, -Math.cos(ang) * (b + 0.5));
         ov.placeProjected('seat', i, s.x, s.y);
         const bp = this._betPos(i);
         const bs = this._toScreen(bp.x, 0.45, bp.z);
         ov.placeProjected('bet', i, bs.x, bs.y);
       }
       const pp = this._potPos();
-      const ps = this._toScreen(pp.x, 0.9, pp.z);
+      const ps = this._toScreen(pp.x, 0.02, pp.z + 0.62);
       ov.placeProjected('pot', 0, ps.x, ps.y);
       const h = this._dealerHand();
       ov.dealerScreen = this._toScreen(h.x, h.y, h.z);

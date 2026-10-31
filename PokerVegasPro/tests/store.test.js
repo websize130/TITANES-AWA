@@ -69,6 +69,16 @@ function fakeBackend() {
   await assert.rejects(reloaded.claimDaily(), /Ya reclamaste/);
   assert.ok(!(await reloaded.dailyStatus()).canClaim);
 
+  // Sin almacenamiento disponible (modo privado / visores): sigue siendo un solo cobro por día.
+  const realLS = globalThis.localStorage;
+  globalThis.localStorage = { getItem: () => null, setItem: () => { throw new Error('QuotaExceeded'); }, removeItem: () => {} };
+  const noStore = new Store({ available: false });
+  noStore.playAsGuest();
+  await noStore.claimDaily();
+  await assert.rejects(noStore.claimDaily(), /Ya reclamaste/);
+  assert.ok(!(await noStore.dailyStatus()).canClaim);
+  globalThis.localStorage = realLS;
+
   // damaocho sin servidor: 15 canjes por dispositivo y después «expirado»
   mem.delete('pvp.codeuses.v1');
   for (let i = 0; i < 15; i++) {
