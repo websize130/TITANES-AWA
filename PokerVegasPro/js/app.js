@@ -39,24 +39,75 @@
   /* ---------- música, bonus diario y partículas ---------- */
 
   function musicWanted() { return !store.profile || store.profile.prefs.music !== false; }
+  function musicStyle() { return (store.profile && store.profile.prefs.musicStyle) || 'lounge'; }
   function syncMusicFab() {
     const on = musicWanted();
     const fab = $('#music-fab');
     fab.classList.toggle('off', !on);
     fab.setAttribute('aria-pressed', on ? 'true' : 'false');
-    fab.title = on ? 'Silenciar música' : 'Activar música';
+    fab.title = on ? 'Música: ' + PVP.Audio.STYLES[musicStyle()].name : 'Música desactivada';
+    $('#btn-music').classList.toggle('off', !on);
+    const t = $('#mp-toggle');
+    t.setAttribute('aria-pressed', on ? 'true' : 'false');
+    t.textContent = on ? 'Activada' : 'Silenciada';
+    $$('#mp-styles button').forEach((b) => b.classList.toggle('on', b.dataset.style === musicStyle()));
+    PVP.Audio.setStyle(musicStyle());
+  }
+  $('#mp-styles').innerHTML = Object.keys(PVP.Audio.STYLES).map((id) => {
+    const st = PVP.Audio.STYLES[id];
+    return `<button type="button" data-style="${id}"><b>${st.name}</b><small>${st.desc}</small></button>`;
+  }).join('');
+  function setMusic(on, style) {
+    if (store.profile) {
+      if (style) store.setPref('musicStyle', style);
+      store.setPref('music', on);
+    }
+    if (style) PVP.Audio.setStyle(style);
+    PVP.Audio.setMusic(on);
+    syncMusicFab();
   }
   // Los navegadores solo permiten audio tras una interacción: la música arranca con el primer toque.
   document.addEventListener('pointerdown', function firstTouch() {
     document.removeEventListener('pointerdown', firstTouch);
+    PVP.Audio.setStyle(musicStyle());
     if (musicWanted()) PVP.Audio.startMusic();
   });
-  $('#music-fab').addEventListener('click', () => {
-    const on = !musicWanted();
-    if (store.profile) store.setPref('music', on);
-    PVP.Audio.setMusic(on);
+  // Selector compacto: botón pequeño que abre un menú con on/off y estilos.
+  function toggleMusicPop(anchor) {
+    const pop = $('#music-pop');
+    if (pop.classList.contains('open')) return pop.classList.remove('open');
     syncMusicFab();
+    pop.classList.add('open');
+    const r = anchor.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+    const left = U.clamp(r.left + r.width / 2 - pw / 2, 8, root.innerWidth - pw - 8);
+    const below = r.top < root.innerHeight / 2;
+    pop.style.left = left + 'px';
+    pop.style.top = (below ? r.bottom + 8 : r.top - ph - 8) + 'px';
+  }
+  $('#music-fab').addEventListener('click', (e) => { e.stopPropagation(); toggleMusicPop(e.currentTarget); });
+  $('#btn-music').addEventListener('click', (e) => { e.stopPropagation(); toggleMusicPop(e.currentTarget); });
+  $('#mp-toggle').addEventListener('click', () => setMusic(!musicWanted()));
+  $('#mp-styles').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-style]');
+    if (b) setMusic(true, b.dataset.style);
   });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#music-pop')) $('#music-pop').classList.remove('open'); });
+
+  // Pantalla completa dentro de la mesa (se oculta si el navegador no la permite, p. ej. iPhone).
+  (function fullscreen() {
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    const btn = $('#btn-fs');
+    if (!req || document.fullscreenEnabled === false) { btn.hidden = true; return; }
+    btn.addEventListener('click', () => {
+      const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+      if (fsEl) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else {
+        const p = req.call(el, { navigationUI: 'hide' });
+        if (p && p.then) p.then(() => { try { if (screen.orientation && screen.orientation.lock && root.innerWidth > root.innerHeight) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* opcional */ } }).catch(() => ui.toast('El navegador no permitió la pantalla completa.'));
+      }
+    });
+  })();
   $('#btn-daily').addEventListener('click', () => PVP.DailyUI.open(store));
   PVP.Particles.start();
 
@@ -86,7 +137,7 @@
     if (m) { syncSettings(); ui.open('modal-' + m.dataset.modal); }
     if (e.target.closest('[data-close]') || e.target.classList.contains('modal')) {
       const modal = e.target.closest('.modal');
-      if (modal && modal.id !== 'modal-confirm' && modal.id !== 'modal-match') modal.classList.remove('open');
+      if (modal && modal.id !== 'modal-confirm' && modal.id !== 'modal-match' && modal.id !== 'modal-join') modal.classList.remove('open');
     }
   });
 
@@ -188,7 +239,7 @@
   $$('#modal-settings [data-pref]').forEach((i) => i.addEventListener('change', () => {
     store.setPref(i.dataset.pref, i.checked);
     if (i.dataset.pref === 'autoPeek' && game) game.setPeek(i.checked);
-    if (i.dataset.pref === 'music') { PVP.Audio.setMusic(i.checked); syncMusicFab(); }
+    if (i.dataset.pref === 'music') setMusic(i.checked);
   }));
   $$('#modal-settings [data-pref-seg]').forEach((seg) => seg.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-v]');
@@ -196,7 +247,7 @@
     const key = seg.dataset.prefSeg;
     const v = key === 'speed' ? +b.dataset.v : b.dataset.v;
     store.setPref(key, v);
-    if (game && key === 'view') game.setViewMode(v);
+    if (key === 'musicStyle') setMusic(true, v);
     if (game && key === 'orientation') game.setOrientation(v);
     syncSettings();
   }));
@@ -302,13 +353,18 @@
 
   /* ---------- salas privadas ---------- */
 
-  const roomCode = () => Array.from({ length: 6 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[U.randInt(0, 31)]).join('');
-  let code = roomCode();
+  let code = PVP.Net.roomCode();
 
   function renderPrivate() {
     $('#room-code').textContent = code;
+    syncPrivShare();
     updatePrivate();
   }
+  function syncPrivShare() {
+    const name = $('#form-private').name.value || 'Sala privada';
+    $('#priv-wa').href = PVP.Net.whatsappUrl(PVP.Net.shareText(code, name));
+  }
+  $('#form-private').name.addEventListener('input', syncPrivShare);
 
   function updatePrivate() {
     const f = $('#form-private');
@@ -337,21 +393,101 @@
     $$('button', b.parentElement).forEach((x) => x.classList.toggle('on', x === b));
   });
   $('#btn-copy-code').addEventListener('click', async () => {
-    const link = location.href.split('#')[0] + '#sala=' + code;
-    try { await navigator.clipboard.writeText(link); ui.toast('Enlace de invitación copiado'); } catch (e) { ui.toast(link); }
+    const text = PVP.Net.inviteLink(code) || PVP.Net.shareText(code, $('#form-private').name.value);
+    try { await navigator.clipboard.writeText(text); ui.toast('Invitación copiada: pégala en tu grupo'); } catch (e) { ui.toast(U.esc(text), 6000); }
   });
-  $('#form-private').addEventListener('submit', (e) => {
+  $('#form-private').addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.target;
+    const btn = $('.priv-submit', f);
     const sb = +f.blinds.value;
-    startGame({
-      mode: 'private', title: `${f.name.value || 'Sala privada'} · #${code}`,
+    const cfg = {
+      mode: 'private', code, title: `${(f.name.value || 'Sala privada').trim()} · #${code}`,
       seats: +f.seats.value, players: +f.players.value, sb, bb: sb * 2, stack: sb * 2 * +f.bbs.value,
       botLevel: segValIn(f, 'botLevel'), blindMinutes: +f.minutes.value, rebuys: +f.rebuys.value,
       bounty: f.bountyOn.checked ? +f.bounty.value : 0, turnSeconds: +f.turn.value,
-    });
-    code = roomCode();
+    };
+    btn.disabled = true;
+    try {
+      const room = await new PVP.Net.Room(code, 'host').connect();
+      cfg.net = { role: 'host', room };
+    } catch (err) {
+      ui.toast('⚠️ No se pudo abrir la sala online: se juega sin conexión con rivales virtuales.', 5000);
+    } finally {
+      btn.disabled = false;
+    }
+    startGame(cfg);
+    code = PVP.Net.roomCode();
   });
+
+  /* Unirse a una sala: con el código o abriendo el enlace de invitación (#sala=CÓDIGO). */
+  let joining = null;
+  $('#form-join').addEventListener('submit', (e) => {
+    e.preventDefault();
+    joinRoom(e.target.code.value);
+  });
+  $('#form-join').code.addEventListener('input', (e) => { e.target.value = PVP.Net.normalizeCode(e.target.value); });
+  $('#jn-cancel').addEventListener('click', () => cancelJoin());
+
+  function cancelJoin(msg) {
+    if (!joining) return;
+    const j = joining;
+    joining = null;
+    clearInterval(j.timer);
+    j.off();
+    j.room.close();
+    ui.close('modal-join');
+    if (msg) ui.toast(msg, 5000);
+  }
+
+  async function joinRoom(raw) {
+    const roomId = PVP.Net.normalizeCode(raw);
+    if (roomId.length !== 6) return ui.toast('El código de sala tiene 6 caracteres.');
+    if (!store.profile) { store.playAsGuest(); renderTopbar(); go('menu'); }
+    if (joining) cancelJoin();
+    if (game) exitGame();
+    $('#jn-title').textContent = 'Entrando en la sala #' + roomId;
+    $('#jn-text').textContent = 'Conectando…';
+    ui.open('modal-join');
+    const room = new PVP.Net.Room(roomId, 'client');
+    const j = (joining = { room, timer: 0, off: () => {} });
+    try { await room.connect(); } catch (err) { if (joining === j) cancelJoin('⚠️ ' + U.esc(err.message)); return; }
+    if (joining !== j) return room.close();
+    $('#jn-text').textContent = room.online ? 'Buscando al anfitrión…' : 'Buscando al anfitrión (modo local)…';
+    const p = store.profile;
+    const hello = () => room.send('hello', { name: p.name, look: p.prefs.look, img: p.prefs.avatarImg || null, pub: room.pub, v: 1 });
+    const started = Date.now();
+    j.off = room.on('welcome', (w, from) => {
+      if (joining !== j) return;
+      joining = null;
+      clearInterval(j.timer);
+      j.off();
+      ui.close('modal-join');
+      w.hostCid = from;
+      const c = w.cfg || {};
+      startGame({
+        mode: 'private', code: roomId, title: c.title || 'Sala #' + roomId, seats: c.seats, players: c.players, sb: c.sb, bb: c.bb, stack: c.stack,
+        blindMinutes: c.blindMinutes, rebuys: c.rebuys, bounty: c.bounty, turnSeconds: c.turnSeconds,
+        net: { role: 'client', room, welcome: w },
+      });
+    });
+    hello();
+    // El anfitrión puede tardar en abrir la sala: se reintenta durante un minuto.
+    j.timer = setInterval(() => {
+      if (Date.now() - started > 60000) return cancelJoin('No se encontró la sala #' + roomId + '. Comprueba el código o pide a tu amigo que la abra.');
+      $('#jn-text').textContent = 'Esperando a que el anfitrión abra la sala… (' + Math.round((Date.now() - started) / 1000) + ' s)';
+      hello();
+    }, 2500);
+  }
+
+  function handleRoomHash() {
+    const m = location.hash.match(/#sala=([A-Za-z0-9]+)/);
+    if (!m) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    joinRoom(m[1]);
+  }
+  root.addEventListener('hashchange', handleRoomHash);
+  root.addEventListener('pagehide', () => { if (game && game.net) game.leave(); });
   function segValIn(form, name) {
     const b = $(`[data-name="${name}"] button.on`, form);
     return b ? b.dataset.v : 'medium';
@@ -547,23 +683,34 @@
   }
   $('#btn-copy-id').addEventListener('click', () => copyText(store.profile.id).then(() => ui.toast('ID copiado')));
 
-  /* Barra de códigos promocionales / activación / creador */
+  /* Barra de códigos promocionales / activación / creador: basta con escribir el código (también como invitado). */
+  async function redeemCode(raw, btn, msgEl) {
+    if (btn) btn.disabled = true;
+    if (msgEl) { msgEl.className = msgEl.className.replace(/ (ok|err)/g, ''); msgEl.textContent = 'Comprobando…'; }
+    try {
+      const msg = await store.redeem(raw);
+      if (msgEl) { msgEl.textContent = '🎉 ' + msg; msgEl.classList.add('ok'); } else ui.toast(`🎉 ${msg}`, 4500);
+      if (PVP.Sound) PVP.Sound.win();
+      renderTopbar();
+      if (current === 'shop') renderShop();
+      return true;
+    } catch (err) {
+      if (msgEl) { msgEl.textContent = '⚠️ ' + err.message; msgEl.classList.add('err'); } else ui.toast(`⚠️ ${U.esc(err.message)}`, 4000);
+      return false;
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
   $('#form-redeem').addEventListener('submit', async (e) => {
     e.preventDefault();
     const input = $('#redeem-input');
-    const btn = $('#form-redeem button');
-    btn.disabled = true;
-    try {
-      const msg = await store.redeem(input.value);
-      input.value = '';
-      ui.toast(`🎉 ${msg}`, 4500);
-      if (PVP.Sound) PVP.Sound.win();
-      renderShop();
-    } catch (err) {
-      ui.toast(`⚠️ ${U.esc(err.message)}`, 4000);
-    } finally {
-      btn.disabled = false;
-    }
+    if (await redeemCode(input.value, $('#form-redeem button'))) input.value = '';
+  });
+  $('#mv-code').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = e.target.code;
+    if (!input.value.trim()) return input.focus();
+    if (await redeemCode(input.value, $('#mv-code button'), $('#mv-code-msg'))) input.value = '';
   });
 
   /* ---------- estadísticas + Coach ---------- */
@@ -608,6 +755,8 @@
 
   function exitGame() {
     if (!game) return;
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fsEl) { const r = (document.exitFullscreen || document.webkitExitFullscreen).call(document); if (r && r.catch) r.catch(() => {}); }
     const g = game;
     game = null;
     g.destroy();
@@ -622,7 +771,8 @@
     ui.confirm({
       title: '¿Salir de la mesa?',
       text: mode === 'public' ? 'Tus fichas vuelven a tu saldo de monedas (lo apostado en la mano en curso se pierde).'
-        : mode === 'tournament' ? 'Abandonarás el torneo y perderás la entrada.' : 'La sala privada se cerrará.',
+        : mode === 'tournament' ? 'Abandonarás el torneo y perderás la entrada.'
+          : game.isClient ? 'Saldrás de la sala de tu amigo.' : game.net ? 'La sala se cerrará para todos los jugadores.' : 'La sala privada se cerrará.',
       yes: 'Salir', no: 'Seguir jugando',
       onYes: () => game && game.leave(),
     });
@@ -651,18 +801,18 @@
     document.body.classList.toggle('offline-mode', !PVP.Backend.available);
     if (ok) { renderTopbar(); go('menu'); } else go('welcome');
     handleRedeemHash();
+    handleRoomHash();
   });
-  // Enlace directo de canje: index.html#canjear=CÓDIGO
+  // Enlace directo de canje: index.html#canjear=CÓDIGO → se canjea solo (si no hay perfil, se entra como invitado).
   function handleRedeemHash() {
-    const m = location.hash.match(/#canjear=(.+)$/);
+    const m = location.hash.match(/#canjear=([^&]+)/);
     if (!m) return;
-    $('#redeem-input').value = decodeURIComponent(m[1]);
     history.replaceState(null, '', location.pathname + location.search);
-    if (store.profile && !game) { go('shop'); ui.toast('Pulsa «Canjear» para activar tu código.'); }
+    if (!store.profile) { store.playAsGuest(); renderTopbar(); go('menu'); }
+    redeemCode(decodeURIComponent(m[1]));
   }
   root.addEventListener('hashchange', handleRedeemHash);
   store.on('change', () => { if (current === 'shop') { $('#shop-plan').innerHTML = planStatus(); } });
-  if (/#sala=/.test(location.hash) && store.profile) ui.toast('Invitación recibida: el multijugador online estará disponible con el servidor de salas.');
 
   PVP.app = { store, go, startGame, get game() { return game; } };
 })(window);

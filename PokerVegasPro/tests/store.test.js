@@ -27,6 +27,7 @@ function fakeBackend() {
     async fetchProfile() { return Object.assign({}, row); },
     async updateProfile(uid, fields) { calls.push(['update', Object.keys(fields).sort().join(',')]); },
     async adjustCoins(delta, reason) { calls.push(['adjust', delta, reason]); row.coins += delta; return row.coins; },
+    async claimGuestCodes(device) { calls.push(['claimGuest', device]); return row.tier; },
     async redeem(code) { calls.push(['redeem', code]); if (code === 'DAMAOCHO') { row.tier = 'legend'; return { kind: 'creator', coins: 0, tier: 'legend' }; } throw new Error('Código no válido'); },
     async dailyStatus() { return { today: 3, claimed: [1] }; },
     async claimDaily() { row.coins += 16000; return { day: 3, amount: 16000, balance: row.coins }; },
@@ -91,11 +92,32 @@ function fakeBackend() {
   const g16 = new Store({ available: false });
   g16.playAsGuest();
   await assert.rejects(g16.redeem('damaocho'), /expirado/);
-  // Con servidor disponible, el invitado debe iniciar sesión (los usos se cuentan en Supabase)
+  // Con servidor: el invitado canjea sin registrarse escribiendo solo el código (el servidor cuenta los usos).
   mem.delete('pvp.guest.v1');
-  const g2 = new Store({ available: true });
+  const guestCalls = [];
+  const g2 = new Store({
+    available: true,
+    async redeemGuest(code, device) { guestCalls.push([code, device]); if (guestCalls.length > 1) throw new Error('Este código ha expirado: ya se alcanzó su límite de 15 usos'); return { kind: 'creator', coins: 0, tier: 'legend' }; },
+  });
   g2.playAsGuest();
-  await assert.rejects(g2.redeem('damaocho'), /Inicia sesión/);
+  let tierEv = null;
+  g2.on('tierUp', (t) => { tierEv = t; });
+  assert.match(await g2.redeem('  DamaOcho '), /todo desbloqueado/);
+  assert.strictEqual(guestCalls[0][0], 'DAMAOCHO');
+  assert.match(guestCalls[0][1], /^dev-[0-9a-f]{24}$/);
+  assert.ok(g2.owns('legend') && g2.hasCoach() && tierEv === 'legend', 'Leyenda al instante, sin cuenta');
+  assert.strictEqual(g2.profile.prefs.table, 'royale', 'estrena la mesa de lujo');
+  await assert.rejects(g2.redeem('damaocho'), /Ya canjeaste/);
+  mem.delete('pvp.guest.v1');
+  const g3 = new Store({ available: true, redeemGuest: g2.backend.redeemGuest });
+  g3.playAsGuest();
+  await assert.rejects(g3.redeem('damaocho'), /expirado/);
+  assert.strictEqual(guestCalls[1][1], guestCalls[0][1], 'mismo id de dispositivo');
+  // Servidor sin la función todavía (migración pendiente): se usa la lista local.
+  mem.delete('pvp.guest.v1');
+  const g4 = new Store({ available: true, async redeemGuest() { throw new Error('El servidor del juego aún no está preparado (falta aplicar la migración de Supabase).'); } });
+  g4.playAsGuest();
+  assert.match(await g4.redeem('bienvenido'), /10\.000/);
 
   // --- Cuenta online (Supabase simulado) ---
   mem.clear();
@@ -109,6 +131,7 @@ function fakeBackend() {
   assert.strictEqual(s.profile.id, 'PVP-ABC234');
   assert.strictEqual(s.profile.prefs.look.base, 'mei', 'el avatar del invitado pasa a la cuenta');
   assert.ok(be.calls.some((c) => c[0] === 'update' && c[1] === 'adv,prefs,stats,xp'));
+  assert.ok(be.calls.some((c) => c[0] === 'claimGuest'), 'al registrarse se traspasan los canjes de invitado');
 
   assert.ok(s.spend(20000, 'buy_in'));
   s.addCoins(9000000, 'tournament_prize');

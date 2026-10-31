@@ -1,5 +1,5 @@
 /* PokerVegasPro — personajes: 10 modelos base (7 hombres y 3 mujeres de distintas etnias), opciones de vestuario
- * y retratos vectoriales SVG. El mismo «look» alimenta el retrato 2D y el personaje 3D (views/humans3d.js).
+ * y retratos vectoriales SVG que se usan en el menú, el perfil y los asientos de la mesa.
  */
 (function (root) {
   'use strict';

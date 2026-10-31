@@ -80,11 +80,50 @@
         const b = e.target.closest('button[data-v]');
         if (b && this.game) fn(b.dataset.v);
       });
-      seg('#seg-view', (v) => this.game.setViewMode(v));
       seg('#seg-orient', (v) => this.game.setOrientation(v));
-      seg('#seg-cam', (v) => this.game.setCamera(v));
 
       document.addEventListener('keydown', (e) => this._key(e));
+
+      // Panel de sala online
+      $('#btn-share').addEventListener('click', () => this.game && this.game.showRoom());
+      $('#rp-close').addEventListener('click', () => this.hideRoom());
+      $('#rp-start').addEventListener('click', () => this.room && this.room.onStart && this.room.onStart());
+      const copy = async (text, ok) => {
+        try { await navigator.clipboard.writeText(text); ui.toast(ok); } catch (e) { ui.toast(U.esc(text), 6000); }
+      };
+      $('#rp-link').addEventListener('click', () => this.room && copy(PVP.Net.inviteLink(this.room.code) || this.room.code, 'Enlace copiado: pégalo en tu grupo'));
+      $('#rp-copy').addEventListener('click', () => this.room && copy(this.room.code, 'Código copiado'));
+      $('#rp-native').addEventListener('click', () => {
+        if (!this.room || !navigator.share) return;
+        const link = PVP.Net.inviteLink(this.room.code);
+        navigator.share({ title: 'PokerVegasPro', text: PVP.Net.shareText(this.room.code, this.room.title).replace(/\nEntra directo:.*$/m, ''), url: link || undefined }).catch(() => {});
+      });
+    }
+
+    /* ----- sala online ----- */
+
+    showRoom(o) {
+      this.room = o;
+      const link = PVP.Net.inviteLink(o.code);
+      $('#rp-title').textContent = o.title || 'Sala privada';
+      $('#rp-code').textContent = o.code;
+      $('#rp-wa').href = PVP.Net.whatsappUrl(PVP.Net.shareText(o.code, o.title));
+      $('#rp-link').hidden = !link;
+      $('#rp-native').hidden = !navigator.share;
+      $('#rp-start').hidden = !o.isHost || o.begun;
+      $('#rp-wait').hidden = o.isHost || o.begun;
+      $('#rp-note').textContent = !o.online
+        ? 'Modo local: el servidor de salas no está disponible, la sala solo funciona entre pestañas de este navegador.'
+        : link ? 'Tus amigos entran directamente a la sala con el enlace, o escribiendo el código en «Salas privadas → Unirse».'
+          : 'Tus amigos pueden entrar con el código en «Salas privadas → Unirse». Publica el juego en una web para que el enlace lleve directo a la sala.';
+      $('#room-panel').hidden = false;
+    }
+
+    hideRoom() { $('#room-panel').hidden = true; }
+
+    roomPlayers(list, bots) {
+      $('#rp-count').textContent = `(${list.filter((x) => !x.waiting).length}${bots ? ' + ' + bots + ' virtuales' : ''})`;
+      $('#rp-list').innerHTML = list.map((x) => `<li class="${x.waiting ? 'waiting' : ''}${x.away ? ' away' : ''}"><b>${U.esc(x.name)}</b>${x.host ? '<em>Anfitrión</em>' : ''}${x.me ? '<em class="me">Tú</em>' : ''}${x.waiting ? '<em>Esperando asiento</em>' : ''}${x.away ? '<em>Desconectado</em>' : ''}</li>`).join('');
     }
 
     bind(game) {
@@ -94,6 +133,8 @@
       this.hideActions();
       this.syncToggles();
       this.syncPeek(game.peek);
+      $('#btn-share').hidden = !game.net;
+      this.hideRoom();
       const names = { public: 'Partida pública', private: 'Sala privada', tournament: 'Torneo' };
       $('#game-mode').textContent = game.cfg.title || names[game.cfg.mode];
       this.setLevel('');
@@ -108,13 +149,8 @@
 
     syncToggles() {
       if (!this.game) return;
-      const p = this.store.profile.prefs;
       const mark = (id, v) => $$(id + ' button').forEach((b) => b.classList.toggle('on', b.dataset.v === String(v)));
-      const is3d = !!this.game.view3d;
-      mark('#seg-view', is3d ? '3d' : '2d');
       mark('#seg-orient', this.game._orientation());
-      mark('#seg-cam', p.camera);
-      $('#seg-cam').style.display = is3d ? '' : 'none';
     }
 
     syncPeek(on) {
@@ -139,7 +175,7 @@
       $('[data-act="check"]', bar).style.display = legal.canCheck ? '' : 'none';
       $('[data-act="call"]', bar).style.display = legal.canCheck ? 'none' : '';
       $('#call-amt').textContent = U.fmt(legal.toCall);
-      const allInCall = !legal.canCheck && legal.toCall >= engine.seats[0].stack;
+      const allInCall = !legal.canCheck && legal.toCall >= engine.seats[this.game ? this.game.hero : 0].stack;
       $('[data-act="call"]', bar).classList.toggle('is-allin', allInCall);
       $('.ab-raise', bar).style.display = legal.canRaise ? '' : 'none';
       $('[data-act="raise"]', bar).style.display = legal.canRaise ? '' : 'none';

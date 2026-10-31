@@ -99,9 +99,23 @@
       <div class="pc-inner"><div class="pc-face pc-front">${front}</div><div class="pc-face pc-back"><span class="pc-emblem">${suitSVG(0)}</span></div></div></div>`;
   }
 
+  /** Emblema grabado en el centro del tapete (trazo con el color de acento de la mesa). */
+  const EMBLEMS = {
+    space: '<circle cx="50" cy="50" r="18"/><ellipse cx="50" cy="50" rx="40" ry="11" transform="rotate(-18 50 50)"/><circle cx="80" cy="22" r="2.5"/><circle cx="18" cy="76" r="1.8"/>',
+    underwater: '<path d="M50 14v72M50 14l-7 12M50 14l7 12M30 30v18a20 20 0 0 0 40 0V30M30 30l-5 9M30 30l5 9M70 30l-5 9M70 30l5 9"/><path d="M38 86h24"/>',
+    balloon: '<path d="M50 12c-17 0-28 13-28 28 0 17 16 28 22 36h12c6-8 22-19 22-36 0-15-11-28-28-28Z"/><path d="M50 12c-8 10-10 22-10 28 0 14 4 26 4 36M50 12c8 10 10 22 10 28 0 14-4 26-4 36"/><path d="M44 76l-2 8h16l-2-8"/><rect x="42" y="84" width="16" height="8" rx="1"/>',
+    cyberpunk: '<path d="M50 12C40 30 20 38 20 56c0 10 8 17 17 17 5 0 9-2 11-5-1 6-3 11-8 16h20c-5-5-7-10-8-16 2 3 6 5 11 5 9 0 17-7 17-17 0-18-20-26-30-44Z"/><path d="M10 50h8M82 50h8M50 2v6" opacity=".7"/>',
+    royale: '<path d="M18 70l-4-36 20 16 16-26 16 26 20-16-4 36Z"/><path d="M18 80h64"/><circle cx="14" cy="32" r="3"/><circle cx="50" cy="22" r="3"/><circle cx="86" cy="32" r="3"/><path d="M40 58h20M50 48v20" opacity=".7"/>',
+    beach: '<circle cx="50" cy="44" r="16"/><path d="M14 70c8-6 14-6 22 0s14 6 22 0 14-6 22 0M22 82c6-4 12-4 18 0s12 4 18 0 12-4 18 0"/>',
+    forest: '<path d="M50 12c18 14 26 30 20 46-4 10-12 16-20 18-8-2-16-8-20-18-6-16 2-32 20-46Z"/><path d="M50 30v62M50 48l-10-8M50 60l12-9"/>',
+  };
+  function tableEmblem(id) {
+    return EMBLEMS[id] ? `<svg viewBox="0 0 100 100" aria-hidden="true">${EMBLEMS[id]}</svg>` : '';
+  }
+
   /** Mini vista previa de una mesa para el catálogo. */
   function tableSwatch(t) {
-    return `<div class="swatch-table" style="--f1:${t.felt[0]};--f2:${t.felt[1]};--r1:${t.rim[0]};--r2:${t.rim[1]};--acc:${t.accent};--bg1:${t.bg[0]};--bg2:${t.bg[1]}">
+    return `<div class="swatch-table" data-t="${t.id}" style="--f1:${t.felt[0]};--f2:${t.felt[1]};--r1:${t.rim[0]};--r2:${t.rim[1]};--acc:${t.accent};--bg1:${t.bg[0]};--bg2:${t.bg[1]}">
       <div class="swatch-felt"><span>♠</span></div></div>`;
   }
 
@@ -138,5 +152,5 @@
       <circle cx="52" cy="58" r="3.5" fill="#0b1a24"/><path d="M30 72 L54 76 L36 80" stroke="#fff" stroke-width="2" fill="none"/></svg>`;
   }
 
-  PVP.Art = { SUIT_PATHS, suitSVG, dealerSVG, cardHTML, tableSwatch, chipStackHTML, chipColor, avatarHTML, sharkSVG };
+  PVP.Art = { SUIT_PATHS, suitSVG, dealerSVG, cardHTML, tableSwatch, tableEmblem, chipStackHTML, chipColor, avatarHTML, sharkSVG };
 })(typeof window !== 'undefined' ? window : globalThis);

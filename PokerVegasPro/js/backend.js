@@ -106,6 +106,9 @@
 
     adjustCoins(delta, reason) { return this.rpc('pvp_adjust_coins', { p_delta: Math.round(delta), p_reason: reason }); },
     redeem(code) { return this.rpc('pvp_redeem_code', { p_code: code }); },
+    /** Canje sin cuenta (invitado): identifica el dispositivo con un id aleatorio. */
+    redeemGuest(code, device) { return this.rpc('pvp_redeem_guest', { p_code: code, p_device: device }); },
+    claimGuestCodes(device) { return this.rpc('pvp_claim_guest_codes', { p_device: device }); },
 
     /* ---------- compras (pago único) ---------- */
 

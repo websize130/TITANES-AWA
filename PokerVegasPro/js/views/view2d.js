@@ -1,5 +1,4 @@
 /* PokerVegasPro — vista de mesa 2D clásica (DOM + CSS + Web Animations).
- * También actúa como capa HUD de la vista 3D: asientos, apuestas, bote, cronómetros y emotes.
  */
 (function (root) {
   'use strict';
@@ -38,6 +37,15 @@
 
   PVP.Layout = { seatAngles, polar };
 
+  /** Decorado de fondo de cada mesa (formas CSS; solo se animan transform/opacity). */
+  const SCENES = {
+    space: '<i class="planet"></i><i class="ring"></i><i class="moon"></i>',
+    underwater: '<i class="ray"></i><i class="ray"></i><i class="ray"></i><i class="weed w1"></i><i class="weed w2"></i><i class="weed w3"></i><i class="weed w4"></i>',
+    balloon: '<i class="bal b1"></i><i class="bal b2"></i><i class="bal b3"></i>',
+    cyberpunk: '<i class="city"></i>',
+    royale: '<i class="spot s1"></i><i class="spot s2"></i><i class="curtain l"></i><i class="curtain r"></i>',
+  };
+
   const ACTION_LABEL = {
     fold: 'Fold', check: 'Check', call: 'Call', bet: 'Apuesta', raise: 'Sube', allin: 'All-In', SB: 'SB', BB: 'BB',
   };
@@ -47,15 +55,15 @@
       this.host = host;
       this.opts = Object.assign({ heroSeat: 0, deck: 'classic', table: PVP.Catalog.TABLES[0], orientation: 'h', isPrivate: false }, opts);
       this.peek = false;
-      this.is3D = false;
       this.seatState = [];
       this.boardIds = [];
       this.snap = null;
       this.root = document.createElement('div');
       this.root.className = 't2d';
       this.root.innerHTML = `
+        <div class="t2d-scene"></div>
         <div class="t2d-stage">
-          <div class="t2d-table"><div class="t2d-rim"></div><div class="t2d-felt"><div class="felt-line"></div><div class="felt-logo">PokerVegas<b>Pro</b></div></div></div>
+          <div class="t2d-table"><div class="t2d-rim"></div><div class="t2d-felt"><div class="felt-line"></div><div class="felt-emblem"></div><div class="felt-logo">PokerVegas<b>Pro</b></div></div></div>
           <div class="t2d-fx"></div>
           <div class="t2d-dealer">${Art().dealerSVG()}</div>
           <div class="t2d-center"><div class="t2d-pot"><span class="pot-label">Bote</span><span class="pot-amt">0</span></div><div class="t2d-board"></div><div class="t2d-banner"></div></div>
@@ -134,10 +142,9 @@
       if (!this.seatEls) return;
       const v = this.orientation === 'v';
       this.angles = seatAngles(this.n, v ? 96 : GAP, v ? 92 : 0);
-      if (this.is3D) return;
       const sw = Math.max(1, this.stage.clientWidth), sh = Math.max(1, this.stage.clientHeight);
       for (let i = 0; i < this.n; i++) {
-        const a = this.angles[i];
+        const a = this.angles[this._slot(i)];
         const hero = i === this.opts.heroSeat;
         const p = polar(a, v ? 40 : 45, v ? 41 : 42);
         const b = polar(a, v ? 25 : 30, v ? 26 : 25);
@@ -162,7 +169,7 @@
      * de la mesa: las fichas nunca quedan debajo de las cartas.
      */
     _placeBets() {
-      if (!this.seatEls || this.is3D) return;
+      if (!this.seatEls) return;
       const W = this.stage.clientWidth, H = this.stage.clientHeight;
       if (!W || !this._seatPos) return;
       const cx = W / 2, cy = H / 2;
@@ -199,10 +206,24 @@
       const s = this.snap;
       if (!s || s.dealer < 0 || !this.angles) { this.dbtn.style.opacity = 0; return; }
       this.dbtn.style.opacity = 1;
-      if (this.is3D) return;
       const v = this.orientation === 'v';
-      const p = polar(this.angles[s.dealer] + 14, v ? 33 : 37, v ? 33 : 31);
+      const p = polar(this.angles[this._slot(s.dealer)] + 14, v ? 33 : 37, v ? 33 : 31);
       this._place(this.dbtn, p.x, p.y, '%');
+    }
+
+    /** Posición visual de un asiento: el jugador propio siempre abajo en el centro (las salas online giran la mesa). */
+    _slot(i) {
+      const h = this.opts.heroSeat;
+      return h >= 0 ? (i - h + this.n) % this.n : i;
+    }
+
+    setHeroSeat(h) {
+      this.opts.heroSeat = h;
+      if (!this.seatEls) return;
+      this.seatEls.forEach((el, i) => el.classList.toggle('hero', i === h));
+      for (const st of this.seatState) { st.pid = null; st.ids = ''; }
+      this.layout();
+      if (this.snap) this.render(this.snap);
     }
 
     setOrientation(o) {
@@ -217,7 +238,6 @@
     fit() {
       const w = this.root.clientWidth, h = this.root.clientHeight;
       if (!w || !h) return;
-      if (this.is3D) { this.stage.style.width = w + 'px'; this.stage.style.height = h + 'px'; this._scale(w, h); return; }
       const ratio = this.orientation === 'v' ? 0.66 : 1.85;
       let sw = w, sh = w / ratio;
       if (sh > h) { sh = h; sw = h * ratio; }
@@ -229,7 +249,7 @@
     _scale(sw, sh) {
       // Escala de los elementos según el tamaño real de la mesa (cartas, placas).
       const base = this.orientation === 'v' ? Math.min(sw / 430, sh / 700) : Math.min(sh / 520, sw / 980);
-      this.u = U.clamp(base * (this.is3D ? 0.85 : 1), 0.55, 1.35);
+      this.u = U.clamp(base, 0.55, 1.35);
       this.root.style.setProperty('--u', this.u.toFixed(3));
     }
 
@@ -242,6 +262,8 @@
       st.setProperty('--bg1', t.bg[0]); st.setProperty('--bg2', t.bg[1]);
       this.root.dataset.table = t.id;
       this.root.classList.toggle('neon', !!t.neon);
+      this.$('.felt-emblem').innerHTML = Art().tableEmblem(t.id);
+      this.$('.t2d-scene').innerHTML = SCENES[t.id] || '';
       this._buildFx(t.fx);
     }
 
@@ -274,26 +296,6 @@
     setPeek(on) {
       this.peek = on;
       if (this.snap) this.render(this.snap);
-    }
-
-    /** En 3D esta vista solo pinta el HUD; la vista 3D le pasa las posiciones proyectadas. */
-    set3D(on) {
-      this.is3D = on;
-      this.root.classList.toggle('is3d', on);
-      this.fit();
-      this.layout();
-    }
-
-    placeProjected(kind, i, x, y) {
-      const el = kind === 'seat' ? this.seatEls[i] : kind === 'bet' ? this.betEls[i] : kind === 'pot' ? this.potEl : kind === 'dbtn' ? this.dbtn : null;
-      if (!el) return;
-      el.style.left = x + 'px';
-      el.style.top = y + 'px';
-      if (kind === 'seat') {
-        el.classList.toggle('upper', y < this.stage.clientHeight * 0.42);
-        el.classList.toggle('left', x < this.stage.clientWidth * 0.33);
-        el.classList.toggle('right', x > this.stage.clientWidth * 0.67);
-      }
     }
 
     /* ---------- render ---------- */
@@ -413,7 +415,7 @@
 
     _flyFromDealer(el, delay, dur) {
       if (!el.animate) return;
-      const from = this.is3D && this.dealerScreen ? this.dealerScreen : this._dealerPoint();
+      const from = this._dealerPoint();
       const r = el.getBoundingClientRect();
       const dx = from.x - (r.left + r.width / 2), dy = from.y - (r.top + r.height / 2);
       // Deslizamiento en arco con un pequeño rebote al asentarse (solo transform/opacity: va por GPU).

@@ -79,6 +79,16 @@ create table if not exists public.pvp_redemptions (
 );
 create index if not exists pvp_redemptions_code on public.pvp_redemptions (code_hash);
 
+-- Canjes hechos sin cuenta (invitados): se identifican por un id aleatorio del dispositivo. Cuentan para el límite
+-- global de usos y se traspasan a la cuenta si el invitado se registra o inicia sesión en ese dispositivo.
+create table if not exists public.pvp_guest_redemptions (
+  device     text not null check (char_length(device) between 8 and 64),
+  code_hash  text not null references public.pvp_codes (code_hash) on delete cascade,
+  claimed_by uuid references public.pvp_profiles (id) on delete set null,
+  created_at timestamptz not null default now(),
+  primary key (device, code_hash)
+);
+
 -- Recompensa diaria semanal: lunes 4.000 y se duplica cada día hasta el domingo (256.000). Una por día (hora de España).
 create table if not exists public.pvp_daily_claims (
   user_id    uuid not null references public.pvp_profiles (id) on delete cascade,
@@ -269,6 +279,54 @@ begin
   return jsonb_build_object('kind', v_code.kind, 'coins', v_code.coins, 'tier', v_code.grants_tier);
 end $$;
 
+-- Canje sin cuenta: basta con escribir el código. Respeta el límite global de usos (p. ej. damaocho: 15).
+create or replace function public.pvp_redeem_guest(p_code text, p_device text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_hash text := public.pvp_hash_code(p_code);
+  v_code public.pvp_codes;
+begin
+  if p_device is null or char_length(p_device) not between 8 and 64 then raise exception 'Dispositivo no válido' using errcode = 'P0001'; end if;
+  select * into v_code from public.pvp_codes where code_hash = v_hash for update;
+  if not found or not v_code.active then raise exception 'Código no válido' using errcode = 'P0001'; end if;
+  if v_code.expires_at is not null and v_code.expires_at < now() then raise exception 'Este código ha caducado' using errcode = 'P0001'; end if;
+  if exists (select 1 from public.pvp_guest_redemptions where device = p_device and code_hash = v_hash) then
+    raise exception 'Ya canjeaste este código' using errcode = 'P0001';
+  end if;
+  if v_code.max_uses is not null and v_code.uses >= v_code.max_uses then
+    raise exception 'Este código ha expirado: ya se alcanzó su límite de % usos', v_code.max_uses using errcode = 'P0001';
+  end if;
+  insert into public.pvp_guest_redemptions (device, code_hash) values (p_device, v_hash);
+  update public.pvp_codes set uses = uses + 1 where code_hash = v_hash;
+  return jsonb_build_object('kind', v_code.kind, 'coins', v_code.coins, 'tier', v_code.grants_tier);
+end $$;
+
+-- Al entrar con cuenta en el mismo dispositivo, los packs canjeados como invitado pasan a la cuenta (sin gastar otro uso).
+create or replace function public.pvp_claim_guest_codes(p_device text)
+returns text language plpgsql security definer set search_path = '' as $$
+declare
+  v_uid uuid := auth.uid();
+  r record;
+  v_tier text;
+begin
+  if v_uid is null then raise exception 'No autenticado' using errcode = '28000'; end if;
+  if not exists (select 1 from public.pvp_profiles where id = v_uid) then return null; end if;
+  for r in
+    select g.code_hash, c.grants_tier from public.pvp_guest_redemptions g join public.pvp_codes c using (code_hash)
+     where g.device = p_device and g.claimed_by is null and c.grants_tier is not null
+     for update of g
+  loop
+    update public.pvp_guest_redemptions set claimed_by = v_uid where device = p_device and code_hash = r.code_hash;
+    insert into public.pvp_redemptions (user_id, code_hash) values (v_uid, r.code_hash) on conflict do nothing;
+    update public.pvp_profiles
+       set tier = case when public.pvp_tier_rank(r.grants_tier) > public.pvp_tier_rank(tier) then r.grants_tier else tier end,
+           updated_at = now()
+     where id = v_uid;
+  end loop;
+  select tier into v_tier from public.pvp_profiles where id = v_uid;
+  return v_tier;
+end $$;
+
 -- ===================== Recompensa diaria =====================
 
 create or replace function public.pvp_daily_amount(p_isodow integer)
@@ -416,6 +474,7 @@ alter table public.pvp_coin_ledger enable row level security;
 alter table public.pvp_codes       enable row level security;
 alter table public.pvp_redemptions enable row level security;
 alter table public.pvp_daily_claims enable row level security;
+alter table public.pvp_guest_redemptions enable row level security;
 
 drop policy if exists pvp_daily_select on public.pvp_daily_claims;
 create policy pvp_daily_select on public.pvp_daily_claims for select to authenticated
@@ -444,7 +503,7 @@ create policy pvp_redemptions_select on public.pvp_redemptions for select to aut
   using (user_id = (select auth.uid()) or (select public.pvp_is_admin()));
 
 -- Escrituras directas: solo columnas cosméticas del propio perfil.
-revoke all on public.pvp_profiles, public.pvp_purchases, public.pvp_coin_ledger, public.pvp_codes, public.pvp_redemptions, public.pvp_daily_claims from anon, authenticated;
+revoke all on public.pvp_profiles, public.pvp_purchases, public.pvp_coin_ledger, public.pvp_codes, public.pvp_redemptions, public.pvp_daily_claims, public.pvp_guest_redemptions from anon, authenticated;
 grant select on public.pvp_profiles, public.pvp_purchases, public.pvp_coin_ledger, public.pvp_codes, public.pvp_redemptions, public.pvp_daily_claims to authenticated;
 grant update (prefs, stats, adv, xp, updated_at) on public.pvp_profiles to authenticated;
 
@@ -461,10 +520,11 @@ begin
     if f.proname in ('pvp_is_admin', 'pvp_tier_rank', 'pvp_pack_info', 'pvp_ensure_profile', 'pvp_adjust_coins', 'pvp_create_purchase',
                      'pvp_cancel_purchase', 'pvp_redeem_code', 'pvp_username_available', 'pvp_admin_confirm_purchase',
                      'pvp_admin_reject_purchase', 'pvp_admin_grant_pack', 'pvp_admin_adjust_coins', 'pvp_admin_set_tier',
-                     'pvp_admin_create_code', 'pvp_admin_set_code_active', 'pvp_daily_status', 'pvp_claim_daily', 'pvp_daily_amount') then
+                     'pvp_admin_create_code', 'pvp_admin_set_code_active', 'pvp_daily_status', 'pvp_claim_daily', 'pvp_daily_amount',
+                     'pvp_redeem_guest', 'pvp_claim_guest_codes') then
       execute format('grant execute on function %s to authenticated', f.sig);
     end if;
-    if f.proname in ('pvp_username_available', 'pvp_pack_info') then
+    if f.proname in ('pvp_username_available', 'pvp_pack_info', 'pvp_redeem_guest') then
       execute format('grant execute on function %s to anon', f.sig);
     end if;
     execute format('grant execute on function %s to service_role', f.sig);

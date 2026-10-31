@@ -47,7 +47,7 @@
       $('#pf-body').innerHTML = `<div class="pf-gallery">${A.ROSTER.map((r) => `
         <button type="button" class="pf-model${r.id === L.base ? ' on' : ''}" data-base="${r.id}">
           ${A.portraitSVG({ base: r.id })}<b>${U.esc(r.name)}</b><small>${U.esc(r.origin)}</small></button>`).join('')}</div>
-        <p class="pf-note">Tu personaje también te representa en la mesa 3D. Si subes una foto, se usa como avatar en la interfaz.</p>`;
+        <p class="pf-note">Tu personaje te representa en las mesas y en las salas con amigos. Si subes una foto, se usa como avatar.</p>`;
       return;
     }
     const sex = L.sex;

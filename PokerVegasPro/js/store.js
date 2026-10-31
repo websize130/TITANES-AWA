@@ -14,6 +14,7 @@
   const MAX_CREDIT = 6000000; // límite por movimiento de pvp_adjust_coins
   const KEY_DAILY = 'pvp.daily.v1';
   const KEY_CODE_USES = 'pvp.codeuses.v1';
+  const KEY_DEVICE = 'pvp.device.v1';
 
   /** Fecha de hoy (YYYY-MM-DD) y día ISO (1 = lunes … 7 = domingo) en la zona horaria del juego. */
   function todayInfo() {
@@ -41,7 +42,7 @@
 
   function defaultPrefs() {
     return {
-      table: 'classic', deck: 'classic', view: '2d', orientation: 'auto', camera: 'player', sound: true, music: true, autoPeek: true, speed: 1,
+      table: 'classic', deck: 'classic', orientation: 'auto', sound: true, music: true, musicStyle: 'lounge', autoPeek: true, speed: 1,
       look: { base: 'marco' }, avatarImg: null, v: 3,
     };
   }
@@ -59,6 +60,7 @@
   function normalize(p) {
     p.prefs = Object.assign(defaultPrefs(), p.prefs || {});
     if (p.prefs.v !== 3) { p.prefs.autoPeek = true; p.prefs.v = 3; }
+    delete p.prefs.view; delete p.prefs.camera; // la vista 3D ya no existe
     p.stats = Object.assign(defaultStats(), p.stats || {});
     if (!PVP.Catalog.TIERS[p.tier]) p.tier = 'free';
     if (!Array.isArray(p.redeemed)) p.redeemed = [];
@@ -70,6 +72,19 @@
       uid: row.id, id: row.player_code, name: row.username, guest: false, remote: true, coins: Number(row.coins),
       xp: row.xp || 0, tier: row.tier, prefs: row.prefs, stats: row.stats, adv: row.adv, isAdmin: !!row.is_admin, createdAt: row.created_at,
     });
+  }
+
+  /** Id aleatorio y persistente del dispositivo (para canjes de invitado). */
+  function deviceId() {
+    let id = deviceId.mem || read(KEY_DEVICE, null);
+    if (!id) {
+      const a = new Uint8Array(12);
+      (root.crypto || globalThis.crypto).getRandomValues(a);
+      id = 'dev-' + Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('');
+      write(KEY_DEVICE, id);
+    }
+    deviceId.mem = id;
+    return id;
   }
 
   async function sha256Hex(text) {
@@ -151,6 +166,7 @@
       if (!res.session) return { confirm: true };
       await this._loadRemote(res.user);
       if (guest) await this._importGuest(guest);
+      await this._claimGuestCodes();
       return { bonus: SIGNUP_BONUS };
     }
 
@@ -160,7 +176,16 @@
       const res = await this.backend.signIn(String(email || '').trim(), password);
       await this._loadRemote(res.user);
       if (guest && !this.profile.stats.hands) await this._importGuest(guest);
+      await this._claimGuestCodes();
       return this.profile;
+    }
+
+    /** Los packs canjeados como invitado en este dispositivo (p. ej. damaocho) pasan a la cuenta. */
+    async _claimGuestCodes() {
+      try {
+        await this.backend.claimGuestCodes(deviceId());
+        await this.refresh(); // si cambia el nivel, _onRemoteProfile avisa con «tierUp»
+      } catch (e) { /* sin canjes previos o servidor sin la función: nada que traspasar */ }
     }
 
     /** Conserva avatar, preferencias y estadísticas del invitado (las monedas no: el servidor da el bono). */
@@ -263,40 +288,62 @@
     }
 
     /** Canjea un código promocional o de creador. Con cuenta lo valida Supabase; como invitado, el navegador. */
+    /**
+     * Canjea un código. Basta con escribirlo: funciona con cuenta y también como invitado (sin registro).
+     * Los códigos con usos limitados (damaocho: 15) se cuentan en el servidor cuando está disponible.
+     */
     async redeem(raw) {
       const code = String(raw || '').replace(/\s+/g, '').toUpperCase();
       if (!code) throw new Error('Escribe un código.');
       const fmt = PVP.util.fmt;
       const T = PVP.Catalog.TIERS;
+      const before = this.tier();
       let res;
       if (this.online) {
         res = await this.backend.redeem(code);
         await this.refresh();
       } else {
         const hash = await sha256Hex(code);
-        const c = (PVP.Config.LOCAL_CODES || []).find((x) => x.hash === hash);
-        if (!c) throw new Error('Código no válido.');
         if (this.profile.redeemed.includes(hash)) throw new Error('Ya canjeaste este código.');
-        if (c.maxUses) {
-          // Los usos limitados se cuentan en el servidor: con servidor disponible hace falta cuenta.
-          if (this.backend && this.backend.available) throw new Error('Inicia sesión con tu cuenta para canjear este código: tiene un número limitado de usos.');
-          const uses = read(KEY_CODE_USES, {});
-          if ((uses[hash] || 0) >= c.maxUses) throw new Error(`Este código ha expirado: ya se alcanzó su límite de ${c.maxUses} usos.`);
-          uses[hash] = (uses[hash] || 0) + 1;
-          write(KEY_CODE_USES, uses);
+        if (this.backend && this.backend.available) {
+          try { res = await this.backend.redeemGuest(code, deviceId()); } catch (e) {
+            // Solo si el servidor aún no tiene la función se usa la lista local; los demás errores se muestran.
+            if (!/no está preparado/.test(e.message)) throw e;
+          }
+        }
+        if (!res) {
+          const c = (PVP.Config.LOCAL_CODES || []).find((x) => x.hash === hash);
+          if (!c) throw new Error('Código no válido.');
+          if (c.maxUses) {
+            const uses = read(KEY_CODE_USES, {});
+            if ((uses[hash] || 0) >= c.maxUses) throw new Error(`Este código ha expirado: ya se alcanzó su límite de ${c.maxUses} usos.`);
+            uses[hash] = (uses[hash] || 0) + 1;
+            write(KEY_CODE_USES, uses);
+          }
+          res = { kind: c.kind, coins: c.coins, tier: c.tier };
         }
         this.profile.redeemed.push(hash);
-        this.profile.coins += c.coins || 0;
-        if (c.tier && T[c.tier].rank > T[this.profile.tier].rank) this.profile.tier = c.tier;
+        this.profile.coins += Number(res.coins) || 0;
+        if (res.tier && T[res.tier].rank > T[this.profile.tier].rank) this.profile.tier = res.tier;
         this.save();
-        res = { kind: c.kind, coins: c.coins, tier: c.tier };
       }
       this.sanitizePrefs();
-      if (res.kind === 'creator') return 'Código de creador: acceso VIP Leyenda activado';
+      if (this.tier() !== before) this._showcase();
+      if (res.kind === 'creator') return '¡Código de creador! Pack Leyenda activado: todo desbloqueado';
       const parts = [];
       if (res.tier) parts.push(T[res.tier].name + ' activado');
       if (res.coins) parts.push(`+${fmt(res.coins)} monedas`);
       return parts.join(' · ') || 'Código aplicado';
+    }
+
+    /** Al desbloquear un pack se estrenan la mejor mesa y baraja disponibles (si el jugador seguía con las básicas). */
+    _showcase() {
+      const p = this.profile.prefs;
+      const best = this.tier() === 'legend' ? { table: 'royale', deck: 'gold' } : { table: 'space', deck: 'ruby' };
+      if (PVP.Catalog.table(p.table).tier === 'free') p.table = best.table;
+      if (PVP.Catalog.deck(p.deck).tier === 'free') p.deck = best.deck;
+      this.save();
+      if (!this.online) this.emit('tierUp', this.tier());
     }
 
     /* ---------- recompensa diaria semanal ---------- */

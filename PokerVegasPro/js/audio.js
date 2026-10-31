@@ -1,4 +1,4 @@
-/* PokerVegasPro — audio: música lounge/jazz generada en tiempo real con WebAudio (sin archivos ni derechos de autor)
+/* PokerVegasPro — audio: música generada en tiempo real con WebAudio en varios estilos (sin archivos ni derechos de autor)
  * y efectos de sonido (fichas, cartas, botones, premios). Todo pasa por un bus con compresor y reverberación suave.
  */
 (function (root) {
@@ -7,20 +7,100 @@
   const PVP = (root.PVP = root.PVP || {});
 
   const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
-  // ii–V–I–VI en Do y su variante (voicings de jazz sin fundamental en la mano derecha).
-  const PROG = [
-    { root: 38, chord: [53, 57, 60, 64] }, // Dm9
-    { root: 43, chord: [53, 57, 59, 64] }, // G13
-    { root: 36, chord: [52, 55, 59, 62] }, // Cmaj9
-    { root: 45, chord: [55, 58, 61, 65] }, // A7(b13)
-    { root: 41, chord: [52, 57, 60, 64] }, // Fmaj7
-    { root: 40, chord: [50, 55, 59, 62] }, // Em7
-    { root: 38, chord: [53, 57, 60, 64] }, // Dm9
-    { root: 43, chord: [53, 56, 59, 65] }, // G7(b9)
-  ];
-  const BPM = 74;
-  const BEAT = 60 / BPM;
-  const SWING = 0.62; // corchea larga del swing
+  const rnd = Math.random;
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+
+  /**
+   * Estilos de música. Cada uno define tempo, progresión (fundamental + voicing) y cómo suena un compás.
+   * `bar(A, t, c, nxt, i, B)` programa las notas del compás que empieza en t (B = duración de un pulso).
+   */
+  const STYLES = {
+    lounge: {
+      name: 'Elegante', desc: 'Jazz lounge de casino', bpm: 74, vol: 0.32,
+      // ii–V–I–VI en Do y su variante (voicings de jazz sin fundamental en la mano derecha).
+      prog: [
+        { root: 38, chord: [53, 57, 60, 64] }, { root: 43, chord: [53, 57, 59, 64] }, { root: 36, chord: [52, 55, 59, 62] }, { root: 45, chord: [55, 58, 61, 65] },
+        { root: 41, chord: [52, 57, 60, 64] }, { root: 40, chord: [50, 55, 59, 62] }, { root: 38, chord: [53, 57, 60, 64] }, { root: 43, chord: [53, 56, 59, 65] },
+      ],
+      bar(A, t, c, nxt, i, B) {
+        const SW = 0.62;
+        A._rhodes(c.chord, t, B * 2.4, 0.07);
+        if (rnd() < 0.55) A._rhodes(c.chord.map((n) => n + (rnd() < 0.3 ? 12 : 0)), t + B * (1 + SW), B * 1.6, 0.045);
+        const walk = [c.root, c.root + (rnd() < 0.5 ? 7 : 4), c.root + (rnd() < 0.5 ? 9 : 10), nxt.root + (rnd() < 0.5 ? 1 : -1)];
+        walk.forEach((n, k) => A._bass(n, t + k * B, B * 0.9));
+        for (let k = 0; k < 4; k++) {
+          if (k % 2 === 1) A._noise(t + k * B, 0.22, 900, 0.018, 'bandpass');
+          A._noise(t + k * B, 0.06, 7000, 0.012, 'highpass');
+          A._noise(t + k * B + B * SW, 0.05, 7000, 0.008, 'highpass');
+        }
+        if (i % 2 === 0 && rnd() < 0.6) {
+          const scale = c.chord.map((n) => n + 12);
+          for (let k = 0; k < 3; k++) if (rnd() < 0.7) A._bell(pick(scale), t + B * (k + (k ? SW : 0)), 0.03);
+        }
+      },
+    },
+    relax: {
+      name: 'Relajante', desc: 'Ambiente chill muy suave', bpm: 60, vol: 0.36,
+      prog: [
+        { root: 41, chord: [57, 60, 64, 67] }, { root: 40, chord: [55, 59, 62, 67] }, { root: 38, chord: [57, 60, 64, 65] }, { root: 36, chord: [55, 59, 62, 64] },
+      ],
+      bar(A, t, c, nxt, i, B) {
+        A._pad(c.chord, t, B * 4.4, 0.035);
+        A._bass(c.root, t, B * 3.5, 0.09);
+        const penta = [72, 74, 76, 79, 81, 84];
+        for (let k = 0; k < 4; k++) if (rnd() < 0.35) A._bell(pick(penta), t + k * B + rnd() * 0.2, 0.022);
+        if (rnd() < 0.5) A._noise(t + B * 2, 0.9, 600, 0.006, 'lowpass'); // oleaje suave
+      },
+    },
+    upbeat: {
+      name: 'Animada', desc: 'Funk de casino con ritmo', bpm: 112, vol: 0.28,
+      prog: [
+        { root: 46, chord: [62, 65, 69, 72] }, { root: 43, chord: [62, 65, 67, 70] }, { root: 39, chord: [62, 67, 70, 74] }, { root: 41, chord: [60, 63, 67, 69] },
+      ],
+      bar(A, t, c, nxt, i, B) {
+        const h = B / 2;
+        A._kick(t); A._kick(t + B * 2); if (rnd() < 0.5) A._kick(t + B * 2.5, 0.5);
+        A._snare(t + B); A._snare(t + B * 3);
+        for (let k = 0; k < 8; k++) A._noise(t + k * h, 0.04, 8000, k % 2 ? 0.012 : 0.02, 'highpass');
+        const line = [0, 0, 12, 0, 7, 10, 12, 7];
+        line.forEach((d, k) => { if (k !== 3 || rnd() < 0.5) A._pluckBass(c.root + d, t + k * h, h * 0.8); });
+        [1.5, 2.5, 3.5].forEach((b) => { if (rnd() < 0.85) A._stab(c.chord, t + b * B, h * 0.7, 0.04); });
+        if (i % 4 === 3) [0, 1, 2, 3].forEach((k) => A._stab(c.chord.map((n) => n + 12), t + B * 3 + k * (h / 2), h * 0.4, 0.02));
+      },
+    },
+    electro: {
+      name: 'Electrónica', desc: 'Synthwave nocturno', bpm: 100, vol: 0.27,
+      prog: [
+        { root: 33, chord: [57, 60, 64, 69] }, { root: 29, chord: [57, 60, 65, 69] }, { root: 36, chord: [55, 60, 64, 67] }, { root: 31, chord: [55, 59, 62, 67] },
+      ],
+      bar(A, t, c, nxt, i, B) {
+        const s16 = B / 4;
+        for (let k = 0; k < 4; k++) { A._kick(t + k * B, 0.9); A._noise(t + k * B + B / 2, 0.05, 9000, 0.016, 'highpass'); }
+        A._snare(t + B, 0.7); A._snare(t + B * 3, 0.7);
+        for (let k = 0; k < 8; k++) A._sawBass(c.root + (k % 2 ? 12 : 0), t + k * (B / 2), B / 2 * 0.85);
+        A._pad(c.chord, t, B * 4.2, 0.022, 'sawtooth');
+        const arp = [c.chord[0], c.chord[1], c.chord[2], c.chord[3], c.chord[2] + 12, c.chord[3], c.chord[1] + 12, c.chord[2]];
+        for (let k = 0; k < 16; k++) A._arp(arp[k % arp.length] + 12, t + k * s16, s16 * 0.8);
+      },
+    },
+    bossa: {
+      name: 'Bossa', desc: 'Bossa nova cálida', bpm: 86, vol: 0.32,
+      prog: [
+        { root: 41, chord: [57, 60, 64, 67] }, { root: 43, chord: [53, 57, 59, 62] }, { root: 40, chord: [55, 59, 62, 65] }, { root: 45, chord: [55, 59, 61, 64] },
+      ],
+      bar(A, t, c, nxt, i, B) {
+        // Bajo: fundamental en el 1 y quinta en el «y» del 2 (patrón clásico de bossa).
+        A._bass(c.root, t, B * 1.4, 0.13); A._bass(c.root + 7, t + B * 1.5, B * 0.5, 0.11);
+        A._bass(c.root, t + B * 2, B * 1.4, 0.13); A._bass(c.root + 7, t + B * 3.5, B * 0.5, 0.11);
+        // Guitarra: acordes sincopados.
+        [0, 1.5, 2.5, 3].forEach((b) => A._guitar(c.chord, t + b * B, B * 0.9));
+        // Rimshot y shaker.
+        [0, 0.75, 1.5, 2.5, 3.25].forEach((b) => A._noise(t + b * B, 0.03, 2500, 0.03, 'bandpass'));
+        for (let k = 0; k < 8; k++) A._noise(t + k * B / 2, 0.06, 7500, 0.01, 'highpass');
+        if (rnd() < 0.4) A._bell(pick(c.chord) + 12, t + B * 2, 0.025);
+      },
+    },
+  };
 
   const Audio = {
     ctx: null,
@@ -30,6 +110,16 @@
     _bar: 0,
     _next: 0,
     _timer: null,
+    style: 'lounge',
+    STYLES,
+
+    /** Cambia el estilo de música (se nota en el siguiente compás). */
+    setStyle(id) {
+      if (!STYLES[id] || id === this.style) return;
+      this.style = id;
+      this._bar = 0;
+      if (this.ctx && this.playing) this.musicBus.gain.setTargetAtTime(STYLES[id].vol, this.ctx.currentTime, 0.6);
+    },
 
     _ensure() {
       if (this.ctx) {
@@ -78,7 +168,7 @@
       this.playing = true;
       this._next = ctx.currentTime + 0.1;
       this.musicBus.gain.cancelScheduledValues(ctx.currentTime);
-      this.musicBus.gain.setTargetAtTime(0.32, ctx.currentTime, 1.2);
+      this.musicBus.gain.setTargetAtTime(STYLES[this.style].vol, ctx.currentTime, 1.2);
       this._timer = setInterval(() => this._schedule(), 120);
       this._schedule();
     },
@@ -92,31 +182,12 @@
 
     _schedule() {
       const ctx = this.ctx;
+      if (this._next < ctx.currentTime) this._next = ctx.currentTime + 0.05; // tras volver de una pestaña oculta
       while (this._next < ctx.currentTime + 0.6) {
-        this._playBar(this._bar % PROG.length, this._next);
-        this._next += BEAT * 4;
+        const st = STYLES[this.style], B = 60 / st.bpm, i = this._bar % st.prog.length;
+        st.bar(this, this._next, st.prog[i], st.prog[(i + 1) % st.prog.length], i, B);
+        this._next += B * 4;
         this._bar++;
-      }
-    },
-
-    _playBar(i, t) {
-      const c = PROG[i], nxt = PROG[(i + 1) % PROG.length];
-      // Piano eléctrico: acorde en el 1 y a veces anticipado en el «y» del 2.
-      this._rhodes(c.chord, t, BEAT * 2.4, 0.07);
-      if (Math.random() < 0.55) this._rhodes(c.chord.map((n) => n + (Math.random() < 0.3 ? 12 : 0)), t + BEAT * (1 + SWING), BEAT * 1.6, 0.045);
-      // Contrabajo caminando: fundamental, quinta/tercera y aproximación cromática al siguiente acorde.
-      const walk = [c.root, c.root + (Math.random() < 0.5 ? 7 : 4), c.root + (Math.random() < 0.5 ? 9 : 10), nxt.root + (Math.random() < 0.5 ? 1 : -1)];
-      walk.forEach((n, k) => this._bass(n, t + k * BEAT, BEAT * 0.9));
-      // Escobillas: barrido en 2 y 4, ride suave en corcheas con swing.
-      for (let k = 0; k < 4; k++) {
-        if (k % 2 === 1) this._noise(t + k * BEAT, 0.22, 900, 0.018, 'bandpass');
-        this._noise(t + k * BEAT, 0.06, 7000, 0.012, 'highpass');
-        this._noise(t + k * BEAT + BEAT * SWING, 0.05, 7000, 0.008, 'highpass');
-      }
-      // Melodía ocasional, muy suave.
-      if (i % 2 === 0 && Math.random() < 0.6) {
-        const scale = c.chord.map((n) => n + 12);
-        for (let k = 0; k < 3; k++) if (Math.random() < 0.7) this._bell(scale[Math.floor(Math.random() * scale.length)], t + BEAT * (k + (k ? SWING : 0)), 0.03);
       }
     },
 
@@ -139,7 +210,7 @@
       }
     },
 
-    _bass(n, t, dur) {
+    _bass(n, t, dur, vol) {
       const ctx = this.ctx;
       const o = ctx.createOscillator();
       o.type = 'triangle';
@@ -147,11 +218,59 @@
       const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(vol || 0.16, t + 0.02);
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       o.connect(lp).connect(g).connect(this.musicBus);
       o.start(t); o.stop(t + dur + 0.05);
     },
+
+    /** Colchón: osciladores desafinados con ataque y caída lentos, filtrados. */
+    _pad(notes, t, dur, vol, type) {
+      const ctx = this.ctx;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + Math.min(1.2, dur * 0.35));
+      g.gain.setValueAtTime(vol, t + dur * 0.7);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = type === 'sawtooth' ? 1400 : 1800;
+      g.connect(lp).connect(this.musicBus);
+      for (const n of notes) for (const det of [-6, 6]) {
+        const o = ctx.createOscillator();
+        o.type = type || 'triangle'; o.frequency.value = midi(n); o.detune.value = det;
+        o.connect(g); o.start(t); o.stop(t + dur + 0.05);
+      }
+    },
+
+    _kick(t, vol) {
+      const ctx = this.ctx;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.38 * (vol || 1), t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+      o.connect(g).connect(this.musicBus); o.start(t); o.stop(t + 0.32);
+    },
+
+    _snare(t, vol) {
+      this._noise(t, 0.16, 1800, 0.07 * (vol || 1), 'bandpass');
+      const ctx = this.ctx, o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(140, t + 0.08);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06 * (vol || 1), t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+      o.connect(g).connect(this.musicBus); o.start(t); o.stop(t + 0.12);
+    },
+
+    _synth(n, t, dur, vol, type, cut, q) {
+      const ctx = this.ctx;
+      const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      o.type = type; o.frequency.value = midi(n);
+      f.type = 'lowpass'; f.Q.value = q || 1;
+      f.frequency.setValueAtTime(cut * 3, t); f.frequency.exponentialRampToValueAtTime(cut, t + dur * 0.8);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(f).connect(g).connect(this.musicBus); o.start(t); o.stop(t + dur + 0.03);
+    },
+    _pluckBass(n, t, dur) { this._synth(n, t, dur, 0.14, 'sawtooth', 380, 4); },
+    _sawBass(n, t, dur) { this._synth(n, t, dur, 0.09, 'sawtooth', 300, 6); },
+    _arp(n, t, dur) { this._synth(n, t, dur, 0.022, 'square', 1600, 2); },
+    _stab(notes, t, dur, vol) { for (const n of notes) this._synth(n, t, dur, vol / 2, 'sawtooth', 1500, 1); },
+    _guitar(notes, t, dur) { notes.forEach((n, k) => this._synth(n, t + k * 0.012, dur, 0.035, 'triangle', 1800, 1)); },
 
     _bell(n, t, vol) {
       const ctx = this.ctx;
