@@ -285,7 +285,6 @@
     pubStake = b.dataset.stake;
     renderPublic();
   });
-  segGroup('#pub-level');
   segGroup('#pub-size');
 
   function segGroup(sel) {
@@ -304,12 +303,12 @@
       return;
     }
     const size = +segVal('#pub-size');
-    matchmaking(size, segVal('#pub-level'), () => {
+    matchmaking(size, 'mixed', () => {
       if (!store.spend(stake.buyIn, 'buy_in')) return ui.toast('Monedas insuficientes.');
       startGame({
         mode: 'public', title: `Mesa ${stake.name} · ${U.short(stake.sb)}/${U.short(stake.bb)}`,
         seats: size, players: size, sb: stake.sb, bb: stake.bb, stack: stake.buyIn, buyIn: stake.buyIn,
-        botLevel: segVal('#pub-level'), turnSeconds: 30,
+        botLevel: 'mixed', turnSeconds: 30, // rivales variados, sin elegir dificultad
       });
     });
   });

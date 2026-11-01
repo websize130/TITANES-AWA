@@ -151,8 +151,7 @@
         // Mantener placa y cartas dentro del escenario: nada se corta ni se monta sobre los bordes.
         // Caja real del asiento (o una estimación si aún no se ha pintado): nada se sale del escenario.
         const el = this.seatEls[i];
-        const sideHero = hero && !v;
-        const estW = this.u * (sideHero ? 150 : 72), estH = this.u * (sideHero ? 48 : hero ? 74 : 52);
+        const estW = this.u * 72, estH = this.u * (hero ? 74 : 52);
         const halfW = (Math.max(estW, el.offsetWidth / 2) * 100) / sw;
         const halfH = (Math.max(estH, el.offsetHeight / 2) * 100) / sh;
         p.x = U.clamp(p.x, halfW, 100 - halfW);
@@ -188,8 +187,18 @@
         const len = Math.hypot(ux, uy) || 1;
         ux /= len; uy /= len;
         const t = Math.min(Math.abs(ux) > 1e-3 ? r.width / 2 / Math.abs(ux) : Infinity, Math.abs(uy) > 1e-3 ? r.height / 2 / Math.abs(uy) : Infinity);
-        const d = Math.min(t + gap, len * 0.72);
-        this._place(this.betEls[i], ((sx + ux * d) / W) * 100, ((sy + uy * d) / H) * 100, '%');
+        const d = t + gap;
+        if (d <= len * 0.8) {
+          this._place(this.betEls[i], ((sx + ux * d) / W) * 100, ((sy + uy * d) / H) * 100, '%');
+        } else {
+          // Mesa poco profunda: no cabe entre el asiento y el centro, así que las fichas van al lado del asiento
+          // (a la altura de las cartas), nunca encima de ellas.
+          let side = cx - sx >= 0 ? 1 : -1;
+          if (Math.abs(cx - sx) < W * 0.05) side = -1;
+          const bx = sx + side * (r.width / 2 + gap + 16 * this.u);
+          const by = sy - r.height * 0.18;
+          this._place(this.betEls[i], (bx / W) * 100, (by / H) * 100, '%');
+        }
       }
     }
 
