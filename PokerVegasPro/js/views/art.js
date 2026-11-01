@@ -104,35 +104,33 @@
     const rot = flip ? ` rotate(180 ${cx} ${cy})` : '';
     return `<g transform="${rot ? rot.trim() + ' ' : ''}translate(${(cx - size / 2).toFixed(2)} ${(cy - size / 2).toFixed(2)}) scale(${k.toFixed(4)})">${suitPaths(suit)}</g>`;
   }
-  const COURT = {
-    K: '<path d="M70 92 L64 62 L84 76 L100 52 L116 76 L136 62 L130 92 Z"/><circle cx="64" cy="58" r="5"/><circle cx="100" cy="47" r="5"/><circle cx="136" cy="58" r="5"/>',
-    Q: '<path d="M74 92 L70 70 L86 80 L100 62 L114 80 L130 70 L126 92 Z"/><circle cx="100" cy="56" r="6"/><circle cx="70" cy="66" r="4"/><circle cx="130" cy="66" r="4"/>',
-    J: '<path d="M82 92 C82 74 92 62 104 56 C98 66 100 76 108 80 C114 72 118 66 118 58 C126 70 122 84 118 92 Z"/>',
-  };
   const faceCache = new Map();
+  /**
+   * Cara de carta como la de una baraja de casino estándar: índice (número + palo) en dos esquinas opuestas,
+   * pips en su posición de siempre y, en J/Q/K y el As de picas, el arte clásico de dominio público (PVP.CourtArt).
+   */
   function cardFaceSVG(rank, suit) {
     const key = rank + suit;
     if (faceCache.has(key)) return faceCache.get(key);
-    const tx = rank === '10' ? 'textLength="50" lengthAdjust="spacingAndGlyphs"' : '';
-    const index = `<text x="27" y="56" text-anchor="middle" class="ci-r" ${tx}>${rank}</text>${pip(suit, 27, 82, 30, false)}`;
+    const index = `<text x="21" y="45" text-anchor="middle" class="ci-r">${rank}</text>${pip(suit, 21, 65, 24, false)}`;
+    const art = PVP.CourtArt || {};
     let body = '';
     if (rank === 'A') {
-      body = pip(suit, 100, 140, suit === 0 ? 104 : 88, false);
-      if (suit === 0) body += '<ellipse cx="100" cy="140" rx="66" ry="66" fill="none" stroke="currentColor" stroke-width="2" opacity=".35"/>';
-    } else if (COURT[rank]) {
-      // Figura: marco con fondo propio, corona/emblema y letra grande (diseño original, sin arte de terceros).
-      body = `<rect x="52" y="34" width="96" height="212" rx="8" class="cc-bg"/>` +
-        `<rect x="58" y="40" width="84" height="200" rx="5" fill="none" stroke="currentColor" stroke-width="2" opacity=".55"/>` +
-        `<g class="cc-crown">${COURT[rank]}</g>` +
-        `<text x="100" y="166" text-anchor="middle" class="cc-l">${rank}</text>` +
-        pip(suit, 100, 206, 34, false) +
-        `<g transform="rotate(180 100 140)" opacity=".18"><g class="cc-crown">${COURT[rank]}</g></g>`;
+      if (suit === 0 && art.A0) {
+        const w = 132, h = w * (art.A0ratio || 1.15);
+        body = `<image href="${art.A0}" x="${100 - w / 2}" y="${(140 - h / 2).toFixed(1)}" width="${w}" height="${h.toFixed(1)}"/>`;
+      } else body = pip(suit, 100, 140, 74, false);
+    } else if (rank === 'J' || rank === 'Q' || rank === 'K') {
+      const img = art[rank + suit];
+      body = img
+        ? `<image href="${img}" x="36" y="37" width="128" height="206" preserveAspectRatio="none"/>`
+        : `<rect x="36" y="37" width="128" height="206" fill="none" stroke="currentColor" stroke-width="2"/><text x="100" y="160" text-anchor="middle" class="ci-r" style="font-size:80px">${rank}</text>`;
     } else {
       const pts = PIP_LAYOUT[rank];
-      const x0 = 68, x1 = 132, y0 = 52, y1 = 228, size = rank === '10' ? 28 : rank === '9' ? 31 : 36;
+      const x0 = 70, x1 = 130, y0 = 54, y1 = 226, size = rank === '10' ? 34 : rank === '9' ? 36 : 42;
       body = pts.map(([px, py]) => pip(suit, x0 + (x1 - x0) * px, y0 + (y1 - y0) * py, size, py > 0.5)).join('');
     }
-    const svg = `<svg class="cface" viewBox="0 0 200 280" aria-hidden="true">${index}<g transform="rotate(180 100 140)">${index}</g>${body}</svg>`;
+    const svg = `<svg class="cface" viewBox="0 0 200 280" aria-hidden="true">${body}${index}<g transform="rotate(180 100 140)">${index}</g></svg>`;
     faceCache.set(key, svg);
     return svg;
   }

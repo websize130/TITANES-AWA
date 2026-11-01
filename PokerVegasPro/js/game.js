@@ -113,7 +113,7 @@
         table,
         orientation: this._orientation(),
         isPrivate: this.cfg.mode === 'private' && this.authority,
-        onSeatClick: (s) => this.addBotAt(s),
+        onSeatClick: null, // las salas privadas son solo para amigos: no se añaden bots
         onKick: (s) => this.kick(s),
       });
       this.view.build(this.cfg.seats);
@@ -195,10 +195,14 @@
       if (!this.engine.canStart()) {
         if (this.cfg.mode === 'public') this._refillPublic(1);
         if (!this.engine.canStart()) {
-          this.hud.toast('No hay jugadores suficientes. Añade bots o recarga fichas.');
+          this._waiting = true;
+          if (this.cfg.mode === 'private') this._sys('Esperando a que se una otro jugador para seguir…');
+          else this.hud.toast('No hay jugadores suficientes.');
+          this._render();
           return;
         }
       }
+      this._waiting = false;
       this.engine.startHand();
     }
 
@@ -592,7 +596,7 @@
       this.room.send('welcome', welcome, cid);
       if (info.img) this.room.send('player', { id: cid, img: info.img });
       this._render();
-      if (this.begun && this.engine.phase === 'idle' && this.engine.canStart()) this._nextHand();
+      if (this.begun && this._waiting && this.engine.canStart()) this._nextHand();
     }
 
     _publicCfg() {
@@ -725,14 +729,8 @@
       this._roomList();
     }
 
-    /** Completa con bots hasta el nº de jugadores elegido (sin quitar sitio a los amigos que ya están). */
+    /** Empieza la partida de la sala (solo jugadores reales: sin bots que alteren la partida ni las estadísticas). */
     _fillBots() {
-      const want = Math.min(this.cfg.players, this.cfg.seats);
-      let seated = this.engine.players().length;
-      const taken = this.engine.players().map((p) => p.name);
-      for (let s = 1; s < this.cfg.seats && seated < want; s++) {
-        if (!this.engine.seats[s]) { this._addBot(s, taken); seated++; }
-      }
       this.room.send('begin', {});
       this._sendLevel();
       this._render();
@@ -740,6 +738,7 @@
 
     beginRoom() {
       if (!this.isHost || this.begun) return;
+      if (this.engine.players().length < 2) return this.hud.toast('Necesitas al menos un amigo en la sala para empezar. Invítalo por WhatsApp o con el código.');
       this.hud.hideRoom();
       this._begin();
     }
@@ -835,16 +834,6 @@
     }
 
     /* ---------- puestos dinámicos (privadas) ---------- */
-
-    addBotAt(seat) {
-      if (this.cfg.mode !== 'private' || !this.authority || this.engine.seats[seat]) return;
-      const inHand = this.engine.phase !== 'ended' && this.engine.phase !== 'idle';
-      if (this.isHost && this.pending.length) return this._seatPending(inHand); // primero los amigos que esperan
-      const p = this._addBot(seat, null, inHand);
-      this._sys(`${p.name} se une a la mesa${inHand ? ' (entra en la próxima mano)' : ''}`);
-      this._render();
-      if (this.begun && this.engine.phase === 'idle' && this.engine.canStart()) this._nextHand();
-    }
 
     kick(seat) {
       const p = this.engine.seats[seat];

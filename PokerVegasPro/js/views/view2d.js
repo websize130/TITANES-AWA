@@ -360,7 +360,8 @@
           betEl.innerHTML = Art().chipStackHTML(p.bet);
         }
       }
-      if (seatsChanged) this._placeBets();
+      // Recolocar siempre: al aparecer las cartas el asiento crece y las fichas nunca deben taparlas.
+      this._placeBets();
       this._renderBoard(snap.board);
       this.potAmt.textContent = U.fmt(snap.potTotal);
       this.potEl.classList.toggle('show', snap.potTotal > 0);
@@ -598,8 +599,8 @@
 
     /** Punto de entrada de eventos del motor. */
     onEvent(type, payload, snap) {
-      if (type === 'handStart') { this.clearHighlight(); this.bannerEl.classList.remove('show'); }
-      if (type === 'collect') this.animateCollect();
+      if (type === 'handStart') { this.clearHighlight(); this.bannerEl.classList.remove('show'); if (PVP.Sound && PVP.Sound.shuffle) PVP.Sound.shuffle(); }
+      if (type === 'collect') { this.animateCollect(); if (PVP.Sound && PVP.Sound.collect) PVP.Sound.collect(); }
       this.render(snap);
       if (type === 'deal') this.animateDeal(payload.order);
       if (type === 'street') this.dealerGesture(700);

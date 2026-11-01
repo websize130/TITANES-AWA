@@ -376,12 +376,9 @@
   function updatePrivate() {
     const f = $('#form-private');
     const seats = +f.seats.value;
-    f.players.max = seats;
-    if (+f.players.value > seats) f.players.value = seats;
     const sb = +f.blinds.value, bb = sb * 2;
     const out = (k, v) => { const o = $(`[data-out="${k}"]`, f); if (o) o.textContent = v; };
     out('seats', seats);
-    out('players', f.players.value);
     out('bbs', f.bbs.value + ' BB');
     out('minutes', f.minutes.value + ' min');
     out('rebuys', f.rebuys.value === '0' ? 'No' : f.rebuys.value);
@@ -410,16 +407,18 @@
     const sb = +f.blinds.value;
     const cfg = {
       mode: 'private', code, title: `${(f.name.value || 'Sala privada').trim()} · #${code}`,
-      seats: +f.seats.value, players: +f.players.value, sb, bb: sb * 2, stack: sb * 2 * +f.bbs.value,
-      botLevel: segValIn(f, 'botLevel'), blindMinutes: +f.minutes.value, rebuys: +f.rebuys.value,
+      seats: +f.seats.value, players: +f.seats.value, sb, bb: sb * 2, stack: sb * 2 * +f.bbs.value,
+      blindMinutes: +f.minutes.value, rebuys: +f.rebuys.value,
       bounty: f.bountyOn.checked ? +f.bounty.value : 0, turnSeconds: +f.turn.value,
     };
+    // Sala solo para amigos (sin bots): necesita conexión para que entren los demás.
     btn.disabled = true;
     try {
       const room = await new PVP.Net.Room(code, 'host').connect();
       cfg.net = { role: 'host', room };
     } catch (err) {
-      ui.toast('⚠️ No se pudo abrir la sala online: se juega sin conexión con rivales virtuales.', 5000);
+      ui.toast('⚠️ No se pudo abrir la sala online. Comprueba tu conexión e inténtalo de nuevo.', 5000);
+      return;
     } finally {
       btn.disabled = false;
     }
@@ -433,7 +432,6 @@
     e.preventDefault();
     joinRoom(e.target.code.value);
   });
-  $('#form-join').code.addEventListener('input', (e) => { e.target.value = PVP.Net.normalizeCode(e.target.value); });
   $('#jn-cancel').addEventListener('click', () => cancelJoin());
 
   function cancelJoin(msg) {

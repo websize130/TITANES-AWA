@@ -135,7 +135,7 @@ PayPal.me no notifica los pagos, así que el paso 3 es un clic manual. Para auto
 
 ## Novedades: salas online, códigos y música
 
-- **Salas privadas online con amigos**: al crear la sala se genera un código y un botón **Enviar por WhatsApp** (también *Copiar enlace* y *Compartir*). Quien abre el enlace `…/index.html#sala=CÓDIGO` entra directo en la sala (si no tiene perfil, entra como invitado); también se puede escribir el código en *Salas privadas → Unirse*. El anfitrión ejecuta el motor; los invitados reciben el estado por **Supabase Realtime** (canal de difusión, no necesita tablas) y sus cartas viajan **cifradas** para cada jugador (ECDH P-256 + AES-GCM). Los asientos libres se completan con rivales virtuales y un amigo que llega tiene **prioridad**: entre manos ocupa el sitio de un bot. Para que el enlace abra la sala, el juego debe estar publicado en una web (p. ej. GitHub Pages); desde un archivo local se comparte el código, o se define `PVP.Config.PUBLIC_URL`. Con `?net=local` las salas funcionan entre pestañas del mismo navegador (pruebas).
+- **Salas privadas online con amigos**: al crear la sala se genera un código y un botón **Enviar por WhatsApp** (también *Copiar enlace* y *Compartir*). Quien abre el enlace `…/index.html#sala=CÓDIGO` entra directo en la sala (si no tiene perfil, entra como invitado); también se puede escribir el código en *Salas privadas → Unirse*. El anfitrión ejecuta el motor; los invitados reciben el estado por **Supabase Realtime** (canal de difusión, no necesita tablas) y sus cartas viajan **cifradas** para cada jugador (ECDH P-256 + AES-GCM). Las salas privadas son **solo para amigos, sin bots** (la partida y las estadísticas son reales): hacen falta al menos 2 jugadores para empezar y, si alguien se queda solo, la mesa espera a que entre otro. Para que el enlace abra la sala, el juego debe estar publicado en una web (p. ej. GitHub Pages); desde un archivo local se comparte el código, o se define `PVP.Config.PUBLIC_URL`. Con `?net=local` las salas funcionan entre pestañas del mismo navegador (pruebas).
 - **damaocho sin registro**: basta con escribirlo en la barra de códigos de la **Tienda** (o abrir `#canjear=damaocho`), también como invitado. Desbloquea el Pack Leyenda al momento y estrena la mesa Royale y la baraja Oro. El límite de **15 usos** se cuenta en Supabase sumando cuentas e invitados (`pvp_redeem_guest`); si el invitado se registra después en ese dispositivo, la cuenta conserva Leyenda (`pvp_claim_guest_codes`).
 - **Música**: 5 estilos generados en tiempo real (Elegante, Relajante, Animada, Electrónica y Bossa) desde un botón pequeño (♫) o en Ajustes.
 
@@ -145,3 +145,10 @@ PayPal.me no notifica los pagos, así que el paso 3 es un clic manual. Para auto
 - Cartas en SVG con índice grande en dos esquinas y los palos en la disposición estándar de una baraja de casino (figuras con diseño propio).
 - Sonidos de fichas (modos resonantes de arcilla) y de naipes (roce de papel y golpe en el tapete) generados por código, sin eco.
 - El botón o gesto «atrás» del móvil vuelve al menú, y el botón «‹ Menú» de cada sección queda fijo al desplazarse.
+
+## Baraja, sonidos y orientación
+
+- **Cartas de casino estándar**: índice (número y palo) en dos esquinas, pips en su posición habitual y las figuras J, Q, K y el As de picas con el arte clásico de **Vector Playing Cards** (Byron Knoll, dominio público), en `js/views/court-art.js`. Las caras son iguales en todas las barajas; la «skin» cambia el dorso y el canto.
+- **Sonidos grabados reales** de cartas (deslizar, colocar, barajar, retirarse) y fichas (apostar, recoger el bote) del pack **Casino Audio de Kenney** (CC0), en `js/sfx-data.js`.
+- Botón en la mesa para elegir **mesa horizontal o vertical** (también en Ajustes, con «Auto»).
+- Las fichas de cada apuesta se recolocan en cada cambio para no tapar nunca las cartas.

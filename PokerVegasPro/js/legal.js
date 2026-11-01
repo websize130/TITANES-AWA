@@ -32,7 +32,7 @@
         <h4>3. Cuentas</h4>
         <p>Debes dar datos veraces y custodiar tu contraseña. Podemos suspender cuentas que hagan trampas, manipulen el juego o abusen de otros jugadores.</p>
         <h4>4. Rivales</h4>
-        <p>Las mesas se completan con <b>rivales virtuales</b> controlados por el juego cuando no hay suficientes jugadores conectados. Su comportamiento simula estilos de juego humanos.</p>
+        <p>Las mesas públicas y los torneos se completan con <b>rivales virtuales</b> controlados por el juego cuando no hay suficientes jugadores conectados; su comportamiento simula estilos de juego humanos. Las <b>salas privadas</b> son solo para personas invitadas: nunca hay rivales virtuales.</p>
         <h4>5. Compras (pago único)</h4>
         <p>El Pack Élite (4,99 €) y el Pack Leyenda (9,99 €) son pagos únicos por contenido digital: monedas virtuales y desbloqueos permanentes
           de mesas, barajas y funciones. El pago se realiza a través de PayPal. Tras confirmar el pago, el contenido se activa en tu cuenta.

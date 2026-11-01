@@ -85,6 +85,13 @@
       root.addEventListener('resize', () => this.layoutBar());
       if (root.visualViewport) root.visualViewport.addEventListener('resize', () => this.layoutBar());
 
+      // Mesa horizontal / vertical (se guarda como preferencia).
+      $('#btn-orient').addEventListener('click', () => {
+        if (!this.game) return;
+        this.game.setOrientation(this.game.view.orientation === 'h' ? 'v' : 'h');
+        ui.toast(this.game.view.orientation === 'h' ? 'Mesa horizontal' : 'Mesa vertical');
+      });
+
       // Panel de sala online
       $('#btn-share').addEventListener('click', () => this.game && this.game.showRoom());
       $('#rp-close').addEventListener('click', () => this.hideRoom());
@@ -157,6 +164,11 @@
 
     syncToggles() {
       if (!this.game) return;
+      const h = this.game.view && this.game.view.orientation === 'h';
+      // El icono muestra la orientación a la que se cambia.
+      $('#btn-orient').innerHTML = h
+        ? '<svg viewBox="0 0 24 24" class="or-ico"><rect x="7" y="3" width="10" height="18" rx="5"/><path d="M3 12h2M19 12h2"/></svg>'
+        : '<svg viewBox="0 0 24 24" class="or-ico"><rect x="3" y="7" width="18" height="10" rx="5"/><path d="M12 3v2M12 19v2"/></svg>';
       const mark = (id, v) => $$(id + ' button').forEach((b) => b.classList.toggle('on', b.dataset.v === String(v)));
     }
 

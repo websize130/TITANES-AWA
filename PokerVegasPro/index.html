@@ -219,11 +219,11 @@
       <div class="sub-wrap">
         <button class="back-btn" data-go="menu">‹ Menú</button>
         <h2 class="sub-title">Salas privadas</h2>
-        <p class="sub-desc">Juega online con tus amigos con tus propias reglas. Fichas de juego (no se gastan monedas). Los asientos que no ocupen tus amigos se completan con rivales virtuales, y un amigo que llega siempre tiene prioridad sobre ellos.</p>
+        <p class="sub-desc">Juega online solo con tus amigos y con tus propias reglas: sin bots, para que la partida y las estadísticas sean reales. Fichas de juego (no se gastan monedas).</p>
 
         <form id="form-join" class="glass-card p-4 join-card" autocomplete="off">
           <h3>¿Te han invitado? Únete con el código</h3>
-          <input name="code" maxlength="6" placeholder="ABC123" aria-label="Código de sala" autocapitalize="characters" spellcheck="false" />
+          <input name="code" maxlength="6" placeholder="ABC123" aria-label="Código de sala" autocapitalize="off" autocorrect="off" spellcheck="false" />
           <button class="lux-btn" type="submit"><span>Entrar a la sala</span></button>
         </form>
 
@@ -240,11 +240,6 @@
 
           <div class="glass-card p-4 space-y-4">
             <label class="range-field"><span>Asientos de la mesa <b data-out="seats">6</b></span><input type="range" name="seats" min="3" max="10" value="6" /></label>
-            <label class="range-field"><span>Jugadores al empezar (con rivales virtuales) <b data-out="players">6</b></span><input type="range" name="players" min="2" max="6" value="6" /></label>
-            <div>
-              <span class="field-label">Bots</span>
-              <div class="seg wide" data-name="botLevel"><button type="button" data-v="easy">Fácil</button><button type="button" data-v="medium" class="on">Medio</button><button type="button" data-v="hard">Difícil</button><button type="button" data-v="mixed">Mixto</button></div>
-            </div>
           </div>
 
           <div class="glass-card p-4 space-y-4">
@@ -296,7 +291,7 @@
           <form class="redeem-bar glass-card" id="form-redeem" autocomplete="off">
             <label for="redeem-input">Código promocional o de creador</label>
             <div class="rb-row">
-              <input id="redeem-input" placeholder="Escribe o pega tu código" spellcheck="false" autocapitalize="characters" />
+              <input id="redeem-input" placeholder="Escribe o pega tu código" spellcheck="false" autocapitalize="off" autocorrect="off" />
               <button class="lux-btn sm" type="submit"><span>Canjear</span></button>
             </div>
           </form>
@@ -322,6 +317,7 @@
         <div class="gt-info"><b id="game-mode">Partida</b><span id="game-level">Nivel 1</span></div>
         <div class="gt-tools">
           <button class="icon-btn sm" id="btn-share" aria-label="Invitar a la sala" title="Invitar amigos" hidden>➕</button>
+          <button class="icon-btn sm" id="btn-orient" aria-label="Cambiar mesa horizontal o vertical" title="Mesa horizontal / vertical"><svg viewBox="0 0 24 24" class="or-ico"><rect x="3" y="7" width="18" height="10" rx="5"/></svg></button>
           <button class="icon-btn sm" id="btn-skin" aria-label="Mesa y cartas" title="Mesa y cartas">🎨</button>
           <button class="icon-btn sm" id="btn-music" aria-label="Música" title="Música">♫</button>
           <button class="icon-btn sm" id="btn-fs" aria-label="Pantalla completa" title="Pantalla completa"><svg viewBox="0 0 24 24" class="fs-in"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><svg viewBox="0 0 24 24" class="fs-out"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button>
@@ -510,6 +506,7 @@
   <!-- Supabase JS v2 (cuentas, saldo y compras en tiempo real) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="js/core.js"></script>
+  <script src="js/sfx-data.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/catalog.js"></script>
   <script src="js/avatars.js"></script>
@@ -521,6 +518,7 @@
   <script src="js/poker/evaluator.js"></script>
   <script src="js/poker/engine.js"></script>
   <script src="js/poker/bots.js"></script>
+  <script src="js/views/court-art.js"></script>
   <script src="js/views/art.js"></script>
   <script src="js/views/view2d.js"></script>
   <script src="js/net.js"></script>
