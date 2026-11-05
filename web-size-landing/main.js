@@ -678,10 +678,75 @@
 
   updateConfigurator(false);
 
-  /* Oculta el botón flotante mientras el resumen (con su propio botón de envío) está a la vista: evita duplicados */
-  new IntersectionObserver((entries) => {
-    fab.classList.toggle('tucked', entries[0].isIntersecting);
-  }, { threshold: 0.25 }).observe(sumSend.closest('.summary'));
+  /* Oculta el botón flotante mientras el resumen o el footer (con su propio botón de WhatsApp) están a la vista: evita duplicados */
+  const tuckTargets = new Map();
+  const tuckIO = new IntersectionObserver((entries) => {
+    entries.forEach((en) => tuckTargets.set(en.target, en.isIntersecting));
+    let any = false;
+    tuckTargets.forEach((v) => { any = any || v; });
+    fab.classList.toggle('tucked', any);
+  }, { threshold: 0.25 });
+  tuckIO.observe(sumSend.closest('.summary'));
+  const footerEl = document.querySelector('.site-footer');
+  if (footerEl) tuckIO.observe(footerEl);
+
+  /* =========================================================
+     TARIFAS — enlaces de WhatsApp con mensaje propio por plan
+     ========================================================= */
+  document.querySelectorAll('[data-wa-msg]').forEach((a) => {
+    a.href = waLink(a.dataset.waMsg);
+    a.addEventListener('click', () => showToast('Abriendo WhatsApp…'));
+  });
+
+  /* =========================================================
+     STACK — medidores animados al entrar en pantalla
+     ========================================================= */
+  const gauges = document.querySelectorAll('.gauge-arc');
+  if (gauges.length) {
+    const GAUGE_C = 2 * Math.PI * 50;
+    const go = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        const pct = Number(en.target.dataset.gauge) || 0;
+        en.target.style.strokeDashoffset = (GAUGE_C * (1 - pct / 100)).toFixed(1);
+        go.unobserve(en.target);
+      });
+    }, { threshold: 0.4 });
+    gauges.forEach((g) => go.observe(g));
+  }
+
+  /* =========================================================
+     REDES SOCIALES (footer)
+     Rellena "url" para mostrar cada red; las que estén vacías no se muestran.
+     ========================================================= */
+  const SOCIAL_LINKS = [
+    { name: 'LinkedIn',  url: 'https://www.linkedin.com/in/joshua-p%C3%A9rez-7a8523449',
+      path: 'M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z' },
+    { name: 'WhatsApp',  url: waLink(GENERAL_MESSAGE),
+      path: WA_ICON.match(/ d=\"([^\"]+)\"/)[1] },
+    { name: 'Instagram', url: '',  // ⚠️ añade tu URL de Instagram
+      path: 'M12 2.2c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07s-3.58-.01-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92C2.21 15.58 2.2 15.2 2.2 12s.01-3.58.07-4.85C2.42 3.92 3.94 2.37 7.15 2.27 8.42 2.21 8.8 2.2 12 2.2zm0 4.76a5.04 5.04 0 1 0 0 10.08 5.04 5.04 0 0 0 0-10.08zm0 8.31a3.27 3.27 0 1 1 0-6.54 3.27 3.27 0 0 1 0 6.54zm5.24-9.69a1.18 1.18 0 1 0 0 2.36 1.18 1.18 0 0 0 0-2.36z' },
+    { name: 'TikTok',    url: '',  // ⚠️ añade tu URL de TikTok
+      path: 'M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 1 1-2.59-2.59c.27 0 .53.04.77.12V9.79a5.68 5.68 0 1 0 4.91 5.62V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3a4.3 4.3 0 0 1-3.24-1.48z' },
+    { name: 'GitHub',    url: '',  // ⚠️ añade tu URL de GitHub (opcional)
+      path: 'M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z' },
+  ];
+
+  const socialList = document.getElementById('socialLinks');
+  if (socialList) {
+    SOCIAL_LINKS.filter((s) => s.url).forEach((s) => {
+      const li = el('li');
+      const a = el('a', 'icon-btn');
+      a.href = s.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.setAttribute('aria-label', s.name);
+      a.title = s.name;
+      a.innerHTML = `<svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="${s.path}"/></svg>`;
+      li.appendChild(a);
+      socialList.appendChild(li);
+    });
+  }
 
   /* ---------- Año del footer ---------- */
   document.getElementById('year').textContent = new Date().getFullYear();
