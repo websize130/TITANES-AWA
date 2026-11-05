@@ -299,6 +299,390 @@
     requestAnimationFrame(tick);
   }
 
+  /* =========================================================
+     SOFTWARE & DASHBOARDS — datos de demostración en tiempo real
+     ========================================================= */
+  const rand = (min, max) => Math.random() * (max - min) + min;
+  const fmt = new Intl.NumberFormat('es-ES');
+
+  const kpiState = {
+    revenue:  { value: 0, target: 48250, step: [120, 640], decimals: 0 },
+    leads:    { value: 0, target: 312,   step: [1, 4],     decimals: 0 },
+    bookings: { value: 0, target: 27,    step: [0, 1],     decimals: 0 },
+    conv:     { value: 0, target: 6.8,   step: [-0.15, 0.2], decimals: 1 },
+  };
+
+  const kpiEls = {};
+  Object.keys(kpiState).forEach((k) => {
+    kpiEls[k] = {
+      val: document.querySelector(`[data-kpi="${k}"]`),
+      delta: document.querySelector(`[data-kpi-delta="${k}"]`),
+    };
+  });
+
+  const renderKpi = (k) => {
+    const s = kpiState[k];
+    const e = kpiEls[k];
+    if (!e.val) return;
+    e.val.textContent = s.decimals
+      ? s.value.toFixed(s.decimals).replace('.', ',')
+      : fmt.format(Math.round(s.value));
+  };
+
+  /* Cuenta progresiva inicial */
+  const countUp = (duration = 1600) => {
+    const t0 = performance.now();
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / duration);
+      const ease = 1 - Math.pow(1 - p, 3);
+      Object.keys(kpiState).forEach((k) => {
+        kpiState[k].value = kpiState[k].target * ease;
+        renderKpi(k);
+      });
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    Object.keys(kpiState).forEach((k) => {
+      const d = kpiEls[k].delta;
+      if (d) d.textContent = `▲ ${rand(4, 24).toFixed(1).replace('.', ',')}%`;
+    });
+  };
+
+  /* Gráfico de línea */
+  const LINE_POINTS = 24;
+  const W = 400, H = 140;
+  const series = Array.from({ length: LINE_POINTS }, (_, i) => 50 + Math.sin(i / 3) * 18 + rand(-8, 8));
+  const series2 = series.map((v) => v * 0.55 + rand(-4, 4));
+  const lineStroke = document.getElementById('lineStroke');
+  const lineStroke2 = document.getElementById('lineStroke2');
+  const lineArea = document.getElementById('lineArea');
+  const lineDot = document.getElementById('lineDot');
+
+  const toPath = (arr) => {
+    const dx = W / (arr.length - 1);
+    const pts = arr.map((v, i) => [i * dx, H - (v / 100) * H]);
+    let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {      // curva suave (Catmull-Rom → Bézier)
+      const p0 = pts[i - 2] || pts[i - 1], p1 = pts[i - 1], p2 = pts[i], p3 = pts[i + 1] || p2;
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += ` C${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+    }
+    return { d, last: pts[pts.length - 1] };
+  };
+
+  const renderLine = () => {
+    if (!lineStroke) return;
+    const a = toPath(series);
+    lineStroke.setAttribute('d', a.d);
+    lineArea.setAttribute('d', `${a.d} L${W} ${H} L0 ${H} Z`);
+    lineStroke2.setAttribute('d', toPath(series2).d);
+    lineDot.setAttribute('cx', a.last[0]);
+    lineDot.setAttribute('cy', a.last[1]);
+  };
+
+  /* Barras */
+  const barChart = document.getElementById('barChart');
+  const bars = [];
+  if (barChart) {
+    for (let i = 0; i < 6; i++) { const b = el('span'); barChart.appendChild(b); bars.push(b); }
+  }
+  const renderBars = () => bars.forEach((b) => { b.style.height = `${rand(22, 96).toFixed(0)}%`; });
+
+  /* Donut */
+  const donutArc = document.getElementById('donutArc');
+  const donutPct = document.getElementById('donutPct');
+  const CIRC = 2 * Math.PI * 48;
+  let donut = 0;
+  const renderDonut = (pct) => {
+    donut = Math.max(0, Math.min(100, pct));
+    if (donutArc) donutArc.style.strokeDashoffset = (CIRC * (1 - donut / 100)).toFixed(1);
+    if (donutPct) donutPct.textContent = `${Math.round(donut)}%`;
+  };
+
+  /* CRM: pipeline + feed de leads */
+  const stageEls = [...document.querySelectorAll('[data-stage]')];
+  const stages = [18, 11, 7, 4];
+  const renderStages = () => stageEls.forEach((s, i) => { s.textContent = stages[i]; });
+
+  const leadFeed = document.getElementById('leadFeed');
+  const LEADS = [
+    ['Laura M.', 'Clínica dental · vía WhatsApp', 'hot', 'Caliente'],
+    ['Taller R. Ortiz', 'Presupuesto web + CRM', 'new', 'Nuevo'],
+    ['Estética Nova', 'Reservas online', 'won', 'Ganado'],
+    ['Fisio Activa', 'Dashboard de métricas', 'hot', 'Caliente'],
+    ['Fontanería Sur', 'Agente IA 24/7', 'new', 'Nuevo'],
+    ['Carlos P.', 'Landing + automatización', 'won', 'Ganado'],
+  ];
+  let leadIdx = 0;
+  const pushLead = () => {
+    if (!leadFeed) return;
+    const [name, sub, cls, tag] = LEADS[leadIdx++ % LEADS.length];
+    const li = el('li');
+    li.appendChild(el('span', 'av', name.split(' ').map((w) => w[0]).join('').slice(0, 2)));
+    const meta = el('div', 'meta');
+    meta.appendChild(el('b', '', name));
+    meta.appendChild(el('span', '', sub));
+    li.appendChild(meta);
+    li.appendChild(el('span', `tag ${cls}`, tag));
+    leadFeed.prepend(li);
+    while (leadFeed.children.length > 4) leadFeed.lastChild.remove();
+  };
+
+  /* Notificación flotante */
+  const NOTIFS = [
+    ['Nueva reserva confirmada', 'Automatización IA · hace 2 s'],
+    ['Lead respondido por la IA', 'WhatsApp · hace 1 s'],
+    ['Factura enviada al cliente', 'CRM · ahora mismo'],
+    ['Recordatorio de cita enviado', 'Automatización · hace 3 s'],
+  ];
+  let notifIdx = 0;
+  const notifPanel = document.querySelector('.panel-notif');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+
+  /* Bucle de "tiempo real": solo corre mientras la sección es visible */
+  let liveTimer = 0, liveTick = 0, dashStarted = false;
+  const liveStep = () => {
+    liveTick++;
+    series.shift(); series.push(Math.max(12, Math.min(92, series[series.length - 1] + rand(-14, 14))));
+    series2.shift(); series2.push(series[series.length - 1] * 0.55 + rand(-4, 4));
+    renderLine();
+
+    Object.keys(kpiState).forEach((k) => {
+      const s = kpiState[k];
+      s.value = Math.max(0, s.value + rand(s.step[0], s.step[1]));
+      renderKpi(k);
+    });
+    const flashKey = Object.keys(kpiState)[liveTick % 4];
+    const kpiCard = kpiEls[flashKey].val && kpiEls[flashKey].val.closest('.kpi');
+    if (kpiCard) { kpiCard.classList.remove('flash'); void kpiCard.offsetWidth; kpiCard.classList.add('flash'); }
+
+    if (liveTick % 2 === 0) renderBars();
+    if (liveTick % 3 === 0) {
+      pushLead();
+      const i = Math.floor(rand(0, 3));
+      stages[i] = Math.max(0, stages[i] - 1); stages[i + 1]++; stages[0] += Math.random() < 0.6 ? 1 : 0;
+      renderStages();
+    }
+    if (liveTick % 4 === 0 && notifPanel) {
+      const [t, s] = NOTIFS[++notifIdx % NOTIFS.length];
+      notifTitle.textContent = t; notifSub.textContent = s;
+      notifPanel.classList.remove('pop'); void notifPanel.offsetWidth; notifPanel.classList.add('pop');
+    }
+    renderDonut(donut >= 96 ? 58 : donut + rand(1, 4));
+  };
+
+  const dashSection = document.getElementById('software');
+  if (dashSection) {
+    renderLine(); renderStages();
+    for (let i = 0; i < 3; i++) pushLead();
+    new IntersectionObserver((entries) => {
+      const visible = entries[0].isIntersecting;
+      if (visible && !dashStarted) {
+        dashStarted = true;
+        countUp(); renderBars(); renderDonut(72);
+      }
+      clearInterval(liveTimer);
+      if (visible && !reduceMotion) liveTimer = setInterval(liveStep, 1600);
+    }, { threshold: 0.2 }).observe(dashSection);
+  }
+
+  /* Inclinación de la escena de paneles según el ratón */
+  const dashScene = document.querySelector('.dash-scene');
+  if (dashScene && finePointer && !reduceMotion) {
+    const dashStage = document.getElementById('dashStage');
+    dashStage.addEventListener('pointermove', (e) => {
+      if (window.innerWidth < 1024) return;
+      const r = dashStage.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      dashScene.style.setProperty('--dry', `${(x * 12).toFixed(2)}deg`);
+      dashScene.style.setProperty('--drx', `${(-y * 8).toFixed(2)}deg`);
+    });
+    dashStage.addEventListener('pointerleave', () => {
+      dashScene.style.setProperty('--dry', '0deg');
+      dashScene.style.setProperty('--drx', '0deg');
+    });
+  }
+
+  /* =========================================================
+     CONFIGURADOR MODULAR + GENERADOR DINÁMICO DE WHATSAPP
+     ========================================================= */
+  const MODULES = [
+    { id: 'web',    icon: '🌐', title: 'Web Corporativa',
+      desc: 'Web premium, rápida y optimizada para SEO local y conversión.',
+      feats: ['Mobile‑first', 'SEO local', 'Carga < 2 s'] },
+    { id: 'dash',   icon: '📊', title: 'Dashboard de Métricas',
+      desc: 'Panel en tiempo real con ventas, leads, citas y rendimiento de tu negocio.',
+      feats: ['KPIs en vivo', 'Gráficos', 'Exportación'] },
+    { id: 'crm',    icon: '🗂️', title: 'CRM a Medida',
+      desc: 'Gestiona clientes, presupuestos y seguimiento en un pipeline visual.',
+      feats: ['Pipeline', 'Historial', 'Recordatorios'] },
+    { id: 'ia',     icon: '🤖', title: 'Automatización WhatsApp / IA',
+      desc: 'Agente que responde, cualifica leads y deriva a una persona cuando hace falta.',
+      feats: ['Respuestas 24/7', 'Cualificación', 'Derivación humana'] },
+    { id: 'book',   icon: '📅', title: 'Sistema de Reservas',
+      desc: 'Agenda online con confirmaciones y recordatorios automáticos.',
+      feats: ['Calendario', 'Recordatorios', 'Menos ausencias'] },
+  ];
+
+  const moduleGrid = document.getElementById('moduleGrid');
+  const selected = new Set();
+
+  const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+
+  MODULES.forEach((m) => {
+    const label = el('label', 'module-card');
+    const input = el('input');
+    input.type = 'checkbox';
+    input.value = m.id;
+    input.setAttribute('aria-describedby', `desc-${m.id}`);
+
+    const inner = el('div', 'module-inner');
+    const top = el('div', 'module-top');
+    top.appendChild(el('span', 'module-ico', m.icon));
+    const check = el('span', 'check');
+    check.innerHTML = CHECK_SVG;
+    top.appendChild(check);
+    inner.appendChild(top);
+    inner.appendChild(el('h3', 'module-title', m.title));
+    const d = el('p', 'module-desc', m.desc);
+    d.id = `desc-${m.id}`;
+    inner.appendChild(d);
+    const feats = el('div', 'module-feats');
+    m.feats.forEach((f) => feats.appendChild(el('span', '', f)));
+    inner.appendChild(feats);
+
+    label.appendChild(input);
+    label.appendChild(inner);
+    moduleGrid.appendChild(label);
+
+    input.addEventListener('change', () => {
+      if (input.checked) selected.add(m.id); else selected.delete(m.id);
+      updateConfigurator(true);
+    });
+
+    if (finePointer && !reduceMotion) {
+      label.addEventListener('pointermove', (e) => {
+        const r = label.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+        inner.style.setProperty('--mx', `${(x * 100).toFixed(1)}%`);
+        inner.style.setProperty('--my', `${(y * 100).toFixed(1)}%`);
+        inner.style.setProperty('--mry', `${((x - 0.5) * 10).toFixed(2)}deg`);
+        inner.style.setProperty('--mrx', `${((0.5 - y) * 10).toFixed(2)}deg`);
+      });
+      label.addEventListener('pointerleave', () => {
+        inner.style.setProperty('--mry', '0deg');
+        inner.style.setProperty('--mrx', '0deg');
+      });
+    }
+  });
+
+  const sumCount = document.getElementById('sumCount');
+  const sumTotal = document.getElementById('sumTotal');
+  const sumBar = document.getElementById('sumBar');
+  const sumList = document.getElementById('sumList');
+  const sumEmpty = document.getElementById('sumEmpty');
+  const msgPreview = document.getElementById('msgPreview');
+  const sumSend = document.getElementById('sumSend');
+  const sumReset = document.getElementById('sumReset');
+  const fab = document.getElementById('waFab');
+  const fabBadge = document.getElementById('fabBadge');
+  const fabTitle = document.getElementById('fabTitle');
+  const fabSub = document.getElementById('fabSub');
+  sumTotal.textContent = MODULES.length;
+
+  const buildMessage = (mods) => {
+    const lines = [
+      'Hola Web Size 👋',
+      'He configurado mi solución a la carta en vuestra web y me interesan estos módulos:',
+      '',
+      ...mods.map((m, i) => `${i + 1}. ${m.icon} ${m.title}`),
+      '',
+      `Total: ${mods.length} ${mods.length === 1 ? 'módulo' : 'módulos'}.`,
+      '¿Me preparáis una propuesta? ¡Gracias!',
+    ];
+    return lines.join('\n');
+  };
+
+  const setSelected = (id, on) => {
+    const input = moduleGrid.querySelector(`input[value="${id}"]`);
+    if (input) input.checked = on;
+    if (on) selected.add(id); else selected.delete(id);
+  };
+
+  function updateConfigurator(bump) {
+    const mods = MODULES.filter((m) => selected.has(m.id)); // mantiene el orden del catálogo
+    const n = mods.length;
+
+    sumCount.textContent = n;
+    sumBar.style.width = `${(n / MODULES.length) * 100}%`;
+    sumEmpty.hidden = n > 0;
+
+    sumList.textContent = '';
+    mods.forEach((m) => {
+      const li = el('li');
+      li.appendChild(el('span', '', m.icon));
+      li.appendChild(el('span', 'text-silver-200', m.title));
+      const rm = el('button', '', '×');
+      rm.type = 'button';
+      rm.setAttribute('aria-label', `Quitar ${m.title}`);
+      rm.addEventListener('click', () => { setSelected(m.id, false); updateConfigurator(true); });
+      li.appendChild(rm);
+      sumList.appendChild(li);
+    });
+
+    const msg = n ? buildMessage(mods) : GENERAL_MESSAGE;
+    msgPreview.textContent = msg;
+
+    if (n) {
+      const href = waLink(msg);
+      sumSend.href = href;
+      sumSend.classList.remove('is-disabled');
+      sumSend.setAttribute('aria-disabled', 'false');
+      sumSend.textContent = 'Enviar por WhatsApp';
+
+      fab.href = href;
+      fab.target = '_blank';
+      fab.rel = 'noopener noreferrer';
+      fab.classList.add('active');
+      fabTitle.textContent = `Enviar mi combinación (${n})`;
+      fabSub.textContent = mods.map((m) => m.title).join(' · ');
+      fab.setAttribute('aria-label', `Enviar por WhatsApp la combinación: ${mods.map((m) => m.title).join(', ')}`);
+    } else {
+      sumSend.href = '#';
+      sumSend.classList.add('is-disabled');
+      sumSend.setAttribute('aria-disabled', 'true');
+      sumSend.textContent = 'Enviar por WhatsApp';
+
+      fab.href = '#configurador';
+      fab.removeAttribute('target');
+      fab.classList.remove('active');
+      fabTitle.textContent = 'Configura tu solución';
+      fabSub.textContent = 'Elige módulos a la carta';
+      fab.setAttribute('aria-label', 'Ir al configurador de módulos');
+    }
+
+    fabBadge.textContent = n;
+    if (bump && n) { fabBadge.classList.remove('bump'); void fabBadge.offsetWidth; fabBadge.classList.add('bump'); }
+  }
+
+  sumReset.addEventListener('click', () => {
+    MODULES.forEach((m) => setSelected(m.id, false));
+    updateConfigurator(false);
+  });
+  [sumSend, fab].forEach((a) => a.addEventListener('click', () => {
+    if (selected.size) showToast(`Abriendo WhatsApp · ${selected.size} ${selected.size === 1 ? 'módulo' : 'módulos'}`);
+  }));
+
+  updateConfigurator(false);
+
+  /* Oculta el botón flotante mientras el resumen (con su propio botón de envío) está a la vista: evita duplicados */
+  new IntersectionObserver((entries) => {
+    fab.classList.toggle('tucked', entries[0].isIntersecting);
+  }, { threshold: 0.25 }).observe(sumSend.closest('.summary'));
+
   /* ---------- Año del footer ---------- */
   document.getElementById('year').textContent = new Date().getFullYear();
 })();

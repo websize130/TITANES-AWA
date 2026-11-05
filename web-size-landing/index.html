@@ -175,9 +175,191 @@
         <path class="wave-path w3" d="M0 180 C 280 100, 520 230, 760 160 S 1160 80, 1440 160" />
       </svg>
     </section>
+
+    <!-- ===================== SOFTWARE & DASHBOARDS ===================== -->
+    <section id="software" class="relative py-24 sm:py-32 overflow-hidden" aria-labelledby="software-title">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+          <p class="reveal inline-flex items-center gap-3 text-[11px] sm:text-xs font-medium tracking-[0.4em] text-silver-400">
+            <span class="h-px w-8 bg-gradient-to-r from-transparent to-neon"></span>
+            SOFTWARE &amp; DASHBOARDS
+            <span class="h-px w-8 bg-gradient-to-l from-transparent to-neon"></span>
+          </p>
+          <h2 id="software-title" class="reveal mt-5 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
+            <span class="text-metal">No solo webs.</span>
+            <span class="text-neon-grad neon-text">Software que gobierna tu negocio.</span>
+          </h2>
+          <p class="reveal mx-auto mt-5 max-w-2xl text-silver-400 sm:text-lg">
+            Paneles de control y CRMs a medida, con métricas en tiempo real, para que veas de un vistazo
+            qué entra, qué se vende y qué cliente hay que llamar hoy.
+          </p>
+        </div>
+
+        <!-- Escena 3D de paneles -->
+        <div id="dashStage" class="dash-stage mt-14 sm:mt-20">
+          <div class="dash-scene">
+
+            <!-- Panel principal: Dashboard -->
+            <article class="panel panel-main" aria-label="Demostración de dashboard de métricas">
+              <header class="panel-bar">
+                <span class="dots"><i></i><i></i><i></i></span>
+                <span class="panel-url">app.websize.dev/dashboard</span>
+                <span class="live"><span></span>EN VIVO</span>
+              </header>
+              <div class="panel-body">
+                <div class="kpis">
+                  <div class="kpi">
+                    <p>Facturación del mes</p>
+                    <strong><span data-kpi="revenue">0</span> €</strong>
+                    <em class="up" data-kpi-delta="revenue">▲ 0%</em>
+                  </div>
+                  <div class="kpi">
+                    <p>Leads nuevos</p>
+                    <strong data-kpi="leads">0</strong>
+                    <em class="up" data-kpi-delta="leads">▲ 0%</em>
+                  </div>
+                  <div class="kpi">
+                    <p>Citas hoy</p>
+                    <strong data-kpi="bookings">0</strong>
+                    <em class="up" data-kpi-delta="bookings">▲ 0%</em>
+                  </div>
+                  <div class="kpi">
+                    <p>Conversión web</p>
+                    <strong><span data-kpi="conv">0</span>%</strong>
+                    <em class="up" data-kpi-delta="conv">▲ 0%</em>
+                  </div>
+                </div>
+
+                <div class="charts">
+                  <div class="chart-card chart-line">
+                    <div class="chart-head"><p>Visitas → contactos (24 h)</p><span class="chip">Tiempo real</span></div>
+                    <svg id="lineChart" viewBox="0 0 400 140" preserveAspectRatio="none" aria-hidden="true">
+                      <defs>
+                        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0" stop-color="#ff7a00" stop-opacity=".45" />
+                          <stop offset="1" stop-color="#ff7a00" stop-opacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <g class="grid-lines">
+                        <line x1="0" y1="35" x2="400" y2="35" /><line x1="0" y1="70" x2="400" y2="70" /><line x1="0" y1="105" x2="400" y2="105" />
+                      </g>
+                      <path id="lineArea" fill="url(#areaGrad)" d="" />
+                      <path id="lineStroke" class="line-stroke" d="" />
+                      <path id="lineStroke2" class="line-stroke-2" d="" />
+                      <circle id="lineDot" r="4" class="line-dot" cx="0" cy="0" />
+                    </svg>
+                  </div>
+                  <div class="chart-card chart-bars">
+                    <div class="chart-head"><p>Ventas por canal</p></div>
+                    <div id="barChart" class="bars" aria-hidden="true"></div>
+                    <div class="bar-labels"><span>Web</span><span>WA</span><span>IG</span><span>Google</span><span>Ref.</span><span>Otros</span></div>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- Panel lateral: CRM -->
+            <article class="panel panel-crm" aria-label="Demostración de CRM a medida">
+              <header class="panel-bar">
+                <span class="dots"><i></i><i></i><i></i></span>
+                <span class="panel-url">CRM · Pipeline</span>
+              </header>
+              <div class="panel-body">
+                <div class="pipeline">
+                  <div><p>Nuevo</p><b data-stage="0">0</b></div>
+                  <div><p>Contactado</p><b data-stage="1">0</b></div>
+                  <div><p>Propuesta</p><b data-stage="2">0</b></div>
+                  <div class="won"><p>Ganado</p><b data-stage="3">0</b></div>
+                </div>
+                <ul id="leadFeed" class="lead-feed" aria-live="off"></ul>
+              </div>
+            </article>
+
+            <!-- Panel flotante: donut -->
+            <article class="panel panel-donut" aria-label="Demostración de objetivo mensual">
+              <div class="panel-body donut-body">
+                <svg viewBox="0 0 120 120" class="donut" aria-hidden="true">
+                  <circle cx="60" cy="60" r="48" class="donut-track" />
+                  <circle id="donutArc" cx="60" cy="60" r="48" class="donut-arc" />
+                </svg>
+                <div class="donut-label"><strong id="donutPct">0%</strong><span>Objetivo mensual</span></div>
+              </div>
+            </article>
+
+            <!-- Notificación flotante -->
+            <div class="panel panel-notif" aria-hidden="true">
+              <span class="notif-ico">⚡</span>
+              <div><p id="notifTitle">Nueva reserva confirmada</p><span id="notifSub">Automatización IA · hace 2 s</span></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="mt-6 text-center text-[11px] tracking-wide text-silver-600">Datos de demostración generados en el navegador.</p>
+      </div>
+    </section>
+
+    <!-- ===================== CONFIGURADOR MODULAR ===================== -->
+    <section id="configurador" class="relative py-24 sm:py-32" aria-labelledby="config-title">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+          <p class="reveal inline-flex items-center gap-3 text-[11px] sm:text-xs font-medium tracking-[0.4em] text-silver-400">
+            <span class="h-px w-8 bg-gradient-to-r from-transparent to-neon"></span>
+            CONFIGURADOR A LA CARTA
+            <span class="h-px w-8 bg-gradient-to-l from-transparent to-neon"></span>
+          </p>
+          <h2 id="config-title" class="reveal mt-5 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
+            <span class="text-metal">Monta tu solución</span>
+            <span class="text-neon-grad neon-text">pieza a pieza.</span>
+          </h2>
+          <p class="reveal mx-auto mt-5 max-w-2xl text-silver-400 sm:text-lg">
+            Marca los módulos que necesitas. El botón de WhatsApp se actualiza al momento con tu combinación exacta.
+          </p>
+        </div>
+
+        <div class="mt-14 grid gap-8 lg:grid-cols-[1fr_380px] items-start">
+          <fieldset>
+            <legend class="sr-only">Módulos disponibles</legend>
+            <div id="moduleGrid" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"></div>
+          </fieldset>
+
+          <!-- Resumen -->
+          <aside class="summary lg:sticky lg:top-28" aria-labelledby="summary-title">
+            <div class="flex items-center justify-between">
+              <h3 id="summary-title" class="font-display text-lg font-bold text-metal">Tu combinación</h3>
+              <span class="count-pill"><span id="sumCount">0</span> / <span id="sumTotal">5</span></span>
+            </div>
+            <div class="progress mt-4" aria-hidden="true"><span id="sumBar"></span></div>
+            <ul id="sumList" class="mt-5 space-y-2 text-sm"></ul>
+            <p id="sumEmpty" class="mt-5 text-sm text-silver-600">Aún no has elegido ningún módulo. Empieza marcando una tarjeta.</p>
+
+            <div class="mt-6">
+              <p class="text-[11px] tracking-[0.25em] text-silver-600">VISTA PREVIA DEL MENSAJE</p>
+              <pre id="msgPreview" class="msg-preview"></pre>
+            </div>
+
+            <div class="mt-6 flex gap-3">
+              <a id="sumSend" href="#" target="_blank" rel="noopener noreferrer" class="btn-wa flex-1 justify-center is-disabled" aria-disabled="true">Enviar por WhatsApp</a>
+              <button id="sumReset" type="button" class="btn-ghost !px-4 !py-0 h-11 text-sm">Limpiar</button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <footer class="border-t border-white/5 py-8">
+  <!-- ===================== BOTÓN FLOTANTE DINÁMICO ===================== -->
+  <a id="waFab" href="#configurador" class="wa-fab" aria-live="polite">
+    <span class="fab-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35zM12.04 21.5a9.45 9.45 0 0 1-4.82-1.32l-.35-.2-3.58.93.96-3.49-.23-.36a9.43 9.43 0 0 1-1.45-5.03c0-5.22 4.25-9.47 9.48-9.47 2.53 0 4.91.99 6.7 2.78a9.4 9.4 0 0 1 2.77 6.7c0 5.23-4.25 9.47-9.47 9.47zm8.06-17.53A11.33 11.33 0 0 0 12.04.63C5.76.63.65 5.74.65 12.02c0 2 .53 3.96 1.52 5.69L.55 23.63l6.05-1.59a11.36 11.36 0 0 0 5.44 1.39c6.28 0 11.39-5.11 11.39-11.39 0-3.04-1.18-5.9-3.34-8.06z"/></svg>
+      <span id="fabBadge" class="fab-badge">0</span>
+    </span>
+    <span class="fab-text">
+      <strong id="fabTitle">Configura tu solución</strong>
+      <small id="fabSub">Elige módulos a la carta</small>
+    </span>
+  </a>
+
+  <footer class="border-t border-white/5 pt-8 pb-28 sm:pb-8">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-silver-600">
       <p>© <span id="year"></span> Web Size · Digital Solutions</p>
       <p class="tracking-[0.3em]">DISEÑO <span class="text-neon">·</span> WEB <span class="text-neon">·</span> IA</p>
