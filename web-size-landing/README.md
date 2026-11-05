@@ -11,18 +11,27 @@ assets/      Logotipo y banner corporativos
 ```
 
 ## Secciones
-Header · Hero · 5 móviles 3D por sector · Software & Dashboards (demo en vivo) ·
-Configurador a la carta + botón flotante de WhatsApp dinámico · Tarifas · Stack de rendimiento · Footer.
+Header · Hero · 5 móviles 3D con maquetas de negocios ficticios · Software & Dashboards (demo en vivo) ·
+Tarifas (planes, módulos y packs) · Configurador con presupuesto en tiempo real + botón flotante de WhatsApp ·
+Stack de rendimiento · Footer.
+
+## Precios: dónde se cambian
+Todo el cálculo sale de `main.js`, sección **CATÁLOGO DE PRECIOS**:
+- `PLANS`: Plan Básico, Pro y Élite / 3D (`min` = `max` para precio fijo).
+- `MODULES`: módulos de automatización y software (`min`/`max` = rango; `open: true` añade "+").
+- `PACKS`: packs con su precio, el plan y los módulos que incluyen. El configurador
+  aplica el pack automáticamente cuando el usuario marca esa combinación y calcula el ahorro.
+
+Los textos y precios de las tarjetas de planes están en `index.html` (sección `#tarifas`);
+si cambias un precio de plan, cámbialo en los dos sitios.
 
 ## Antes de publicar
-1. Abre `main.js` y cambia el marcador temporal `WHATSAPP_NUMBER = '34600000000'`
+1. Cambia el marcador temporal `WHATSAPP_NUMBER = '34600000000'` en `main.js`
    por tu número real (formato internacional, solo dígitos, sin `+`).
 2. Redes sociales del footer: rellena `url` en `SOCIAL_LINKS` (`main.js`).
    Las redes con `url` vacía no se muestran (ahora mismo: LinkedIn y WhatsApp).
-3. Revisa en `index.html` las características de cada plan (sección `#tarifas`):
-   son una propuesta inicial; los precios (200 €, 350 €, 699 €) son los indicados.
-4. Ajusta, si quieres, los mensajes preconfigurados: sectores en `SECTORS[].message`,
-   planes en el atributo `data-wa-msg` de cada botón y módulos en `MODULES` (`main.js`).
+3. Los negocios de los móviles (TurboFix, Lumière, AquaPronto, Dentiva, KineticFisio)
+   son maquetas inventadas; se editan en `SECTORS` (`main.js`).
 
 ## Probar en local
 ```bash

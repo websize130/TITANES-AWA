@@ -13,7 +13,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@600;700;800&family=Oswald:wght@600;700&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -128,14 +128,14 @@
           <a href="#sectores" class="btn-ghost">Ver sectores</a>
         </div>
         <p class="reveal micro justify-center mt-4">
-          <span aria-hidden="true">⚡</span> Sin llamadas de ventas eternas. Escríbenos por WhatsApp y te respondemos rápido.
+          <span aria-hidden="true">⚡</span> Sin llamadas de ventas eternas. Respuesta en &lt;15 min por WhatsApp.
         </p>
 
         <!-- Métricas de autoridad -->
         <dl class="reveal mx-auto mt-14 grid max-w-3xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/5 bg-white/5">
           <div class="bg-carbon/80 px-1.5 sm:px-3 py-5 backdrop-blur">
-            <dt class="text-[11px] sm:text-xs text-silver-600 tracking-wide">Entrega</dt>
-            <dd class="mt-1 font-display text-[15px] sm:text-3xl font-bold text-metal">7–14 días</dd>
+            <dt class="text-[11px] sm:text-xs text-silver-600 tracking-wide">Entrega desde</dt>
+            <dd class="mt-1 font-display text-[15px] sm:text-3xl font-bold text-metal">24–48 h</dd>
           </div>
           <div class="bg-carbon/80 px-1.5 sm:px-3 py-5 backdrop-blur">
             <dt class="text-[11px] sm:text-xs text-silver-600 tracking-wide">Enfoque</dt>
@@ -162,6 +162,24 @@
       <!-- Escenario 3D -->
       <div id="stage" class="stage mt-12 sm:mt-16">
         <div id="phoneRow" class="phone-row" role="list"></div>
+      </div>
+
+      <!-- Franja de garantías -->
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-4">
+        <div class="trust-strip reveal">
+          <div>
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+            <p><b>Entrega desde 24–48 h</b><br />con el Plan Básico</p>
+          </div>
+          <div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>
+            <p><b>Optimizado 100%</b><br />para móviles</p>
+          </div>
+          <div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V14M9 20V10M14 20v-4M19 20V7"/><path d="M4 9l5-4 5 4 6-6"/><path d="M16 3h4v4"/></svg>
+            <p><b>Tu negocio,</b><br />en las mejores manos</p>
+          </div>
+        </div>
       </div>
 
       <!-- Onda neón decorativa -->
@@ -301,55 +319,6 @@
       </div>
     </section>
 
-    <!-- ===================== CONFIGURADOR MODULAR ===================== -->
-    <section id="configurador" class="relative py-24 sm:py-32" aria-labelledby="config-title">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="text-center">
-          <p class="reveal inline-flex items-center gap-3 text-[11px] sm:text-xs font-medium tracking-[0.4em] text-silver-400">
-            <span class="h-px w-8 bg-gradient-to-r from-transparent to-neon"></span>
-            CONFIGURADOR A LA CARTA
-            <span class="h-px w-8 bg-gradient-to-l from-transparent to-neon"></span>
-          </p>
-          <h2 id="config-title" class="reveal mt-5 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
-            <span class="text-metal">Monta tu solución</span>
-            <span class="text-neon-grad neon-text">pieza a pieza.</span>
-          </h2>
-          <p class="reveal mx-auto mt-5 max-w-2xl text-silver-400 sm:text-lg">
-            Marca los módulos que necesitas. El botón de WhatsApp se actualiza al momento con tu combinación exacta.
-          </p>
-        </div>
-
-        <div class="mt-14 grid gap-8 lg:grid-cols-[1fr_380px] items-start">
-          <fieldset>
-            <legend class="sr-only">Módulos disponibles</legend>
-            <div id="moduleGrid" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"></div>
-          </fieldset>
-
-          <!-- Resumen -->
-          <aside class="summary lg:sticky lg:top-28" aria-labelledby="summary-title">
-            <div class="flex items-center justify-between">
-              <h3 id="summary-title" class="font-display text-lg font-bold text-metal">Tu combinación</h3>
-              <span class="count-pill"><span id="sumCount">0</span> / <span id="sumTotal">5</span></span>
-            </div>
-            <div class="progress mt-4" aria-hidden="true"><span id="sumBar"></span></div>
-            <ul id="sumList" class="mt-5 space-y-2 text-sm"></ul>
-            <p id="sumEmpty" class="mt-5 text-sm text-silver-600">Aún no has elegido ningún módulo. Empieza marcando una tarjeta.</p>
-
-            <div class="mt-6">
-              <p class="text-[11px] tracking-[0.25em] text-silver-600">VISTA PREVIA DEL MENSAJE</p>
-              <pre id="msgPreview" class="msg-preview"></pre>
-            </div>
-
-            <div class="mt-6 flex gap-3">
-              <a id="sumSend" href="#" target="_blank" rel="noopener noreferrer" class="btn-wa flex-1 justify-center is-disabled" aria-disabled="true">Enviar por WhatsApp</a>
-              <button id="sumReset" type="button" class="btn-ghost !px-4 !py-0 h-11 text-sm">Limpiar</button>
-            </div>
-            <p class="micro mt-3"><span aria-hidden="true">💬</span> Sin compromiso: te respondemos por WhatsApp con una propuesta clara, sin reuniones interminables.</p>
-          </aside>
-        </div>
-      </div>
-    </section>
-
     <!-- ===================== TARIFAS ===================== -->
     <section id="tarifas" class="relative py-24 sm:py-32" aria-labelledby="pricing-title">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -364,90 +333,153 @@
             <span class="text-neon-grad neon-text">Sin letra pequeña.</span>
           </h2>
           <p class="reveal mx-auto mt-5 max-w-2xl text-silver-400 sm:text-lg">
-            Elige el plan que encaja con tu negocio y escríbenos. Así de simple.
+            Webs que captan, automatizaciones que atienden y software que ordena tu negocio. Elige y escríbenos.
           </p>
         </div>
 
-        <div class="mt-14 grid gap-6 lg:grid-cols-3 items-stretch">
+        <!-- 1 · Desarrollo web & captación -->
+        <h3 class="reveal mt-14 text-center text-[11px] sm:text-xs font-semibold tracking-[0.35em] text-silver-400">DESARROLLO WEB &amp; CAPTACIÓN</h3>
+        <div class="mt-8 grid gap-6 lg:grid-cols-3 items-stretch">
           <!-- Básico -->
           <article class="plan reveal">
+            <span class="plan-chip">⚡ Entrega 24–48 h</span>
             <header>
               <p class="plan-name">Plan Básico</p>
               <p class="plan-price"><span class="text-metal">200</span><small>€</small></p>
-              <p class="plan-for">Para empezar a recibir clientes desde Google y WhatsApp.</p>
+              <p class="plan-for">Landing express para empezar a recibir clientes ya.</p>
             </header>
             <ul class="plan-feats">
-              <li>Landing page de una sola página</li>
-              <li>Diseño responsive mobile‑first</li>
+              <li>Landing express de 1 página</li>
+              <li>Optimizada 100% para móvil</li>
+              <li>Enlace a Google Maps</li>
               <li>Botón directo a WhatsApp</li>
-              <li>SEO básico y ficha optimizada</li>
+              <li>Entrega en 24–48 h</li>
             </ul>
             <a class="plan-cta" data-wa-msg="Hola Web Size 👋 Me interesa el Plan Básico (200 €). ¿Me contáis los siguientes pasos?" href="#" target="_blank" rel="noopener noreferrer">Quiero el Plan Básico</a>
-            <p class="micro justify-center mt-3">Respuesta rápida por WhatsApp</p>
+            <button type="button" class="plan-add" data-preset="plan:basico">o combínalo en el configurador →</button>
+            <p class="micro justify-center mt-2">Respuesta en &lt;15 min por WhatsApp</p>
           </article>
 
           <!-- Pro -->
           <article class="plan plan-featured reveal">
-            <span class="plan-badge">Más elegido</span>
+            <span class="plan-badge">🔥 El más vendido</span>
             <header>
               <p class="plan-name">Plan Pro</p>
               <p class="plan-price"><span class="text-neon-grad">350</span><small>€</small></p>
-              <p class="plan-for">Para negocios que quieren destacar en su zona y captar más.</p>
+              <p class="plan-for">Web completa para captar y reservar desde el móvil.</p>
             </header>
             <ul class="plan-feats">
-              <li>Web completa de varias secciones</li>
-              <li>SEO local y Google Maps</li>
-              <li>Formulario de contacto o reservas</li>
-              <li>WhatsApp con mensajes por servicio</li>
-              <li>Animaciones premium</li>
+              <li>Web de 3 secciones: Inicio, Servicios y Contacto</li>
+              <li>Catálogo visual de servicios</li>
+              <li>Sistema de reservas por WhatsApp</li>
+              <li>Optimizada para móvil y Google</li>
             </ul>
             <a class="plan-cta is-primary" data-wa-msg="Hola Web Size 👋 Me interesa el Plan Pro (350 €). ¿Me contáis los siguientes pasos?" href="#" target="_blank" rel="noopener noreferrer">Quiero el Plan Pro</a>
-            <p class="micro justify-center mt-3">Sin llamadas eternas · Cerramos por WhatsApp</p>
+            <button type="button" class="plan-add" data-preset="plan:pro">o combínalo en el configurador →</button>
+            <p class="micro justify-center mt-2">Sin llamadas de ventas eternas · Respuesta en &lt;15 min</p>
           </article>
 
           <!-- Élite / 3D -->
           <article class="plan plan-elite reveal">
+            <span class="plan-chip">👑 Prioridad absoluta</span>
             <header>
               <p class="plan-name">Plan Élite <span class="text-neon">/ 3D</span></p>
               <p class="plan-price"><span class="text-metal">699</span><small>€</small></p>
-              <p class="plan-for">Experiencia inmersiva para marcas que quieren impresionar.</p>
+              <p class="plan-for">Superweb inmersiva para dominar tu sector.</p>
             </header>
             <ul class="plan-feats">
-              <li>Todo lo del Plan Pro</li>
-              <li>Efectos 3D y animaciones avanzadas</li>
-              <li>Showcase interactivo como esta web</li>
-              <li>Optimización de rendimiento máxima</li>
-              <li>Integraciones a medida</li>
+              <li>Superweb inmersiva completa</li>
+              <li>Mockups flotantes 3D</li>
+              <li>Animación fluida</li>
+              <li>Máxima velocidad de carga (&lt; 0.8 s)</li>
+              <li>Prioridad absoluta en entrega y soporte</li>
             </ul>
             <a class="plan-cta" data-wa-msg="Hola Web Size 👋 Me interesa el Plan Élite / 3D (699 €). ¿Me contáis los siguientes pasos?" href="#" target="_blank" rel="noopener noreferrer">Quiero el Plan Élite</a>
-            <p class="micro justify-center mt-3">Respuesta rápida por WhatsApp</p>
+            <button type="button" class="plan-add" data-preset="plan:elite">o combínalo en el configurador →</button>
+            <p class="micro justify-center mt-2">Respuesta en &lt;15 min por WhatsApp</p>
           </article>
         </div>
 
-        <!-- Presupuesto personalizado -->
-        <div class="custom-quote reveal mt-8">
-          <div class="cq-copy">
-            <p class="plan-name">Presupuesto personalizado</p>
-            <h3 class="mt-2 font-display text-2xl sm:text-3xl font-bold">
-              <span class="text-metal">Dashboards, CRMs y</span> <span class="text-neon-grad">Automatizaciones</span>
-            </h3>
-            <p class="mt-3 text-silver-400 max-w-xl">
-              Software a medida de tu operativa. Cuéntanos qué necesitas y te enviamos un presupuesto cerrado,
-              sin sorpresas.
-            </p>
-            <div class="mt-5 flex flex-wrap gap-2">
-              <span class="cq-chip">📊 Dashboards</span>
-              <span class="cq-chip">🗂️ CRM a medida</span>
-              <span class="cq-chip">🤖 WhatsApp / IA</span>
-              <span class="cq-chip">📅 Reservas</span>
-              <span class="cq-chip">🔗 Integraciones</span>
+        <!-- 2 · Automatización & software a medida -->
+        <div class="mt-24 text-center">
+          <h3 class="reveal text-[11px] sm:text-xs font-semibold tracking-[0.35em] text-silver-400">MÓDULOS DE AUTOMATIZACIÓN &amp; SOFTWARE A MEDIDA</h3>
+          <p class="reveal mt-4 font-display text-2xl sm:text-4xl font-bold">
+            <span class="text-metal">Tu negocio trabajando</span> <span class="text-neon-grad">mientras tú no estás.</span>
+          </p>
+        </div>
+        <div id="modulePriceGrid" class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"></div>
+
+        <!-- 3 · Packs destacados -->
+        <div class="mt-24 text-center">
+          <h3 class="reveal text-[11px] sm:text-xs font-semibold tracking-[0.35em] text-silver-400">PACKS DESTACADOS</h3>
+          <p class="reveal mt-4 font-display text-2xl sm:text-4xl font-bold">
+            <span class="text-metal">Combina y</span> <span class="text-neon-grad">ahorra.</span>
+          </p>
+        </div>
+        <div id="packGrid" class="mt-10 grid gap-6 lg:grid-cols-2"></div>
+        <p class="micro justify-center mt-8 text-center">💬 Sin llamadas de ventas eternas. Respuesta en &lt;15 min por WhatsApp. Precios orientativos.</p>
+      </div>
+    </section>
+
+    <!-- ===================== CONFIGURADOR MODULAR ===================== -->
+    <section id="configurador" class="relative py-24 sm:py-32" aria-labelledby="config-title">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+          <p class="reveal inline-flex items-center gap-3 text-[11px] sm:text-xs font-medium tracking-[0.4em] text-silver-400">
+            <span class="h-px w-8 bg-gradient-to-r from-transparent to-neon"></span>
+            CONFIGURADOR A LA CARTA
+            <span class="h-px w-8 bg-gradient-to-l from-transparent to-neon"></span>
+          </p>
+          <h2 id="config-title" class="reveal mt-5 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
+            <span class="text-metal">Monta tu solución</span>
+            <span class="text-neon-grad neon-text">pieza a pieza.</span>
+          </h2>
+          <p class="reveal mx-auto mt-5 max-w-2xl text-silver-400 sm:text-lg">
+            Elige tu web, añade módulos y mira el presupuesto estimado en tiempo real. Si tu combinación forma un pack, el descuento se aplica solo.
+          </p>
+        </div>
+
+        <div class="mt-14 grid gap-8 lg:grid-cols-[1fr_400px] items-start">
+          <div>
+            <fieldset>
+              <legend class="cfg-step"><span>1</span> Elige tu web</legend>
+              <div id="planGrid" class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" role="radiogroup"></div>
+            </fieldset>
+            <fieldset class="mt-10">
+              <legend class="cfg-step"><span>2</span> Añade automatización y software</legend>
+              <div id="moduleGrid" class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"></div>
+            </fieldset>
+          </div>
+
+          <!-- Resumen -->
+          <aside class="summary lg:sticky lg:top-28" aria-labelledby="summary-title">
+            <div class="flex items-center justify-between">
+              <h3 id="summary-title" class="font-display text-lg font-bold text-metal">Tu presupuesto</h3>
+              <span class="count-pill"><span id="sumCount">0</span> <span id="sumCountLabel">ítems</span></span>
             </div>
-          </div>
-          <div class="cq-actions">
-            <a class="btn-primary justify-center" data-wa-msg="Hola Web Size 👋 Necesito un presupuesto personalizado para un Dashboard / CRM / Automatización. Os cuento mi caso:" href="#" target="_blank" rel="noopener noreferrer">Pedir presupuesto</a>
-            <a href="#configurador" class="btn-ghost justify-center">Usar el configurador</a>
-            <p class="micro justify-center">⚡ Te respondemos rápido por WhatsApp. Sin llamadas de venta.</p>
-          </div>
+
+            <div class="price-box mt-4" aria-live="polite">
+              <p class="text-[11px] tracking-[0.25em] text-silver-400">PRESUPUESTO ESTIMADO</p>
+              <p class="price-total"><span id="sumPrice">0 €</span></p>
+              <p id="sumSaving" class="price-saving" hidden></p>
+            </div>
+
+            <ul id="sumList" class="mt-5 space-y-2 text-sm"></ul>
+            <p id="sumEmpty" class="mt-5 text-sm text-silver-600">Aún no has elegido nada. Empieza por tu web o marca un módulo.</p>
+            <div id="upsell" class="upsell mt-4" hidden></div>
+
+            <details class="mt-5">
+              <summary class="cursor-pointer text-[11px] tracking-[0.25em] text-silver-600 hover:text-silver-400">VISTA PREVIA DEL MENSAJE</summary>
+              <pre id="msgPreview" class="msg-preview"></pre>
+            </details>
+
+            <div class="mt-5 flex gap-3">
+              <a id="sumSend" href="#" target="_blank" rel="noopener noreferrer" class="btn-wa flex-1 justify-center is-disabled" aria-disabled="true">Enviar por WhatsApp</a>
+              <button id="sumReset" type="button" class="btn-ghost !px-4 !py-0 h-11 text-sm">Limpiar</button>
+            </div>
+            <p class="micro mt-3"><span aria-hidden="true">⚡</span> Sin llamadas de ventas eternas. Respuesta en &lt;15 min por WhatsApp.</p>
+            <p class="mt-2 text-[11px] text-silver-600">Estimación orientativa: el presupuesto final se confirma por WhatsApp según tu caso.</p>
+          </aside>
         </div>
       </div>
     </section>
@@ -521,7 +553,7 @@
           </a>
           <p class="mt-4 max-w-sm text-sm text-silver-400">Ideas que se convierten en <span class="text-neon">soluciones digitales</span>. Webs, software y automatización con IA para negocios locales.</p>
           <a data-wa="general" href="#" target="_blank" rel="noopener noreferrer" class="btn-wa mt-6">Hablemos por WhatsApp</a>
-          <p class="micro mt-3">Sin llamadas de ventas eternas · Respuesta rápida</p>
+          <p class="micro mt-3">Sin llamadas de ventas eternas · Respuesta en &lt;15 min</p>
         </div>
 
         <nav aria-label="Secciones">

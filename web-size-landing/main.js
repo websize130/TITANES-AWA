@@ -13,71 +13,78 @@
   const GENERAL_MESSAGE =
     'Hola Web Size 👋 He visto vuestra web y me gustaría hablar sobre un proyecto para mi negocio.';
 
-  /* ---------- SECTORES (5 móviles) ---------- */
+  /* ---------- SECTORES (5 móviles · negocios ficticios de maqueta) ---------- */
   const SECTORS = [
     {
-      id: 'taller',
-      label: 'Taller Mecánico',
-      icon: '🔧',
-      tag: 'Taller · Cita previa',
-      title: 'Tu coche, a punto y sin esperas',
-      sub: 'Diagnosis, ITV y mantenimiento con presupuesto al momento.',
-      items: ['Pre-ITV y revisión', 'Cambio de aceite y frenos', 'Presupuesto en 24 h'],
-      rating: '4,9',
-      cta: 'Pedir cita al taller',
-      accent: ['#ff7a00', '#b84f00', '#ffb066'],
+      id: 'taller', label: 'Taller Mecánico',
+      brand: 'Turbo', brandAccent: 'Fix', brandSub: 'TALLER MECÁNICO', logo: 'gear',
+      theme: 'dark', art: 'gear', skyline: true,
+      acc: '#ff8a1f',
+      bg: 'radial-gradient(90% 55% at 85% 12%, rgba(255,138,31,.35), transparent 60%), linear-gradient(180deg,#17110b,#0a0806)',
+      cta: 'linear-gradient(180deg,#ffc061,#ff7a00)', ctaTxt: '#1a0b00', ctaIcon: 'wa',
+      ctaLabel: 'Pedir cita ya',
+      lines: [{ t: 'Tu coche' }, { t: 'a punto' }, { t: 'en 24 h', hl: true }, { t: 'sin sorpresas' }],
+      services: [['wrench', 'Mecánica'], ['shield', 'Pre‑ITV'], ['car', 'Neumáticos']],
+      trustStyle: 'list', trust: ['Diagnosis en el día', 'Presupuesto cerrado', 'Coche de sustitución'],
+      location: 'Polígono Norte, nave 12',
       message: 'Hola Web Size 👋 Tengo un taller mecánico y quiero una web que me traiga más citas y presupuestos por WhatsApp. ¿Hablamos?',
     },
     {
-      id: 'estetica',
-      label: 'Centro de Estética',
-      icon: '✨',
-      tag: 'Estética · Bienestar',
-      title: 'Reserva tu momento de belleza',
-      sub: 'Tratamientos faciales, corporales y láser con agenda online.',
-      items: ['Limpieza facial premium', 'Depilación láser', 'Bonos y packs'],
-      rating: '5,0',
-      cta: 'Reservar tratamiento',
-      accent: ['#f472b6', '#9d174d', '#fbcfe8'],
+      id: 'estetica', label: 'Centro de Estética',
+      brand: 'Lumière', brandAccent: '', brandSub: 'CENTRO DE ESTÉTICA', logo: 'lotus',
+      theme: 'dark', art: 'lotus', serif: true,
+      acc: '#e9c49a',
+      bg: 'radial-gradient(90% 55% at 80% 15%, rgba(233,196,154,.32), transparent 60%), linear-gradient(180deg,#2b1d16,#120b08)',
+      cta: 'linear-gradient(180deg,#34d399,#059669)', ctaTxt: '#ffffff', ctaIcon: 'wa',
+      ctaLabel: 'Reservar cita por WhatsApp',
+      lines: [{ t: 'Belleza y' }, { t: 'bienestar', hl: true }, { t: 'en las mejores' }, { t: 'manos' }],
+      svcStyle: 'tiles', services: [['sparkle', 'Faciales'], ['body', 'Corporales'], ['stones', 'Masajes']],
+      trustStyle: 'row', trust: [['lotus', 'Centro profesional'], ['gem', 'Resultados visibles'], ['heart', 'Tu bienestar']],
+      location: 'Calle Mayor 8 · Cita previa',
       message: 'Hola Web Size 👋 Tengo un centro de estética y me interesa una web con reservas por WhatsApp. ¿Me contáis cómo funciona?',
     },
     {
-      id: 'fontanero',
-      label: 'Fontanero / Urgencias',
-      icon: '🚰',
-      tag: 'Urgencias 24 h',
-      title: '¿Una fuga? Llegamos en 30 min',
-      sub: 'Fontanería urgente, desatascos y calderas, todos los días.',
-      items: ['Servicio 24/7', 'Desatascos y fugas', 'Precio cerrado'],
-      rating: '4,8',
-      cta: 'Urgencia por WhatsApp',
-      accent: ['#38bdf8', '#075985', '#bae6fd'],
+      id: 'fontanero', label: 'Fontanero / Urgencias',
+      brand: 'Aqua', brandAccent: 'Pronto', brandSub: 'FONTANERÍA 24 H', logo: 'drop',
+      theme: 'dark', art: 'faucet', skyline: true,
+      acc: '#38bdf8',
+      bg: 'radial-gradient(90% 55% at 85% 12%, rgba(56,189,248,.38), transparent 60%), linear-gradient(180deg,#0c1d42,#050b1c)',
+      cta: 'linear-gradient(180deg,#ff5a5f,#d90429)', ctaTxt: '#ffffff', ctaIcon: 'wa',
+      ctaLabel: '¡Urgencia ahora!',
+      lines: [{ t: 'Fontaneros de' }, { t: 'Urgencia' }, { t: '24 Horas', hl: true }, { t: 'en tu ciudad' }],
+      services: [['drop', 'Fugas'], ['pipe', 'Desatascos'], ['radiator', 'Calefacción']],
+      trustStyle: 'row', trust: [['bolt', 'Llegada en 30 min'], ['shield', 'Servicio garantizado'], ['thumb', 'Precios justos']],
+      location: 'Tu ciudad y alrededores',
       message: 'Hola Web Size 👋 Soy fontanero y hago urgencias. Quiero una web que haga sonar mi WhatsApp con clientes de mi zona. ¿Hablamos?',
     },
     {
-      id: 'dental',
-      label: 'Clínica Dental',
-      icon: '🦷',
-      tag: 'Clínica dental',
-      title: 'Sonríe con total confianza',
-      sub: 'Implantes, ortodoncia invisible y primera visita gratuita.',
-      items: ['Primera visita gratis', 'Ortodoncia invisible', 'Financiación a medida'],
-      rating: '4,9',
-      cta: 'Solicitar primera visita',
-      accent: ['#2dd4bf', '#115e59', '#ccfbf1'],
+      id: 'dental', label: 'Clínica Dental',
+      brand: 'Denti', brandAccent: 'va', brandSub: 'CLÍNICA DENTAL', logo: 'tooth',
+      theme: 'light', art: 'tooth',
+      acc: '#2563eb',
+      bg: 'radial-gradient(90% 50% at 85% 18%, rgba(147,197,253,.55), transparent 60%), linear-gradient(180deg,#f5f8ff,#e4ecfb)',
+      cta: 'linear-gradient(180deg,#3b82f6,#1d4ed8)', ctaTxt: '#ffffff', ctaIcon: 'calendar',
+      ctaLabel: 'Pedir cita online',
+      lines: [{ t: 'Tu sonrisa,' }, { t: 'nuestra prioridad', hl: true }],
+      lead: 'Odontología avanzada para toda la familia',
+      svcStyle: 'tiles', services: [['tooth', 'Implantes'], ['braces', 'Ortodoncia'], ['smile', 'Estética dental']],
+      trustStyle: 'card', trust: 'Sonríe con confianza',
+      location: '1ª visita sin compromiso',
       message: 'Hola Web Size 👋 Tengo una clínica dental y quiero captar más primeras visitas con una web profesional. ¿Podemos hablar?',
     },
     {
-      id: 'fisio',
-      label: 'Fisioterapia',
-      icon: '💪',
-      tag: 'Fisioterapia · Deporte',
-      title: 'Vuelve a moverte sin dolor',
-      sub: 'Fisioterapia deportiva, suelo pélvico y readaptación.',
-      items: ['Valoración inicial', 'Punción seca y masaje', 'Bonos de sesiones'],
-      rating: '5,0',
-      cta: 'Reservar sesión',
-      accent: ['#a3e635', '#3f6212', '#ecfccb'],
+      id: 'fisio', label: 'Fisioterapia',
+      brand: 'Kinetic', brandAccent: 'Fisio', brandSub: 'FISIOTERAPIA DEPORTIVA', logo: 'run',
+      theme: 'dark', art: 'runner',
+      acc: '#a3e635',
+      bg: 'radial-gradient(90% 55% at 85% 12%, rgba(163,230,53,.28), transparent 60%), linear-gradient(180deg,#0d1c14,#060f0a)',
+      cta: 'linear-gradient(180deg,#d9f99d,#65a30d)', ctaTxt: '#0b1a05', ctaIcon: 'wa',
+      ctaLabel: 'Reservar sesión',
+      lines: [{ t: 'Vuelve a' }, { t: 'moverte' }, { t: 'sin dolor', hl: true }],
+      lead: 'Lesiones, espalda y readaptación',
+      services: [['spine', 'Espalda'], ['run', 'Deportiva'], ['hand', 'Masaje']],
+      trustStyle: 'row', trust: [['clock', 'Sesión de 50 min'], ['target', 'Plan a medida'], ['calendar', 'Cita en 24h']],
+      location: 'Junto al polideportivo',
       message: 'Hola Web Size 👋 Tengo un centro de fisioterapia y quiero una web que me llene la agenda por WhatsApp. ¿Hablamos?',
     },
   ];
@@ -119,69 +126,169 @@
     a.href = waLink(GENERAL_MESSAGE);
   });
 
+  /* ---------- Iconos de línea para las maquetas ---------- */
+  const ICONS = {
+    drop: '<path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z"/>',
+    pipe: '<path d="M3 7h9a4 4 0 0 1 4 4v10"/><path d="M3 12h6a2 2 0 0 1 2 2v7"/><path d="M13.5 21h5"/>',
+    radiator: '<path d="M6 5v14M10 5v14M14 5v14M18 5v14M4 8h16M4 16h16"/>',
+    wrench: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>',
+    car: '<path d="M3 13l2.2-5.2A2 2 0 0 1 7 6.5h10a2 2 0 0 1 1.8 1.3L21 13v5h-3v-2H6v2H3z"/><path d="M3 13h18"/><circle cx="7.5" cy="15.2" r=".6"/><circle cx="16.5" cy="15.2" r=".6"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+    shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+    bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    thumb: '<path d="M7 11v9H4v-9zM7 11l4-8a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 2 2.3l-1.2 6.5a2 2 0 0 1-2 1.7H7"/>',
+    lotus: '<path d="M12 19c-3-2-4.5-5-4-9 2 1 3.5 2.5 4 4.5.5-2 2-3.5 4-4.5.5 4-1 7-4 9z"/><path d="M12 19c-4 0-7.5-2-9-5.5 2.5-.5 5 .5 7 2.5M12 19c4 0 7.5-2 9-5.5-2.5-.5-5 .5-7 2.5"/><path d="M12 10.5C11 8 11 5.5 12 3c1 2.5 1 5 0 7.5"/>',
+    sparkle: '<path d="M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8-5.2L4 10l5.2-1.8z"/><path d="M19 15l.7 1.8 1.8.7-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7z"/>',
+    body: '<path d="M8 3c0 4 1.5 6 1.5 9S7 17 8 21M16 3c0 4-1.5 6-1.5 9s2.5 5 1.5 9"/><path d="M9.5 12h5"/>',
+    stones: '<ellipse cx="12" cy="18" rx="8" ry="3"/><ellipse cx="12" cy="12.5" rx="6" ry="2.5"/><ellipse cx="12" cy="7.5" rx="4" ry="2"/>',
+    gem: '<path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18M9 3L8 9l4 12 4-12-1-6"/>',
+    heart: '<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z"/>',
+    tooth: '<path d="M7.5 3C5 3 3.5 5 3.5 8c0 3.5 1.8 5 2.3 8 .4 2.6 1 5 2.4 5 1.6 0 1.4-4.5 3.8-4.5s2.2 4.5 3.8 4.5c1.4 0 2-2.4 2.4-5 .5-3 2.3-4.5 2.3-8 0-3-1.5-5-4-5-2 0-3 1-4.5 1S9.5 3 7.5 3z"/>',
+    braces: '<rect x="3" y="8" width="18" height="8" rx="3"/><path d="M8 8v8M12 8v8M16 8v8M3 12h18"/>',
+    smile: '<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5h.01M15 9.5h.01"/>',
+    spine: '<path d="M12 3v18"/><path d="M9 5h6M8.5 9h7M8 13h8M8.5 17h7"/>',
+    run: '<circle cx="14" cy="4.5" r="1.8"/><path d="M8 21l3-6 3 2v4M6 12l3-4 4 1 3 3 3-1M11 15l1-6"/>',
+    hand: '<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11V4a1.5 1.5 0 0 1 3 0v7V5.5a1.5 1.5 0 0 1 3 0V14c0 4-2.7 7-6.5 7-2.6 0-4.3-1.4-5.3-3.6L4 14a1.5 1.5 0 0 1 2.6-1.5L8 14"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+    calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+    pin: '<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  };
+  const icon = (name, sw = 1.8) =>
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+  const WA_PATH = WA_ICON.match(/ d="([^"]+)"/)[1];
+  const waGlyph = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${WA_PATH}"/></svg>`;
+
+  /* Ilustraciones del hero de cada maqueta (SVG vectorial, sin imágenes externas) */
+  const metal = (id) =>
+    `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset=".45" stop-color="#a1a7b3"/><stop offset=".55" stop-color="#5b616c"/><stop offset="1" stop-color="#e2e8f0"/></linearGradient>`;
+
+  const artSVG = (kind, id, acc) => {
+    switch (kind) {
+      case 'faucet': return `
+        <svg viewBox="0 0 100 130" aria-hidden="true"><defs>${metal(id + 'm')}
+          <linearGradient id="${id}w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bae6fd" stop-opacity=".95"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0"/></linearGradient></defs>
+          <rect x="58" y="4" width="40" height="10" rx="5" fill="url(#${id}m)"/>
+          <rect x="73" y="12" width="10" height="16" fill="url(#${id}m)"/>
+          <path d="M104 26H50a24 24 0 0 0-24 24v8h18v-8a6 6 0 0 1 6-6h54z" fill="url(#${id}m)"/>
+          <rect x="22" y="56" width="26" height="7" rx="2" fill="#cbd5e1"/>
+          <rect x="27" y="63" width="16" height="67" fill="url(#${id}w)"/>
+          <path class="mk-flow" d="M30 63v67M35 63v67M40 63v67" stroke="#f0f9ff" stroke-width="1.4" stroke-dasharray="5 9" fill="none"/>
+        </svg>`;
+      case 'gear': return `
+        <svg viewBox="0 0 100 110" aria-hidden="true"><defs>${metal(id + 'm')}</defs>
+          <g class="mk-spin" style="transform-origin:60px 42px">
+            <circle cx="60" cy="42" r="27" fill="none" stroke="url(#${id}m)" stroke-width="10" stroke-dasharray="7 7.1"/>
+            <circle cx="60" cy="42" r="22" fill="url(#${id}m)"/>
+            <circle cx="60" cy="42" r="8" fill="#17110b" stroke="${acc}" stroke-width="2.5"/>
+          </g>
+          <g transform="translate(4 40) scale(3)"><path d="${ICONS.wrench.match(/ d="([^"]+)"/)[1]}" fill="url(#${id}m)" stroke="rgba(0,0,0,.5)" stroke-width=".3"/></g>
+        </svg>`;
+      case 'lotus': return `
+        <svg viewBox="0 0 100 110" aria-hidden="true"><defs>
+          <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3e0"/><stop offset=".5" stop-color="${acc}"/><stop offset="1" stop-color="#a0703f"/></linearGradient></defs>
+          <g fill="${acc}" fill-opacity=".1" stroke="url(#${id}g)" stroke-width="1.8" stroke-linejoin="round">
+            <path d="M50 72C42 58 28 52 12 54 18 68 32 74 50 72z"/><path d="M50 72C58 58 72 52 88 54 82 68 68 74 50 72z"/>
+            <path d="M50 72C54 52 48 36 32 28 28 48 36 64 50 72z"/><path d="M50 72C46 52 52 36 68 28 72 48 64 64 50 72z"/>
+            <path d="M50 16C61 33 62 54 50 72 38 54 39 33 50 16z"/>
+          </g>
+          <g fill="#fff"><circle class="mk-twinkle" cx="20" cy="26" r="1.6"/><circle class="mk-twinkle d2" cx="84" cy="22" r="1.2"/><circle class="mk-twinkle d3" cx="78" cy="88" r="1.4"/><circle class="mk-twinkle" cx="26" cy="90" r="1"/></g>
+        </svg>`;
+      case 'tooth': return `
+        <svg viewBox="0 0 100 110" aria-hidden="true"><defs>
+          <linearGradient id="${id}t" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c7dbff"/></linearGradient></defs>
+          <circle cx="54" cy="50" r="40" fill="#bfdbfe" opacity=".45"/>
+          <g transform="translate(18 14) scale(3)"><path d="${ICONS.tooth.match(/ d="([^"]+)"/)[1]}" fill="url(#${id}t)" stroke="#93c5fd" stroke-width=".5"/></g>
+          <path class="mk-twinkle" d="M80 14l2.4 6.6L89 23l-6.6 2.4L80 32l-2.4-6.6L71 23l6.6-2.4z" fill="#fff" stroke="#93c5fd" stroke-width=".8"/>
+          <path class="mk-twinkle d2" d="M24 76l1.4 3.6 3.6 1.4-3.6 1.4L24 86l-1.4-3.6L19 81l3.6-1.4z" fill="#fff" stroke="#93c5fd" stroke-width=".6"/>
+        </svg>`;
+      case 'runner': return `
+        <svg viewBox="0 0 100 110" aria-hidden="true"><defs>
+          <linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ecfccb"/><stop offset="1" stop-color="${acc}"/></linearGradient></defs>
+          <g fill="none" stroke="${acc}" stroke-opacity=".35" stroke-width="1.5" stroke-dasharray="3 5"><path d="M10 40c10-18 30-28 52-26"/><path d="M6 66c8-10 18-16 30-18"/></g>
+          <circle cx="62" cy="16" r="8" fill="url(#${id}r)"/>
+          <g fill="none" stroke="url(#${id}r)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M58 28L50 58"/><path d="M56 36l20-12M56 36L34 42"/><path d="M50 58l18 20-2 22M50 58L36 78 22 84"/>
+          </g>
+        </svg>`;
+      default: return '';
+    }
+  };
+
+  /* Silueta de ciudad para el pie de algunas maquetas */
+  const SKYLINE = (() => {
+    const H = [14, 22, 10, 30, 18, 26, 12, 36, 20, 16, 28, 11, 24, 19, 33, 15, 21, 27, 13];
+    let x = 0, d = 'M0 42';
+    H.forEach((h, i) => { const w = i % 3 ? 6 : 9; d += `V${42 - h}H${x + w}`; x += w; });
+    return { d: `${d}V42Z`, w: x };
+  })();
+
+  const trustHTML = (s) => {
+    if (s.trustStyle === 'list') {
+      return `<ul class="mk-trust list">${s.trust.map((t) => `<li>${icon('check', 3)}${t}</li>`).join('')}</ul>`;
+    }
+    if (s.trustStyle === 'card') {
+      return `<div class="mk-trust card">${icon('tooth', 1.5)}<strong>${s.trust}</strong></div>`;
+    }
+    return `<div class="mk-trust row">${s.trust.map(([ic, t]) => `<div>${icon(ic)}<span>${t}</span></div>`).join('')}</div>`;
+  };
+
   /* ---------- Render de los 5 móviles ---------- */
   const row = document.getElementById('phoneRow');
   const center = (SECTORS.length - 1) / 2;
 
   SECTORS.forEach((s, i) => {
-    const [accent, dark, light] = s.accent;
     const offset = i - center;
+    const light = s.theme === 'light';
 
     const slot = el('div', 'phone-slot');
     slot.setAttribute('role', 'listitem');
-    slot.style.setProperty('--offset', offset);
-    slot.style.setProperty('--abs', Math.abs(offset));
-    slot.style.setProperty('--accent', accent);
-    slot.style.setProperty('--accent-dark', dark);
-    slot.style.setProperty('--accent-light', light);
-    slot.style.setProperty('--accent-soft', hexToRgba(accent, 0.28));
-    slot.style.setProperty('--accent-glow', hexToRgba(accent, 0.55));
-    slot.style.setProperty('--delay', `${(-i * 1.15).toFixed(2)}s`);
+    const vars = {
+      '--offset': offset, '--abs': Math.abs(offset), '--delay': `${(-i * 1.15).toFixed(2)}s`,
+      '--accent': s.acc, '--accent-light': light ? '#93c5fd' : s.acc,
+      '--accent-soft': hexToRgba(s.acc, 0.28), '--accent-glow': hexToRgba(s.acc, 0.55),
+      '--acc': s.acc, '--glow': hexToRgba(s.acc, 0.6), '--soft': hexToRgba(s.acc, 0.16),
+      '--bg': s.bg, '--cta': s.cta, '--cta-txt': s.ctaTxt,
+      '--txt': light ? '#0f2a5c' : '#ffffff',
+      '--muted': light ? 'rgba(15,42,92,.65)' : 'rgba(255,255,255,.7)',
+      '--card': light ? '#ffffff' : 'rgba(255,255,255,.06)',
+      '--line': light ? 'rgba(37,99,235,.14)' : 'rgba(255,255,255,.1)',
+    };
+    Object.keys(vars).forEach((k) => slot.style.setProperty(k, vars[k]));
 
     const float = el('div', 'phone-float');
     const phone = el('div', 'phone');
-    const screen = el('div', 'screen');
+    const screen = el('div', `screen mk ${light ? 'is-light' : ''}`);
 
-    screen.appendChild(el('div', 'notch'));
+    const lines = s.lines.map((l) => `<span class="${l.hl ? 'hl' : ''}">${l.t}</span>`).join('');
+    const services = s.services.map(([ic, t]) => `<div class="mk-svc"><i>${icon(ic)}</i><span>${t}</span></div>`).join('');
 
-    const status = el('div', 'statusbar');
-    status.appendChild(el('span', '', '9:41'));
-    status.appendChild(el('span', '', '5G ▮▮▮'));
-    screen.appendChild(status);
+    screen.innerHTML = `
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span class="sb-ico" aria-hidden="true"><i></i><i></i><i></i><b></b></span></div>
+      <div class="mk-app">
+        <span class="mk-logo">${icon(s.logo, 2)}</span>
+        <span class="mk-brand"><b>${s.brand}<i>${s.brandAccent}</i></b><small>${s.brandSub}</small></span>
+        <span class="mk-burger">${icon('menu', 2.2)}</span>
+      </div>
+      <div class="mk-hero">
+        <div class="mk-art">${artSVG(s.art, `art-${s.id}`, s.acc)}</div>
+        <h3 class="mk-h1 ${s.serif ? 'is-serif' : ''}">${lines}</h3>
+        ${s.lead ? `<p class="mk-lead">${s.lead}</p>` : ''}
+      </div>
+      <a class="mk-cta" href="${waLink(s.message)}" target="_blank" rel="noopener noreferrer"
+         aria-label="${s.ctaLabel} — enviar WhatsApp (${s.label})">${s.ctaIcon === 'wa' ? waGlyph : icon(s.ctaIcon, 2.2)}<span>${s.ctaLabel}</span></a>
+      <div class="mk-svcs ${s.svcStyle || ''}">${services}</div>
+      ${trustHTML(s)}
+      <div class="mk-foot">
+        ${s.skyline ? `<svg class="mk-sky" viewBox="0 0 ${SKYLINE.w} 42" preserveAspectRatio="none" aria-hidden="true"><path d="${SKYLINE.d}"/></svg>` : ''}
+        <span>${icon('pin', 2)}${s.location}</span>
+      </div>
+      <div class="home-bar"></div>`;
 
-    const hero = el('div', 'mini-hero');
-    hero.appendChild(el('div', 'mini-icon', s.icon));
-    hero.appendChild(el('p', 'mini-tag', s.tag));
-    hero.appendChild(el('h3', 'mini-title', s.title));
-    hero.appendChild(el('p', 'mini-sub', s.sub));
-    screen.appendChild(hero);
-
-    const list = el('div', 'mini-list');
-    s.items.forEach((t) => {
-      const it = el('div', 'mini-item');
-      it.appendChild(el('i'));
-      it.appendChild(document.createTextNode(t));
-      list.appendChild(it);
-    });
-    screen.appendChild(list);
-
-    const rating = el('div', 'mini-rating');
-    rating.innerHTML = `<b>★★★★★</b>`;
-    rating.appendChild(document.createTextNode(`${s.rating} · reseñas de Google`));
-    screen.appendChild(rating);
-
-    const ctaWrap = el('div', 'mini-cta');
-    const btn = el('a', 'wa-btn');
-    btn.href = waLink(s.message);
-    btn.target = '_blank';
-    btn.rel = 'noopener noreferrer';
-    btn.setAttribute('aria-label', `${s.cta} — enviar WhatsApp (${s.label})`);
-    btn.innerHTML = WA_ICON;
-    btn.appendChild(document.createTextNode(s.cta));
-    btn.addEventListener('click', () => showToast(`Abriendo WhatsApp · ${s.label}`));
-    ctaWrap.appendChild(btn);
-    screen.appendChild(ctaWrap);
-    screen.appendChild(el('div', 'home-bar'));
+    screen.querySelector('.mk-cta').addEventListener('click', () => showToast(`Abriendo WhatsApp · ${s.label}`));
 
     phone.appendChild(screen);
     float.appendChild(phone);
@@ -191,9 +298,7 @@
     label.appendChild(el('span', '', `0${i + 1} · `));
     label.appendChild(document.createTextNode(s.label));
     slot.appendChild(label);
-
-    const shadow = el('div', 'phone-shadow');
-    slot.appendChild(shadow);
+    slot.appendChild(el('div', 'phone-shadow'));
 
     row.appendChild(slot);
   });
@@ -507,83 +612,216 @@
   }
 
   /* =========================================================
-     CONFIGURADOR MODULAR + GENERADOR DINÁMICO DE WHATSAPP
+     CATÁLOGO DE PRECIOS (fuente única para tarifas y configurador)
      ========================================================= */
-  const MODULES = [
-    { id: 'web',    icon: '🌐', title: 'Web Corporativa',
-      desc: 'Web premium, rápida y optimizada para SEO local y conversión.',
-      feats: ['Mobile‑first', 'SEO local', 'Carga < 2 s'] },
-    { id: 'dash',   icon: '📊', title: 'Dashboard de Métricas',
-      desc: 'Panel en tiempo real con ventas, leads, citas y rendimiento de tu negocio.',
-      feats: ['KPIs en vivo', 'Gráficos', 'Exportación'] },
-    { id: 'crm',    icon: '🗂️', title: 'CRM a Medida',
-      desc: 'Gestiona clientes, presupuestos y seguimiento en un pipeline visual.',
-      feats: ['Pipeline', 'Historial', 'Recordatorios'] },
-    { id: 'ia',     icon: '🤖', title: 'Automatización WhatsApp / IA',
-      desc: 'Agente que responde, cualifica leads y deriva a una persona cuando hace falta.',
-      feats: ['Respuestas 24/7', 'Cualificación', 'Derivación humana'] },
-    { id: 'book',   icon: '📅', title: 'Sistema de Reservas',
-      desc: 'Agenda online con confirmaciones y recordatorios automáticos.',
-      feats: ['Calendario', 'Recordatorios', 'Menos ausencias'] },
+  const PLANS = [
+    { id: 'basico', icon: '⚡', title: 'Plan Básico', short: 'Landing express 1 página · 24–48 h', min: 200, max: 200 },
+    { id: 'pro',    icon: '🔥', title: 'Plan Pro', short: '3 secciones · catálogo · reservas WhatsApp', min: 350, max: 350, badge: 'El más vendido' },
+    { id: 'elite',  icon: '👑', title: 'Plan Élite / 3D', short: 'Superweb 3D inmersiva · < 0.8 s', min: 699, max: 699 },
   ];
 
+  const MODULES = [
+    { id: 'wa',    icon: '💬', title: 'Automatización de WhatsApp', min: 250, max: 350,
+      desc: 'Embudos de bienvenida y filtro de leads 24/7.', feats: ['Bienvenida automática', 'Filtro de leads', '24/7'] },
+    { id: 'voz',   icon: '🎙️', title: 'Agente / Automatización de Voz', min: 400, max: 500,
+      desc: 'Centralita inteligente para atenciones y recados fuera de horario.', feats: ['Centralita IA', 'Recados', 'Fuera de horario'] },
+    { id: 'citas', icon: '📅', title: 'Sistema de Citas y Reservas', min: 250, max: 250,
+      desc: 'Calendario interactivo sincronizado con recordatorios.', feats: ['Calendario', 'Sincronizado', 'Recordatorios'] },
+    { id: 'dash',  icon: '📊', title: 'Dashboard / Panel de Control 3D', min: 600, max: 900,
+      desc: 'Visualización de métricas, ventas y stock en tiempo real.', feats: ['Métricas', 'Ventas', 'Stock en vivo'] },
+    { id: 'crm',   icon: '🗂️', title: 'CRM a Medida', min: 900, max: 1500, open: true,
+      desc: 'Gestión centralizada de leads, presupuestos en 1 clic y pipeline comercial.', feats: ['Leads', 'Presupuestos 1 clic', 'Pipeline'] },
+  ];
+
+  const PACKS = [
+    { id: 'impulso', icon: '🚀', title: 'Pack Impulso Local', price: 550, plan: 'pro', modules: ['wa'],
+      tagline: 'Web Pro + Automatización de WhatsApp' },
+    { id: 'autoridad', icon: '🏆', title: 'Pack 360º Autoridad', price: 899, plan: 'elite', modules: ['wa', 'citas'],
+      tagline: 'Web Élite 3D + Automatización de WhatsApp + Sistema de Reservas', featured: true },
+  ];
+
+  const byId = (list, id) => list.find((x) => x.id === id);
+
+  /* 1.500 € — agrupa miles con punto como en el resto de la web */
+  const eur = (n) => `${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} €`;
+  const range = (min, max, open) =>
+    (min === max ? eur(min) : `${eur(min).replace(' €', '')} – ${eur(max)}`) + (open ? '+' : '');
+
+  const packParts = (p) => [byId(PLANS, p.plan), ...p.modules.map((m) => byId(MODULES, m))];
+  const packValue = (p) => packParts(p).reduce((a, x) => ({ min: a.min + x.min, max: a.max + x.max }), { min: 0, max: 0 });
+
+  /* ---------- Render de módulos y packs en la sección de tarifas ---------- */
+  const modulePriceGrid = document.getElementById('modulePriceGrid');
+  if (modulePriceGrid) {
+    MODULES.forEach((m) => {
+      const card = el('article', 'mod-price reveal in');
+      card.innerHTML = `
+        <span class="mod-ico" aria-hidden="true">${m.icon}</span>
+        <h4>${m.title}</h4>
+        <p class="mod-desc">${m.desc}</p>
+        <p class="mod-range">${range(m.min, m.max, m.open)}</p>
+        <button type="button" class="mod-add" data-preset="mod:${m.id}">+ Añadir al configurador</button>`;
+      modulePriceGrid.appendChild(card);
+    });
+  }
+
+  const packGrid = document.getElementById('packGrid');
+  if (packGrid) {
+    PACKS.forEach((p) => {
+      const v = packValue(p);
+      const card = el('article', `pack reveal in ${p.featured ? 'pack-featured' : ''}`);
+      const msg = `Hola Web Size 👋 Me interesa el ${p.title} (${eur(p.price)}): ${p.tagline}. ¿Me contáis los siguientes pasos?`;
+      card.innerHTML = `
+        <div class="pack-head">
+          <span class="pack-ico" aria-hidden="true">${p.icon}</span>
+          <div><p class="plan-name">${p.featured ? 'Máxima autoridad' : 'Ideal para empezar fuerte'}</p><h4>${p.title}</h4></div>
+          <span class="pack-save">Ahorras desde ${eur(v.min - p.price)}</span>
+        </div>
+        <ul class="pack-items">${packParts(p).map((x) => `<li><span>${x.title}</span><em>${range(x.min, x.max)}</em></li>`).join('')}</ul>
+        <div class="pack-foot">
+          <div>
+            <p class="pack-was">Por separado: <s>${range(v.min, v.max)}</s></p>
+            <p class="pack-price"><span class="${p.featured ? 'text-neon-grad' : 'text-metal'}">${eur(p.price).replace(' €', '')}</span><small>€</small></p>
+          </div>
+          <div class="pack-actions">
+            <a class="plan-cta ${p.featured ? 'is-primary' : ''}" href="${waLink(msg)}" target="_blank" rel="noopener noreferrer">Quiero este pack</a>
+            <button type="button" class="plan-add" data-preset="plan:${p.plan},${p.modules.map((m) => `mod:${m}`).join(',')}">Configurarlo →</button>
+          </div>
+        </div>
+        <p class="micro mt-3">Sin llamadas de ventas eternas · Respuesta en &lt;15 min por WhatsApp</p>`;
+      packGrid.appendChild(card);
+    });
+  }
+
+  /* =========================================================
+     CONFIGURADOR MODULAR + PRESUPUESTO EN TIEMPO REAL
+     ========================================================= */
+  const planGrid = document.getElementById('planGrid');
   const moduleGrid = document.getElementById('moduleGrid');
-  const selected = new Set();
+  const state = { plan: '', mods: new Set() };
 
   const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
 
+  const addTilt = (label, inner) => {
+    if (!finePointer || reduceMotion) return;
+    label.addEventListener('pointermove', (e) => {
+      const r = label.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      inner.style.setProperty('--mx', `${(x * 100).toFixed(1)}%`);
+      inner.style.setProperty('--my', `${(y * 100).toFixed(1)}%`);
+      inner.style.setProperty('--mry', `${((x - 0.5) * 8).toFixed(2)}deg`);
+      inner.style.setProperty('--mrx', `${((0.5 - y) * 8).toFixed(2)}deg`);
+    });
+    label.addEventListener('pointerleave', () => {
+      inner.style.setProperty('--mry', '0deg');
+      inner.style.setProperty('--mrx', '0deg');
+    });
+  };
+
+  /* Paso 1: plan web (radio, opcional) */
+  [{ id: '', icon: '🌐', title: 'Ya tengo web', short: 'Solo automatización / software', min: 0, max: 0 }, ...PLANS].forEach((p) => {
+    const label = el('label', 'module-card plan-option');
+    const input = el('input');
+    input.type = 'radio';
+    input.name = 'plan';
+    input.value = p.id;
+    if (!p.id) input.checked = true;
+    const inner = el('div', 'module-inner');
+    inner.innerHTML = `
+      <div class="module-top"><span class="module-ico">${p.icon}</span><span class="check radio">${CHECK_SVG}</span></div>
+      <h3 class="module-title">${p.title}</h3>
+      <p class="module-desc">${p.short}</p>
+      <p class="opt-price">${p.id ? eur(p.min) : '0 €'}${p.badge ? `<span class="opt-badge">${p.badge}</span>` : ''}</p>`;
+    label.appendChild(input);
+    label.appendChild(inner);
+    planGrid.appendChild(label);
+    input.addEventListener('change', () => { state.plan = p.id; updateConfigurator(true); });
+    addTilt(label, inner);
+  });
+
+  /* Paso 2: módulos (checkbox) */
   MODULES.forEach((m) => {
     const label = el('label', 'module-card');
     const input = el('input');
     input.type = 'checkbox';
     input.value = m.id;
     input.setAttribute('aria-describedby', `desc-${m.id}`);
-
     const inner = el('div', 'module-inner');
-    const top = el('div', 'module-top');
-    top.appendChild(el('span', 'module-ico', m.icon));
-    const check = el('span', 'check');
-    check.innerHTML = CHECK_SVG;
-    top.appendChild(check);
-    inner.appendChild(top);
-    inner.appendChild(el('h3', 'module-title', m.title));
-    const d = el('p', 'module-desc', m.desc);
-    d.id = `desc-${m.id}`;
-    inner.appendChild(d);
-    const feats = el('div', 'module-feats');
-    m.feats.forEach((f) => feats.appendChild(el('span', '', f)));
-    inner.appendChild(feats);
-
+    inner.innerHTML = `
+      <div class="module-top"><span class="module-ico">${m.icon}</span><span class="check">${CHECK_SVG}</span></div>
+      <h3 class="module-title">${m.title}</h3>
+      <p class="module-desc" id="desc-${m.id}">${m.desc}</p>
+      <div class="module-feats">${m.feats.map((f) => `<span>${f}</span>`).join('')}</div>
+      <p class="opt-price">${range(m.min, m.max, m.open)}</p>`;
     label.appendChild(input);
     label.appendChild(inner);
     moduleGrid.appendChild(label);
-
     input.addEventListener('change', () => {
-      if (input.checked) selected.add(m.id); else selected.delete(m.id);
+      if (input.checked) state.mods.add(m.id); else state.mods.delete(m.id);
       updateConfigurator(true);
     });
-
-    if (finePointer && !reduceMotion) {
-      label.addEventListener('pointermove', (e) => {
-        const r = label.getBoundingClientRect();
-        const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-        inner.style.setProperty('--mx', `${(x * 100).toFixed(1)}%`);
-        inner.style.setProperty('--my', `${(y * 100).toFixed(1)}%`);
-        inner.style.setProperty('--mry', `${((x - 0.5) * 10).toFixed(2)}deg`);
-        inner.style.setProperty('--mrx', `${((0.5 - y) * 10).toFixed(2)}deg`);
-      });
-      label.addEventListener('pointerleave', () => {
-        inner.style.setProperty('--mry', '0deg');
-        inner.style.setProperty('--mrx', '0deg');
-      });
-    }
+    addTilt(label, inner);
   });
 
+  /* Cálculo: aplica el pack más grande que encaje y suma el resto */
+  const computeQuote = () => {
+    const packsBySize = PACKS.slice().sort((a, b) => b.modules.length - a.modules.length);
+    const pack = packsBySize.find((p) => state.plan === p.plan && p.modules.every((id) => state.mods.has(id))) || null;
+
+    const lines = [];
+    if (pack) lines.push({ key: `pack:${pack.id}`, icon: pack.icon, title: pack.title, sub: pack.tagline, min: pack.price, max: pack.price, pack });
+    const plan = byId(PLANS, state.plan);
+    if (plan && !pack) lines.push({ key: `plan:${plan.id}`, icon: plan.icon, title: plan.title, min: plan.min, max: plan.max });
+    MODULES.forEach((m) => {
+      if (!state.mods.has(m.id) || (pack && pack.modules.includes(m.id))) return;
+      lines.push({ key: `mod:${m.id}`, icon: m.icon, title: m.title, min: m.min, max: m.max, open: m.open });
+    });
+
+    const total = lines.reduce((a, l) => ({ min: a.min + l.min, max: a.max + l.max, open: a.open || !!l.open }), { min: 0, max: 0, open: false });
+    const saving = pack ? packValue(pack).min - pack.price : 0;
+    const items = (plan ? 1 : 0) + state.mods.size;
+    return { lines, total, pack, saving, items };
+  };
+
+  /* Sugerencia de pack cuando falta una sola pieza */
+  const findUpsell = (q) => {
+    if (q.pack) return null;
+    for (const p of PACKS) {
+      const missingPlan = state.plan !== p.plan;
+      if (missingPlan && state.plan) continue; // nunca proponer cambiar un plan ya elegido
+      const missingMods = p.modules.filter((id) => !state.mods.has(id));
+      const missing = (missingPlan ? 1 : 0) + missingMods.length;
+      const hasSome = !missingPlan || missingMods.length < p.modules.length;
+      if (missing === 1 && hasSome) {
+        const what = missingPlan ? byId(PLANS, p.plan) : byId(MODULES, missingMods[0]);
+        const preset = missingPlan ? `plan:${p.plan}` : `mod:${missingMods[0]}`;
+        return { p, what, preset };
+      }
+    }
+    return null;
+  };
+
+  const buildQuoteMessage = (q) => {
+    const L = [
+      'Hola Web Size 👋',
+      'He calculado mi presupuesto en vuestro configurador:',
+      '',
+      ...q.lines.map((l) => `• ${l.title}${l.sub ? ` (${l.sub})` : ''}: ${range(l.min, l.max, l.open)}`),
+      '',
+      `💰 Presupuesto estimado: ${range(q.total.min, q.total.max, q.total.open)}`,
+    ];
+    if (q.pack) L.push(`✅ Ahorro por pack: desde ${eur(q.saving)}`);
+    L.push('', '¿Me confirmáis el presupuesto final? ¡Gracias!');
+    return L.join('\n');
+  };
+
   const sumCount = document.getElementById('sumCount');
-  const sumTotal = document.getElementById('sumTotal');
-  const sumBar = document.getElementById('sumBar');
+  const sumCountLabel = document.getElementById('sumCountLabel');
+  const sumPrice = document.getElementById('sumPrice');
+  const sumSaving = document.getElementById('sumSaving');
   const sumList = document.getElementById('sumList');
   const sumEmpty = document.getElementById('sumEmpty');
+  const upsellBox = document.getElementById('upsell');
   const msgPreview = document.getElementById('msgPreview');
   const sumSend = document.getElementById('sumSend');
   const sumReset = document.getElementById('sumReset');
@@ -591,89 +829,147 @@
   const fabBadge = document.getElementById('fabBadge');
   const fabTitle = document.getElementById('fabTitle');
   const fabSub = document.getElementById('fabSub');
-  sumTotal.textContent = MODULES.length;
 
-  const buildMessage = (mods) => {
-    const lines = [
-      'Hola Web Size 👋',
-      'He configurado mi solución a la carta en vuestra web y me interesan estos módulos:',
-      '',
-      ...mods.map((m, i) => `${i + 1}. ${m.icon} ${m.title}`),
-      '',
-      `Total: ${mods.length} ${mods.length === 1 ? 'módulo' : 'módulos'}.`,
-      '¿Me preparáis una propuesta? ¡Gracias!',
-    ];
-    return lines.join('\n');
+  /* Animación del total (cuenta hacia el nuevo valor) */
+  const shown = { min: 0, max: 0 };
+  let priceRaf = 0;
+  const animatePrice = (to) => {
+    cancelAnimationFrame(priceRaf);
+    const from = { min: shown.min, max: shown.max };
+    const t0 = performance.now();
+    const D = reduceMotion ? 0 : 450;
+    const step = (t) => {
+      const k = D ? Math.min(1, (t - t0) / D) : 1;
+      const e = 1 - Math.pow(1 - k, 3);
+      shown.min = from.min + (to.min - from.min) * e;
+      shown.max = from.max + (to.max - from.max) * e;
+      sumPrice.textContent = range(Math.round(shown.min), Math.round(shown.max), to.open && k === 1);
+      if (k < 1) priceRaf = requestAnimationFrame(step);
+      else sumPrice.textContent = range(to.min, to.max, to.open);
+    };
+    priceRaf = requestAnimationFrame(step);
   };
 
-  const setSelected = (id, on) => {
-    const input = moduleGrid.querySelector(`input[value="${id}"]`);
-    if (input) input.checked = on;
-    if (on) selected.add(id); else selected.delete(id);
+  const syncInputs = () => {
+    planGrid.querySelectorAll('input').forEach((i) => { i.checked = i.value === state.plan; });
+    moduleGrid.querySelectorAll('input').forEach((i) => { i.checked = state.mods.has(i.value); });
+  };
+
+  const removeLine = (key) => {
+    const [kind, id] = key.split(':');
+    if (kind === 'plan') state.plan = '';
+    if (kind === 'mod') state.mods.delete(id);
+    if (kind === 'pack') { const p = byId(PACKS, id); state.plan = ''; p.modules.forEach((m) => state.mods.delete(m)); }
+    syncInputs();
+    updateConfigurator(true);
   };
 
   function updateConfigurator(bump) {
-    const mods = MODULES.filter((m) => selected.has(m.id)); // mantiene el orden del catálogo
-    const n = mods.length;
+    const q = computeQuote();
+    const n = q.items;
 
     sumCount.textContent = n;
-    sumBar.style.width = `${(n / MODULES.length) * 100}%`;
+    sumCountLabel.textContent = n === 1 ? 'ítem' : 'ítems';
     sumEmpty.hidden = n > 0;
+    animatePrice(q.total);
+
+    sumSaving.hidden = !q.pack;
+    if (q.pack) sumSaving.textContent = `✅ ${q.pack.title} aplicado · ahorras desde ${eur(q.saving)}`;
 
     sumList.textContent = '';
-    mods.forEach((m) => {
-      const li = el('li');
-      li.appendChild(el('span', '', m.icon));
-      li.appendChild(el('span', 'text-silver-200', m.title));
+    q.lines.forEach((l) => {
+      const li = el('li', l.pack ? 'is-pack' : '');
+      li.appendChild(el('span', 'li-ico', l.icon));
+      const txt = el('span', 'li-txt');
+      txt.appendChild(el('b', '', l.title));
+      if (l.sub) txt.appendChild(el('small', '', l.sub));
+      li.appendChild(txt);
+      li.appendChild(el('span', 'li-price', range(l.min, l.max, l.open)));
       const rm = el('button', '', '×');
       rm.type = 'button';
-      rm.setAttribute('aria-label', `Quitar ${m.title}`);
-      rm.addEventListener('click', () => { setSelected(m.id, false); updateConfigurator(true); });
+      rm.setAttribute('aria-label', `Quitar ${l.title}`);
+      rm.addEventListener('click', () => removeLine(l.key));
       li.appendChild(rm);
       sumList.appendChild(li);
     });
 
-    const msg = n ? buildMessage(mods) : GENERAL_MESSAGE;
+    const up = findUpsell(q);
+    upsellBox.hidden = !up;
+    upsellBox.textContent = '';
+    if (up) {
+      const v = packValue(up.p);
+      upsellBox.appendChild(el('p', '', `💡 Añade ${up.what.title} y activa el ${up.p.title} por ${eur(up.p.price)} (ahorras desde ${eur(v.min - up.p.price)}).`));
+      const b = el('button', '', `+ Añadir ${up.what.title}`);
+      b.type = 'button';
+      b.addEventListener('click', () => applyPreset(up.preset, false));
+      upsellBox.appendChild(b);
+    }
+
+    const msg = n ? buildQuoteMessage(q) : GENERAL_MESSAGE;
     msgPreview.textContent = msg;
+    const priceTxt = range(q.total.min, q.total.max, q.total.open);
 
     if (n) {
       const href = waLink(msg);
       sumSend.href = href;
       sumSend.classList.remove('is-disabled');
       sumSend.setAttribute('aria-disabled', 'false');
-      sumSend.textContent = 'Enviar por WhatsApp';
+      sumSend.textContent = 'Enviar presupuesto';
 
       fab.href = href;
       fab.target = '_blank';
       fab.rel = 'noopener noreferrer';
       fab.classList.add('active');
-      fabTitle.textContent = `Enviar mi combinación (${n})`;
-      fabSub.textContent = mods.map((m) => m.title).join(' · ');
-      fab.setAttribute('aria-label', `Enviar por WhatsApp la combinación: ${mods.map((m) => m.title).join(', ')}`);
+      fabTitle.textContent = `Enviar presupuesto (${n})`;
+      fabSub.textContent = `Estimado: ${priceTxt}`;
+      fab.setAttribute('aria-label', `Enviar por WhatsApp el presupuesto estimado de ${priceTxt}`);
     } else {
       sumSend.href = '#';
       sumSend.classList.add('is-disabled');
       sumSend.setAttribute('aria-disabled', 'true');
-      sumSend.textContent = 'Enviar por WhatsApp';
+      sumSend.textContent = 'Enviar presupuesto';
 
       fab.href = '#configurador';
       fab.removeAttribute('target');
       fab.classList.remove('active');
-      fabTitle.textContent = 'Configura tu solución';
-      fabSub.textContent = 'Elige módulos a la carta';
-      fab.setAttribute('aria-label', 'Ir al configurador de módulos');
+      fabTitle.textContent = 'Calcula tu presupuesto';
+      fabSub.textContent = 'Configurador a la carta';
+      fab.setAttribute('aria-label', 'Ir al configurador de presupuesto');
     }
 
     fabBadge.textContent = n;
     if (bump && n) { fabBadge.classList.remove('bump'); void fabBadge.offsetWidth; fabBadge.classList.add('bump'); }
   }
 
+  /* Presets desde tarifas / packs: "plan:pro,mod:wa" */
+  function applyPreset(preset, replace) {
+    if (replace) { state.plan = ''; state.mods.clear(); }
+    preset.split(',').forEach((tok) => {
+      const [kind, id] = tok.split(':');
+      if (kind === 'plan') state.plan = id;
+      if (kind === 'mod') state.mods.add(id);
+    });
+    syncInputs();
+    updateConfigurator(true);
+  }
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-preset]');
+    if (!t) return;
+    const isPack = t.dataset.preset.includes(',');
+    applyPreset(t.dataset.preset, isPack);
+    document.getElementById('configurador').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+    showToast(isPack ? 'Pack cargado en el configurador' : 'Añadido al configurador');
+  });
+
   sumReset.addEventListener('click', () => {
-    MODULES.forEach((m) => setSelected(m.id, false));
+    state.plan = '';
+    state.mods.clear();
+    syncInputs();
     updateConfigurator(false);
   });
   [sumSend, fab].forEach((a) => a.addEventListener('click', () => {
-    if (selected.size) showToast(`Abriendo WhatsApp · ${selected.size} ${selected.size === 1 ? 'módulo' : 'módulos'}`);
+    if (computeQuote().items) showToast('Abriendo WhatsApp con tu presupuesto…');
   }));
 
   updateConfigurator(false);
