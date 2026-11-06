@@ -897,29 +897,48 @@
 /* =========================================================
    INMERSIVO · Secciones a pantalla completa con snap obligatorio
    ========================================================= */
-html { scroll-snap-type: y mandatory; }
-.sec {
-  position: relative; isolation: isolate; overflow-x: clip;
-  min-height: 100vh; min-height: 100svh;
-  display: flex; flex-direction: column; justify-content: center;
-  scroll-snap-align: start;
-  padding-top: 88px; padding-bottom: 56px;
+/* La página ya no hace scroll vertical: todo ocurre dentro de la pista horizontal */
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+.track {
+  position: relative; display: flex; width: 100vw;
+  height: 100vh; height: 100svh;
+  overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
 }
-.site-footer { scroll-snap-align: end; }
+.track::-webkit-scrollbar { display: none; }
+.track > main { display: contents; }
+/* Cada sección es un panel de pantalla completa con su propio scroll vertical si lo necesita */
+.sec {
+  position: relative; isolation: isolate;
+  flex: 0 0 100vw; width: 100vw;
+  height: 100vh; height: 100svh;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain;
+  display: flex; flex-direction: column;
+  scroll-snap-align: start; scroll-snap-stop: always;
+  padding-top: 88px; padding-bottom: 72px;
+  scrollbar-width: thin; scrollbar-color: rgba(255,122,0,.35) transparent;
+}
+.sec::-webkit-scrollbar { width: 6px; }
+.sec::-webkit-scrollbar-thumb { background: rgba(255,122,0,.35); border-radius: 6px; }
+/* Centrado vertical "seguro": si el contenido cabe se centra; si no, empieza arriba y se puede desplazar */
+.sec::before, .sec::after { content: ""; flex: 1 0 0; }
+.site-footer.sec { padding-bottom: 110px; }
 /* Fondo propio de cada sección: hace zoom hacia dentro al entrar */
 .sec-bg {
   position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden;
-  opacity: 0; transform: scale(1.18);
-  transition: opacity 1.2s ease, transform 1.6s cubic-bezier(.16,1,.3,1);
-  will-change: transform, opacity;
+  opacity: 0; transition: opacity 1.2s ease;
 }
+/* El zoom va en la capa interior: así el escalado no añade altura desplazable al panel */
 .sec-bg::before {
   content: ""; position: absolute; inset: 0;
   background:
     radial-gradient(60% 45% at var(--bgx, 50%) var(--bgy, 30%), rgba(255,122,0,.16), transparent 70%),
     radial-gradient(40% 35% at calc(100% - var(--bgx, 50%)) 85%, rgba(255,90,0,.08), transparent 70%);
+  transform: scale(1.18); transition: transform 1.6s cubic-bezier(.16,1,.3,1); will-change: transform;
 }
-.sec.is-active .sec-bg { opacity: 1; transform: scale(1); }
+.sec.is-active .sec-bg { opacity: 1; }
+.sec.is-active .sec-bg::before { transform: scale(1); }
 /* Desvanecimiento progresivo escalonado del contenido */
 .sec .fx {
   opacity: 0; transform: translate3d(0, 48px, 0) scale(.985);
@@ -934,13 +953,26 @@ html { scroll-snap-type: y mandatory; }
   transition-delay: calc(var(--d, 0) * 110ms + 260ms);
 }
 .sec.is-active .fx-clip { clip-path: inset(0 0 0 0); opacity: 1; transform: none; }
-/* Indicador de sección (escritorio) */
-.sec-dots { position: fixed; right: 22px; top: 50%; z-index: 40; display: none; flex-direction: column; gap: 6px; transform: translateY(-50%); }
-@media (min-width: 1024px) { .sec-dots { display: flex; } }
-.sec-dots a { display: grid; place-items: center; width: 28px; height: 28px; }
-.sec-dots a span { width: 7px; height: 7px; border-radius: 99px; background: rgba(255,255,255,.22); transition: transform .4s cubic-bezier(.3,1.6,.5,1), background .3s; }
+/* Navegación horizontal (escritorio): flechas + puntos + contador */
+.sec-dock {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 45;
+  display: none; align-items: center; gap: 4px; padding: 5px; border-radius: 99px;
+  background: rgba(10,10,14,.78); border: 1px solid rgba(255,255,255,.09);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  transform: translateX(-50%); box-shadow: 0 16px 40px -18px rgba(0,0,0,.9);
+}
+@media (min-width: 1024px) { .sec-dock { display: flex; } }
+.sec-dock button { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: #eceef2; transition: background .25s, color .25s, opacity .25s; }
+.sec-dock button:hover { background: rgba(255,122,0,.15); color: #ffb066; }
+.sec-dock button:disabled { opacity: .3; pointer-events: none; }
+.sec-dock button svg { width: 18px; height: 18px; }
+.sec-count { min-width: 52px; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: .12em; color: #a4a8b1; font-variant-numeric: tabular-nums; }
+.sec-count b { color: #ff9433; }
+.sec-dots { display: flex; flex-direction: row; gap: 0; }
+.sec-dots a { display: grid; place-items: center; width: 22px; height: 32px; }
+.sec-dots a span { width: 7px; height: 7px; border-radius: 99px; background: rgba(255,255,255,.22); transition: width .45s cubic-bezier(.16,1,.3,1), background .3s; }
 .sec-dots a:hover span { background: rgba(255,148,51,.7); }
-.sec-dots a.on span { background: #ff7a00; box-shadow: 0 0 10px #ff7a00; transform: scale(1.6); }
+.sec-dots a.on span { width: 18px; background: #ff7a00; box-shadow: 0 0 10px #ff7a00; }
 
 /* =========================================================
    INMERSIVO · Inclinación 3D de los móviles
@@ -984,7 +1016,7 @@ html { scroll-snap-type: y mandatory; }
 .btn-wa.neon-ring { --ring: #bbf7d0; --ring-fill: linear-gradient(180deg, #4ade80, #22c55e); }
 .btn-wa.neon-ring.is-disabled::before { animation: none; opacity: 0; }
 .plan-cta.is-primary.neon-ring { --ring: #fff3e0; --ring-fill: linear-gradient(100deg, #ffa24d, #ff7a00 55%, #ff5c00); }
-.wa-fab.neon-ring { --ring: #ff7a00; --ring-fill: rgba(10,10,14,.94); }
+.wa-fab.neon-ring { position: fixed; --ring: #ff7a00; --ring-fill: rgba(10,10,14,.94); } /* .neon-ring no debe quitarle el position: fixed */
 .wa-fab.neon-ring.active { --ring: #4ade80; }
 .wa-fab.neon-ring::after { inset: 1.5px; }
 .chart-dot { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; pointer-events: none; z-index: 2;
@@ -1038,6 +1070,7 @@ dialog.legal::backdrop { background: rgba(0,0,0,.7); -webkit-backdrop-filter: bl
 .cookie-actions button { flex: 1; min-height: 44px; border-radius: 99px; font-weight: 700; font-size: 13px; }
 .cookie-accept { color: #1a0b00; background: linear-gradient(100deg, #ffa24d, #ff7a00); }
 .cookie-reject { color: #eceef2; border: 1px solid rgba(255,255,255,.2); }
+body.cookie-open .sec-dock { opacity: 0; pointer-events: none; }
 body.cookie-open .wa-fab { opacity: 0; pointer-events: none; transform: translate3d(0, 160%, 0); }
 
 @media (max-width: 640px) {
@@ -1050,5 +1083,29 @@ body.cookie-open .wa-fab { opacity: 0; pointer-events: none; transform: translat
   [data-split] .wi { transform: none !important; }
   html { scroll-snap-type: none !important; }
   .bg-grid::before, .neon-ring::before { animation: none !important; }
-  .sec .fx, .sec .fx-clip, .sec-bg { opacity: 1 !important; transform: none !important; clip-path: none !important; }
+  .sec .fx, .sec .fx-clip, .sec-bg, .sec-bg::before { opacity: 1 !important; transform: none !important; clip-path: none !important; }
 }
+
+/* =========================================================
+   HORIZONTAL · Barra de progreso y pista de "desliza"
+   ========================================================= */
+.h-progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 60; pointer-events: none;
+  background: linear-gradient(90deg, #ff5c00, #ffb066); box-shadow: 0 0 10px #ff7a00;
+  transform-origin: 0 50%; transform: scaleX(0); will-change: transform; }
+.swipe-hint { position: absolute; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 2; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 700; letter-spacing: .3em; color: #a4a8b1;
+  transition: opacity .5s; pointer-events: none; }
+.swipe-hint i { display: block; width: 34px; height: 1px; background: linear-gradient(90deg, transparent, #ff7a00); position: relative; overflow: hidden; }
+.swipe-hint i::after { content: ""; position: absolute; top: -1px; left: 0; width: 10px; height: 3px; border-radius: 2px; background: #ffb066; box-shadow: 0 0 8px #ff7a00; animation: hintSlide 1.6s ease-in-out infinite; }
+@keyframes hintSlide { from { transform: translateX(-12px); } to { transform: translateX(36px); } }
+.swipe-hint.gone { opacity: 0; }
+@media (min-width: 1024px) { .swipe-hint { bottom: 86px; } }
+@media (max-width: 1023px) { .swipe-hint { position: relative; left: auto; bottom: auto; transform: none; align-self: center; margin-top: 22px; } }
+@media (prefers-reduced-motion: reduce) { .swipe-hint i::after { animation: none; } }
+/* El hero cabe siempre en una pantalla: así el primer gesto ya pasa al siguiente panel */
+#hero { padding-bottom: 96px; }
+#hero h1 { font-size: clamp(2.25rem, 6.2vh + 1.2vw, 4.5rem); }
+#hero dl { margin-top: clamp(1.5rem, 4vh, 3.5rem); }
+@media (max-height: 760px) and (min-width: 1024px) { #hero dl { display: none; } }
+/* En escritorio, el final de cada panel queda por encima del dock de navegación */
+@media (min-width: 1024px) { .sec { padding-bottom: 108px; } }

@@ -1299,7 +1299,6 @@
     dots.appendChild(a);
     dotFor.set(sec, a);
   });
-  document.body.appendChild(dots);
 
   const setActive = (sec, on) => {
     sec.classList.toggle('is-active', on);
@@ -1316,7 +1315,7 @@
         setActive(en.target, true);
         dotFor.forEach((a, s) => a.classList.toggle('on', s === en.target));
       });
-    }, { rootMargin: '-38% 0px -38% 0px' });
+    }, { rootMargin: '0px -40% 0px -40%' }); // franja central horizontal: los paneles entran de lado
     // La resetea solo cuando ha salido por completo, para que la transición se repita al volver
     const exitIO = new IntersectionObserver((entries) => {
       entries.forEach((en) => { if (!en.isIntersecting) setActive(en.target, false); });
@@ -1447,6 +1446,172 @@
     if (settings) settings.addEventListener('click', showCookieBar);
     if (!readConsent()) setTimeout(showCookieBar, 1200);
   }
+
+  /* =========================================================
+     HORIZONTAL · Las secciones se recorren de lado
+     - Rueda vertical → panel siguiente/anterior. Si el panel es más alto que la pantalla,
+       primero se desplaza su contenido y, al llegar al final, se pasa al siguiente.
+     - Táctil: deslizar en horizontal entre paneles; en vertical dentro de cada panel.
+     - Teclado: ← → (y AvPág/RePág/Espacio cuando el panel ya no tiene más recorrido).
+     ========================================================= */
+  const track = document.getElementById('track');
+  const panels = [...track.querySelectorAll('.sec')];
+  const panelW = () => track.clientWidth;
+  const currentIndex = () => Math.min(panels.length - 1, Math.max(0, Math.round(track.scrollLeft / panelW())));
+  const smooth = reduceMotion ? 'auto' : 'smooth';
+
+  const goTo = (i, opts = {}) => {
+    const idx = Math.min(panels.length - 1, Math.max(0, i));
+    const from = currentIndex();
+    const target = panels[idx];
+    // Al volver hacia atrás, el panel aparece por su final para seguir "subiendo" con naturalidad
+    if (!opts.keepScroll && idx !== from) target.scrollTop = idx < from ? target.scrollHeight : 0;
+    track.scrollTo({ left: idx * panelW(), behavior: smooth });
+    return target;
+  };
+
+  /* ¿Puede algún elemento con scroll vertical bajo el cursor seguir desplazándose en esa dirección? */
+  const canScrollY = (start, dy) => {
+    for (let n = start; n && n !== track; n = n.parentElement) {
+      if (n.scrollHeight <= n.clientHeight + 1) continue;
+      const oy = getComputedStyle(n).overflowY;
+      if (oy !== 'auto' && oy !== 'scroll') continue;
+      if (dy > 0 ? n.scrollTop + n.clientHeight < n.scrollHeight - 1 : n.scrollTop > 0) return true;
+    }
+    return false;
+  };
+
+  /* Rueda: un gesto = un panel (se ignora la inercia del trackpad hasta que el gesto termina) */
+  let wheelLock = false, lockSince = 0, lastWheel = 0, acc = 0;
+  track.addEventListener('wheel', (e) => {
+    if (e.ctrlKey) return;                                       // zoom del navegador
+    const dx = e.deltaX, dy = e.deltaY;
+    if (Math.abs(dx) > Math.abs(dy)) return;                     // gesto horizontal nativo (trackpad)
+    if (canScrollY(e.target, dy)) { acc = 0; return; }           // primero se recorre el panel
+    e.preventDefault();
+    const now = performance.now();
+    if (wheelLock) {
+      // Se libera cuando el gesto se detiene (sin eventos durante 220 ms) y ha pasado un mínimo
+      if (now - lastWheel > 220 && now - lockSince > 550) wheelLock = false;
+      lastWheel = now;
+      if (wheelLock) return;
+    }
+    if (now - lastWheel > 250) acc = 0;
+    lastWheel = now;
+    acc += e.deltaMode === 1 ? dy * 40 : dy;                     // deltaMode 1 = líneas (Firefox)
+    if (Math.abs(acc) < 35) return;
+    goTo(currentIndex() + Math.sign(acc));
+    acc = 0;
+    wheelLock = true;
+    lockSince = now;
+  }, { passive: false });
+
+  /* Teclado */
+  document.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (document.querySelector('dialog[open]')) return;
+    const tag = (document.activeElement && document.activeElement.tagName) || '';
+    if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;
+    const panel = panels[currentIndex()];
+    let dir = 0;
+    if (e.key === 'ArrowRight') dir = 1;
+    else if (e.key === 'ArrowLeft') dir = -1;
+    else if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) dir = canScrollY(panel, 1) ? 0 : 1;
+    else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) dir = canScrollY(panel, -1) ? 0 : -1;
+    else if (e.key === 'Home') { e.preventDefault(); goTo(0); return; }
+    else if (e.key === 'End') { e.preventDefault(); goTo(panels.length - 1); return; }
+    if (!dir) return;
+    e.preventDefault();
+    goTo(currentIndex() + dir);
+  });
+
+  /* Enlaces internos (#sectores, #configurador…): ir al panel y, si hace falta, bajar dentro de él */
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || a.getAttribute('href').length < 2) return;
+    const el2 = document.getElementById(a.getAttribute('href').slice(1));
+    if (!el2) return;
+    const panel = el2.classList.contains('sec') ? el2 : el2.closest('.sec');
+    if (!panel) return;
+    e.preventDefault();
+    goTo(panels.indexOf(panel), { keepScroll: el2 !== panel });
+    if (el2 !== panel) panel.scrollTo({ top: el2.offsetTop - 90, behavior: smooth });
+    else panel.scrollTo({ top: 0, behavior: smooth });
+  });
+
+  /* Dock de navegación (escritorio): ← puntos → y contador */
+  const dock = el('div', 'sec-dock');
+  const arrow = (d, label) => {
+    const b = el('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', label);
+    b.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+    return b;
+  };
+  const prevBtn = arrow('M15 5l-7 7 7 7', 'Sección anterior');
+  const nextBtn = arrow('M9 5l7 7-7 7', 'Sección siguiente');
+  const count = el('span', 'sec-count');
+  prevBtn.addEventListener('click', () => goTo(currentIndex() - 1));
+  nextBtn.addEventListener('click', () => goTo(currentIndex() + 1));
+  dock.append(prevBtn, dots, count, nextBtn);
+  document.body.appendChild(dock);
+
+  /* Barra de progreso + pista de desliza */
+  const progress = el('div', 'h-progress');
+  progress.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(progress);
+  const hero = document.getElementById('hero');
+  const hint = el('div', 'swipe-hint');
+  hint.setAttribute('aria-hidden', 'true');
+  hint.innerHTML = `<span>${finePointer ? 'HAZ SCROLL' : 'DESLIZA'}</span><i></i>`;
+  if (hero) hero.appendChild(hint);
+
+  const pad2 = (n) => String(n).padStart(2, '0');
+  let trackRaf = 0;
+  const onTrack = () => {
+    trackRaf = 0;
+    const max = track.scrollWidth - track.clientWidth;
+    const p = max > 0 ? track.scrollLeft / max : 0;
+    progress.style.transform = `scaleX(${p.toFixed(4)})`;
+    const i = currentIndex();
+    count.innerHTML = `<b>${pad2(i + 1)}</b> / ${pad2(panels.length)}`;
+    prevBtn.disabled = i === 0;
+    nextBtn.disabled = i === panels.length - 1;
+    if (track.scrollLeft > 20) hint.classList.add('gone');
+    header.classList.toggle('scrolled', track.scrollLeft > 8 || panels[i].scrollTop > 12);
+  };
+  track.addEventListener('scroll', () => { if (!trackRaf) trackRaf = requestAnimationFrame(onTrack); }, { passive: true });
+  onTrack();
+
+  /* Scroll vertical dentro de los paneles: cabecera con cristal y botón flotante que se aparta en móvil */
+  const lastTop = new WeakMap();
+  let panelRaf = 0, panelTarget = null;
+  document.addEventListener('scroll', (e) => {
+    const t = e.target;
+    if (!(t instanceof Element) || !t.classList.contains('sec')) return;
+    panelTarget = t;
+    if (panelRaf) return;
+    panelRaf = requestAnimationFrame(() => {
+      panelRaf = 0;
+      const y = panelTarget.scrollTop;
+      const prev = lastTop.get(panelTarget) || 0;
+      header.classList.toggle('scrolled', track.scrollLeft > 8 || y > 12);
+      if (window.innerWidth < 1024) {
+        if (y > prev + 10 && y > 300) fab.classList.add('fab-hidden');
+        else if (y < prev - 10) fab.classList.remove('fab-hidden');
+      }
+      lastTop.set(panelTarget, y);
+    });
+  }, { capture: true, passive: true });
+  // Al cambiar de panel, el botón flotante vuelve a mostrarse
+  track.addEventListener('scroll', () => fab.classList.remove('fab-hidden'), { passive: true });
+
+  /* Al redimensionar, mantener el panel actual alineado */
+  let resizeIdx = 0;
+  window.addEventListener('resize', () => {
+    track.scrollLeft = resizeIdx * panelW();
+  });
+  track.addEventListener('scroll', () => { resizeIdx = currentIndex(); }, { passive: true });
 
   /* ---------- Año del footer ---------- */
   document.getElementById('year').textContent = new Date().getFullYear();
