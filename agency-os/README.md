@@ -6,6 +6,10 @@ NAS (diseño), BIGGIE (CRM y automatizaciones) e ICE CUBE (seguridad y QA).
 
 > Los nombres son etiquetas internas. Los personajes, sprites y personalidades son originales.
 
+![Overview](docs/capturas/1-overview.png)
+
+Más capturas en [`docs/capturas/`](docs/capturas/).
+
 ## Arranque rápido
 
 ```bash
