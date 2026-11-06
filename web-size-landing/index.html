@@ -39,7 +39,7 @@
 <body class="bg-carbon text-silver-200 font-sans antialiased overflow-x-hidden selection:bg-neon/40 selection:text-white">
 
   <!-- Fondo ambiental -->
-  <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10">
+  <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
     <div class="bg-grid absolute inset-0"></div>
     <div class="glow glow-a"></div>
     <div class="glow glow-b"></div>
@@ -92,7 +92,7 @@
 
   <main id="inicio">
     <!-- ===================== HERO ===================== -->
-    <section class="relative pt-32 sm:pt-40 pb-10">
+    <section id="hero" class="sec relative" aria-label="Inicio">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
 
         <!-- Disponibilidad (móvil) -->
@@ -131,6 +131,9 @@
         <p class="reveal micro justify-center mt-4">
           <span aria-hidden="true">⚡</span> Sin llamadas de ventas eternas. Respuesta en &lt;15 min por WhatsApp.
         </p>
+        <p class="reveal mt-1 flex justify-center">
+          <a href="mailto:websize130@gmail.com" class="mail-link hero-mail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>websize130@gmail.com</a>
+        </p>
 
         <!-- Métricas de autoridad -->
         <dl class="reveal mx-auto mt-14 grid max-w-3xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/5 bg-white/5">
@@ -151,7 +154,7 @@
     </section>
 
     <!-- ===================== SHOWCASE 5 MÓVILES 3D ===================== -->
-    <section id="sectores" class="relative pb-24 sm:pb-32" aria-labelledby="sectores-title">
+    <section id="sectores" class="sec relative" aria-labelledby="sectores-title">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
         <h2 id="sectores-title" data-split class="font-display text-2xl sm:text-4xl font-bold">
           <span class="text-metal">Una web para cada sector.</span>
@@ -199,7 +202,7 @@
     </section>
 
     <!-- ===================== SOFTWARE & DASHBOARDS ===================== -->
-    <section id="software" class="relative py-24 sm:py-32 overflow-hidden" aria-labelledby="software-title">
+    <section id="software" class="sec relative overflow-hidden" aria-labelledby="software-title">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="text-center">
           <p class="reveal inline-flex items-center gap-3 text-[11px] sm:text-xs font-medium tracking-[0.4em] text-silver-400">
@@ -266,8 +269,8 @@
                         <line x1="0" y1="35" x2="400" y2="35" /><line x1="0" y1="70" x2="400" y2="70" /><line x1="0" y1="105" x2="400" y2="105" />
                       </g>
                       <path id="lineArea" fill="url(#areaGrad)" d="" />
-                      <path id="lineStroke" class="line-stroke" d="" />
-                      <path id="lineStroke2" class="line-stroke-2" d="" />
+                      <path id="lineStroke" class="line-stroke" d="" pathLength="1" />
+                      <path id="lineStroke2" class="line-stroke-2" d="" pathLength="1" />
                       <circle id="lineDot" r="4" class="line-dot" cx="0" cy="0" />
                     </svg>
                   </div>
@@ -327,7 +330,7 @@
 
     <!-- ===================== PRUEBA SOCIAL EXPRESS ===================== -->
     <!-- ⚠️ BORRADOR: sustituye el texto por la opinión real de Aura Beauty Studio y quita data-draft -->
-    <section id="caso" class="relative py-16 sm:py-24" aria-labelledby="caso-title">
+    <section id="caso" class="sec relative" aria-labelledby="caso-title">
       <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <figure class="proof reveal" data-draft>
           <span class="proof-draft">Texto de ejemplo · sustituir por la opinión real</span>
@@ -356,7 +359,7 @@
     </section>
 
     <!-- ===================== TARIFAS ===================== -->
-    <section id="tarifas" class="relative py-24 sm:py-32" aria-labelledby="pricing-title">
+    <section id="tarifas" class="sec relative" aria-labelledby="pricing-title">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="text-center">
           <p class="reveal inline-flex items-center gap-3 text-[11px] sm:text-xs font-medium tracking-[0.4em] text-silver-400">
@@ -458,7 +461,7 @@
     </section>
 
     <!-- ===================== CONFIGURADOR MODULAR ===================== -->
-    <section id="configurador" class="relative py-24 sm:py-32" aria-labelledby="config-title">
+    <section id="configurador" class="sec relative" aria-labelledby="config-title">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="text-center">
           <p class="reveal inline-flex items-center gap-3 text-[11px] sm:text-xs font-medium tracking-[0.4em] text-silver-400">
@@ -521,7 +524,7 @@
     </section>
 
     <!-- ===================== STACK DE RENDIMIENTO ===================== -->
-    <section id="stack" class="relative py-20 sm:py-28" aria-labelledby="stack-title">
+    <section id="stack" class="sec relative" aria-labelledby="stack-title">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="stack-wrap reveal">
           <div class="text-center">
@@ -604,20 +607,104 @@
         </nav>
 
         <div>
-          <p class="footer-h">Sígueme</p>
+          <p class="footer-h">Contacto y redes</p>
           <ul id="socialLinks" class="social-row" aria-label="Redes sociales"></ul>
+          <a href="mailto:websize130@gmail.com" class="mail-link mt-4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>websize130@gmail.com</a>
+          <br />
           <a href="https://www.linkedin.com/in/joshua-p%C3%A9rez-7a8523449" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex min-h-[44px] items-center gap-2 text-sm text-silver-400 hover:text-white transition-colors">
             Joshua Pérez · LinkedIn <span aria-hidden="true">↗</span>
           </a>
         </div>
       </div>
 
-      <div class="mt-12 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/5 pt-6 text-xs text-silver-600">
+      <div class="mt-12 flex flex-col lg:flex-row items-center justify-between gap-3 border-t border-white/5 pt-6 text-xs text-silver-600 text-center">
         <p>© <span id="year"></span> Web Size · Digital Solutions</p>
+        <nav class="legal-links" aria-label="Información legal">
+          <button type="button" data-legal="legal-aviso">Aviso Legal</button>
+          <button type="button" data-legal="legal-privacidad">Política de Privacidad</button>
+          <button type="button" data-legal="legal-cookies">Política de Cookies</button>
+          <button type="button" data-legal="legal-terminos">Términos y Condiciones</button>
+          <button type="button" id="cookieSettings">Preferencias de cookies</button>
+        </nav>
         <p class="tracking-[0.3em]">DISEÑO <span class="text-neon">·</span> WEB <span class="text-neon">·</span> IA</p>
       </div>
     </div>
   </footer>
+
+
+  <!-- ===================== MODALES LEGALES ===================== -->
+  <dialog id="legal-aviso" class="legal" aria-labelledby="legal-aviso-t">
+    <div class="legal-head"><h2 id="legal-aviso-t">Aviso Legal</h2><button type="button" class="legal-close" data-close aria-label="Cerrar">×</button></div>
+    <div class="legal-body">
+<p>En cumplimiento de la Ley 34/2002, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se informa de los datos del titular de este sitio web:</p>
+<p><b>Titular:</b> Joshua Pérez (<span class="tbd">[nombre completo]</span>), que opera con el nombre comercial <b>Web Size</b>.<br />
+<b>NIF:</b> <span class="tbd">[NIF]</span><br />
+<b>Domicilio:</b> <span class="tbd">[dirección completa]</span><br />
+<b>Correo electrónico:</b> <a href="mailto:websize130@gmail.com">websize130@gmail.com</a><br />
+<b>Contacto:</b> WhatsApp, a través de los botones de esta web.</p>
+<h3>Objeto</h3><p>Esta web presenta los servicios de diseño web, automatización e inteligencia artificial de Web Size y facilita el contacto con potenciales clientes.</p>
+<h3>Propiedad intelectual</h3><p>Los textos, diseños, logotipos y código de esta web pertenecen a su titular o se usan con licencia. Las maquetas de negocios mostradas son ficticias y tienen fines ilustrativos. No se permite su reproducción sin autorización.</p>
+<h3>Responsabilidad</h3><p>El titular no se responsabiliza del uso indebido de la web ni de los contenidos de sitios de terceros enlazados (por ejemplo, WhatsApp o LinkedIn).</p>
+<h3>Legislación aplicable</h3><p>Se aplica la legislación española. Para cualquier controversia, las partes se someten a los juzgados y tribunales que correspondan según la normativa vigente.</p>
+<p class="legal-note">Plantilla orientativa. Completa los datos marcados en amarillo y haz que la revise un profesional antes de publicar.</p>
+    </div>
+  </dialog>
+  <dialog id="legal-privacidad" class="legal" aria-labelledby="legal-privacidad-t">
+    <div class="legal-head"><h2 id="legal-privacidad-t">Política de Privacidad</h2><button type="button" class="legal-close" data-close aria-label="Cerrar">×</button></div>
+    <div class="legal-body">
+<h3>Responsable del tratamiento</h3><p><b>Titular:</b> Joshua Pérez (<span class="tbd">[nombre completo]</span>), que opera con el nombre comercial <b>Web Size</b>.<br />
+<b>NIF:</b> <span class="tbd">[NIF]</span><br />
+<b>Domicilio:</b> <span class="tbd">[dirección completa]</span><br />
+<b>Correo electrónico:</b> <a href="mailto:websize130@gmail.com">websize130@gmail.com</a><br />
+<b>Contacto:</b> WhatsApp, a través de los botones de esta web.</p>
+<h3>Qué datos tratamos</h3><p>Esta web no tiene formularios ni crea cuentas de usuario. Solo tratamos los datos que nos envías voluntariamente cuando nos escribes por WhatsApp o por correo electrónico (nombre, teléfono, correo y el contenido de tu mensaje, incluida la configuración de servicios que elijas).</p>
+<h3>Finalidad</h3><p>Responder a tu consulta, preparar un presupuesto y, si lo contratas, prestar el servicio.</p>
+<h3>Base jurídica</h3><p>Tu consentimiento al contactarnos y la aplicación de medidas precontractuales o la ejecución del contrato (art. 6.1.a y 6.1.b del RGPD).</p>
+<h3>Conservación</h3><p>Durante el tiempo necesario para atender tu solicitud y, si hay contrato, durante los plazos legales obligatorios.</p>
+<h3>Destinatarios</h3><p>No cedemos tus datos a terceros salvo obligación legal. Al usar WhatsApp, el mensaje se gestiona a través de WhatsApp (Meta), según sus propias condiciones. Esta web carga tipografías de Google Fonts y estilos desde un CDN, lo que implica que tu navegador comunica tu dirección IP a esos proveedores.</p>
+<h3>Tus derechos</h3><p>Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a <a href="mailto:websize130@gmail.com">websize130@gmail.com</a>. También puedes reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es" target="_blank" rel="noopener noreferrer">www.aepd.es</a>).</p>
+<p class="legal-note">Plantilla orientativa. Completa los datos marcados en amarillo y haz que la revise un profesional antes de publicar.</p>
+    </div>
+  </dialog>
+  <dialog id="legal-cookies" class="legal" aria-labelledby="legal-cookies-t">
+    <div class="legal-head"><h2 id="legal-cookies-t">Política de Cookies</h2><button type="button" class="legal-close" data-close aria-label="Cerrar">×</button></div>
+    <div class="legal-body">
+<h3>Qué son las cookies</h3><p>Son pequeños archivos que un sitio web guarda en tu navegador para recordar información sobre tu visita.</p>
+<h3>Cookies que usa esta web</h3><p>Esta web <b>no instala cookies propias de análisis, publicidad ni seguimiento</b>.</p>
+<ul>
+<li><b>Preferencia de cookies (técnica, necesaria):</b> guardamos en el almacenamiento local de tu navegador (<code>ws-consent</code>) si has aceptado o rechazado este aviso, para no volver a mostrártelo. No contiene datos personales.</li>
+<li><b>Servicios de terceros:</b> las tipografías (Google Fonts) y los estilos (CDN de Tailwind CSS) se cargan desde servidores externos. Estos proveedores pueden recibir datos técnicos como tu dirección IP. Al pulsar un botón de WhatsApp o LinkedIn sales de esta web y se aplican las políticas de esos servicios.</li>
+</ul>
+<h3>Cómo gestionarlas</h3><p>Puedes cambiar tu elección en cualquier momento desde «Preferencias de cookies», en el pie de página, y eliminar los datos guardados desde la configuración de tu navegador.</p>
+<p>Si en el futuro se añaden cookies de análisis o publicidad, solo se activarán con tu consentimiento previo y se actualizará esta política.</p>
+<p class="legal-note">Plantilla orientativa. Completa los datos marcados en amarillo y haz que la revise un profesional antes de publicar.</p>
+    </div>
+  </dialog>
+  <dialog id="legal-terminos" class="legal" aria-labelledby="legal-terminos-t">
+    <div class="legal-head"><h2 id="legal-terminos-t">Términos y Condiciones</h2><button type="button" class="legal-close" data-close aria-label="Cerrar">×</button></div>
+    <div class="legal-body">
+<h3>Objeto</h3><p>Estas condiciones regulan la contratación de los servicios de Web Size: desarrollo web, automatizaciones y software a medida.</p>
+<h3>Presupuestos</h3><p>Los precios publicados y las estimaciones del configurador son <b>orientativos</b>. El precio final se confirma por escrito (WhatsApp o correo) antes de empezar, según el alcance de cada proyecto. <span class="tbd">[indica si los precios incluyen IVA]</span></p>
+<h3>Plazos de entrega</h3><p>Los plazos indicados (por ejemplo, 24–48 h en el Plan Básico) empiezan a contar cuando recibimos todo el material necesario (textos, imágenes, accesos) y la confirmación del encargo.</p>
+<h3>Pagos</h3><p><span class="tbd">[condiciones de pago: anticipo, forma de pago, plazos]</span></p>
+<h3>Revisiones y cambios</h3><p><span class="tbd">[número de revisiones incluidas y coste de cambios adicionales]</span></p>
+<h3>Servicios de terceros</h3><p>Los costes de dominio, alojamiento, APIs (por ejemplo, WhatsApp Business) u otras herramientas de terceros no están incluidos salvo que se indique expresamente.</p>
+<h3>Propiedad y entrega</h3><p><span class="tbd">[cuándo se transfiere la propiedad del trabajo al cliente]</span></p>
+<h3>Desistimiento</h3><p>Si contratas como consumidor, tienes los derechos que reconoce la normativa de consumidores. Al tratarse de servicios a medida, el derecho de desistimiento puede no aplicarse una vez iniciado el trabajo con tu consentimiento expreso.</p>
+<h3>Contacto</h3><p>Para cualquier duda: <a href="mailto:websize130@gmail.com">websize130@gmail.com</a>.</p>
+<p class="legal-note">Plantilla orientativa. Completa los datos marcados en amarillo y haz que la revise un profesional antes de publicar.</p>
+    </div>
+  </dialog>
+
+  <!-- ===================== AVISO DE COOKIES ===================== -->
+  <div id="cookieBar" class="cookie-bar" role="region" aria-label="Aviso de cookies" hidden>
+    <p><b>🍪 Solo lo necesario.</b> Esta web no usa cookies de análisis ni publicidad; solo guarda tu elección sobre este aviso.
+      <button type="button" class="link" data-legal="legal-cookies">Más información</button></p>
+    <div class="cookie-actions">
+      <button type="button" class="cookie-reject" data-consent="rejected">Rechazar</button>
+      <button type="button" class="cookie-accept" data-consent="accepted">Aceptar</button>
+    </div>
+  </div>
 
   <script src="main.js" defer></script>
 </body>

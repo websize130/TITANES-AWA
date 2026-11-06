@@ -374,7 +374,23 @@
       vy: Math.random() * 0.35 + 0.08,
       vx: (Math.random() - 0.5) * 0.15,
       a: Math.random() * 0.6 + 0.2,
+      ph: Math.random() * Math.PI * 2,
+      sw: Math.random() * 0.35 + 0.1,
     });
+
+    /* Brillo pre-renderizado una sola vez: dibujar una imagen es mucho más barato que shadowBlur en cada frame */
+    const SPRITE = 32;
+    const sprite = document.createElement('canvas');
+    sprite.width = sprite.height = SPRITE;
+    const sctx = sprite.getContext('2d');
+    const g = sctx.createRadialGradient(SPRITE / 2, SPRITE / 2, 0, SPRITE / 2, SPRITE / 2, SPRITE / 2);
+    g.addColorStop(0, 'rgba(255,236,210,1)');
+    g.addColorStop(0.18, 'rgba(255,170,80,.95)');
+    g.addColorStop(0.45, 'rgba(255,122,0,.35)');
+    g.addColorStop(1, 'rgba(255,122,0,0)');
+    sctx.fillStyle = g;
+    sctx.fillRect(0, 0, SPRITE, SPRITE);
+    let t = 0;
 
     let running = true;
     document.addEventListener('visibilitychange', () => {
@@ -385,17 +401,17 @@
     function tick() {
       if (!running) return;
       ctx.clearRect(0, 0, w, h);
+      t += 0.016;
       for (let i = 0; i < sparks.length; i++) {
         const p = sparks[i];
-        p.y -= p.vy; p.x += p.vx;
+        p.y -= p.vy;
+        p.x += p.vx + Math.sin(t * 1.3 + p.ph) * p.sw;   // vaivén flotante continuo
         if (p.y < -10) sparks[i] = spawn(false);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, ${120 + (p.r * 40) | 0}, 30, ${p.a})`;
-        ctx.shadowColor = '#ff7a00';
-        ctx.shadowBlur = 8;
-        ctx.fill();
+        const size = p.r * 9;
+        ctx.globalAlpha = p.a * (0.75 + 0.25 * Math.sin(t * 2 + p.ph)); // parpadeo suave
+        ctx.drawImage(sprite, p.x - size / 2, p.y - size / 2, size, size);
       }
+      ctx.globalAlpha = 1;
       requestAnimationFrame(tick);
     }
 
@@ -584,9 +600,10 @@
     for (let i = 0; i < 3; i++) pushLead();
     new IntersectionObserver((entries) => {
       const visible = entries[0].isIntersecting;
-      if (visible && !dashStarted) {
+      if (visible) {
         dashStarted = true;
         countUp(); renderBars(); renderDonut(72);
+        [lineStroke, lineStroke2].forEach((ln) => { ln.classList.remove('drawing'); void ln.getBoundingClientRect(); ln.classList.add('drawing'); });
       }
       clearInterval(liveTimer);
       if (visible && !reduceMotion) liveTimer = setInterval(liveStep, 1600);
@@ -1078,18 +1095,7 @@
 
   const splitTargets = document.querySelectorAll('[data-split]');
   splitTargets.forEach(splitHeading);
-  if (reduceMotion) {
-    splitTargets.forEach((h) => h.classList.add('is-in'));
-  } else {
-    const splitIO = new IntersectionObserver((entries) => {
-      entries.forEach((en) => {
-        if (!en.isIntersecting) return;
-        en.target.classList.add('is-in');
-        splitIO.unobserve(en.target);
-      });
-    }, { threshold: 0.2, rootMargin: '0px 0px -8% 0px' });
-    splitTargets.forEach((h) => splitIO.observe(h));
-  }
+  if (reduceMotion) splitTargets.forEach((h) => h.classList.add('is-in'));
 
   /* =========================================================
      ÉLITE · Spotlight que sigue al cursor (solo escritorio)
@@ -1243,6 +1249,204 @@
       lastY = y;
     });
   }, { passive: true });
+
+  /* =========================================================
+     INMERSIVO · Secciones con transiciones cinemáticas
+     Al entrar una sección: su fondo hace zoom hacia dentro, el contenido aparece
+     escalonado (opacity/transform) y las entradillas se revelan con clip-path.
+     ========================================================= */
+  const sections = [...document.querySelectorAll('.sec')];
+
+  const tagSection = (sec) => {
+    const bg = el('div', 'sec-bg');
+    bg.setAttribute('aria-hidden', 'true');
+    bg.style.setProperty('--bgx', `${Math.round(rand(25, 75))}%`);
+    bg.style.setProperty('--bgy', `${Math.round(rand(15, 45))}%`);
+    sec.prepend(bg);
+
+    let d = 0;
+    const tag = (node) => {
+      if (node.hasAttribute('data-split')) return;
+      node.classList.remove('reveal');
+      if (node.tagName === 'P') node.classList.add('fx-clip');
+      else node.classList.add('fx');
+      node.style.setProperty('--d', Math.min(d++, 8));
+    };
+    const walk = (parent, depth) => {
+      [...parent.children].forEach((c) => {
+        if (c.classList.contains('sec-bg') || c.classList.contains('wave')) return;
+        const isWrapper = c.tagName === 'DIV' && (c.classList.contains('mx-auto') || c.classList.contains('text-center')) && !c.id;
+        if (isWrapper && depth < 3) walk(c, depth + 1);
+        else tag(c);
+      });
+    };
+    walk(sec, 0);
+  };
+  sections.forEach(tagSection);
+
+  /* Indicador lateral de secciones (escritorio) */
+  const dots = el('nav', 'sec-dots');
+  dots.setAttribute('aria-label', 'Secciones');
+  const dotFor = new Map();
+  sections.forEach((sec) => {
+    if (!sec.id) return;
+    const a = el('a');
+    a.href = `#${sec.id}`;
+    const name = (sec.getAttribute('aria-label') || sec.querySelector('h2, h1')?.textContent || sec.id).replace(/\s+/g, ' ').trim();
+    a.setAttribute('aria-label', name);
+    a.title = name;
+    a.appendChild(el('span'));
+    dots.appendChild(a);
+    dotFor.set(sec, a);
+  });
+  document.body.appendChild(dots);
+
+  const setActive = (sec, on) => {
+    sec.classList.toggle('is-active', on);
+    sec.querySelectorAll('[data-split]').forEach((h) => h.classList.toggle('is-in', on || reduceMotion));
+  };
+
+  if (reduceMotion) {
+    sections.forEach((sec) => setActive(sec, true));
+  } else {
+    // Activa la sección cuando cruza la franja central de la pantalla (funciona con secciones de cualquier altura)
+    const enterIO = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        setActive(en.target, true);
+        dotFor.forEach((a, s) => a.classList.toggle('on', s === en.target));
+      });
+    }, { rootMargin: '-38% 0px -38% 0px' });
+    // La resetea solo cuando ha salido por completo, para que la transición se repita al volver
+    const exitIO = new IntersectionObserver((entries) => {
+      entries.forEach((en) => { if (!en.isIntersecting) setActive(en.target, false); });
+    }, { threshold: 0 });
+    sections.forEach((sec) => { enterIO.observe(sec); exitIO.observe(sec); });
+  }
+
+  /* =========================================================
+     INMERSIVO · Inclinación 3D (tilt) de los móviles
+     ========================================================= */
+  document.querySelectorAll('.phone').forEach((ph) => {
+    ph.appendChild(el('div', 'glare'));
+    const tilt = (e) => {
+      const r = ph.getBoundingClientRect();
+      const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+      const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+      ph.style.setProperty('--ty', `${((x - 0.5) * 22).toFixed(2)}deg`);
+      ph.style.setProperty('--tx', `${((0.5 - y) * 16).toFixed(2)}deg`);
+      ph.style.setProperty('--gx', `${(x * 100).toFixed(1)}%`);
+      ph.style.setProperty('--gy', `${(y * 100).toFixed(1)}%`);
+      ph.classList.add('tilting');
+    };
+    const reset = () => {
+      ph.classList.remove('tilting');
+      ph.style.setProperty('--tx', '0deg');
+      ph.style.setProperty('--ty', '0deg');
+    };
+    if (reduceMotion) return;
+    ph.addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch') tilt(e); });
+    ph.addEventListener('pointerleave', reset);
+    // En táctil: el móvil se inclina hacia el dedo y vuelve al soltar
+    ph.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') tilt(e); }, { passive: true });
+    ['pointerup', 'pointercancel'].forEach((t) => ph.addEventListener(t, (e) => { if (e.pointerType === 'touch') setTimeout(reset, 350); }));
+  });
+
+  /* =========================================================
+     INMERSIVO · Gráfico de línea interactivo (cursor + valor)
+     ========================================================= */
+  const lineSvg = document.getElementById('lineChart');
+  if (lineSvg) {
+    const wrap = lineSvg.closest('.chart-line');
+    const NS = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'chart-cursor');
+    const vline = document.createElementNS(NS, 'line');
+    vline.setAttribute('y1', '0'); vline.setAttribute('y2', String(H));
+    vline.setAttribute('vector-effect', 'non-scaling-stroke');
+    g.appendChild(vline);
+    lineSvg.appendChild(g);
+    const dot = el('span', 'chart-dot');
+    const tip = el('div', 'chart-tip');
+    tip.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(dot);
+    wrap.appendChild(tip);
+
+    const move = (e) => {
+      const r = lineSvg.getBoundingClientRect();
+      const wr = wrap.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+      const i = Math.round(ratio * (series.length - 1));
+      const xv = (i / (series.length - 1)) * W;
+      vline.setAttribute('x1', xv.toFixed(1));
+      vline.setAttribute('x2', xv.toFixed(1));
+      const px = r.left - wr.left + (xv / W) * r.width;
+      const py = r.top - wr.top + (1 - series[i] / 100) * r.height;
+      dot.style.transform = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0)`;
+      const hoursAgo = series.length - 1 - i;
+      tip.innerHTML = `<b>${Math.round(series[i] * 4)}</b> visitas · <b>${Math.round(series2[i] * 0.45)}</b> contactos<br><span style="color:#8d929c">${hoursAgo ? `hace ${hoursAgo} h` : 'ahora'}</span>`;
+      const tw = tip.offsetWidth;
+      tip.style.setProperty('--tipx', `${Math.min(wr.width - tw - 8, Math.max(8, px - tw / 2)).toFixed(1)}px`);
+      wrap.classList.add('chart-on');
+    };
+    lineSvg.addEventListener('pointermove', move);
+    lineSvg.addEventListener('pointerdown', move);
+    lineSvg.addEventListener('pointerleave', () => wrap.classList.remove('chart-on'));
+  }
+
+  /* =========================================================
+     INMERSIVO · Borde neón en movimiento en CTAs de WhatsApp y botón flotante
+     ========================================================= */
+  document.querySelectorAll('.btn-wa, .wa-fab, .plan-cta.is-primary').forEach((b) => b.classList.add('neon-ring'));
+
+  /* =========================================================
+     LEGAL · Modales
+     ========================================================= */
+  const openLegal = (id) => {
+    const d = document.getElementById(id);
+    if (!d || d.open) return;
+    d.showModal();
+    requestAnimationFrame(() => d.classList.add('shown'));
+  };
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-legal]');
+    if (t) { e.preventDefault(); openLegal(t.dataset.legal); }
+  });
+  document.querySelectorAll('dialog.legal').forEach((d) => {
+    const close = () => { d.classList.remove('shown'); setTimeout(() => d.open && d.close(), reduceMotion ? 0 : 220); };
+    d.querySelector('[data-close]').addEventListener('click', close);
+    d.addEventListener('click', (e) => { if (e.target === d) close(); }); // clic fuera del contenido
+    d.addEventListener('cancel', (e) => { e.preventDefault(); close(); }); // tecla Esc con animación
+  });
+
+  /* =========================================================
+     LEGAL · Aviso de cookies (sin cookies no esenciales; la elección se guarda en localStorage)
+     ========================================================= */
+  const CONSENT_KEY = 'ws-consent';
+  const cookieBar = document.getElementById('cookieBar');
+  const readConsent = () => { try { return JSON.parse(localStorage.getItem(CONSENT_KEY)); } catch (_) { return null; } };
+  const showCookieBar = () => {
+    cookieBar.hidden = false;
+    document.body.classList.add('cookie-open');
+    requestAnimationFrame(() => requestAnimationFrame(() => cookieBar.classList.add('show')));
+  };
+  const hideCookieBar = () => {
+    cookieBar.classList.remove('show');
+    document.body.classList.remove('cookie-open');
+    setTimeout(() => { cookieBar.hidden = true; }, 500);
+  };
+  /* Punto de enganche por si en el futuro se añade analítica: comprobar window.wsConsent() === 'accepted' */
+  window.wsConsent = () => (readConsent() || {}).v || null;
+
+  if (cookieBar) {
+    cookieBar.querySelectorAll('[data-consent]').forEach((b) => b.addEventListener('click', () => {
+      try { localStorage.setItem(CONSENT_KEY, JSON.stringify({ v: b.dataset.consent, t: Date.now() })); } catch (_) { /* modo privado */ }
+      hideCookieBar();
+    }));
+    const settings = document.getElementById('cookieSettings');
+    if (settings) settings.addEventListener('click', showCookieBar);
+    if (!readConsent()) setTimeout(showCookieBar, 1200);
+  }
 
   /* ---------- Año del footer ---------- */
   document.getElementById('year').textContent = new Date().getFullYear();

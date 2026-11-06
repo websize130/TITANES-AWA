@@ -30,7 +30,12 @@ si cambias un precio de plan, cámbialo en los dos sitios.
    por tu número real (formato internacional, solo dígitos, sin `+`).
 2. Redes sociales del footer: rellena `url` en `SOCIAL_LINKS` (`main.js`).
    Las redes con `url` vacía no se muestran (ahora mismo: LinkedIn y WhatsApp).
-3. Los negocios de los móviles (TurboFix, Lumière, AquaPronto, Dentiva, KineticFisio)
+3. **Textos legales** (modales del footer: Aviso Legal, Privacidad, Cookies y Términos):
+   completa los datos marcados en amarillo (nombre completo, NIF, domicilio, IVA, pagos,
+   revisiones, propiedad) en `index.html` y haz que un profesional los revise.
+4. **Prueba social**: sustituye el texto de ejemplo de Aura Beauty Studio (`#caso`) por su
+   opinión real y quita el atributo `data-draft`.
+5. Los negocios de los móviles (TurboFix, Lumière, AquaPronto, Dentiva, KineticFisio)
    son maquetas inventadas; se editan en `SECTORS` (`main.js`).
 
 ## Probar en local
