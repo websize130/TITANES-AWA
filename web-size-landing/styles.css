@@ -120,7 +120,10 @@
 }
 
 /* Contenedor de posición en abanico (offset = -2..2) */
+/* El contenedor 3D no debe capturar clics: los móviles laterales quedan "detrás" de su plano */
+.phone-row { pointer-events: none; }
 .phone-slot {
+  pointer-events: auto;
   --offset: 0;
   --abs: 0;
   flex: 0 0 auto;
@@ -468,9 +471,11 @@
 @keyframes pop { 0% { scale: .9; } 60% { scale: 1.04; } 100% { scale: 1; } }
 
 @media (max-width: 1023px) {
-  .dash-scene { height: auto; transform: rotateX(8deg); display: grid; gap: 16px; }
+  .dash-stage { perspective: none; }
+  .dash-scene { height: auto; transform: none; transform-style: flat; display: grid; gap: 16px; }
   .panel { position: relative; inset: auto; width: 100% !important; transform: none !important; }
   .panel-notif, .panel-donut { display: none; }
+  .panel-notif.force { display: flex; position: fixed; left: 12px; right: 12px; top: calc(76px + env(safe-area-inset-top)); bottom: auto; z-index: 70; width: auto !important; animation: pop .5s ease-out !important; }
 }
 @media (max-width: 640px) {
   .kpis { grid-template-columns: repeat(2, 1fr); }
@@ -556,10 +561,7 @@
 .fab-text { display: flex; flex-direction: column; line-height: 1.2; max-width: 240px; }
 .fab-text strong { font-size: 13.5px; color: #fff; }
 .fab-text small { font-size: 11px; color: #a4a8b1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 480px) {
-  .wa-fab { left: 12px; right: 12px; bottom: 12px; }
-  .fab-text { max-width: none; flex: 1; min-width: 0; }
-}
+
 
 /* =========================================================
    Textos de fricción cero
@@ -756,6 +758,152 @@
 .upsell { padding: 12px 14px; border-radius: 14px; font-size: 12.5px; line-height: 1.45; color: #ffd2a8; background: rgba(255,122,0,.08); border: 1px dashed rgba(255,122,0,.5); }
 .upsell button { margin-top: 8px; padding: 6px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; color: #1a0b00; background: linear-gradient(100deg, #ffa24d, #ff7a00); }
 
+/* =========================================================
+   ÉLITE · Tipografía con revelación enmascarada
+   ========================================================= */
+[data-split] .w { display: inline-block; overflow: hidden; vertical-align: top; padding: .04em 0 .12em; margin: -.04em 0 -.12em; }
+[data-split] .wi { display: inline-block; transform: translate3d(0, 115%, 0) rotate(4deg); transform-origin: 0 100%;
+  transition: transform 1s cubic-bezier(.16,1,.3,1); transition-delay: calc(var(--i, 0) * 55ms); will-change: transform; }
+[data-split].is-in .wi { transform: none; }
+[data-split] br + .w, [data-split] .line-break { display: block; height: 0; }
+
+/* =========================================================
+   ÉLITE · Spotlight reactivo (escritorio)
+   ========================================================= */
+.spotlight { position: absolute; inset: 0; opacity: 0; transition: opacity .6s;
+  background: radial-gradient(520px circle at var(--sx, 50%) var(--sy, 30%), rgba(255,122,0,.13), rgba(255,122,0,.04) 40%, transparent 70%); }
+.spotlight.on { opacity: 1; }
+/* La rejilla se "enciende" bajo el cursor */
+.has-spot .bg-grid::after { content: ""; position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(255,148,51,.22) 1px, transparent 1px), linear-gradient(90deg, rgba(255,148,51,.22) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(260px circle at var(--sx, -999px) var(--sy, -999px), #000, transparent 70%);
+          mask-image: radial-gradient(260px circle at var(--sx, -999px) var(--sy, -999px), #000, transparent 70%); }
+/* Borde de luz en tarjetas bajo el cursor */
+.spot-card { position: relative; }
+.spot-card::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none; opacity: 0; transition: opacity .35s;
+  background: radial-gradient(240px circle at var(--cx, 50%) var(--cy, 50%), rgba(255,160,80,.95), transparent 60%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.spot-card:hover::after { opacity: 1; }
+
+/* =========================================================
+   ÉLITE · Scroll cinemático (escritorio)
+   ========================================================= */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  html { scroll-snap-type: y proximity; scroll-padding-top: 72px; }
+  main > section, #stack { scroll-snap-align: start; }
+}
+@supports (animation-timeline: view()) {
+  @media (min-width: 1024px) {
+    main > section > div:first-child { animation: sectionIn linear both; animation-timeline: view(); animation-range: entry 0% entry 55%; }
+  }
+  @keyframes sectionIn { from { opacity: .25; transform: translate3d(0, 60px, 0) scale(.97); } to { opacity: 1; transform: none; } }
+}
+
+/* =========================================================
+   ÉLITE · Avisos en vivo dentro de las maquetas
+   ========================================================= */
+.mk-notif {
+  position: absolute; left: .7em; right: .7em; top: 3.2em; z-index: 6;
+  display: flex; align-items: center; gap: .6em; padding: .65em .75em; border-radius: 1.1em;
+  color: #0b0b0f; background: rgba(250,250,252,.94); box-shadow: 0 .8em 2em -.6em rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.4);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  transform: translate3d(0, -160%, 0) scale(.96); opacity: 0;
+  transition: transform .6s cubic-bezier(.16,1,.3,1), opacity .35s;
+  pointer-events: none;
+}
+.mk-notif.show { transform: none; opacity: 1; }
+.mk-notif .n-ico { flex: none; display: grid; place-items: center; width: 2.4em; height: 2.4em; border-radius: .7em; color: #fff; background: var(--acc); box-shadow: 0 0 1em -.2em var(--glow); }
+.mk-notif .n-ico svg { width: 1.3em; height: 1.3em; }
+.mk-notif .n-txt { min-width: 0; flex: 1; line-height: 1.2; }
+.mk-notif .n-app { display: flex; justify-content: space-between; font-size: .62em; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(0,0,0,.45); }
+.mk-notif b { display: block; margin-top: .15em; font-size: .86em; font-weight: 700; }
+.mk-notif small { display: block; font-size: .74em; color: rgba(0,0,0,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.sim-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 44px; padding: 0 18px; border-radius: 99px;
+  font-size: 13px; font-weight: 600; color: #eceef2;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.14);
+  transition: border-color .25s, background .25s, color .25s, transform .2s cubic-bezier(.3,1.6,.5,1);
+  -webkit-tap-highlight-color: transparent;
+}
+.sim-btn:hover { color: #fff; border-color: rgba(255,122,0,.7); background: rgba(255,122,0,.1); }
+.sim-btn:active { transform: scale(.95); }
+.sim-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff7a00; box-shadow: 0 0 10px #ff7a00; animation: blink 1.2s infinite; }
+.phone-slot .sim-btn { margin: 12px auto 0; display: flex; width: max-content; }
+
+/* =========================================================
+   ÉLITE · Prueba social express
+   ========================================================= */
+.proof {
+  position: relative; overflow: hidden; padding: 30px 24px; border-radius: 28px;
+  background: radial-gradient(600px 260px at 0% 0%, rgba(233,196,154,.14), transparent 60%), radial-gradient(500px 240px at 100% 100%, rgba(255,122,0,.14), transparent 60%), linear-gradient(180deg, rgba(22,22,28,.92), rgba(10,10,14,.92));
+  border: 1px solid rgba(255,255,255,.09); box-shadow: 0 40px 90px -45px rgba(255,122,0,.6);
+}
+@media (min-width: 640px) { .proof { padding: 44px 48px; } }
+.proof-brand { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.proof-logo { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 18px; color: #e9c49a;
+  background: linear-gradient(145deg, #3b281d, #1a110c); border: 1px solid rgba(233,196,154,.35); box-shadow: 0 0 26px -6px rgba(233,196,154,.6); }
+.proof-logo svg { width: 30px; height: 30px; }
+.proof-kicker { font-size: 10.5px; font-weight: 700; letter-spacing: .28em; color: #ff9433; }
+.proof-name { margin-top: 4px; font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 600; color: #fff; line-height: 1.1; }
+.proof-role { font-size: 13px; color: #a4a8b1; }
+.proof-stars { margin-left: auto; font-size: 18px; letter-spacing: 3px; color: #ffb066; text-shadow: 0 0 12px rgba(255,122,0,.7); }
+.proof-quote { margin-top: 24px; font-size: clamp(18px, 2.3vw, 25px); line-height: 1.5; font-weight: 500; color: #eceef2; letter-spacing: -.005em; }
+.proof-foot { margin-top: 26px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.proof-chip { font-size: 12.5px; padding: 7px 13px; border-radius: 99px; color: #e9c49a; background: rgba(233,196,154,.08); border: 1px solid rgba(233,196,154,.25); }
+.proof-cta { margin-left: auto; display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; font-weight: 700; font-size: 14px; color: #ff9433; transition: color .25s; }
+.proof-cta:hover { color: #ffb066; }
+.proof-draft { display: none; }
+.proof[data-draft] .proof-draft { display: inline-block; position: absolute; top: 14px; right: 14px; padding: 4px 10px; border-radius: 99px;
+  font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #1a0b00; background: #fde047; }
+.proof[data-draft] .proof-stars { margin-top: 18px; }
+
+/* =========================================================
+   ÉLITE · Micro-interacciones en CTAs
+   ========================================================= */
+.cta-press { transition-property: transform, box-shadow, filter, background, border-color, color, opacity !important; }
+.cta-press.is-pressed { transform: scale(.94) !important; transition-duration: .12s !important; }
+.cta-press.is-released { animation: ctaSpring .5s cubic-bezier(.3,1.8,.5,1); }
+@keyframes ctaSpring { 0% { transform: scale(.94); } 55% { transform: scale(1.04); } 100% { transform: scale(1); } }
+.ripple { position: absolute; border-radius: 50%; pointer-events: none; width: 12px; height: 12px; margin: -6px 0 0 -6px;
+  background: rgba(255,255,255,.55); transform: scale(0); opacity: .9; animation: ripple .65s ease-out forwards; }
+@keyframes ripple { to { transform: scale(26); opacity: 0; } }
+.btn-wa, .plan-cta, .btn-primary, .mk-cta, .proof-cta, .wa-fab { -webkit-tap-highlight-color: transparent; }
+.btn-wa, .plan-cta { position: relative; overflow: hidden; }
+
+/* =========================================================
+   ÉLITE · Móvil: thumb-zone y áreas de pulsación
+   ========================================================= */
+.wa-fab { bottom: calc(20px + env(safe-area-inset-bottom)); transition: border-color .4s, box-shadow .4s, transform .45s cubic-bezier(.16,1,.3,1), opacity .3s; }
+.wa-fab.fab-hidden { transform: translate3d(0, 160%, 0); opacity: 0; pointer-events: none; }
+.plan-add { min-height: 44px; padding: 0 8px; }
+.mod-add { min-height: 40px; padding: 0 14px; }
+#sumList li button { display: grid; place-items: center; min-width: 36px; min-height: 36px; margin-right: -8px; font-size: 20px; border-radius: 10px; }
+.summary details summary { display: flex; align-items: center; min-height: 40px; }
+.footer-links a { display: inline-flex; align-items: center; min-height: 36px; }
+
+@media (max-width: 640px) {
+  .wa-fab { right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); padding: 7px 16px 7px 7px; gap: 10px; }
+  .fab-ico { width: 48px; height: 48px; }
+  .fab-text { max-width: 160px; }
+  .fab-text strong { font-size: 13px; }
+  .fab-text small { font-size: 11px; }
+  .wa-fab:not(.active) .fab-text small { display: none; }
+  .btn-primary, .btn-ghost { min-height: 52px; width: 100%; max-width: 340px; justify-content: center; }
+  .plan { padding: 26px 20px 22px; }
+  .plan-price span { font-size: 52px; }
+  .pack { padding: 24px 18px; }
+  .pack-actions { width: 100%; }
+  .summary { padding: 20px 18px; }
+  .price-total { font-size: 30px; }
+  /* Menos coste de pintado en móvil para mantener 60 FPS */
+  .panel, .summary, .toast { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .glow { filter: blur(70px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .panel, .panel-notif.pop { animation: none !important; }
+  [data-split] .wi { transform: none !important; }
+  html { scroll-snap-type: none !important; }
 }

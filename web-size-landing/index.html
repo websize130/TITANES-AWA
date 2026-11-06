@@ -2,7 +2,7 @@
 <html lang="es" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Web Size · Diseño · Web · IA — Webs que convierten para negocios locales</title>
   <meta name="description" content="Web Size: agencia de diseño web, landing pages, MicroSaaS, automatización e IA. Webs premium que convierten visitas en clientes por WhatsApp." />
   <meta name="theme-color" content="#050507" />
@@ -44,6 +44,7 @@
     <div class="glow glow-a"></div>
     <div class="glow glow-b"></div>
     <canvas id="sparks" class="absolute inset-0 w-full h-full"></canvas>
+    <div id="spotlight" class="spotlight"></div>
   </div>
 
   <!-- ===================== HEADER ===================== -->
@@ -109,7 +110,7 @@
           <span class="h-px w-8 bg-gradient-to-l from-transparent to-neon"></span>
         </p>
 
-        <h1 class="reveal mt-6 font-display font-extrabold tracking-tight leading-[1.05] text-4xl sm:text-6xl lg:text-7xl">
+        <h1 data-split class="mt-6 font-display font-extrabold tracking-tight leading-[1.05] text-4xl sm:text-6xl lg:text-7xl">
           <span class="text-metal">Webs que no se miran.</span><br />
           <span class="text-neon-grad neon-text">Webs que facturan.</span>
         </h1>
@@ -152,7 +153,7 @@
     <!-- ===================== SHOWCASE 5 MÓVILES 3D ===================== -->
     <section id="sectores" class="relative pb-24 sm:pb-32" aria-labelledby="sectores-title">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-        <h2 id="sectores-title" class="reveal font-display text-2xl sm:text-4xl font-bold">
+        <h2 id="sectores-title" data-split class="font-display text-2xl sm:text-4xl font-bold">
           <span class="text-metal">Una web para cada sector.</span>
           <span class="text-neon-grad">Un WhatsApp para cada cliente.</span>
         </h2>
@@ -206,7 +207,7 @@
             SOFTWARE &amp; DASHBOARDS
             <span class="h-px w-8 bg-gradient-to-l from-transparent to-neon"></span>
           </p>
-          <h2 id="software-title" class="reveal mt-5 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
+          <h2 id="software-title" data-split class="mt-5 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
             <span class="text-metal">No solo webs.</span>
             <span class="text-neon-grad neon-text">Software que gobierna tu negocio.</span>
           </h2>
@@ -315,7 +316,42 @@
           </div>
         </div>
 
-        <p class="mt-6 text-center text-[11px] tracking-wide text-silver-600">Datos de demostración generados en el navegador.</p>
+        <div class="mt-8 flex flex-col items-center gap-3">
+          <button type="button" id="simDashAlert" class="sim-btn">
+            <span class="sim-dot" aria-hidden="true"></span> Simular aviso en vivo
+          </button>
+          <p class="text-center text-[11px] tracking-wide text-silver-600">Datos de demostración generados en el navegador.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PRUEBA SOCIAL EXPRESS ===================== -->
+    <!-- ⚠️ BORRADOR: sustituye el texto por la opinión real de Aura Beauty Studio y quita data-draft -->
+    <section id="caso" class="relative py-16 sm:py-24" aria-labelledby="caso-title">
+      <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <figure class="proof reveal" data-draft>
+          <span class="proof-draft">Texto de ejemplo · sustituir por la opinión real</span>
+          <div class="proof-brand">
+            <span class="proof-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19c-3-2-4.5-5-4-9 2 1 3.5 2.5 4 4.5.5-2 2-3.5 4-4.5.5 4-1 7-4 9z"/><path d="M12 19c-4 0-7.5-2-9-5.5 2.5-.5 5 .5 7 2.5M12 19c4 0 7.5-2 9-5.5-2.5-.5-5 .5-7 2.5"/><path d="M12 10.5C11 8 11 5.5 12 3c1 2.5 1 5 0 7.5"/></svg>
+            </span>
+            <div>
+              <p class="proof-kicker">CLIENTE REAL · CASO EXPRESS</p>
+              <h2 id="caso-title" class="proof-name">Aura Beauty Studio</h2>
+              <p class="proof-role">Centro de estética</p>
+            </div>
+            <span class="proof-stars" aria-label="Valoración de 5 sobre 5">★★★★★</span>
+          </div>
+          <blockquote class="proof-quote">
+            “Queríamos que las clientas pudieran reservar sin llamar. Ahora nos escriben directamente por WhatsApp desde la web
+            y la agenda se organiza sola. El proceso con Web Size fue rápido y sin reuniones eternas.”
+          </blockquote>
+          <figcaption class="proof-foot">
+            <span class="proof-chip">Web + reservas por WhatsApp</span>
+            <span class="proof-chip">Diseño mobile‑first</span>
+            <a data-wa-msg="Hola Web Size 👋 He visto el caso de Aura Beauty Studio y quiero algo parecido para mi negocio. ¿Hablamos?" href="#" target="_blank" rel="noopener noreferrer" class="proof-cta">Quiero un resultado así →</a>
+          </figcaption>
+        </figure>
       </div>
     </section>
 
@@ -328,7 +364,7 @@
             TARIFAS CLARAS
             <span class="h-px w-8 bg-gradient-to-l from-transparent to-neon"></span>
           </p>
-          <h2 id="pricing-title" class="reveal mt-5 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
+          <h2 id="pricing-title" data-split class="mt-5 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
             <span class="text-metal">Precios a la vista.</span>
             <span class="text-neon-grad neon-text">Sin letra pequeña.</span>
           </h2>
@@ -430,7 +466,7 @@
             CONFIGURADOR A LA CARTA
             <span class="h-px w-8 bg-gradient-to-l from-transparent to-neon"></span>
           </p>
-          <h2 id="config-title" class="reveal mt-5 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
+          <h2 id="config-title" data-split class="mt-5 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
             <span class="text-metal">Monta tu solución</span>
             <span class="text-neon-grad neon-text">pieza a pieza.</span>
           </h2>
@@ -490,7 +526,7 @@
         <div class="stack-wrap reveal">
           <div class="text-center">
             <p class="text-[11px] sm:text-xs font-medium tracking-[0.4em] text-silver-400">STACK DE RENDIMIENTO</p>
-            <h2 id="stack-title" class="mt-4 font-display text-2xl sm:text-4xl font-extrabold tracking-tight">
+            <h2 id="stack-title" data-split class="mt-4 font-display text-2xl sm:text-4xl font-extrabold tracking-tight">
               <span class="text-metal">Ingeniería que se nota</span> <span class="text-neon-grad">en cada milisegundo.</span>
             </h2>
           </div>
@@ -570,7 +606,7 @@
         <div>
           <p class="footer-h">Sígueme</p>
           <ul id="socialLinks" class="social-row" aria-label="Redes sociales"></ul>
-          <a href="https://www.linkedin.com/in/joshua-p%C3%A9rez-7a8523449" target="_blank" rel="noopener noreferrer" class="mt-5 inline-flex items-center gap-2 text-sm text-silver-400 hover:text-white transition-colors">
+          <a href="https://www.linkedin.com/in/joshua-p%C3%A9rez-7a8523449" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex min-h-[44px] items-center gap-2 text-sm text-silver-400 hover:text-white transition-colors">
             Joshua Pérez · LinkedIn <span aria-hidden="true">↗</span>
           </a>
         </div>

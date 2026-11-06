@@ -1044,6 +1044,206 @@
     });
   }
 
+  /* =========================================================
+     ÉLITE · Títulos con revelación enmascarada
+     Cada palabra se envuelve en una máscara (overflow hidden) y emerge al entrar en pantalla.
+     ========================================================= */
+  const GRADIENT_CLASSES = ['text-metal', 'text-neon-grad'];
+  const splitHeading = (h) => {
+    let i = 0;
+    const walk = (node, inherit) => {
+      [...node.childNodes].forEach((n) => {
+        if (n.nodeType === 3) {
+          const frag = document.createDocumentFragment();
+          n.textContent.split(/(\s+)/).forEach((part) => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(' ')); return; }
+            const w = el('span', 'w');
+            const wi = el('span', `wi${inherit ? ` ${inherit}` : ''}`, part);
+            wi.style.setProperty('--i', i++);
+            w.appendChild(wi);
+            frag.appendChild(w);
+          });
+          node.replaceChild(frag, n);
+        } else if (n.nodeType === 1 && n.tagName !== 'BR') {
+          // El degradado pasa a cada palabra: background-clip:text no funciona bien sobre hijos transformados
+          const grad = GRADIENT_CLASSES.filter((c) => n.classList.contains(c));
+          grad.forEach((c) => n.classList.remove(c));
+          walk(n, [inherit, ...grad].filter(Boolean).join(' '));
+        }
+      });
+    };
+    walk(h, '');
+  };
+
+  const splitTargets = document.querySelectorAll('[data-split]');
+  splitTargets.forEach(splitHeading);
+  if (reduceMotion) {
+    splitTargets.forEach((h) => h.classList.add('is-in'));
+  } else {
+    const splitIO = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        en.target.classList.add('is-in');
+        splitIO.unobserve(en.target);
+      });
+    }, { threshold: 0.2, rootMargin: '0px 0px -8% 0px' });
+    splitTargets.forEach((h) => splitIO.observe(h));
+  }
+
+  /* =========================================================
+     ÉLITE · Spotlight que sigue al cursor (solo escritorio)
+     ========================================================= */
+  const spotlight = document.getElementById('spotlight');
+  if (spotlight && finePointer && !reduceMotion) {
+    const bgLayer = spotlight.parentElement;
+    document.documentElement.classList.add('has-spot');
+    document.querySelectorAll('.plan:not(.plan-elite), .mod-price, .pack, .badge-card, .proof, .summary')
+      .forEach((c) => c.classList.add('spot-card'));
+
+    let px = 0, py = 0, target = null, spotRaf = 0;
+    const paint = () => {
+      spotRaf = 0;
+      bgLayer.style.setProperty('--sx', `${px}px`);
+      bgLayer.style.setProperty('--sy', `${py}px`);
+      if (target) {
+        const r = target.getBoundingClientRect();
+        target.style.setProperty('--cx', `${px - r.left}px`);
+        target.style.setProperty('--cy', `${py - r.top}px`);
+      }
+    };
+    window.addEventListener('pointermove', (e) => {
+      px = e.clientX; py = e.clientY;
+      target = e.target.closest ? e.target.closest('.spot-card') : null;
+      spotlight.classList.add('on');
+      if (!spotRaf) spotRaf = requestAnimationFrame(paint);
+    }, { passive: true });
+    document.addEventListener('pointerleave', () => spotlight.classList.remove('on'));
+  }
+
+  /* =========================================================
+     ÉLITE · Avisos en vivo dentro de las maquetas
+     ========================================================= */
+  ICONS.bell = '<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>';
+  const PHONE_ALERTS = {
+    taller:    [['calendar', 'Nueva cita', 'Mañana 9:30 · Cambio de aceite'], ['wa', 'WhatsApp', 'Carlos: ¿Tenéis hueco para la pre‑ITV?'], ['check', 'Presupuesto aceptado', 'Frenos delanteros']],
+    estetica:  [['calendar', 'Reserva confirmada', 'Hoy 17:00 · Limpieza facial'], ['wa', 'WhatsApp', 'Lucía: ¿Queda hueco el sábado?'], ['bell', 'Recordatorio enviado', 'Citas de mañana · 3 clientas']],
+    fontanero: [['bolt', '¡Urgencia entrante!', 'Fuga en cocina · a 2,4 km'], ['wa', 'WhatsApp', 'Ana: Se me ha roto la caldera'], ['check', 'Servicio completado', 'Desatasco · cliente satisfecho']],
+    dental:    [['calendar', 'Primera visita', 'Jueves 11:00 · Revisión'], ['wa', 'WhatsApp', 'Pedro: Info sobre ortodoncia invisible'], ['bell', 'Recordatorio', 'Limpieza dental mañana 10:00']],
+    fisio:     [['calendar', 'Sesión reservada', 'Lunes 19:00 · Espalda'], ['wa', 'WhatsApp', 'Marta: ¿Tratáis lesiones de rodilla?'], ['check', 'Bono renovado', '10 sesiones']],
+  };
+
+  const phoneSlots = row.querySelectorAll('.phone-slot');
+  phoneSlots.forEach((slot, i) => {
+    const s = SECTORS[i];
+    const screen = slot.querySelector('.screen');
+    const notif = el('div', 'mk-notif');
+    notif.setAttribute('role', 'status');
+    notif.setAttribute('aria-live', 'polite');
+    screen.appendChild(notif);
+
+    let n = 0, hideTimer = 0;
+    const fire = () => {
+      const [ic, title, sub] = PHONE_ALERTS[s.id][n++ % PHONE_ALERTS[s.id].length];
+      notif.innerHTML = `
+        <span class="n-ico">${ic === 'wa' ? waGlyph : icon(ic, 2.2)}</span>
+        <span class="n-txt"><span class="n-app"><span>${s.brand}${s.brandAccent}</span><span>ahora</span></span><b>${title}</b><small>${sub}</small></span>`;
+      notif.classList.remove('show');
+      void notif.offsetWidth;
+      notif.classList.add('show');
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => notif.classList.remove('show'), 3400);
+    };
+    slot._fireAlert = fire;
+
+    const btn = el('button', 'sim-btn');
+    btn.type = 'button';
+    btn.innerHTML = '<span class="sim-dot" aria-hidden="true"></span>';
+    btn.appendChild(document.createTextNode('Simular aviso'));
+    btn.setAttribute('aria-label', `Simular un aviso en vivo en la maqueta de ${s.label}`);
+    btn.addEventListener('click', () => {
+      fire();
+      if (navigator.vibrate) navigator.vibrate(18);
+    });
+    slot.insertBefore(btn, slot.querySelector('.phone-shadow'));
+  });
+
+  /* Primer aviso automático en el móvil central al ver la sección */
+  const stageEl = document.getElementById('stage');
+  if (stageEl && !reduceMotion) {
+    const autoIO = new IntersectionObserver((entries) => {
+      if (!entries[0].isIntersecting) return;
+      autoIO.disconnect();
+      const mid = phoneSlots[Math.floor(phoneSlots.length / 2)];
+      setTimeout(() => mid && mid._fireAlert(), 1400);
+    }, { threshold: 0.45 });
+    autoIO.observe(stageEl);
+  }
+
+  /* Botón de aviso en vivo del dashboard */
+  const simDash = document.getElementById('simDashAlert');
+  if (simDash && notifPanel) {
+    let forceTimer = 0;
+    simDash.addEventListener('click', () => {
+      const [t, sub] = NOTIFS[++notifIdx % NOTIFS.length];
+      notifTitle.textContent = t;
+      notifSub.textContent = sub;
+      notifPanel.classList.remove('pop', 'force');
+      void notifPanel.offsetWidth;
+      notifPanel.classList.add('pop', 'force');
+      clearTimeout(forceTimer);
+      forceTimer = setTimeout(() => notifPanel.classList.remove('force'), 3200);
+      pushLead();
+      stages[0]++; renderStages();
+      if (navigator.vibrate) navigator.vibrate(18);
+    });
+  }
+
+  /* =========================================================
+     ÉLITE · Micro-interacciones en los CTAs (escala + onda)
+     ========================================================= */
+  const CTA_SEL = '.btn-wa, .btn-primary, .plan-cta, .mk-cta, .wa-fab, .proof-cta, .upsell button';
+  let pressed = null;
+  const release = () => {
+    if (!pressed) return;
+    const b = pressed;
+    pressed = null;
+    b.classList.remove('is-pressed');
+    if (reduceMotion) return;
+    b.classList.add('is-released');
+    b.addEventListener('animationend', () => b.classList.remove('is-released'), { once: true });
+  };
+  document.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest(CTA_SEL);
+    if (!b || b.classList.contains('is-disabled')) return;
+    pressed = b;
+    b.classList.add('cta-press', 'is-pressed');
+    if (reduceMotion || getComputedStyle(b).overflow !== 'hidden') return;
+    const r = b.getBoundingClientRect();
+    const rp = el('span', 'ripple');
+    rp.style.left = `${e.clientX - r.left}px`;
+    rp.style.top = `${e.clientY - r.top}px`;
+    b.appendChild(rp);
+    rp.addEventListener('animationend', () => rp.remove(), { once: true });
+  }, { passive: true });
+  ['pointerup', 'pointercancel', 'dragstart'].forEach((t) => document.addEventListener(t, release, { passive: true }));
+
+  /* =========================================================
+     ÉLITE · Móvil: el botón flotante se aparta al bajar y vuelve al subir
+     ========================================================= */
+  let lastY = window.scrollY, fabRaf = 0;
+  window.addEventListener('scroll', () => {
+    if (fabRaf) return;
+    fabRaf = requestAnimationFrame(() => {
+      fabRaf = 0;
+      const y = window.scrollY;
+      if (window.innerWidth >= 1024) { fab.classList.remove('fab-hidden'); lastY = y; return; }
+      if (y > lastY + 10 && y > 400) fab.classList.add('fab-hidden');
+      else if (y < lastY - 10) fab.classList.remove('fab-hidden');
+      lastY = y;
+    });
+  }, { passive: true });
+
   /* ---------- Año del footer ---------- */
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
