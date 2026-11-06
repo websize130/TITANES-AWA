@@ -11,10 +11,10 @@ assets/      Logotipo y banner corporativos
 ```
 
 ## Navegación horizontal
-Las secciones son paneles de pantalla completa colocados en horizontal dentro de .
+Las secciones son paneles de pantalla completa colocados en horizontal dentro de `#track`.
 La rueda del ratón pasa de panel en panel; si un panel es más alto que la pantalla, primero
 se recorre su contenido. En móvil se desliza de lado entre paneles y en vertical dentro de cada uno.
-Teclado: ← → (y AvPág/RePág/Espacio). La lógica está en , bloque **HORIZONTAL**.
+Teclado: ← → (y AvPág/RePág/Espacio). La lógica está en `main.js`, bloque **HORIZONTAL**.
 
 ## Secciones
 Header · Hero · 5 móviles 3D con maquetas de negocios ficticios · Software & Dashboards (demo en vivo) ·
