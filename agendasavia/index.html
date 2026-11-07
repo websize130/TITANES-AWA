@@ -419,7 +419,23 @@ const TR={
  'Peeling químico':'Declaro haber sido informado/a de que el peeling puede producir enrojecimiento, descamación, irritación o manchas. Debo usar protección solar alta y no aplicar retinoides ni exfoliantes durante los días indicados.',
  'Micropigmentación':'Declaro haber sido informado/a de que el pigmento se implanta en la piel, que puede haber inflamación, infección o reacción alérgica, que se requiere un retoque y que el resultado final varía según mi piel.'
 };
-const COLORS=['#2563EB','#7C3AED','#DB2777','#059669','#D97706','#0891B2','#DC2626','#475569'];
+/* Paleta de 40 colores para servicios: 10 familias × 4 tonos, todos con buen contraste para el texto blanco de las citas */
+const PALETTE=[
+ ['Rojos',[['#DC2626','Rojo'],['#B91C1C','Rojo intenso'],['#991B1B','Granate'],['#7F1D1D','Burdeos']]],
+ ['Rosas',[['#E11D48','Frambuesa'],['#DB2777','Rosa'],['#BE185D','Fucsia oscuro'],['#9D174D','Ciruela']]],
+ ['Naranjas',[['#EA580C','Naranja'],['#C2410C','Calabaza'],['#9A3412','Teja'],['#D97706','Mostaza']]],
+ ['Tierras',[['#B45309','Caramelo'],['#A16207','Oro viejo'],['#92400E','Canela'],['#78350F','Chocolate']]],
+ ['Verdes',[['#16A34A','Verde'],['#15803D','Verde bosque'],['#4D7C0F','Oliva'],['#166534','Verde botella']]],
+ ['Esmeraldas',[['#059669','Esmeralda'],['#047857','Jade'],['#0D9488','Turquesa'],['#0F766E','Verde azulado']]],
+ ['Cianes',[['#0891B2','Cian'],['#0E7490','Petróleo'],['#0284C7','Celeste'],['#0369A1','Azul océano']]],
+ ['Azules',[['#2563EB','Azul'],['#1D4ED8','Azul real'],['#1E40AF','Azul marino'],['#4F46E5','Índigo']]],
+ ['Violetas',[['#7C3AED','Violeta'],['#6D28D9','Lavanda oscuro'],['#9333EA','Púrpura'],['#C026D3','Magenta']]],
+ ['Neutros',[['#475569','Pizarra'],['#334155','Grafito'],['#57534E','Piedra'],['#1F2937','Antracita']]]
+];
+const COLORS=PALETTE.flatMap(([,c])=>c.map(x=>x[0]));
+const freeColor=()=>COLORS.find(c=>!SERVICES.some(s=>String(s.color).toUpperCase()===c))||COLORS[0];
+const swatches=sel=>{const used=new Set(SERVICES.map(s=>String(s.color).toUpperCase())),cur=String(sel||'').toUpperCase();
+  return `<div class="grid sm:grid-cols-2 gap-x-4 gap-y-1.5">${PALETTE.map(([g,cs])=>`<div class="flex items-center gap-2"><span class="w-[4.5rem] shrink-0 text-xs text-gray-500">${g}</span><div class="flex gap-1.5">${cs.map(([k,n])=>`<button type="button" data-a="swatch" data-id="${k}" title="${n}${used.has(k)&&k!==cur?' · ya usado':''}" aria-label="${n}" class="sw relative w-8 h-8 rounded-full border-2 border-white shadow ${k===cur?'ring-2 ring-offset-1 ring-[#111827]':'ring-1 ring-gray-300'}" style="background:${k}">${used.has(k)&&k!==cur?'<span class="absolute inset-0 grid place-items-center text-white/80 text-[10px]">•</span>':''}</button>`).join('')}</div></div>`).join('')}</div>`};
 const btn='px-4 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-medium';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const clean=s=>String(s).replace(/[<>&"]/g,'').trim();
@@ -517,12 +533,12 @@ function openModal2(type,arg){
       c.consents.push({id:Date.now(),tr:f.get('tr'),text:TR[f.get('tr')],name:clean(f.get('name')),ts:new Date().toISOString(),sig:cv.toDataURL('image/png')});
       save();closeModal();state.tab='consent';render();toast('Consentimiento firmado y guardado')};
   }else if(type==='svc'){
-    const s=arg?S(arg):{name:'',g:'Unisex',price:20,dur:30,color:'#2563EB'};
+    const s=arg?S(arg):{name:'',g:'Unisex',price:20,dur:30,color:freeColor()};
     showModal(arg?'Editar servicio':'Nuevo servicio',`<form id="f" class="space-y-3">
      <div><label class="${lbl}">Nombre</label><input name="name" required value="${esc(s.name)}" class="${inp}"></div>
      <div><label class="${lbl}">Género</label><select name="g" class="${inp}">${GEN_OPTS.map(g=>`<option ${g===s.g?'selected':''}>${g}</option>`).join('')}</select></div>
      <div class="grid grid-cols-2 gap-3"><div><label class="${lbl}">Precio (€)</label><input name="price" type="number" min="0" step="0.5" required value="${s.price}" class="${inp}"></div><div><label class="${lbl}">Duración (min)</label><input name="dur" type="number" min="5" step="5" required value="${s.dur}" class="${inp}"></div></div>
-     <div><label class="${lbl}">Color en la agenda</label><div class="flex flex-wrap items-center gap-2">${COLORS.map(k=>`<button type="button" data-a="swatch" data-id="${k}" class="w-9 h-9 rounded-full border-2 border-white shadow ring-1 ring-gray-300" style="background:${k}" aria-label="${k}"></button>`).join('')}<input id="svcColor" name="color" type="color" value="${s.color}" class="w-11 h-9 p-0 border-0 bg-transparent"></div></div>
+     <div><label class="${lbl}">Color en la agenda <span class="font-normal text-gray-400">(40 colores · • = ya usado)</span></label>${swatches(s.color)}<div class="flex items-center gap-2 mt-2 text-sm text-gray-600"><input id="svcColor" name="color" type="color" value="${s.color}" class="w-11 h-9 p-0 border-0 bg-transparent">Color seleccionado · o elige uno personalizado</div></div>
      <button class="${sbtn}">Guardar servicio</button>${arg?'<button type="button" id="svcDel" class="w-full py-2.5 text-sm text-red-600">Eliminar servicio</button>':''}</form>`);
     $('#f').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),o={name:clean(f.get('name')),g:f.get('g'),price:+f.get('price'),dur:+f.get('dur'),color:f.get('color')};
       if(arg)Object.assign(s,o);else SERVICES.push({id:'s'+Date.now(),...o});
@@ -550,7 +566,7 @@ document.addEventListener('click',e=>{
   else if(a==='delNote'){const[vid,i]=id.split(':');cur().visits.find(v=>v.id==vid).notes.splice(+i,1);save();render()}
   else if(a==='gf'){state.gf=id;render()}
   else if(a==='svc')openModal('svc',id);
-  else if(a==='swatch')$('#svcColor').value=id;
+  else if(a==='swatch'){$('#svcColor').value=id.toLowerCase();document.querySelectorAll('.sw').forEach(b=>{const on=b===t;b.classList.toggle('ring-2',on);b.classList.toggle('ring-offset-1',on);b.classList.toggle('ring-[#111827]',on);b.classList.toggle('ring-1',!on);b.classList.toggle('ring-gray-300',!on)})}
 });
 
 /* ================= FASE 3 ================= */
