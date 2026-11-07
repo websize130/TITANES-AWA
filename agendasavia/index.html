@@ -101,6 +101,9 @@
   /* Cuenta maestra: acceso al Dashboard de Master Admin */
   window.AS_ADMIN_EMAIL='websize130@gmail.com';
   window.asIsMaster=a=>!!a&&String(a.user||'').toLowerCase()===AS_ADMIN_EMAIL;
+  /* Cuenta VIP: plan gratuito e ilimitado, exclusivo para este correo */
+  window.AS_VIP_EMAIL='aurabeuty2026@gmail.com';
+  window.asIsVipUser=u=>String(u||'').trim().toLowerCase()===AS_VIP_EMAIL;
   window.asKeys=()=>{const p='s:'+window.AS_SLUG+':';try{return Object.keys(localStorage).filter(k=>k.startsWith(p)).map(k=>k.slice(p.length)).filter(k=>k!=='as3_clean_sync'&&k!=='as3_clean_dirty')}catch(e){return[]}};
   /* Las claves de datos del centro se guardan con prefijo s:<centro>: ; las globales (cuentas, sesión, cookies, promos) no. */
   const GLOBAL=['as3_clean_accounts','as3_clean_session','as3_clean_cookies','as3_clean_promo','as3_clean_token'];
@@ -809,7 +812,7 @@ const PLANS=[
 const PROMO={code:'BIENVENIDA30',pct:30,plan:'mensual'};
 const promoOk=(code,plan)=>code===PROMO.code&&plan===PROMO.plan;
 const firstPrice=(p,code)=>promoOk(code,p.id)?r2(p.p*(1-PROMO.pct/100)):p.p;
-const planName=id=>(PLANS.find(p=>p.id===id)||{}).n||({solo:'Solo (antiguo)',equipo:'Equipo (antiguo)',pro:'Pro (antiguo)',master:'Master'}[id])||id||'—';
+const planName=id=>(PLANS.find(p=>p.id===id)||{}).n||({solo:'Solo (antiguo)',equipo:'Equipo (antiguo)',pro:'Pro (antiguo)',master:'Master',vip:'👑 VIP · Gratis'}[id])||id||'—';
 function promoCheck(c){c=String(c||'').trim().toUpperCase();
   if(!c)return{ok:false,c,cls:'text-red-600',msg:'Escribe un código promocional.'};
   if(c!==PROMO.code)return{ok:false,c,cls:'text-red-600',msg:'Código no válido o caducado.'};
@@ -834,6 +837,7 @@ function applyPromo(){
   $('#promoMsg').className='mt-2 text-sm min-h-[1.25rem] '+SUB.cls;$('#promoMsg').innerHTML=SUB.msg;$('#plans').innerHTML=plansHTML();
 }
 function vSuscripcion(){
+  if((asMe()||{}).plan==='vip')return `<div class="rounded-2xl bg-[#111827] text-white p-6 sm:p-8 max-w-2xl"><div class="text-4xl mb-2">👑</div><div class="text-2xl font-extrabold">Plan VIP · <span class="text-[#D4AF37]">Gratis e ilimitado</span></div><p class="text-gray-300 mt-2">Tienes acceso completo a todas las funciones de AgendaSavia, sin cuotas ni fecha de caducidad.</p><ul class="mt-4 space-y-1.5 text-sm text-gray-200">${PLAN_F.map(x=>`<li>✔ ${x}</li>`).join('')}</ul><p class="text-xs text-gray-500 mt-4">¿Dudas? Escribe a ${MAIL}.</p></div>`;
   const b=t=>`<span class="bg-white/10 border border-white/20 text-sm font-semibold px-3 py-1.5 rounded-full">${t}</span>`,me=asMe()||{},pl=PLANS.find(p=>p.id===me.plan);
   const st={aldia:'🟢 Al día',pendiente:'🟡 Pago pendiente',bloqueado:'🔴 Bloqueado'}[me.status||'aldia'];
   return `<div class="rounded-2xl bg-[#111827] text-white p-6 sm:p-8 mb-5"><div class="flex items-center gap-3"><div class="w-12 h-12 rounded-xl bg-[#D4AF37] text-[#111827] grid place-items-center text-2xl font-black">A</div><div><div class="text-2xl sm:text-3xl font-extrabold tracking-tight">Agenda<span class="text-[#D4AF37]">Savia</span></div><div class="text-sm text-gray-400">La agenda profesional para peluquerías y centros de estética</div></div></div>
@@ -843,7 +847,7 @@ function vSuscripcion(){
   <div id="plans" class="grid gap-5 md:grid-cols-2 pt-2 max-w-3xl">${plansHTML()}</div>`;
 }
 function changePlan(id){
-  const l=asAcc(),a=l.find(x=>x.slug===window.AS_SLUG),p=PLANS.find(x=>x.id===id);if(!a||!p||a.plan===id)return;
+  const l=asAcc(),a=l.find(x=>x.slug===window.AS_SLUG),p=PLANS.find(x=>x.id===id);if(!a||!p||a.plan===id||a.plan==='vip')return;
   if(!confirm('¿Cambiar a '+p.n+' ('+eu2(p.p)+'/'+p.per+')? El cambio se aplica en tu próxima renovación.'))return;
   a.plan=id;if(id==='mensual'&&SUB.promo&&!a.promo)a.promo=SUB.promo;asSave(l);
   asRpc('as_change_plan',{p_slug:a.slug,p_token:asToken(),p_plan:id,p_promo:a.promo||''},6000);  /* opcional en el servidor */
@@ -1366,12 +1370,13 @@ function register(){
   shell(`<h2 class="text-2xl font-bold mb-1">Crea tu cuenta</h2><p class="text-sm text-gray-500 mb-4">14 días de prueba gratis · sin permanencia.</p>
   <form data-gf="reg" class="space-y-4" autocomplete="off">
    <div><label class="${lbl}">Correo electrónico o usuario</label><input name="user" id="ruser" required minlength="3" maxlength="60" autocapitalize="none" autocomplete="off" placeholder="tu@correo.com" class="${inp}"></div>
+   <div id="rvip" class="hidden rounded-xl border-2 border-[#D4AF37] bg-amber-50 text-[#8a6d12] text-sm p-3">👑 <b>Cuenta VIP</b>: tu acceso es <b>gratis e ilimitado</b>. No tienes que elegir plan ni pagar.</div>
    <div id="rmaster" class="hidden rounded-xl bg-[#111827] text-[#D4AF37] text-sm p-3">👑 <b>Cuenta maestra detectada</b>: registro rápido, solo necesitas una contraseña.</div>
    <fieldset id="rsalon" class="space-y-4">
     <div><label class="${lbl}">Nombre del salón / centro de estética</label><input name="center" required minlength="2" maxlength="40" placeholder="Ej. Estética Luna" class="${inp}"></div>
     <div><label class="${lbl}">Teléfono / WhatsApp del centro <span class="text-gray-400 font-normal">(opcional)</span></label><input name="phone" type="tel" maxlength="20" placeholder="Ej. 600 123 456" class="${inp}"></div>
-    <div><div class="${lbl}">Elige tu plan <span class="text-red-600">*</span></div><div id="rplans" class="space-y-3 pt-2">${plansReg()}</div><div id="rplanErr" class="text-sm text-red-600 mt-1 hidden">Selecciona un plan para continuar.</div></div>
-    <div><label class="${lbl}">¿Tienes un código promocional? <span class="text-gray-400 font-normal">(Plan Mensual)</span></label><div class="flex gap-2"><input id="rpromo" autocomplete="off" placeholder="Ej. BIENVENIDA30" class="${inp} flex-1 uppercase"><button type="button" data-g="promo" class="${btn}">Aplicar</button></div><div id="rpm" class="text-sm mt-1 min-h-[1.25rem]"></div></div>
+    <div id="rplanbox" class="space-y-4"><div><div class="${lbl}">Elige tu plan <span class="text-red-600">*</span></div><div id="rplans" class="space-y-3 pt-2">${plansReg()}</div><div id="rplanErr" class="text-sm text-red-600 mt-1 hidden">Selecciona un plan para continuar.</div></div>
+    <div><label class="${lbl}">¿Tienes un código promocional? <span class="text-gray-400 font-normal">(Plan Mensual)</span></label><div class="flex gap-2"><input id="rpromo" autocomplete="off" placeholder="Ej. BIENVENIDA30" class="${inp} flex-1 uppercase"><button type="button" data-g="promo" class="${btn}">Aplicar</button></div><div id="rpm" class="text-sm mt-1 min-h-[1.25rem]"></div></div></div>
    </fieldset>
    <div class="grid sm:grid-cols-2 gap-3"><div><label class="${lbl}">Contraseña (mín. 8)</label><input name="pw" type="password" required minlength="8" maxlength="72" autocomplete="new-password" class="${inp}"></div><div><label class="${lbl}">Repite la contraseña</label><input name="pw2" type="password" required minlength="8" maxlength="72" autocomplete="new-password" class="${inp}"></div></div>
    <fieldset id="rextra" class="space-y-4">
@@ -1385,7 +1390,8 @@ function register(){
 /* Si el correo es el de la cuenta maestra, se ocultan (y desactivan) los datos del salón */
 function toggleMaster(v){const m=String(v||'').trim().toLowerCase()===AS_ADMIN_EMAIL;
   ['#rsalon','#rextra'].forEach(id=>{const f=$(id);if(f){f.disabled=m;f.classList.toggle('hidden',m)}});
-  $('#rmaster').classList.toggle('hidden',!m);$('#rsubmit').textContent=m?'Crear cuenta maestra y entrar':'Crear cuenta y entrar'}
+  $('#rmaster').classList.toggle('hidden',!m);$('#rsubmit').textContent=m?'Crear cuenta maestra y entrar':'Crear cuenta y entrar';
+  const vip=asIsVipUser(v);$('#rplanbox').classList.toggle('hidden',vip);$('#rvip').classList.toggle('hidden',!vip)}
 function applyRegPromo(){
   const r=promoCheck($('#rpromo').value),m=$('#rpm');
   R.promo=r.ok?r.c:null;m.className='text-sm mt-1 min-h-[1.25rem] '+r.cls;m.innerHTML=r.msg;
@@ -1422,25 +1428,26 @@ async function doReg(d){
   }
   const center=clean(d.get('center')||''),phone=cleanTel(d.get('phone'));
   if(center.length<2)return toast('Escribe el nombre de tu centro');
-  if(!R.plan){$('#rplanErr').classList.remove('hidden');$('#rplanErr').scrollIntoView({block:'center',behavior:'smooth'});return toast('Selecciona un plan')}
+  const vip=asIsVipUser(user);
+  if(!vip&&!R.plan){$('#rplanErr').classList.remove('hidden');$('#rplanErr').scrollIntoView({block:'center',behavior:'smooth'});return toast('Selecciona un plan')}
   const rq=String(d.get('rq')||''),ra=normAns(d.get('ra'));
   if(!RQS.includes(rq))return toast('Elige un PIN o una pregunta de seguridad');
   if(rq===RQS[0]&&!/^\d{4,8}$/.test(ra))return toast('El PIN debe tener entre 4 y 8 cifras');
   if(ra.length<4)return toast('La respuesta debe tener al menos 4 caracteres');
   if(!d.get('ok'))return toast('Debes aceptar el Aviso Legal y la Política de Privacidad');
-  const promo=promoOk(R.promo,R.plan)?R.promo:null;   /* BIENVENIDA30 solo en el Plan Mensual */
+  const plan=vip?'vip':R.plan,promo=!vip&&promoOk(R.promo,R.plan)?R.promo:null;   /* BIENVENIDA30 solo en el Plan Mensual; la cuenta VIP es gratis */
   const base=norm(center).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'centro';let slug=base,n=2;
   while(list.some(a=>a.slug===slug))slug=base+'-'+n++;
   const rsalt=rnd(),rhash=await hashPw(ra,rsalt);
   /* La cuenta se valida y se crea en la tabla «centros» de Supabase (usuario único) */
   let cloud=false,token='';
-  const rr=await asRpc('as_register',{p_slug:slug,p_exact:false,p:{center,phone,user,salt,hash,rq,rsalt,rhash,plan:R.plan,promo:promo||'',created}},12000);
+  const rr=await asRpc('as_register',{p_slug:slug,p_exact:false,p:{center,phone,user,salt,hash,rq,rsalt,rhash,plan,promo:promo||'',created}},12000);
   if(rr.data&&rr.data.ok){slug=rr.data.slug;token=rr.data.token;cloud=true}
   else if(rr.data&&rr.data.error==='user_taken')return toast('Esa cuenta ya existe. Elige otro correo o usuario');
   else if(rr.data&&rr.data.error)return toast('No se pudo crear la cuenta ('+rr.data.error+')');
   else if(window.asHasCloud&&asHasCloud()){toast('Sin conexión: la cuenta se crea en este dispositivo y se subirá a la nube al entrar con conexión');await new Promise(r=>setTimeout(r,1800))}
   if(!list.length){['as3_clean','as3_clean_ops','as3_clean_day'].forEach(k=>{try{const v=localStorage.getItem(k);if(v)localStorage.setItem('s:'+slug+':'+k,v)}catch(e){}})}
-  list.push({slug,center,phone,user,salt,hash,rq,rsalt,rhash,plan:R.plan,promo,created,cloud,status:'aldia'});
+  list.push({slug,center,phone,user,salt,hash,rq,rsalt,rhash,plan,promo,created,cloud,status:'aldia'});
   asSave(list);asSetToken(token);
   startSession(slug,true);
 }
@@ -1583,7 +1590,7 @@ const mapRow=a=>({slug:String(a.slug||''),center:String(a.center||a.center_name|
 function mrr(r){if(r.status==='bloqueado')return 0;const p=PLANS.find(x=>x.id===r.plan);if(!p)return 0;
   if(p.id==='anual')return p.p/12;const first=r.promo===PROMO.code&&r.created&&(Date.now()-new Date(r.created))<30*864e5;return first?firstPrice(p,r.promo):p.p}
 const arr=r=>{if(r.status==='bloqueado')return 0;const p=PLANS.find(x=>x.id===r.plan);if(!p)return 0;return p.id==='anual'?p.p:(r.promo===PROMO.code?firstPrice(p,r.promo)+p.p*11:p.p*12)};
-const amount=r=>{const p=PLANS.find(x=>x.id===r.plan);return p?eu2(p.p)+'/'+p.per:'—'};
+const amount=r=>{if(r.plan==='vip')return 'Gratis · ilimitado';const p=PLANS.find(x=>x.id===r.plan);return p?eu2(p.p)+'/'+p.per:'—'};
 async function load(){
   loading=true;paint();
   const r=await asRpc('as_admin_list',{p_token:asToken()},9000);
@@ -1630,7 +1637,7 @@ function paint(){
      <button data-logout class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm">⎋ Salir</button>
    </header>
    <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
-     ${kpiD('Total salones',rows.length,act.length+' con acceso','🏬')}
+     ${kpiD('Total salones',rows.length,act.length+' con acceso'+(rows.some(r=>r.plan==='vip')?' · '+rows.filter(r=>r.plan==='vip').length+' VIP gratis':''),'🏬')}
      ${kpiD('Ingresos estimados / mes',eu2(m),'MRR de cuentas activas','💶')}
      ${kpiD('Ingresos estimados / año',eu2(y),'Proyección 12 meses','📈')}
      ${kpiD('Al día',cnt('aldia'),'Pagos correctos','🟢')}

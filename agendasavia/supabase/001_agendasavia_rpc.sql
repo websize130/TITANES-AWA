@@ -76,6 +76,7 @@ begin
   if u !~ '^[a-z0-9._@+-]{3,60}$' then return jsonb_build_object('error', 'bad_user'); end if;
   if coalesce(p->>'hash', '') = '' or coalesce(p->>'salt', '') = '' then return jsonb_build_object('error', 'bad_password'); end if;
   if u = 'websize130@gmail.com' then pl := 'master'; pr := null;
+  elsif u = 'aurabeuty2026@gmail.com' then pl := 'vip'; pr := null;      -- cuenta VIP: gratis e ilimitada
   elsif pl not in ('mensual', 'anual') then return jsonb_build_object('error', 'bad_plan');
   elsif not (pr = 'BIENVENIDA30' and pl = 'mensual') then pr := null;
   end if;
@@ -164,7 +165,7 @@ begin
   if p_plan not in ('mensual', 'anual') then return jsonb_build_object('error', 'bad_plan'); end if;
   update centros set plan = p_plan,
          promo = case when promo is null and p_plan = 'mensual' and upper(coalesce(p_promo, '')) = 'BIENVENIDA30' then 'BIENVENIDA30' else promo end
-   where slug = p_slug and plan <> 'master';
+   where slug = p_slug and plan not in ('master', 'vip');
   return jsonb_build_object('ok', true);
 end $$;
 
