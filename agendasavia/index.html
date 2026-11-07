@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AgendaSavia</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+  :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  body{background:#F8F9FA;color:#111827;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+  .stripe{background:repeating-linear-gradient(45deg,#e5e7eb,#e5e7eb 8px,#f3f4f6 8px,#f3f4f6 16px)}
+  .appt{transition:transform .12s,box-shadow .12s}
+  .appt:active{transform:scale(.98)}
+  .gold{border:3px solid #D4AF37;box-shadow:0 0 0 2px #fef3c7 inset}
+  .nav-btn.active{background:#1f2937;color:#fff;box-shadow:inset 3px 0 0 #D4AF37}
+  .modal-bg{background:rgba(17,24,39,.55)}
+  body.gate #side,body.gate #appwrap,body.gate #scrim{display:none!important}
+  /* Franjas horarias clicables (30 min) */
+  .slot{position:absolute;left:0;right:0;cursor:pointer;border-radius:.5rem;transition:background .1s}
+  .slot:hover{background:rgba(212,175,55,.14)}
+  .slot:hover::after{content:attr(data-label);position:absolute;left:.5rem;top:.25rem;font-size:.7rem;font-weight:600;color:#8a6d12}
+  .slot:active{background:rgba(212,175,55,.28)}
+  /* Master Admin */
+  #master{background:#0B0F19;color:#E5E7EB}
+  #master .mcard{background:#111827;border:1px solid #1F2937;border-radius:1rem}
+  #master input,#master select,#master textarea{background:#0B0F19;border:1px solid #374151;color:#F9FAFB}
+  @media print{aside,header,#scrim,button,select,input{display:none!important}.md\:pl-64{padding-left:0!important}}
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- Sidebar -->
+<aside id="side" class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full md:translate-x-0 transition-transform bg-[#111827] text-gray-300 flex flex-col" style="padding-top:env(safe-area-inset-top,0px)">
+  <div class="px-5 py-5 flex items-center gap-3 border-b border-gray-800">
+    <div class="w-9 h-9 rounded-lg bg-[#D4AF37] text-[#111827] grid place-items-center font-black">S</div>
+    <div><div class="text-white font-semibold leading-tight">Agenda<span class="text-[#D4AF37]">Savia</span></div><div id="sideName" class="text-xs text-gray-400 truncate max-w-[10rem]"></div></div>
+  </div>
+  <nav id="nav" class="flex-1 p-3 space-y-1 overflow-y-auto"></nav>
+  <div class="p-3 border-t border-gray-800"><button id="logout" class="w-full text-left px-3 py-3 rounded-lg text-[15px] hover:bg-gray-800 text-gray-300">⎋ Cerrar sesión</button><div class="px-3 pt-2 text-xs text-gray-500">AgendaSavia v1.0</div></div>
+</aside>
+<div id="scrim" class="fixed inset-0 z-30 bg-black/40 hidden md:hidden"></div>
+
+<!-- Main -->
+<div id="appwrap" class="md:pl-64 min-h-screen flex flex-col">
+  <header class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-200 px-3 sm:px-6 py-3 flex items-center gap-3">
+    <button id="burger" class="md:hidden p-2 -ml-1 rounded-lg hover:bg-gray-100" aria-label="Menú">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <div class="flex-1 min-w-0"><h1 id="title" class="font-semibold text-lg truncate leading-tight">Agenda</h1><div id="hdrName" class="text-xs text-gray-500 truncate"></div></div>
+    <div class="flex bg-gray-100 rounded-full p-1 text-sm font-medium" role="group" aria-label="Rol">
+      <button data-role="admin" class="role-btn px-3 sm:px-4 py-1.5 rounded-full">Dueño</button>
+      <button data-role="staff" class="role-btn px-3 sm:px-4 py-1.5 rounded-full">Empleado</button>
+    </div>
+  </header>
+  <main id="view" class="flex-1 p-3 sm:p-6"></main>
+  <footer class="px-4 sm:px-6 py-5 border-t border-gray-200 bg-white text-xs text-gray-500">
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <span class="font-semibold text-[#111827]">Agenda<span class="text-[#D4AF37]">Savia</span> · © <span id="yr"></span></span>
+      <button data-legal="aviso" class="hover:underline py-1">Aviso Legal</button>
+      <button data-legal="privacidad" class="hover:underline py-1">Política de Privacidad</button>
+      <button data-legal="cookies" class="hover:underline py-1">Política de Cookies</button>
+      <a href="mailto:websize130@gmail.com" class="hover:underline py-1">✉ websize130@gmail.com</a>
+      <button data-legal="soporte" class="sm:ml-auto rounded-lg bg-[#111827] text-white px-3 py-2 font-medium">🛟 Reportar un problema</button>
+    </div>
+  </footer>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="fixed inset-0 z-[90] hidden modal-bg items-end sm:items-center justify-center p-0 sm:p-4">
+  <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[92vh] overflow-y-auto">
+    <div class="flex items-center justify-between px-5 py-4 border-b">
+      <h2 id="mTitle" class="font-semibold text-lg"></h2>
+      <button id="mClose" class="p-2 -mr-2 text-gray-500" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="mBody" class="p-5"></div>
+  </div>
+</div>
+<div id="gate" class="hidden fixed inset-0 z-[70] overflow-y-auto bg-[#F8F9FA]"></div>
+<!-- Panel Master Admin (solo para la cuenta maestra) -->
+<div id="master" class="hidden fixed inset-0 z-[75] overflow-y-auto"></div>
+<div id="cookies" class="hidden fixed inset-x-0 bottom-0 z-[80] p-3 sm:p-4" style="padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px))">
+  <div class="max-w-3xl mx-auto bg-[#111827] text-gray-200 rounded-2xl shadow-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 border border-gray-700">
+    <p class="text-sm leading-relaxed flex-1">🍪 AgendaSavia solo usa <b class="text-white">almacenamiento local esencial</b> (localStorage) para guardar tus datos en este dispositivo. No usamos cookies de publicidad ni de seguimiento. <button data-legal="cookies" class="underline text-[#D4AF37]">Más información</button></p>
+    <button id="cookOk" class="shrink-0 px-5 py-2.5 rounded-lg bg-[#D4AF37] text-[#111827] text-sm font-bold">Aceptar</button>
+  </div>
+</div>
+<div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-6 z-[100] bg-[#111827] text-white text-sm px-4 py-2.5 rounded-full shadow-lg hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ===== Arranque: acceso exclusivo para profesionales y almacenamiento separado por centro ===== */
+(function(){
+  let L=null;try{L=window.localStorage}catch(e){}
+  const rd=k=>{try{return L.getItem(k)}catch(e){return null}};
+  window.asAcc=()=>{try{return JSON.parse(rd('as3_clean_accounts')||'[]')||[]}catch(e){return[]}};
+  window.asSave=l=>{try{L.setItem('as3_clean_accounts',JSON.stringify(l))}catch(e){}};
+  const ses=rd('as3_clean_session');
+  window.AS_SLUG=(ses&&asAcc().some(a=>a.slug===ses))?ses:null;
+  window.asMe=()=>asAcc().find(a=>a.slug===window.AS_SLUG)||null;
+  /* Cuenta maestra: acceso al Dashboard de Master Admin */
+  window.AS_ADMIN_EMAIL='websize130@gmail.com';
+  window.asIsMaster=a=>!!a&&String(a.user||'').toLowerCase()===AS_ADMIN_EMAIL;
+  window.asKeys=()=>{const p='s:'+window.AS_SLUG+':';try{return Object.keys(localStorage).filter(k=>k.startsWith(p)).map(k=>k.slice(p.length)).filter(k=>k!=='as3_clean_sync'&&k!=='as3_clean_dirty')}catch(e){return[]}};
+  /* Las claves de datos del centro se guardan con prefijo s:<centro>: ; las globales (cuentas, sesión, cookies, promos) no. */
+  const GLOBAL=['as3_clean_accounts','as3_clean_session','as3_clean_cookies','as3_clean_promo','as3_clean_token'];
+  const pk=k=>(window.AS_SLUG&&/^as3_clean/.test(k)&&GLOBAL.indexOf(k)<0)?'s:'+window.AS_SLUG+':'+k:k;
+  ['getItem','setItem','removeItem'].forEach(m=>{const o=Storage.prototype[m];
+    Storage.prototype[m]=function(k,v){
+      if(m!=='setItem')return o.call(this,pk(k));
+      const r=o.call(this,pk(k),v);
+      try{if(window.asSyncMark&&this===window.localStorage)window.asSyncMark(k)}catch(e){}   /* v6: marca para subir a Supabase */
+      return r}});
+  /* Códigos promocionales: contador global de canjeos (no depende de ningún centro) y límite de usos */
+  window.AS_PROMO_LIM={};   /* BIENVENIDA30 no tiene límite de usos */
+  const pAll=()=>{try{const o=JSON.parse(rd('as3_clean_promo')||'{}');return(o&&typeof o==='object')?o:{}}catch(e){return{}}};
+  window.asPromoUses=c=>Math.max(0,parseInt(pAll()[c],10)||0);
+  window.asPromoFull=c=>Object.prototype.hasOwnProperty.call(AS_PROMO_LIM,c)&&asPromoUses(c)>=AS_PROMO_LIM[c];
+  window.asPromoRedeem=c=>{const o=pAll();o[c]=asPromoUses(c)+1;try{L.setItem('as3_clean_promo',JSON.stringify(o))}catch(e){}return o[c]};
+})();
+</script>
+<script>
+/* ===== SUPABASE (v6): cuentas, datos y operativa en la nube, con caché local ===== */
+(function(){
+const SUPABASE_URL="https://bwiiyqgrvsttedalyhdw.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3aWl5cWdydnN0dGVkYWx5aGR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5NzI4NzQsImV4cCI6MjEwNzU0ODg3NH0.COnDW6tDwhTnMRpgLzkRVBP9QHaal9kNkcVJmtYnDVE";
+let sb=null;
+function getSb(){
+  if(sb)return sb;
+  try{if(window.supabase&&window.supabase.createClient)sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}})}catch(e){console.warn('Supabase no disponible',e)}
+  return sb;
+}
+window.asHasCloud=()=>!!getSb();
+/* Llamada RPC con tiempo máximo. Nunca lanza: devuelve {data} o {error,offline} */
+window.asRpc=async function(fn,args,ms){
+  const c=getSb();if(!c)return{error:{message:'sin-cliente'},offline:true};
+  try{
+    const r=await Promise.race([c.rpc(fn,args||{}),new Promise((_,rj)=>setTimeout(()=>rj(new Error('timeout')),ms||9000))]);
+    if(r&&r.error)return{error:r.error,offline:!r.error.code};
+    return{data:r?r.data:null};
+  }catch(e){return{error:e,offline:true}}
+};
+window.asToken=()=>{try{return localStorage.getItem('as3_clean_token')||''}catch(e){return''}};
+window.asSetToken=t=>{try{if(t)localStorage.setItem('as3_clean_token',t);else localStorage.removeItem('as3_clean_token')}catch(e){}};
+window.asCacheAccount=function(a){const l=asAcc(),i=l.findIndex(x=>x.slug===a.slug);if(i>=0)l[i]={...l[i],...a};else l.push(a);asSave(l)};
+window.asPushAccount=function(){const a=asMe(),t=asToken();if(a&&t)asRpc('as_update_account',{p_slug:a.slug,p_token:t,p_center:a.center,p_phone:a.phone||''},6000)};
+/* Contador GLOBAL de canjeos: la verdad está en Supabase; localStorage queda como caché/fallback */
+window.asPromoRefresh=async function(){
+  const r=await asRpc('as_promo_uses',{p_codes:Object.keys(AS_PROMO_LIM)},6000);
+  if(r.data&&typeof r.data==='object'&&!Array.isArray(r.data)){
+    try{const o={};Object.keys(AS_PROMO_LIM).forEach(c=>o[c]=Math.max(0,parseInt(r.data[c],10)||0));localStorage.setItem('as3_clean_promo',JSON.stringify(o))}catch(e){}
+    return true;
+  }
+  return false;
+};
+
+/* ---- Sincronización del panel profesional ---- */
+const SYNC_KEYS={'as3_clean':'datos','as3_clean_ops':'operativa','as3_clean_day':'operativa','as3_clean_future':'operativa'};
+const ver={datos:0,operativa:0};let applying=false,timer=null,busy=false,authWarned=false;
+const jget=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:(JSON.parse(v)??d)}catch(e){return d}};
+const jset=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const has=k=>{try{return localStorage.getItem(k)!=null}catch(e){return false}};
+window.asSyncMark=function(k){
+  if(applying||!window.AS_SLUG)return;const b=SYNC_KEYS[k];if(!b)return;
+  ver[b]++;const d=jget('as3_clean_dirty',{});if(!d[b]){d[b]=1;jset('as3_clean_dirty',d)}
+  clearTimeout(timer);timer=setTimeout(push,900);
+};
+function payload(b){
+  if(b==='datos'){const s=jget('as3_clean',null);return s?{c:s.c||[],s:s.s||[],p:s.p||[]}:null}
+  const ops=jget('as3_clean_ops',null),day=jget('as3_clean_day',null),future=jget('as3_clean_future',null);
+  return(ops||day||future)?{ops,day,future:future||[]}:null;
+}
+function authBad(){if(!authWarned){authWarned=true;try{toast('Sesión en la nube caducada: vuelve a iniciar sesión para sincronizar. Tus datos siguen guardados en este dispositivo.')}catch(e){}}}
+async function push(){
+  if(busy||!window.AS_SLUG)return;const tok=asToken();if(!tok)return;
+  const todo=Object.keys(jget('as3_clean_dirty',{})).filter(b=>jget('as3_clean_dirty',{})[b]);if(!todo.length)return;
+  busy=true;let again=false;
+  try{
+    for(const b of todo){
+      const v0=ver[b],p=payload(b);
+      if(!p){const d=jget('as3_clean_dirty',{});delete d[b];jset('as3_clean_dirty',d);continue}
+      const r=await asRpc('as_save',{p_slug:AS_SLUG,p_token:tok,p_kind:b,p_data:p},15000);
+      if(r.data&&r.data.ok){
+        const st=jget('as3_clean_sync',{});st[b]=r.data.ts;jset('as3_clean_sync',st);
+        if(ver[b]===v0){const d=jget('as3_clean_dirty',{});delete d[b];jset('as3_clean_dirty',d)}else again=true;
+      }else{if(r.data&&r.data.error==='unauthorized')authBad();break}   /* sin red: queda pendiente y se reintenta */
+    }
+  }finally{busy=false}
+  if(again)setTimeout(push,300);
+}
+async function pull(){
+  if(!window.AS_SLUG)return;const tok=asToken();if(!tok)return;
+  const r=await asRpc('as_load',{p_slug:AS_SLUG,p_token:tok},12000);
+  if(!r.data)return;if(r.data.error==='unauthorized'){authBad();return}
+  const dirty=jget('as3_clean_dirty',{}),st=jget('as3_clean_sync',{});let applied=false,needPush=false;
+  const dd=r.data.datos;
+  if(dd){
+    if(!dirty.datos&&st.datos!==dd.ts){applying=true;try{localStorage.setItem('as3_clean',JSON.stringify(dd.data))}finally{applying=false}st.datos=dd.ts;applied=true}
+  }else if(has('as3_clean')&&!dirty.datos){dirty.datos=1;needPush=true}      /* primera subida (migración desde el dispositivo) */
+  const oo=r.data.operativa;
+  if(oo){
+    if(!dirty.operativa&&st.operativa!==oo.ts){
+      applying=true;
+      try{const o=oo.data||{};
+        if(o.ops)localStorage.setItem('as3_clean_ops',JSON.stringify(o.ops));
+        if(o.day)localStorage.setItem('as3_clean_day',JSON.stringify(o.day));
+        if(o.future)localStorage.setItem('as3_clean_future',JSON.stringify(o.future));
+      }finally{applying=false}
+      st.operativa=oo.ts;applied=true;
+    }
+  }else if((has('as3_clean_ops')||has('as3_clean_day')||has('as3_clean_future'))&&!dirty.operativa){dirty.operativa=1;needPush=true}
+  jset('as3_clean_sync',st);jset('as3_clean_dirty',dirty);
+  if(applied&&window.asRehydrate)window.asRehydrate();
+  const ib=Array.isArray(r.data.inbox)?r.data.inbox:[];
+  if(ib.length&&window.asConsumeInbox){
+    const rids=window.asConsumeInbox(ib);
+    if(rids.length)await asRpc('as_ack_inbox',{p_slug:AS_SLUG,p_token:tok,p_rids:rids},9000);
+  }
+  if(needPush)push();
+}
+async function sync(){try{await push();await pull()}catch(e){console.warn('sync',e)}}
+window.asSync=sync;
+window.asFlush=async function(){const d=jget('as3_clean_dirty',{});if(Object.keys(d).length){clearTimeout(timer);await push()}};
+window.addEventListener('load',()=>{if(window.AS_SLUG)sync()});
+window.addEventListener('online',()=>{if(window.AS_SLUG)sync()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&window.AS_SLUG)sync()});
+setInterval(()=>{if(window.AS_SLUG&&!document.hidden)sync()},30000);
+})();
+</script>
+<script>
+/* ---------- Datos ---------- */
+const SERVICES = [
+  {id:'corte', name:'Corte', dur:45, price:25, color:'#2563EB', g:'Unisex'},
+  {id:'color', name:'Color', dur:90, price:55, color:'#7C3AED', g:'Mujer'},
+  {id:'manicura', name:'Manicura', dur:60, price:22, color:'#059669', g:'Unisex'}
+];
+const PROS = [];
+const GEN_OPTS = ['Unisex', 'Ambos', 'Mujer', 'Hombre', 'Niña', 'Niño'];
+let nid = 1;
+const CLIENTS = [];
+const GIFTS = [];
+let appts = [];
+let blocks = [];
+
+try {
+  const s = JSON.parse(localStorage.getItem('as3_clean') || 'null');
+  if (s) {
+    CLIENTS.splice(0, CLIENTS.length, ...s.c);
+    SERVICES.splice(0, SERVICES.length, ...s.s);
+    if (s.p) PROS.splice(0, PROS.length, ...s.p);
+    nid = Math.max(nid, ...CLIENTS.flatMap(c => c.visits.map(v => v.id + 1)));
+  }
+} catch(e) {}
+
+const save = () => {
+  try {
+    localStorage.setItem('as3_clean', JSON.stringify({ c: CLIENTS, s: SERVICES, p: PROS }));
+  } catch(e) {}
+};
+let nextId = 1;
+const S=id=>SERVICES.find(s=>s.id===id);
+const state={role:'admin',view:'agenda'};
+const START=540,END=1200,HH=64; // 9:00–20:00, 64px por hora
+const $=s=>document.querySelector(s);
+const fmt=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+const eur=n=>n.toLocaleString('es-ES',{minimumFractionDigits:0})+' €';
+
+/* ---------- Navegación ---------- */
+const NAV=[
+  {id:'agenda',label:'Agenda',icon:'📅'},
+  {id:'clientes',label:'Clientes',icon:'👥'},
+  {id:'servicios',label:'Servicios',icon:'✂️'},
+  {id:'regalo',label:'Tarjetas Regalo',icon:'🎁'},
+  {id:'caja',label:'Caja / Histórico',icon:'💶',admin:true},
+  {id:'gestoria',label:'Gestoría',icon:'📑',admin:true},
+  {id:'suscripcion',label:'Suscripción',icon:'⭐'},
+  {id:'ayuda',label:'Ayuda y Guía',icon:'💡'},
+  {id:'ajustes',label:'Ajustes',icon:'⚙️',admin:true}
+];
+function renderNav(){
+  $('#nav').innerHTML=NAV.filter(n=>!n.admin||state.role==='admin').map(n=>
+    `<button data-v="${n.id}" class="nav-btn w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-[15px] hover:bg-gray-800 ${state.view===n.id?'active':''}"><span>${n.icon}</span>${n.label}</button>`).join('');
+}
+function go(v){state.cid=null;
+  const n=NAV.find(x=>x.id===v);
+  if(n.admin&&state.role!=='admin')v='agenda';
+  state.view=v;
+  $('#title').textContent=NAV.find(x=>x.id===v).label;
+  renderNav();render();closeSide();
+}
+function setRole(r){
+  state.role=r;
+  document.querySelectorAll('.role-btn').forEach(b=>{
+    const on=b.dataset.role===r;
+    b.className='role-btn px-3 sm:px-4 py-1.5 rounded-full '+(on?'bg-[#111827] text-white shadow':'text-gray-600');
+  });
+  const n=NAV.find(x=>x.id===state.view);
+  if(n.admin&&r!=='admin')state.view='agenda';
+  go(state.view);
+  toast(r==='admin'?'Vista Dueño/Admin':'Vista Empleado: Caja, Gestoría y precios ocultos');
+}
+const openSide=()=>{$('#side').classList.remove('-translate-x-full');$('#scrim').classList.remove('hidden')};
+const closeSide=()=>{$('#side').classList.add('-translate-x-full');$('#scrim').classList.add('hidden')};
+
+/* ---------- Vistas ---------- */
+function render(){
+  const v=state.view;
+  $('#view').innerHTML=({agenda:vAgenda,clientes:vClientes,servicios:vServicios,regalo:vRegalo,caja:vCaja,gestoria:vGestoria,suscripcion:vSuscripcion,ayuda:vAyuda,ajustes:vAjustes})[v]();
+}
+function vAgenda(){if(!PROS.length)return emptyAgenda();if(state.apro&&!PROS.includes(state.apro))state.apro='';
+  const d=aDay(),td=isToday(d),A=dayAppts(d),Bk=dayBlocks(d),adm=state.role==='admin';
+  const hours=[];for(let m=START;m<END;m+=60)hours.push(m);
+  const slots=[];for(let m=START;m<END;m+=30)slots.push(m);
+  const H=(END-START)*HH/60,px=m=>(m-START)*HH/60;
+  const cols=PROS.filter(p=>!state.apro||p===state.apro).map(p=>{
+    const lines=hours.map((m,i)=>`<div class="absolute left-0 right-0 border-t border-gray-200 pointer-events-none" style="top:${i*HH}px"></div><div class="absolute left-0 right-0 border-t border-dashed border-gray-100 pointer-events-none" style="top:${i*HH+HH/2}px"></div>`).join('');
+    /* Franjas de 30 min clicables: abren «Nueva cita» con día, hora y profesional ya rellenos */
+    const sl=slots.map(m=>`<div class="slot" data-a="slot" data-pro="${esc(p)}" data-m="${m}" data-label="＋ ${fmt(m)}" title="Nueva cita a las ${fmt(m)}" style="top:${px(m)}px;height:${HH/2}px"></div>`).join('');
+    const br=Bk.filter(b=>b.pro===p).map(b=>`<div class="stripe absolute left-1 right-1 rounded-lg border border-gray-300 text-gray-500 text-xs font-medium px-2 py-1 overflow-hidden" data-a="delBlock" data-id="${blocks.indexOf(b)}" style="top:${px(b.start)}px;height:${b.dur*HH/60-2}px">⏸ ${b.label} · ${fmt(b.start)}–${fmt(b.start+b.dur)}</div>`).join('');
+    const ap=A.filter(a=>a.pro===p).map(a=>{
+      const s=S(a.svc)||{name:'Servicio',color:'#475569'},key=td?'t:'+a.id:'f:'+a.rid;
+      return `<div class="appt absolute left-1 right-1 rounded-lg text-white px-2 py-1.5 overflow-hidden shadow cursor-pointer ${a.gift?'gold':''} ${a.estado==='pendiente'?'opacity-80 ring-2 ring-inset ring-white/80':''}" data-a="${td?'editAppt':'editFut'}" data-id="${td?a.id:esc(a.rid)}" style="top:${px(a.start)}px;height:${a.dur*HH/60-2}px;background:${s.color}">
+        <div class="flex items-start justify-between gap-1">
+          <div class="min-w-0"><div class="text-sm font-semibold truncate">${esc(a.client)}</div>
+          <div class="text-xs opacity-90 truncate">${a.estado==='pendiente'?'⏳ Pendiente · ':''}${esc(s.name)} · ${fmt(a.start)}–${fmt(a.start+a.dur)}</div></div>
+          <button data-wa="${esc(key)}" title="${a.rem?'Recordatorio ya enviado · enviar de nuevo':'Enviar recordatorio por WhatsApp'}" aria-label="WhatsApp" class="shrink-0 w-8 h-8 rounded-full bg-white/95 grid place-items-center shadow relative">${WA_ICON}${a.rem?'<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-600 text-white text-[9px] grid place-items-center">✓</span>':''}</button>
+        </div>
+        ${a.gift?`<span class="inline-block mt-1 text-[10px] font-bold bg-[#D4AF37] text-[#111827] px-1.5 py-0.5 rounded">🎁 REGALO · 0 €</span>`:''}
+      </div>`;}).join('');
+    return `<div class="min-w-[170px] flex-1 border-l border-gray-200">
+      <div class="h-12 sticky top-0 z-10 bg-white border-b border-gray-200 grid place-items-center font-semibold text-sm">${esc(p)}</div>
+      <div class="relative" style="height:${H}px">${lines}${sl}${br}${ap}</div></div>`;
+  }).join('');
+  const times=hours.map(m=>`<div class="absolute right-2 -translate-y-2 text-xs text-gray-400" style="top:${px(m)}px">${fmt(m)}</div>`).join('');
+  const nTom=futQ().filter(x=>x.date===tomorrow()).length;
+  const dl=new Date(d+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  const catalog=SERVICES.map(s=>`<div class="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"><i class="w-3 h-8 rounded shrink-0" style="background:${s.color}"></i><div class="min-w-0 flex-1"><div class="text-sm font-medium truncate">${esc(s.name)}</div><div class="text-xs text-gray-500">${s.dur} min${adm?' · '+eur(s.price):''}</div></div></div>`).join('');
+  return `<div class="flex flex-wrap items-center gap-2 mb-3">
+      <div class="flex items-center gap-1 mr-auto">
+        <button data-a="aday" data-id="-1" ${td?'disabled':''} class="w-10 h-10 rounded-lg border border-gray-300 bg-white text-lg disabled:opacity-40" aria-label="Día anterior">‹</button>
+        <input id="aday" type="date" min="${today()}" value="${d}" class="border border-gray-300 rounded-lg px-2 py-2 text-sm bg-white">
+        <button data-a="aday" data-id="1" class="w-10 h-10 rounded-lg border border-gray-300 bg-white text-lg" aria-label="Día siguiente">›</button>
+        ${td?'':'<button data-a="atoday" class="px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium">Hoy</button>'}
+        <span class="text-sm text-gray-500 ml-2 capitalize hidden sm:inline">${td?'Hoy · ':''}${dl}</span>
+      </div>
+      <label class="text-sm text-gray-600 flex items-center gap-2">Ver:<select id="apro" class="border border-gray-300 rounded-lg px-2 py-2 text-sm bg-white"><option value="">Todos (vista general)</option>${PROS.map(p=>`<option value="${esc(p)}" ${p===state.apro?'selected':''}>${esc(p)}</option>`).join('')}</select></label>
+      <button data-a="remind" class="px-4 py-2.5 rounded-lg bg-[#25D366] text-white text-sm font-semibold active:opacity-80">📲 Recordar citas de mañana${nTom?` <span class="ml-1 bg-white/25 rounded-full px-2">${nTom}</span>`:''}</button>
+      ${td?'<button data-open="block" class="px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-sm font-medium active:bg-gray-100">⏸ Bloquear horario</button>':''}
+      <button data-a="newApptDay" class="px-4 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-medium active:bg-gray-700">＋ Nueva cita</button>
+    </div>
+    <details class="group mb-3 bg-white rounded-xl border border-gray-200">
+      <summary class="list-none cursor-pointer select-none px-4 py-2.5 flex items-center gap-2 text-sm font-medium text-gray-700"><span>✂️ Ver catálogo de servicios</span><span class="text-xs text-gray-400">(${SERVICES.length})</span><span class="ml-auto text-gray-400 transition group-open:rotate-180">▾</span></summary>
+      <div class="px-4 pb-4"><div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 max-h-72 overflow-y-auto">${catalog||'<p class="text-sm text-gray-500">Aún no hay servicios.</p>'}</div>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-gray-500"><span class="inline-flex items-center gap-1.5"><i class="w-3 h-3 rounded border-2 border-[#D4AF37]"></i>Regalo / 0 €</span><span>⏳ Pendiente de confirmar</span>${adm?'<button data-v="servicios" class="ml-auto underline text-[#8a6d12]">Gestionar servicios →</button>':''}</div></div>
+    </details>
+    <p class="text-xs text-gray-400 mb-2">Toca cualquier hueco libre de la agenda para crear una cita a esa hora.</p>
+    <div class="bg-white rounded-xl border border-gray-200 overflow-auto" style="max-height:calc(100vh - 230px)">
+      <div class="flex min-w-max sm:min-w-0">
+        <div class="w-14 shrink-0 sticky left-0 z-20 bg-white"><div class="h-12 border-b border-gray-200 sticky top-0 bg-white"></div><div class="relative" style="height:${H}px">${times}</div></div>
+        ${cols}
+      </div></div>`;
+}
+const card=(t,b)=>`<div class="bg-white rounded-xl border border-gray-200 p-4 ${b||''}">${t}</div>`;
+
+/* ---------- Modales ---------- */
+const inp='w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base bg-white';
+const lbl='block text-sm font-medium text-gray-700 mb-1';
+const timeOpts=(sel)=>{let o='';for(let m=START;m<=END;m+=15)o+=`<option value="${m}" ${m===sel?'selected':''}>${fmt(m)}</option>`;return o};
+const proOpts=(all)=>(all?'<option value="all">Todos</option>':'')+(PROS.map(p=>`<option>${p}</option>`).join('')||'<option value="">—</option>');
+function openModalBase(type,arg){
+  const m=$('#modal'),b=$('#mBody');
+  if(type==='appt'){
+    const o=arg||{},d0=o.date&&o.date>=today()?o.date:aDay(),st0=o.start!=null?+o.start:600;
+    $('#mTitle').textContent='Nueva cita';
+    b.innerHTML=`<form id="f" class="space-y-3">
+      <div class="rounded-lg bg-amber-50 border border-amber-200 text-[#8a6d12] text-sm px-3 py-2 capitalize">📅 ${longD(d0)} · ${fmt(st0)}</div>
+      <div><label class="${lbl}">Cliente</label><input name="client" id="apClient" list="cl" required autocomplete="off" class="${inp}" placeholder="Nombre del cliente"><datalist id="cl">${CLIENTS.map(c=>`<option value="${esc(c.n)}">`).join('')}</datalist></div>
+      <div><label class="${lbl}">Teléfono WhatsApp <span class="text-gray-400 font-normal">(para recordatorios)</span></label><input name="tel" id="apTel" type="tel" maxlength="20" class="${inp}" placeholder="Ej. 600 123 456"></div>
+      <div><label class="${lbl}">Servicio</label><select name="svc" class="${inp}">${SERVICES.map(s=>`<option value="${s.id}">${esc(s.name)} · ${s.dur} min</option>`).join('')}</select></div>
+      <div><label class="${lbl}">Profesional</label><select name="pro" class="${inp}">${PROS.map(p=>`<option ${p===o.pro?'selected':''}>${esc(p)}</option>`).join('')}</select></div>
+      <div class="grid grid-cols-2 gap-3"><div><label class="${lbl}">Día</label><input name="date" type="date" required min="${today()}" value="${d0}" class="${inp}"></div>
+      <div><label class="${lbl}">Hora</label><select name="start" class="${inp}">${timeOpts(st0)}</select></div></div>
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="gift" class="w-5 h-5 accent-[#D4AF37]"> Cita a 0 € / pagada con Tarjeta Regalo</label>
+      <button class="w-full py-3 rounded-lg bg-[#111827] text-white font-medium">Guardar cita</button></form>`;
+    $('#apClient').oninput=e=>{const c=CLIENTS.find(x=>norm(x.n)===norm(e.target.value.trim()));if(c&&!$('#apTel').value)$('#apTel').value=c.t};
+    $('#f').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),svc=S(f.get('svc')),start=+f.get('start'),d=f.get('date'),pro=f.get('pro');
+      if(!d||d<today())return toast('Elige hoy o un día posterior');
+      if(start+svc.dur>END){toast('La cita termina después del cierre');return}
+      const clash=[...dayAppts(d),...dayBlocks(d)].some(x=>x.pro===pro&&start<x.start+x.dur&&x.start<start+svc.dur);
+      if(clash&&!confirm('Ese hueco ya está ocupado. ¿Crear la cita igualmente?'))return;
+      const gift=!!f.get('gift'),client=clean(f.get('client')),tel=cleanTel(f.get('tel'));
+      if(isToday(d)){
+        if(gift&&zeroLeft()<=0)return toast('Cupo diario de citas a 0 € completo');
+        appts.push({id:nextId++,pro,start,dur:svc.dur,client,tel,svc:svc.id,gift,estado:'confirmada',origen:'centro'});saveDay();
+      }else{const q=futQ();q.push({rid:newRid(),date:d,pro,start,dur:svc.dur,client,tel,svc:svc.id,gift,estado:'confirmada',origen:'centro'});futSave(q)}
+      state.aday=d;closeModal();render();toast('Cita creada · '+fmt(start)+(isToday(d)?'':' · '+new Date(d+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})));};
+  }else{
+    $('#mTitle').textContent='Bloquear horario';
+    b.innerHTML=`<form id="f" class="space-y-3">
+      <div><label class="${lbl}">Profesional</label><select name="pro" class="${inp}">${proOpts(true)}</select></div>
+      <div class="grid grid-cols-2 gap-3"><div><label class="${lbl}">Desde</label><select name="a" class="${inp}">${timeOpts(840)}</select></div>
+      <div><label class="${lbl}">Hasta</label><select name="b" class="${inp}">${timeOpts(900)}</select></div></div>
+      <div><label class="${lbl}">Motivo</label><select name="label" class="${inp}"><option>Comida</option><option>Descanso</option><option>Formación</option><option>Gestión</option></select></div>
+      <button class="w-full py-3 rounded-lg bg-[#111827] text-white font-medium">Bloquear</button></form>`;
+    $('#f').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),a=+f.get('a'),z=+f.get('b');
+      if(z<=a){toast('La hora final debe ser posterior');return}
+      (f.get('pro')==='all'?PROS:[f.get('pro')]).forEach(p=>blocks.push({pro:p,start:a,dur:z-a,label:f.get('label')}));
+      saveDay();closeModal();render();toast('Horario bloqueado');};
+  }
+  m.classList.remove('hidden');m.classList.add('flex');
+}
+function closeModal(){$('#modal').classList.add('hidden');$('#modal').classList.remove('flex')}
+let tt;function toast(t){const e=$('#toast');e.textContent=t;e.classList.remove('hidden');clearTimeout(tt);tt=setTimeout(()=>e.classList.add('hidden'),2400)}
+
+/* ================= FASE 2 ================= */
+const KINDS={'Fórmula':'bg-purple-100 text-purple-800','Piel':'bg-sky-100 text-sky-800','Alergia':'bg-red-100 text-red-700','Sensibilidad':'bg-amber-100 text-amber-800','General':'bg-gray-100 text-gray-700'};
+const TR={
+ 'Láser':'Declaro haber sido informado/a de que el láser puede causar enrojecimiento, hinchazón, costras o alteraciones de pigmentación. Debo evitar el sol antes y después, y confirmo no estar embarazada ni tomar medicación fotosensibilizante.',
+ 'Peeling químico':'Declaro haber sido informado/a de que el peeling puede producir enrojecimiento, descamación, irritación o manchas. Debo usar protección solar alta y no aplicar retinoides ni exfoliantes durante los días indicados.',
+ 'Micropigmentación':'Declaro haber sido informado/a de que el pigmento se implanta en la piel, que puede haber inflamación, infección o reacción alérgica, que se requiere un retoque y que el resultado final varía según mi piel.'
+};
+const COLORS=['#2563EB','#7C3AED','#DB2777','#059669','#D97706','#0891B2','#DC2626','#475569'];
+const btn='px-4 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-medium';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clean=s=>String(s).replace(/[<>&"]/g,'').trim();
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const fd=d=>new Date(d).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
+const dt=d=>new Date(d).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'medium'});
+const today=()=>iso(new Date());
+const cur=()=>CLIENTS.find(c=>c.id===state.cid);
+const alerts=c=>[...new Set(c.visits.flatMap(v=>v.notes).filter(n=>n.k==='Alergia').map(n=>n.t))];
+
+/* --- Clientes / CRM --- */
+function clist(q){
+  const n=norm(q.trim()),d=q.replace(/\D/g,'');
+  const r=CLIENTS.filter(c=>!n||norm(c.n).includes(n)||(d&&c.t.replace(/\D/g,'').includes(d)));
+  return r.length?r.map(c=>{const last=c.visits.map(v=>v.d).sort().pop();return `
+   <button data-a="open" data-id="${c.id}" class="text-left bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 w-full flex items-center gap-3">
+    <div class="w-11 h-11 rounded-full bg-gray-200 grid place-items-center font-semibold shrink-0">${c.n[0]}</div>
+    <div class="flex-1 min-w-0"><div class="font-semibold truncate">${c.n}</div><div class="text-sm text-gray-500">${c.t}</div>
+    <div class="text-xs text-gray-400 mt-0.5">${c.visits.length} visitas${last?' · última '+fd(last):''}</div></div>
+    <div class="flex flex-col gap-1 items-end">${alerts(c).length?'<span class="text-[10px] font-bold bg-red-100 text-red-700 rounded px-1.5 py-0.5">⚠ ALERGIA</span>':''}${c.consents.length?'<span class="text-[10px] font-bold bg-green-100 text-green-700 rounded px-1.5 py-0.5">✍ FIRMADO</span>':''}</div></button>`}).join(''):'<p class="text-sm text-gray-500">Sin resultados.</p>';
+}
+function vClientes(){
+  if(state.cid)return vFicha(cur());
+  return `<div class="flex gap-2 mb-4"><input id="q" type="search" autocomplete="off" placeholder="Buscar por nombre o teléfono…" class="${inp} flex-1"><button data-a="newClient" class="${btn} whitespace-nowrap">＋ Cliente</button></div>
+  <div id="clist" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">${clist('')}</div>`;
+}
+const visitCard=v=>card(`
+  <div class="flex items-center justify-between gap-2"><div><div class="font-semibold">${esc(v.svc)}</div><div class="text-sm text-gray-500">${fd(v.d)} · ${v.pro}</div></div><div class="font-semibold">${eur(v.price)}</div></div>
+  <div class="mt-3 space-y-2">${v.notes.map((n,i)=>`<div class="flex gap-2 items-start text-sm"><span class="text-xs font-medium rounded px-2 py-0.5 shrink-0 ${KINDS[n.k]}">${n.k}</span><div class="flex-1"><div>${esc(n.t)}</div><div class="text-xs text-gray-400">${dt(n.ts)}</div></div><button data-a="delNote" data-id="${v.id}:${i}" class="text-gray-400 p-1" aria-label="Borrar nota">✕</button></div>`).join('')||'<div class="text-sm text-gray-400">Sin notas en esta visita.</div>'}</div>
+  <form data-note="${v.id}" class="mt-3 flex flex-col sm:flex-row gap-2"><select name="k" class="${inp} sm:w-40">${Object.keys(KINDS).map(k=>`<option>${k}</option>`).join('')}</select><input name="t" placeholder="Fórmula, tipo de piel, alergia…" class="${inp} flex-1"><button class="${btn}">Añadir nota</button></form>`);
+function vFicha(c){
+  const tab=state.tab||'visitas',al=alerts(c),adm=state.role==='admin';
+  const gasto=c.visits.reduce((t,v)=>t+v.price,0)+c.purchases.reduce((t,p)=>t+p.price,0);
+  const tabs=[['visitas','Visitas ('+c.visits.length+')'],['compras','Compras ('+c.purchases.length+')'],['consent','Consentimientos ('+c.consents.length+')']].map(([k,l])=>`<button data-a="tab" data-id="${k}" class="px-4 py-2.5 text-sm font-medium border-b-2 whitespace-nowrap ${tab===k?'border-[#111827] text-[#111827]':'border-transparent text-gray-500'}">${l}</button>`).join('');
+  let body;
+  if(tab==='visitas')body=`<button data-a="newVisit" class="${btn}">＋ Registrar visita</button><div class="space-y-3 mt-3">${c.visits.slice().sort((a,b)=>b.d.localeCompare(a.d)).map(visitCard).join('')||'<p class="text-sm text-gray-500">Sin visitas todavía.</p>'}</div>`;
+  else if(tab==='compras')body=`<form data-buy="1" class="flex flex-col sm:flex-row gap-2 mb-3"><input name="item" required placeholder="Producto o tarjeta regalo" class="${inp} flex-1"><input name="price" type="number" step="0.5" min="0" required placeholder="€" class="${inp} sm:w-28"><button class="${btn}">＋ Compra</button></form>`+card(c.purchases.length?`<table class="w-full text-sm">${c.purchases.slice().sort((a,b)=>b.d.localeCompare(a.d)).map(p=>`<tr class="border-t first:border-0"><td class="py-2.5 pr-3 text-gray-500 whitespace-nowrap">${fd(p.d)}</td><td class="pr-3">${esc(p.item)}</td><td class="text-right font-medium">${eur(p.price)}</td></tr>`).join('')}</table>`:'<p class="text-sm text-gray-500">Sin compras registradas.</p>');
+  else body=`<button data-a="newConsent" class="${btn}">✍ Nuevo consentimiento</button><div class="space-y-3 mt-3">${c.consents.slice().reverse().map(k=>card(`<div class="flex justify-between gap-2"><div><div class="font-semibold">${k.tr}</div><div class="text-sm text-gray-500">Firmado por ${esc(k.name)}</div></div><span class="text-xs bg-green-100 text-green-700 rounded-full px-2 py-1 h-fit whitespace-nowrap">✔ ${dt(k.ts)}</span></div><img src="${k.sig}" alt="Firma" class="h-20 mt-3 border border-gray-200 rounded bg-white"><details class="mt-2 text-sm text-gray-600"><summary class="cursor-pointer text-blue-600">Ver texto aceptado</summary><p class="mt-1">${k.text}</p></details>`)).join('')||'<p class="text-sm text-gray-500">Sin consentimientos firmados.</p>'}</div>`;
+  return `<button data-a="back" class="text-sm text-gray-600 mb-3 py-1">← Clientes</button>
+  <div class="bg-white rounded-xl border border-gray-200 p-4 mb-4 flex flex-wrap items-center gap-4">
+   <div class="w-14 h-14 rounded-full bg-[#111827] text-white grid place-items-center text-xl font-semibold">${c.n[0]}</div>
+   <div class="flex-1 min-w-[160px]"><div class="text-lg font-semibold">${c.n}</div><div class="text-sm text-gray-500">📞 ${c.t}</div></div>
+   ${adm?`<div class="text-right"><div class="text-xs text-gray-500">Gasto total</div><div class="text-xl font-bold">${eur(gasto)}</div></div>`:''}</div>
+  ${al.length?`<div class="mb-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm p-3">⚠ <b>Alergias:</b> ${al.map(esc).join(' · ')}</div>`:''}
+  <div class="flex border-b border-gray-200 mb-4 overflow-x-auto">${tabs}</div>${body}`;
+}
+
+/* --- Servicios / Catálogo --- */
+function vServicios(){
+  const adm=state.role==='admin',f=state.gf||'Todos',U=['Unisex','Ambos'];
+  const chips=['Todos',...GEN_OPTS].map(g=>`<button data-a="gf" data-id="${g}" class="px-3 py-1.5 rounded-full text-sm ${f===g?'bg-[#111827] text-white':'bg-white border border-gray-300 text-gray-600'}">${g}</button>`).join('');
+  const list=SERVICES.filter(s=>f==='Todos'||s.g===f||(U.includes(s.g)&&!U.includes(f)));
+  return (adm?prosCard():'')+`<div class="flex flex-wrap items-center gap-2 mb-4"><div class="flex flex-wrap gap-2 flex-1">${chips}</div>${adm?`<button data-a="svc" data-id="" class="${btn}">＋ Nuevo servicio</button>`:''}</div>
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">${list.map(s=>card(`<div class="flex items-center gap-3"><i class="w-4 h-12 rounded" style="background:${s.color}"></i><div class="flex-1 min-w-0"><div class="font-semibold truncate">${s.name}</div><div class="text-sm text-gray-500">${s.dur} min · <span class="bg-gray-100 rounded px-1.5 py-0.5 text-xs">${s.g}</span></div></div>${adm?`<div class="text-right"><div class="font-semibold">${eur(s.price)}</div><button data-a="svc" data-id="${s.id}" class="text-xs text-blue-600 underline py-1">Editar</button></div>`:''}</div>`)).join('')||'<p class="text-sm text-gray-500">Sin servicios en esta categoría.</p>'}</div>
+  ${adm?'':'<p class="text-sm text-gray-500 mt-4">🔒 Los ajustes de precios y del catálogo son solo para el Dueño/Admin.</p>'}`;
+}
+
+/* --- Modales Fase 2 --- */
+function showModal(t,h){$('#mTitle').textContent=t;$('#mBody').innerHTML=h;$('#modal').classList.remove('hidden');$('#modal').classList.add('flex')}
+const sbtn='w-full py-3 rounded-lg bg-[#111827] text-white font-medium';
+function initSig(){
+  const cv=$('#sig'),r=cv.getBoundingClientRect(),dpr=devicePixelRatio||1;
+  cv.width=r.width*dpr;cv.height=r.height*dpr;
+  const x=cv.getContext('2d');x.scale(dpr,dpr);x.lineWidth=2.4;x.lineCap=x.lineJoin='round';x.strokeStyle='#111827';
+  let on=false;
+  const pt=e=>{const b=cv.getBoundingClientRect();return[e.clientX-b.left,e.clientY-b.top]};
+  cv.onpointerdown=e=>{e.preventDefault();on=true;cv.setPointerCapture(e.pointerId);const[a,b]=pt(e);x.beginPath();x.moveTo(a,b);x.lineTo(a+.1,b+.1);x.stroke();cv.dataset.d=1};
+  cv.onpointermove=e=>{if(!on)return;const[a,b]=pt(e);x.lineTo(a,b);x.stroke();x.beginPath();x.moveTo(a,b)};
+  cv.onpointerup=cv.onpointercancel=()=>{on=false};
+  $('#sigClr').onclick=()=>{x.clearRect(0,0,cv.width,cv.height);delete cv.dataset.d};
+}
+function openModal2(type,arg){
+  if(type==='client'){
+    showModal('Nuevo cliente',`<form id="f" class="space-y-3"><div><label class="${lbl}">Nombre</label><input name="n" required class="${inp}"></div><div><label class="${lbl}">Teléfono</label><input name="t" type="tel" required class="${inp}"></div><button class="${sbtn}">Crear cliente</button></form>`);
+    $('#f').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);CLIENTS.push({id:Math.max(0,...CLIENTS.map(c=>c.id))+1,n:clean(f.get('n')),t:clean(f.get('t')),visits:[],purchases:[],consents:[]});save();closeModal();render();toast('Cliente creado')};
+  }else if(type==='visit'){
+    showModal('Registrar visita',`<form id="f" class="space-y-3"><div><label class="${lbl}">Servicio</label><select name="svc" class="${inp}">${SERVICES.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</select></div><div class="grid grid-cols-2 gap-3"><div><label class="${lbl}">Profesional</label><select name="pro" class="${inp}">${proOpts()}</select></div><div><label class="${lbl}">Fecha</label><input type="date" name="d" value="${today()}" class="${inp}"></div></div><button class="${sbtn}">Guardar visita</button></form>`);
+    $('#f').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),s=S(f.get('svc'));cur().visits.push({id:nid++,d:f.get('d'),svc:s.name,price:s.price,pro:f.get('pro'),notes:[]});save();closeModal();render();toast('Visita registrada')};
+  }else if(type==='consent'){
+    const c=cur(),ck=n=>`<label class="flex gap-2 text-sm"><input type="checkbox" name="${n}" class="w-5 h-5 mt-0.5 shrink-0">`;
+    showModal('Consentimiento informado',`<form id="f" class="space-y-3">
+     <div><label class="${lbl}">Tratamiento</label><select name="tr" id="trSel" class="${inp}">${Object.keys(TR).map(k=>`<option>${k}</option>`).join('')}</select></div>
+     <div id="trTxt" class="text-sm bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-700 leading-relaxed">${Object.values(TR)[0]}</div>
+     ${ck('c1')}He informado de alergias, medicación y estado de salud relevantes.</label>
+     ${ck('c2')}He leído y acepto el tratamiento, sus riesgos y las indicaciones posteriores.</label>
+     ${ck('c3')}Consiento el tratamiento de mis datos de salud conforme al RGPD.</label>
+     <div><label class="${lbl}">Nombre del firmante</label><input name="name" required value="${esc(c.n)}" class="${inp}"></div>
+     <div><div class="flex justify-between items-center mb-1"><span class="text-sm font-medium text-gray-700">Firma (dedo o lápiz)</span><button type="button" id="sigClr" class="text-sm text-blue-600 underline">Borrar firma</button></div><canvas id="sig" class="w-full h-44 bg-white border-2 border-dashed border-gray-300 rounded-lg touch-none"></canvas></div>
+     <button class="${sbtn}">Firmar y guardar</button></form>`);
+    initSig();
+    $('#trSel').onchange=e=>{$('#trTxt').textContent=TR[e.target.value]};
+    $('#f').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),cv=$('#sig');
+      if(!(f.get('c1')&&f.get('c2')&&f.get('c3')))return toast('Marca las tres declaraciones');
+      if(!cv.dataset.d)return toast('Falta la firma del cliente');
+      c.consents.push({id:Date.now(),tr:f.get('tr'),text:TR[f.get('tr')],name:clean(f.get('name')),ts:new Date().toISOString(),sig:cv.toDataURL('image/png')});
+      save();closeModal();state.tab='consent';render();toast('Consentimiento firmado y guardado')};
+  }else if(type==='svc'){
+    const s=arg?S(arg):{name:'',g:'Unisex',price:20,dur:30,color:'#2563EB'};
+    showModal(arg?'Editar servicio':'Nuevo servicio',`<form id="f" class="space-y-3">
+     <div><label class="${lbl}">Nombre</label><input name="name" required value="${esc(s.name)}" class="${inp}"></div>
+     <div><label class="${lbl}">Género</label><select name="g" class="${inp}">${GEN_OPTS.map(g=>`<option ${g===s.g?'selected':''}>${g}</option>`).join('')}</select></div>
+     <div class="grid grid-cols-2 gap-3"><div><label class="${lbl}">Precio (€)</label><input name="price" type="number" min="0" step="0.5" required value="${s.price}" class="${inp}"></div><div><label class="${lbl}">Duración (min)</label><input name="dur" type="number" min="5" step="5" required value="${s.dur}" class="${inp}"></div></div>
+     <div><label class="${lbl}">Color en la agenda</label><div class="flex flex-wrap items-center gap-2">${COLORS.map(k=>`<button type="button" data-a="swatch" data-id="${k}" class="w-9 h-9 rounded-full border-2 border-white shadow ring-1 ring-gray-300" style="background:${k}" aria-label="${k}"></button>`).join('')}<input id="svcColor" name="color" type="color" value="${s.color}" class="w-11 h-9 p-0 border-0 bg-transparent"></div></div>
+     <button class="${sbtn}">Guardar servicio</button>${arg?'<button type="button" id="svcDel" class="w-full py-2.5 text-sm text-red-600">Eliminar servicio</button>':''}</form>`);
+    $('#f').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),o={name:clean(f.get('name')),g:f.get('g'),price:+f.get('price'),dur:+f.get('dur'),color:f.get('color')};
+      if(arg)Object.assign(s,o);else SERVICES.push({id:'s'+Date.now(),...o});
+      save();closeModal();render();toast('Servicio guardado · color actualizado en la agenda')};
+    if(arg)$('#svcDel').onclick=()=>{if(appts.some(a=>a.svc===arg))return toast('Tiene citas en la agenda: no se puede eliminar');if(confirm('¿Eliminar este servicio?')){SERVICES.splice(SERVICES.indexOf(s),1);save();closeModal();render()}};
+  }else openModalBase(type,arg);
+}
+
+/* --- Eventos Fase 2 --- */
+document.addEventListener('input',e=>{if(e.target.id==='q')$('#clist').innerHTML=clist(e.target.value)});
+document.addEventListener('submit',e=>{
+  const f=e.target,d=new FormData(f);
+  if(f.dataset.note){e.preventDefault();const t=(d.get('t')||'').trim();if(!t)return;cur().visits.find(v=>v.id==f.dataset.note).notes.push({k:d.get('k'),t,ts:new Date().toISOString()});save();render();toast('Nota añadida')}
+  else if(f.dataset.buy){e.preventDefault();cur().purchases.push({d:today(),item:clean(d.get('item')),price:+d.get('price')});save();render();toast('Compra registrada')}
+});
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-a]');if(!t)return;
+  const a=t.dataset.a,id=t.dataset.id;
+  if(a==='open'){state.cid=+id;state.tab='visitas';render()}
+  else if(a==='back'){state.cid=null;render()}
+  else if(a==='tab'){state.tab=id;render()}
+  else if(a==='newClient')openModal('client');
+  else if(a==='newVisit')openModal('visit');
+  else if(a==='newConsent')openModal('consent');
+  else if(a==='delNote'){const[vid,i]=id.split(':');cur().visits.find(v=>v.id==vid).notes.splice(+i,1);save();render()}
+  else if(a==='gf'){state.gf=id;render()}
+  else if(a==='svc')openModal('svc',id);
+  else if(a==='swatch')$('#svcColor').value=id;
+});
+
+/* ================= FASE 3 ================= */
+const iso=d=>new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const r2=n=>Math.round(n*100)/100;
+const eu2=n=>n.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const M=['Efectivo','Tarjeta','Bizum','Canje 0€'];
+const ICON={'Efectivo':'💶','Tarjeta':'💳','Bizum':'📲','Canje 0€':'🎁'};
+const MC={'Efectivo':'bg-green-100 text-green-800','Tarjeta':'bg-blue-100 text-blue-800','Bizum':'bg-teal-100 text-teal-800','Canje 0€':'bg-amber-100 text-amber-800'};
+const DEN=[50,20,10,5,2,1,.5,.2,.1,.05];
+const AS={closes:[],sales:[],paid:{},quota:3,fondo:100,den:{}};
+try{const q=JSON.parse(localStorage.getItem('as3_clean_ops')||'null');if(q){Object.assign(AS,q);if(q.gifts)GIFTS.splice(0,GIFTS.length,...q.gifts)}}catch(e){}
+const save3=()=>{try{localStorage.setItem('as3_clean_ops',JSON.stringify({...AS,gifts:GIFTS}))}catch(e){}saveDay()};
+const zeroUsed=()=>appts.filter(a=>a.gift).length,zeroLeft=()=>AS.quota-zeroUsed();
+const isClosed=()=>AS.closes.some(c=>c.d===today());
+const nowT=()=>new Date().toTimeString().slice(0,5);
+const saveDay=()=>{try{localStorage.setItem('as3_clean_day',JSON.stringify({d:today(),a:appts,b:blocks,n:nextId}))}catch(e){}};
+try{const q=JSON.parse(localStorage.getItem('as3_clean_day')||'null');if(q&&q.d===today()){appts.splice(0,appts.length,...q.a);blocks.splice(0,blocks.length,...q.b);nextId=Math.max(q.n||1,1,...appts.map(a=>a.id+1))}}catch(e){}
+/* ---- Reservas de clientes: las de hoy entran directo en appts; las de otros días esperan en una cola y entran el día que toca ---- */
+const FUT_K='as3_clean_future';
+function pullFuture(){
+  if(!window.AS_SLUG)return false;
+  let q=[];try{q=JSON.parse(localStorage.getItem(FUT_K)||'[]')||[]}catch(e){}
+  if(!q.length)return false;
+  const t=today(),keep=[];let ch=false;
+  q.forEach(x=>{
+    if(x.date===t){ch=true;if(S(x.svc)&&!appts.some(a=>a.rid===x.rid))appts.push({id:nextId++,rid:x.rid,pro:x.pro,start:x.start,dur:x.dur,client:clean(x.client),tel:clean(x.tel||''),svc:x.svc,gift:!!x.gift,estado:x.estado||'pendiente',origen:x.origen||'cliente',rem:x.rem||0})}
+    else if(x.date<t)ch=true;
+    else keep.push(x);
+  });
+  if(ch){try{localStorage.setItem(FUT_K,JSON.stringify(keep))}catch(e){}saveDay()}
+  return ch;
+}
+function syncDay(){
+  if(!window.AS_SLUG)return;
+  try{const q=JSON.parse(localStorage.getItem('as3_clean_day')||'null');
+    if(q&&q.d===today()){appts.splice(0,appts.length,...q.a);blocks.splice(0,blocks.length,...q.b);nextId=Math.max(q.n||1,nextId,...appts.map(a=>a.id+1))}}catch(e){}
+  pullFuture();
+  if($('#modal').classList.contains('hidden'))render();
+}
+/* v6: relee la caché local (tras descargar de Supabase) y refresca la pantalla */
+window.asRehydrate=function(){
+  try{const s=JSON.parse(localStorage.getItem('as3_clean')||'null');
+    if(s){CLIENTS.splice(0,CLIENTS.length,...s.c);SERVICES.splice(0,SERVICES.length,...s.s);if(s.p)PROS.splice(0,PROS.length,...s.p);nid=Math.max(nid,...CLIENTS.flatMap(c=>c.visits.map(v=>v.id+1)))}}catch(e){}
+  try{const q=JSON.parse(localStorage.getItem('as3_clean_ops')||'null');if(q){Object.assign(AS,q);if(q.gifts)GIFTS.splice(0,GIFTS.length,...q.gifts)}}catch(e){}
+  try{const q=JSON.parse(localStorage.getItem('as3_clean_day')||'null');
+    if(q&&q.d===today()){appts.splice(0,appts.length,...q.a);blocks.splice(0,blocks.length,...q.b);nextId=Math.max(q.n||1,nextId,...appts.map(a=>a.id+1))}}catch(e){}
+  pullFuture();
+  if($('#modal').classList.contains('hidden'))render();
+};
+/* v6: reservas de clientes llegadas por Supabase (bandeja) → agenda de hoy o cola de otros días */
+window.asConsumeInbox=function(items){
+  let fut=[];try{fut=JSON.parse(localStorage.getItem(FUT_K)||'[]')||[]}catch(e){}
+  const t=today();let chF=false,chD=false;
+  items.forEach(x=>{
+    if(!x||!x.rid)return;
+    if(appts.some(a=>a.rid===x.rid)||fut.some(f=>f.rid===x.rid))return;
+    if(x.date===t){if(S(x.svc)){appts.push({id:nextId++,rid:x.rid,pro:x.pro,start:+x.start,dur:+x.dur,client:clean(x.client),tel:clean(x.tel||''),svc:x.svc,gift:false,estado:'pendiente',origen:'cliente'});chD=true}}
+    else if(x.date>t){fut.push({rid:x.rid,date:x.date,pro:x.pro,start:+x.start,dur:+x.dur,client:clean(x.client),tel:clean(x.tel||''),svc:x.svc});chF=true}
+  });
+  if(chF)try{localStorage.setItem(FUT_K,JSON.stringify(fut))}catch(e){}
+  if(chD)saveDay();
+  if((chF||chD)&&$('#modal').classList.contains('hidden'))render();
+  return items.map(x=>x&&x.rid).filter(Boolean);
+};
+/* ================= AGENDA MULTI-DÍA · RECORDATORIOS WHATSAPP (wa.me) ================= */
+const addDays=(d,n)=>{const x=new Date(d+'T12:00');x.setDate(x.getDate()+n);return iso(x)};
+const tomorrow=()=>addDays(today(),1);
+const isToday=d=>d===today();
+const aDay=()=>{const t=today();if(!state.aday||state.aday<t)state.aday=t;return state.aday};
+const futQ=()=>{try{return JSON.parse(localStorage.getItem(FUT_K)||'[]')||[]}catch(e){return[]}};
+const futSave=q=>{try{localStorage.setItem(FUT_K,JSON.stringify(q))}catch(e){}};
+const newRid=()=>'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const cleanTel=v=>String(v||'').replace(/[^\d+ ]/g,'').trim().slice(0,20);
+/* Hoy: citas en memoria · otros días: cola de citas futuras (se sincroniza con la nube como «operativa») */
+const dayAppts=d=>isToday(d)?appts:futQ().filter(x=>x.date===d);
+const dayBlocks=d=>isToday(d)?blocks:[];
+const WA_ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.1 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l2 1c.3.1.5.2.5.3.1.1.1.6-.1 1.2z"/></svg>';
+const telOf=a=>a.tel||((CLIENTS.find(c=>norm(c.n)===norm(String(a.client||'').trim()))||{}).t)||'';
+/* Teléfono internacional para wa.me: solo dígitos; 9 cifras españolas → prefijo 34 */
+function waPhone(t){let d=String(t||'').replace(/\D/g,'');if(d.startsWith('00'))d=d.slice(2);if(d.length===9)d='34'+d;return d.length>=10?d:''}
+function waText(a,d){
+  const s=S(a.svc),cuando=d===tomorrow()?'mañana':d===today()?'hoy':'el '+new Date(d+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  return `¡Hola ${String(a.client||'').trim()}! Te recordamos tu cita para ${s?s.name:'tu servicio'} ${cuando} a las ${fmt(a.start)} en ${CENTER||'nuestro salón'}. Por favor, confírmanos si asistirás respondiendo a este mensaje. ¡Te esperamos!`;
+}
+const waLink=(tel,text)=>{const p=waPhone(tel);return p?'https://wa.me/'+p+'?text='+encodeURIComponent(text):''};
+/* key = «t:<id>» (cita de hoy) o «f:<rid>» (cita de otro día) */
+function apptByKey(k){const[t,v]=[k.slice(0,1),k.slice(2)];
+  if(t==='t'){const a=appts.find(x=>String(x.id)===v);return a?{a,d:today()}:null}
+  const a=futQ().find(x=>x.rid===v);return a?{a,d:a.date}:null}
+function patchByKey(k,o){
+  if(k[0]==='t'){const a=appts.find(x=>String(x.id)===k.slice(2));if(a){Object.assign(a,o);saveDay()}return}
+  const q=futQ(),a=q.find(x=>x.rid===k.slice(2));if(a){Object.assign(a,o);futSave(q)}}
+function sendWa(k){
+  const r=apptByKey(k);if(!r)return;const tel=telOf(r.a),url=waLink(tel,waText(r.a,r.d));
+  if(url){window.open(url,'_blank','noopener');patchByKey(k,{rem:Date.now(),tel:cleanTel(tel)});if($('#modal').classList.contains('hidden'))render();return}
+  /* Sin teléfono: pedirlo, guardarlo en la cita y abrir WhatsApp */
+  showModal('📲 Recordatorio por WhatsApp',`<form id="fwa" class="space-y-3"><p class="text-sm text-gray-600"><b>${esc(r.a.client)}</b> no tiene teléfono guardado. Escríbelo para enviarle el recordatorio.</p>
+    <div><label class="${lbl}">Teléfono WhatsApp</label><input name="tel" type="tel" required maxlength="20" placeholder="Ej. 600 123 456" class="${inp}"></div>
+    <div class="text-xs bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-600">${esc(waText(r.a,r.d))}</div>
+    <button class="w-full py-3 rounded-lg bg-[#25D366] text-white font-semibold">Abrir WhatsApp</button></form>`);
+  $('#fwa').onsubmit=e=>{e.preventDefault();const t=cleanTel(new FormData(e.target).get('tel')),u=waLink(t,waText(r.a,r.d));
+    if(!u)return toast('Teléfono no válido');window.open(u,'_blank','noopener');patchByKey(k,{tel:t,rem:Date.now()});closeModal();render()};
+}
+/* Botón global: citas de mañana, una a una con 1 clic */
+function remindModal(){
+  const d=tomorrow(),L=futQ().filter(x=>x.date===d).sort((a,b)=>a.start-b.start),sent=L.filter(x=>x.rem).length;
+  const row=a=>{const s=S(a.svc),tel=telOf(a),u=waLink(tel,waText(a,d));
+    return `<div class="flex items-center gap-3 py-3 border-t first:border-0"><i class="w-1.5 h-10 rounded shrink-0" style="background:${s?s.color:'#475569'}"></i>
+      <div class="flex-1 min-w-0"><div class="font-medium truncate">${esc(a.client)} ${a.rem?'<span class="text-xs text-green-700">✓ enviado</span>':''}</div><div class="text-xs text-gray-500 truncate">${fmt(a.start)} · ${esc(s?s.name:'Servicio')} · ${esc(a.pro)}${tel?' · '+esc(tel):''}</div></div>
+      ${u?`<a href="${u}" target="_blank" rel="noopener" data-rem="f:${esc(a.rid)}" class="shrink-0 px-3 py-2 rounded-lg ${a.rem?'border border-[#25D366] text-[#128C7E] bg-white':'bg-[#25D366] text-white'} text-sm font-semibold">${a.rem?'Reenviar':'📲 Enviar'}</a>`
+        :`<button data-a="editFut" data-id="${esc(a.rid)}" class="shrink-0 px-3 py-2 rounded-lg border border-gray-300 text-sm">＋ Teléfono</button>`}</div>`};
+  showModal('📲 Recordar citas de mañana',`<div class="text-sm text-gray-500 capitalize mb-1">${longD(d)}</div>
+    <div class="text-sm mb-3">${L.length?`<b>${L.length}</b> cita(s) · <span class="text-green-700">${sent} enviada(s)</span>`:''}</div>
+    ${L.length?`<div id="remList">${L.map(row).join('')}</div><p class="text-xs text-gray-400 mt-3">Cada botón abre WhatsApp con el mensaje ya redactado para ese cliente. Solo tienes que pulsar «Enviar» en WhatsApp.</p>`
+      :'<div class="text-center py-8"><div class="text-4xl mb-2">🗓️</div><p class="text-sm text-gray-500">No hay citas para mañana.</p></div>'}`);
+}
+/* Cita de otro día: editar, mover, enviar WhatsApp o eliminar */
+function editFutModal(rid){
+  const q=futQ(),a=q.find(x=>x.rid===rid);if(!a)return;
+  showModal('Editar cita',`<form id="f" class="space-y-3"><datalist id="cl">${CLIENTS.map(c=>`<option value="${esc(c.n)}">`).join('')}</datalist>
+   <div><label class="${lbl}">Cliente</label><input name="client" list="cl" required value="${esc(a.client)}" class="${inp}">${a.origen==='cliente'?'<div class="text-xs text-gray-500 mt-1">Reservada por el cliente</div>':''}</div>
+   <div><label class="${lbl}">Teléfono WhatsApp</label><input name="tel" type="tel" maxlength="20" value="${esc(telOf(a))}" class="${inp}"></div>
+   <div><label class="${lbl}">Servicio</label><select name="svc" class="${inp}">${SERVICES.map(s=>`<option value="${s.id}" ${s.id===a.svc?'selected':''}>${esc(s.name)} · ${s.dur} min</option>`).join('')}</select></div>
+   <div><label class="${lbl}">Profesional</label><select name="pro" class="${inp}">${PROS.map(p=>`<option ${p===a.pro?'selected':''}>${esc(p)}</option>`).join('')}</select></div>
+   <div class="grid grid-cols-2 gap-3"><div><label class="${lbl}">Día</label><input name="date" type="date" required min="${today()}" value="${a.date}" class="${inp}"></div><div><label class="${lbl}">Hora</label><select name="start" class="${inp}">${timeOpts(a.start)}</select></div></div>
+   ${a.estado==='pendiente'?`<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="conf" checked class="w-5 h-5 accent-[#D4AF37]"> Confirmar cita (quitar «pendiente»)</label>`:''}
+   <button class="${sbtn}">Guardar cambios</button>
+   <button type="button" id="apWa" class="w-full py-3 rounded-lg bg-[#25D366] text-white font-semibold">📲 Enviar recordatorio por WhatsApp</button>
+   <button type="button" id="apDel" class="w-full py-2.5 text-sm text-red-600">Eliminar cita</button></form>`);
+  $('#f').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),s=S(f.get('svc')),start=+f.get('start'),pro=f.get('pro'),d=f.get('date');
+    if(!d||d<today())return toast('Elige hoy o un día posterior');
+    if(start+s.dur>END)return toast('La cita termina después del cierre');
+    const others=isToday(d)?[...appts,...blocks]:futQ().filter(x=>x.date===d&&x.rid!==rid);
+    if(others.some(x=>x.pro===pro&&start<x.start+x.dur&&x.start<start+s.dur)&&!confirm('Ese hueco ya está ocupado. ¿Guardar igualmente?'))return;
+    const q2=futQ(),i=q2.findIndex(x=>x.rid===rid);if(i<0)return closeModal();
+    const o={...q2[i],client:clean(f.get('client')),tel:cleanTel(f.get('tel')),svc:s.id,dur:s.dur,pro,start,date:d};if(o.estado==='pendiente'&&f.get('conf'))o.estado='confirmada';
+    if(isToday(d)){q2.splice(i,1);futSave(q2);const{date,...rest}=o;appts.push({...rest,id:nextId++,gift:!!o.gift});saveDay()}
+    else{q2[i]=o;futSave(q2)}
+    state.aday=d;closeModal();render();toast('Cita actualizada')};
+  $('#apWa').onclick=()=>{const t=cleanTel($('#f').tel.value);if(t)patchByKey('f:'+rid,{tel:t});closeModal();sendWa('f:'+rid)};
+  $('#apDel').onclick=()=>{if(confirm('¿Eliminar esta cita?')){futSave(futQ().filter(x=>x.rid!==rid));closeModal();render();toast('Cita eliminada')}};
+}
+document.addEventListener('click',e=>{
+  const w=e.target.closest('[data-wa]');if(w){sendWa(w.dataset.wa);return}
+  const r=e.target.closest('[data-rem]');if(r){const k=r.dataset.rem;setTimeout(()=>{patchByKey(k,{rem:Date.now()});remindModal()},50);return}
+  const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,id=t.dataset.id;
+  if(a==='slot')openModal('appt',{date:aDay(),pro:t.dataset.pro,start:+t.dataset.m});
+  else if(a==='newApptDay')openModal('appt',{date:aDay()});
+  else if(a==='editFut')editFutModal(id);
+  else if(a==='aday'){const n=addDays(aDay(),+id);state.aday=n<today()?today():n;render()}
+  else if(a==='atoday'){state.aday=today();render()}
+  else if(a==='remind')remindModal();
+});
+document.addEventListener('change',e=>{if(e.target.id==='aday'){const v=e.target.value;state.aday=v&&v>=today()?v:today();render()}});
+pullFuture();
+window.addEventListener('storage',e=>{if(e.key&&/as3_clean_(day|future)$/.test(e.key))syncDay()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncDay()});
+const longD=d=>new Date(d+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const months=()=>{const o=[],n=new Date();for(let i=0;i<12;i++){const d=new Date(n.getFullYear(),n.getMonth()-i,1);o.push({k:iso(d).slice(0,7),l:d.toLocaleDateString('es-ES',{month:'long',year:'numeric'})})}return o};
+
+const ALL=()=>[...AS.closes].sort((a,b)=>b.d.localeCompare(a.d));
+function tickets(){
+  const a=appts.filter(x=>x.paid).map(x=>({t:fmt(x.start+x.dur),c:x.client+' · '+S(x.svc).name,amt:x.gift?0:S(x.svc).price,m:x.paid}));
+  const q=AS.sales.filter(x=>x.d===today()).map(x=>({t:x.t,c:x.c,amt:x.amt,m:x.m}));
+  return [...a,...q].sort((p,r)=>p.t.localeCompare(r.t));
+}
+const sumM=(tk,m)=>r2(tk.filter(x=>x.m===m).reduce((s,x)=>s+x.amt,0));
+const arq=()=>{const cash=sumM(tickets(),'Efectivo'),counted=r2(DEN.reduce((s,d)=>s+d*(+AS.den[d]||0),0)),exp=r2(AS.fondo+cash);return{counted,exp,df:r2(counted-exp)}};
+const kpi=(l,v,c='')=>`<div class="bg-white rounded-xl border border-gray-200 p-3 ${c}"><div class="text-xs text-gray-500">${l}</div><div class="text-lg sm:text-xl font-bold">${v}</div></div>`;
+const dbadge=d=>{const[c,t]=d===0?['bg-green-100 text-green-700','✔ Cuadra exacto']:d>0?['bg-amber-100 text-amber-800','+'+eu2(d)+' sobrante']:['bg-red-100 text-red-700','−'+eu2(-d)+' faltante'];return `<span class="rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${c}">${t}</span>`};
+const det=c=>`<div class="flex flex-wrap items-center justify-between gap-2 mb-3"><div class="font-semibold capitalize">${longD(c.d)}</div>${dbadge(c.diff)}</div>
+ <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">${[['Total',eu2(c.total)],['Efectivo',eu2(c.cash)],['Tarjeta',eu2(c.card)],['Bizum',eu2(c.bizum)],['Citas a 0 €',c.zero],['Tickets',c.n],['Esperado en caja',eu2(c.expected)],['Contado',eu2(r2(c.expected+c.diff))]].map(([l,v])=>`<div class="bg-gray-50 rounded-lg p-2.5"><div class="text-xs text-gray-500">${l}</div><div class="font-semibold">${v}</div></div>`).join('')}</div>`;
+const arqRes=()=>{const{counted,exp,df}=arq();return `<div class="grid grid-cols-3 gap-2 text-center text-sm">${[['Esperado',exp],['Contado',counted],['Descuadre',df]].map(([l,v])=>`<div class="bg-gray-50 rounded-lg p-2"><div class="text-xs text-gray-500">${l}</div><b>${eu2(v)}</b></div>`).join('')}</div><div class="mt-3 text-center">${counted?dbadge(df):'<span class="text-sm text-gray-400">Introduce el recuento físico</span>'}</div>`};
+
+/* --- Caja: TPV · Arqueo · Previsión · Histórico --- */
+const cTpv=(tk,cl)=>{const pend=appts.filter(a=>!a.paid).sort((a,b)=>a.start-b.start);
+  return `<div class="grid lg:grid-cols-2 gap-4"><div class="space-y-4">
+  ${card(`<div class="font-semibold mb-2">Pendientes de cobro (${pend.length})</div>${pend.map(a=>{const s=S(a.svc);return `<div class="flex items-center gap-3 py-2.5 border-t first:border-0"><i class="w-1.5 h-10 rounded" style="background:${s.color}"></i><div class="flex-1 min-w-0"><div class="font-medium truncate">${a.client}</div><div class="text-xs text-gray-500">${fmt(a.start)} · ${s.name} · ${a.pro}</div></div><div class="font-semibold text-sm">${a.gift?'0 € 🎁':eu2(s.price)}</div>${cl?'':`<button data-a="pay" data-id="${a.id}" class="${btn}">Cobrar</button>`}</div>`}).join('')||'<p class="text-sm text-gray-500">Todo cobrado ✔</p>'}`)}
+  ${cl?'':card(`<div class="font-semibold mb-2">Venta rápida</div><form data-quick="1" class="grid grid-cols-2 gap-2"><input name="c" required placeholder="Concepto (producto, extra…)" class="${inp} col-span-2"><input name="a" type="number" min="0.01" step="0.01" required placeholder="Importe €" class="${inp}"><select name="m" class="${inp}">${M.slice(0,3).map(m=>`<option>${m}</option>`).join('')}</select><button class="${btn} col-span-2">Cobrar</button></form>`)}
+  </div>${card(`<div class="font-semibold mb-2">Cobros de hoy (${tk.length})</div>${tk.map(x=>`<div class="flex items-center gap-2 py-2 border-t first:border-0 text-sm"><span class="text-gray-400 w-12">${x.t}</span><span class="flex-1 truncate">${esc(x.c)}</span><span class="text-xs rounded px-1.5 py-0.5 whitespace-nowrap ${MC[x.m]}">${x.m}</span><b class="w-20 text-right">${eu2(x.amt)}</b></div>`).join('')||'<p class="text-sm text-gray-500">Aún no hay cobros.</p>'}`)}</div>`};
+const cArq=(tk,cl)=>cl?card('<div class="font-semibold mb-3">Cierre de hoy</div>'+det(AS.closes.find(c=>c.d===today()))):
+  card(`<div class="grid sm:grid-cols-2 gap-4"><div><label class="${lbl}">Fondo de caja inicial (€)</label><input id="fondo" type="number" step="0.01" value="${AS.fondo}" class="${inp} mb-4"><div class="text-sm font-medium text-gray-700 mb-2">Recuento físico (nº de billetes/monedas)</div><div class="grid grid-cols-2 gap-2">${DEN.map(d=>`<label class="flex items-center gap-2 text-sm"><span class="w-16 text-right text-gray-500">${d>=5?d+' €':eu2(d)}</span><input data-den="${d}" type="number" min="0" inputmode="numeric" value="${AS.den[d]||''}" placeholder="0" class="${inp} !py-1.5"></label>`).join('')}</div></div>
+  <div><div class="text-sm font-medium text-gray-700 mb-2">Resultado del arqueo</div><div id="arq">${arqRes()}</div><button data-a="closeCaja" class="${btn} w-full mt-4 !py-3">🔒 Cerrar caja del día</button></div></div>`);
+function forecast(){
+  const t=new Date();t.setDate(t.getDate()+1);
+  const past=ALL().filter(c=>new Date(c.d+'T12:00').getDay()===t.getDay()).slice(0,8);
+  if(!past.length)return null;
+  const av=k=>past.reduce((s,c)=>s+c[k],0)/past.length;
+  return{n:Math.round(av('n')),total:r2(av('total')),tk:r2(av('total')/av('n')),min:Math.min(...past.map(c=>c.total)),max:Math.max(...past.map(c=>c.total)),k:past.length};
+}
+const cPrev=()=>{const f=forecast(),t=new Date();t.setDate(t.getDate()+1);const dn=t.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  if(!f)return card(`<div class="font-semibold capitalize">${dn}</div><p class="text-sm text-gray-500 mt-1">Aún no hay histórico de cierres para estimar ese día. La previsión aparecerá cuando acumules cierres de caja.</p>`);
+  return card(`<div class="font-semibold capitalize mb-3">Previsión · ${dn}</div><div class="grid sm:grid-cols-3 gap-3">${kpi('Facturación estimada',eu2(f.total))}${kpi('Citas estimadas','≈ '+f.n)}${kpi('Ticket medio',eu2(f.tk))}</div><div class="mt-3 text-sm text-gray-600">Rango probable: <b>${eu2(f.min)}</b> – <b>${eu2(f.max)}</b></div><p class="text-xs text-gray-400 mt-3">Estimación basada en la media de los últimos ${f.k} mismos días de la semana. Es orientativa y no incluye las citas ya reservadas.</p>`)};
+const cHist=()=>{const ms=months(),hm=state.hm||ms[0].k,all=ALL(),list=all.filter(c=>c.d.startsWith(hm)),d=state.hd&&all.find(c=>c.d===state.hd);
+  return `<div class="flex flex-wrap gap-2 mb-3"><div><label class="${lbl}">Buscar por fecha</label><input id="hd" type="date" min="${ms[11].k}-01" max="${today()}" value="${state.hd||''}" class="${inp} w-48"></div><div><label class="${lbl}">Mes</label><select id="hm" class="${inp} w-56">${ms.map(m=>`<option value="${m.k}" ${m.k===hm?'selected':''}>${m.l}</option>`).join('')}</select></div></div>
+  ${state.hd?card(d?det(d):'<p class="text-sm text-gray-500">No hay cierre registrado ese día (domingo o sin actividad).</p>','mb-3'):''}
+  ${card(list.map(c=>`<button data-a="hrow" data-id="${c.d}" class="w-full flex items-center gap-3 py-2.5 border-t first:border-0 text-sm text-left"><span class="w-28 text-gray-600">${new Date(c.d+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short'})}</span><b class="flex-1">${eu2(c.total)}</b>${dbadge(c.diff)}</button>`).join('')||'<p class="text-sm text-gray-500">Sin cierres este mes.</p>')}`};
+function vCaja(){
+  const t=state.ctab||'tpv',tk=tickets(),tot=r2(tk.reduce((s,x)=>s+x.amt,0)),cl=isClosed();
+  const tabs=[['tpv','TPV'],['arqueo','Arqueo y cierre'],['prev','Previsión'],['hist','Histórico']].map(([k,l])=>`<button data-a="ctab" data-id="${k}" class="px-4 py-2.5 text-sm font-medium border-b-2 whitespace-nowrap ${t===k?'border-[#111827] text-[#111827]':'border-transparent text-gray-500'}">${l}</button>`).join('');
+  return `<div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">${kpi('Total hoy',eu2(tot),'col-span-2 sm:col-span-1')}${M.slice(0,3).map(m=>kpi(ICON[m]+' '+m,eu2(sumM(tk,m)))).join('')}${kpi('🎁 Canjes a 0 €',zeroUsed()+' / '+AS.quota)}</div>
+  ${cl?'<div class="mb-4 rounded-xl bg-[#111827] text-white text-sm p-3">🔒 Caja de hoy cerrada. Los cobros quedan bloqueados hasta mañana.</div>':''}
+  <div class="flex border-b border-gray-200 mb-4 overflow-x-auto">${tabs}</div>${({tpv:cTpv,arqueo:cArq,prev:cPrev,hist:cHist})[t](tk,cl)}`;
+}
+
+/* --- Gestoría --- */
+const mon=gm=>{const rows=ALL().filter(c=>c.d.startsWith(gm)).sort((a,b)=>a.d.localeCompare(b.d)).map(c=>({...c,b:r2(c.total/1.21),iva:r2(c.total-r2(c.total/1.21))}));return{rows,T:k=>r2(rows.reduce((s,c)=>s+c[k],0))}};
+function csv(gm){
+  const{rows,T}=mon(gm),f=n=>n.toFixed(2).replace('.',',');
+  const L=[['Fecha','Efectivo','Tarjeta','Bizum','Total facturado','Base imponible','IVA 21%','Citas a 0 EUR','Tickets','Descuadre caja']];
+  rows.forEach(c=>L.push([c.d,f(c.cash),f(c.card),f(c.bizum),f(c.total),f(c.b),f(c.iva),c.zero,c.n,f(c.diff)]));
+  L.push(['TOTAL',f(T('cash')),f(T('card')),f(T('bizum')),f(T('total')),f(T('b')),f(T('iva')),T('zero'),T('n'),f(T('diff'))]);
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+L.map(r=>r.join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
+  a.download=`AgendaSavia_facturacion_${gm}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+  toast('Descargando '+a.download);
+}
+function vGestoria(){
+  const ms=months(),gm=state.gm||ms[1].k,{rows,T}=mon(gm);
+  return `<div class="flex flex-wrap gap-2 items-end mb-4"><div><label class="${lbl}">Mes a exportar</label><select id="gm" class="${inp} w-56">${ms.map(m=>`<option value="${m.k}" ${m.k===gm?'selected':''}>${m.l}</option>`).join('')}</select></div><button data-a="csv" data-id="${gm}" class="${btn} !py-3">⬇ Descargar CSV para la gestoría</button><button data-a="print" class="px-4 py-3 rounded-lg border border-gray-300 bg-white text-sm font-medium">🖨 Imprimir</button></div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">${kpi('Facturación total',eu2(T('total')))}${kpi('Base imponible',eu2(T('b')))}${kpi('IVA 21 %',eu2(T('iva')))}${kpi('Días con cierre',rows.length)}</div>
+  ${card(`<div class="overflow-auto max-h-96"><table class="w-full text-sm min-w-[480px]"><thead class="text-left text-xs text-gray-500 sticky top-0 bg-white"><tr><th class="py-1">Fecha</th><th>Efectivo</th><th>Tarjeta</th><th>Bizum</th><th class="text-right">Total</th></tr></thead><tbody>${rows.map(c=>`<tr class="border-t"><td class="py-2">${c.d.split('-').reverse().join('/')}</td><td>${eu2(c.cash)}</td><td>${eu2(c.card)}</td><td>${eu2(c.bizum)}</td><td class="text-right font-medium">${eu2(c.total)}</td></tr>`).join('')}</tbody></table></div><p class="text-xs text-gray-400 mt-2">Importes con IVA incluido (21 %). El CSV usa «;» y coma decimal para abrirse directamente en Excel.</p>`)}`;
+}
+
+/* --- Tarjetas Regalo + cupo 0 € --- */
+function vRegalo(){
+  const u=zeroUsed(),q=AS.quota,pct=Math.min(100,Math.round(u/Math.max(q,1)*100)),full=u>=q,adm=state.role==='admin';
+  const col=full?'bg-red-500':pct>=66?'bg-amber-500':'bg-green-500',st=d=>adm?`<button data-a="quota" data-id="${d}" class="w-9 h-9 rounded-lg border border-gray-300 text-lg">${d>0?'+':'−'}</button>`:'';
+  return card(`<div class="flex items-center justify-between gap-3 mb-3"><div><div class="font-semibold">Cupo diario de citas a 0 €</div><div class="text-xs text-gray-500">Canjes y cortesías de hoy</div></div><div class="flex items-center gap-2">${st(-1)}<div class="text-2xl font-bold w-20 text-center">${u} / ${q}</div>${st(1)}</div></div><div class="h-3 bg-gray-100 rounded-full overflow-hidden"><div class="h-full ${col}" style="width:${pct}%"></div></div><div class="text-sm mt-2 ${full?'text-red-600 font-medium':'text-gray-500'}">${full?'Cupo completo: no se admiten más citas a 0 € hoy.':`Quedan ${q-u} citas a 0 € disponibles hoy.`}</div>`,'mb-4')+
+  `<button data-a="newGift" class="${btn} mb-4">🎁 Vender tarjeta regalo</button><div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">${GIFTS.slice().reverse().map(g=>`<div class="rounded-xl p-4 bg-white gold"><div class="flex justify-between text-xs font-bold text-[#8a6d12]"><span>🎁 TARJETA REGALO</span><span>${g.code}</span></div><div class="text-2xl font-bold mt-2">${eu2(g.left)} <span class="text-sm font-normal text-gray-500">de ${eu2(g.amount)}</span></div><div class="text-sm text-gray-600 mt-1">De <b>${esc(g.from||'—')}</b> → para <b>${esc(g.to)}</b></div><div class="mt-2 flex justify-between text-xs"><span class="${g.left?'text-green-600':'text-gray-400'}">${g.left?'Activa':'Agotada'}</span><span class="text-gray-400">${g.d?fd(g.d):''}</span></div></div>`).join('')}</div>`;
+}
+
+/* --- Suscripción AgendaSavia: Plan Mensual 19 €/mes · Plan Anual 149 €/año --- */
+const PLAN_F=['Agenda táctil multi-profesional','Recordatorios por WhatsApp','Clientes, fichas y consentimientos','TPV, cierre de caja y gestoría','Tarjetas regalo','Soporte por correo'];
+const PLANS=[
+ {id:'mensual',n:'Plan Mensual',p:19,per:'mes',d:'Pago mes a mes · sin permanencia',f:PLAN_F},
+ {id:'anual',n:'Plan Anual',p:149,per:'año',d:'Un pago al año · ahorras '+(19*12-149)+' € (≈ 12,42 €/mes)',f:PLAN_F,pop:1}
+];
+/* Código promocional: 30 % SOLO el primer mes del Plan Mensual (19 € → 13,30 €). Después, 19 €/mes. */
+const PROMO={code:'BIENVENIDA30',pct:30,plan:'mensual'};
+const promoOk=(code,plan)=>code===PROMO.code&&plan===PROMO.plan;
+const firstPrice=(p,code)=>promoOk(code,p.id)?r2(p.p*(1-PROMO.pct/100)):p.p;
+const planName=id=>(PLANS.find(p=>p.id===id)||{}).n||({solo:'Solo (antiguo)',equipo:'Equipo (antiguo)',pro:'Pro (antiguo)',master:'Master'}[id])||id||'—';
+function promoCheck(c){c=String(c||'').trim().toUpperCase();
+  if(!c)return{ok:false,c,cls:'text-red-600',msg:'Escribe un código promocional.'};
+  if(c!==PROMO.code)return{ok:false,c,cls:'text-red-600',msg:'Código no válido o caducado.'};
+  return{ok:true,c,cls:'text-green-700',msg:'✅ <b>BIENVENIDA30</b> aplicado: el primer mes del <b>Plan Mensual</b> queda en <b>13,30 €</b>. Después, 19 €/mes. (No aplica al Plan Anual.)'};
+}
+/* Tarjeta de plan reutilizada en el registro (data-g) y en Suscripción (data-a) */
+function planBox(p,o){
+  const promo=promoOk(o.promo,p.id),price=firstPrice(p,o.promo),on=o.on===p.id,attr=o.gate?'data-g':'data-a';
+  return `<button type="button" ${attr}="plan" data-id="${p.id}" class="relative text-left w-full rounded-2xl p-5 bg-white border-2 transition ${on?'border-[#111827] shadow-lg':p.pop?'border-[#D4AF37]':'border-gray-200'}">
+   ${p.pop?'<span class="absolute -top-3 left-5 bg-[#D4AF37] text-[#111827] text-[11px] font-bold px-2.5 py-0.5 rounded-full">MEJOR PRECIO</span>':''}
+   ${on?'<span class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-[#111827] text-white grid place-items-center text-xs">✓</span>':''}
+   <div class="flex items-start justify-between gap-3"><div><div class="text-lg font-bold">${p.n}</div><div class="text-xs text-gray-500">${p.d}</div></div>
+   <div class="text-right shrink-0">${promo?`<div class="text-xs text-gray-400 line-through">${eu2(p.p)}</div>`:''}<div class="text-2xl font-extrabold ${promo?'text-green-600':''}">${eu2(price)}</div><div class="text-xs text-gray-500">${promo?'1.er mes · luego '+eu2(p.p)+'/mes':'/'+p.per+' · IVA incl.'}</div></div></div>
+   ${o.full?`<ul class="mt-4 space-y-1.5 text-sm text-gray-700">${p.f.map(x=>`<li>✔ ${x}</li>`).join('')}</ul>`:`<div class="text-xs text-gray-500 mt-2">${p.f.slice(0,4).join(' · ')}…</div>`}
+   ${o.cta?`<div class="mt-4 w-full py-2.5 rounded-lg text-center text-sm font-medium ${on?'bg-gray-100 text-gray-500':'bg-[#111827] text-white'}">${on?'Plan actual':o.cta}</div>`:''}</button>`;
+}
+const SUB={promo:null,cls:'',msg:'',code:''};
+function plansHTML(){const me=asMe()||{};return PLANS.map(p=>planBox(p,{promo:SUB.promo||me.promo,on:me.plan,full:1,cta:'Cambiar a este plan'})).join('')}
+function applyPromo(){
+  const r=promoCheck($('#promo').value),me=asMe()||{};SUB.code=r.c;SUB.promo=r.ok?r.c:null;SUB.cls=r.cls;SUB.msg=r.msg;
+  if(r.ok&&me.promo===PROMO.code){SUB.cls='text-gray-500';SUB.msg='Ya usaste BIENVENIDA30 en tu primer mes. El código solo se aplica una vez.';SUB.promo=null}
+  $('#promoMsg').className='mt-2 text-sm min-h-[1.25rem] '+SUB.cls;$('#promoMsg').innerHTML=SUB.msg;$('#plans').innerHTML=plansHTML();
+}
+function vSuscripcion(){
+  const b=t=>`<span class="bg-white/10 border border-white/20 text-sm font-semibold px-3 py-1.5 rounded-full">${t}</span>`,me=asMe()||{},pl=PLANS.find(p=>p.id===me.plan);
+  const st={aldia:'🟢 Al día',pendiente:'🟡 Pago pendiente',bloqueado:'🔴 Bloqueado'}[me.status||'aldia'];
+  return `<div class="rounded-2xl bg-[#111827] text-white p-6 sm:p-8 mb-5"><div class="flex items-center gap-3"><div class="w-12 h-12 rounded-xl bg-[#D4AF37] text-[#111827] grid place-items-center text-2xl font-black">A</div><div><div class="text-2xl sm:text-3xl font-extrabold tracking-tight">Agenda<span class="text-[#D4AF37]">Savia</span></div><div class="text-sm text-gray-400">La agenda profesional para peluquerías y centros de estética</div></div></div>
+   <div class="flex flex-wrap gap-2 mt-5">${b('🔥 30% DTO. 1.er mes con BIENVENIDA30')}${b('🎁 14 Días de Prueba Gratis')}${b('✅ Sin Permanencia')}</div></div>
+  ${card(`<div class="flex flex-wrap items-center gap-3"><div class="flex-1 min-w-[12rem]"><div class="text-xs text-gray-500">Tu plan actual</div><div class="text-lg font-bold">${planName(me.plan)}${pl?` · ${eu2(pl.p)}/${pl.per}`:''}</div>${me.promo?`<div class="text-xs text-green-700">Cupón usado: ${esc(me.promo)}</div>`:''}</div><span class="text-sm font-medium">${st}</span></div><p class="text-xs text-gray-400 mt-2">Pagos manuales por Bizum o PayPal. Si tienes dudas sobre tu suscripción escribe a ${MAIL}.</p>`,'mb-4')}
+  <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6"><label class="${lbl}">¿Tienes un código promocional? <span class="font-normal text-gray-400">(Plan Mensual)</span></label><div class="flex gap-2"><input id="promo" autocomplete="off" placeholder="Ej. BIENVENIDA30" value="${esc(SUB.code)}" class="${inp} flex-1 uppercase"><button data-a="promo" class="${btn}">Aplicar</button></div><div id="promoMsg" class="mt-2 text-sm min-h-[1.25rem] ${SUB.cls}">${SUB.msg}</div></div>
+  <div id="plans" class="grid gap-5 md:grid-cols-2 pt-2 max-w-3xl">${plansHTML()}</div>`;
+}
+function changePlan(id){
+  const l=asAcc(),a=l.find(x=>x.slug===window.AS_SLUG),p=PLANS.find(x=>x.id===id);if(!a||!p||a.plan===id)return;
+  if(!confirm('¿Cambiar a '+p.n+' ('+eu2(p.p)+'/'+p.per+')? El cambio se aplica en tu próxima renovación.'))return;
+  a.plan=id;if(id==='mensual'&&SUB.promo&&!a.promo)a.promo=SUB.promo;asSave(l);
+  asRpc('as_change_plan',{p_slug:a.slug,p_token:asToken(),p_plan:id,p_promo:a.promo||''},6000);  /* opcional en el servidor */
+  render();toast('Plan cambiado a '+p.n);
+}
+
+/* --- Modales Fase 3 --- */
+function openModal(type,arg){if((type==='appt'||type==='block')&&!PROS.length){toast('Añade primero un profesional en Servicios');go('servicios');return}
+  if(type==='editAppt')return editApptModal(arg);if(type==='pay'){
+    const a=appts.find(x=>x.id===arg),s=S(a.svc),p=a.gift?0:s.price;
+    showModal('Cobrar',`<div class="mb-4"><div class="font-semibold">${a.client}</div><div class="text-sm text-gray-500">${s.name} · ${fmt(a.start)} · ${a.pro}</div><div class="text-3xl font-bold mt-2">${eu2(p)}${a.gift?' 🎁':''}</div></div>
+    ${a.gift?'':`<div class="mb-3"><label class="${lbl}">Tarjeta regalo (solo para «Canje 0€»)</label><select id="gcSel" class="${inp}"><option value="">Cortesía / sin tarjeta</option>${GIFTS.filter(g=>g.left>0&&g.left>=p).map(g=>`<option value="${g.code}">${g.code} · ${esc(g.to)} · saldo ${eu2(g.left)}</option>`).join('')}</select></div>`}
+    <div class="grid grid-cols-2 gap-3">${M.filter(m=>!a.gift||m==='Canje 0€').map(m=>`<button data-a="pm" data-id="${arg}|${m}" class="py-4 rounded-xl border border-gray-300 bg-white text-base font-semibold active:bg-gray-100">${ICON[m]} ${m}</button>`).join('')}</div>`);
+  }else if(type==='gift'){
+    showModal('Vender tarjeta regalo',`<form id="f" class="space-y-3"><datalist id="cl">${CLIENTS.map(c=>`<option value="${esc(c.n)}">`).join('')}</datalist>
+     <div><label class="${lbl}">Comprador</label><input name="from" list="cl" required placeholder="Quien paga" class="${inp}"></div>
+     <div><label class="${lbl}">Beneficiario</label><input name="to" list="cl" required placeholder="Quien la recibe" class="${inp}"></div>
+     <div><label class="${lbl}">Importe (€)</label><div class="flex gap-2 mb-2">${[25,50,100].map(v=>`<button type="button" data-a="amt" data-id="${v}" class="flex-1 py-2 rounded-lg border border-gray-300 text-sm font-medium">${v} €</button>`).join('')}</div><input id="gAmt" name="amt" type="number" min="5" step="5" required value="50" class="${inp}"></div>
+     <div><label class="${lbl}">Método de pago</label><select name="m" class="${inp}">${M.slice(0,3).map(m=>`<option>${m}</option>`).join('')}</select></div>
+     <button class="${sbtn}">Cobrar y emitir tarjeta</button></form>`);
+    $('#f').onsubmit=e=>{e.preventDefault();if(isClosed())return toast('Caja cerrada: no se pueden registrar cobros hoy');
+      const f=new FormData(e.target),amt=+f.get('amt'),code='GR-'+(Math.max(1000,...GIFTS.map(g=>+g.code.slice(3)))+1);
+      GIFTS.push({code,amount:amt,left:amt,from:clean(f.get('from')),to:clean(f.get('to')),d:today()});
+      AS.sales.push({d:today(),t:nowT(),c:'Tarjeta regalo '+code,amt,m:f.get('m')});save3();closeModal();render();toast('Tarjeta '+code+' emitida y cobrada')};
+  }else openModal2(type,arg);
+}
+function payAppt(aid,m){
+  if(isClosed())return toast('Caja cerrada');
+  const a=appts.find(x=>x.id===aid),p=a.gift?0:S(a.svc).price;
+  if(m==='Canje 0€'){
+    if(!a.gift){
+      if(zeroLeft()<=0)return toast('Cupo diario de citas a 0 € completo');
+      const g=GIFTS.find(x=>x.code===$('#gcSel').value);
+      if(g){if(g.left<p)return toast('Saldo insuficiente en la tarjeta');g.left=r2(g.left-p)}
+      a.gift=true;
+    }
+  }else if(a.gift)return toast('Cita a 0 €: usa Canje 0€');
+  a.paid=m;AS.paid[today()+':'+aid]={m,g:a.gift};save3();closeModal();render();toast('Cobrado · '+m);
+}
+
+/* --- Eventos Fase 3 --- */
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='hm'){state.hm=t.value;state.hd=null;render()}
+  else if(t.id==='hd'){state.hd=t.value;if(t.value)state.hm=t.value.slice(0,7);render()}
+  else if(t.id==='gm'){state.gm=t.value;render()}});
+document.addEventListener('input',e=>{const t=e.target;
+  if(t.dataset.den!==undefined){AS.den[t.dataset.den]=+t.value||0;$('#arq').innerHTML=arqRes();save3()}
+  else if(t.id==='fondo'){AS.fondo=+t.value||0;$('#arq').innerHTML=arqRes();save3()}});
+document.addEventListener('keydown',e=>{if(e.target.id==='promo'&&e.key==='Enter')applyPromo()});
+document.addEventListener('submit',e=>{const f=e.target;if(!f.dataset.quick)return;e.preventDefault();
+  if(isClosed())return toast('Caja cerrada');const d=new FormData(f);
+  AS.sales.push({d:today(),t:nowT(),c:clean(d.get('c')),amt:r2(+d.get('a')),m:d.get('m')});save3();render();toast('Cobro registrado')});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,id=t.dataset.id;
+  if(a==='ctab'){state.ctab=id;render()}
+  else if(a==='pay')openModal('pay',+id);
+  else if(a==='pm'){const[x,m]=id.split('|');payAppt(+x,m)}
+  else if(a==='hrow'){state.hd=id;render();scrollTo({top:0,behavior:'smooth'})}
+  else if(a==='closeCaja'){const{counted,exp,df}=arq(),tk=tickets();
+    if(!counted)return toast('Introduce primero el recuento de efectivo');
+    if(!confirm('¿Cerrar la caja de hoy? No podrás cobrar más hasta mañana.'))return;
+    AS.closes.push({d:today(),cash:sumM(tk,'Efectivo'),card:sumM(tk,'Tarjeta'),bizum:sumM(tk,'Bizum'),total:r2(tk.reduce((s,x)=>s+x.amt,0)),n:tk.length,zero:zeroUsed(),fondo:AS.fondo,expected:exp,diff:df,ts:new Date().toISOString()});
+    AS.den={};save3();render();toast('Caja cerrada · '+(df===0?'cuadra exacto':df>0?'sobran '+eu2(df):'faltan '+eu2(-df)))}
+  else if(a==='csv')csv(id);
+  else if(a==='print')print();
+  else if(a==='newGift')openModal('gift');
+  else if(a==='amt')$('#gAmt').value=id;
+  else if(a==='quota'){AS.quota=Math.max(0,Math.min(20,AS.quota+(+id)));save3();render()}
+  else if(a==='promo')applyPromo();
+  else if(a==='plan')changePlan(id);
+});
+
+/* --- Profesionales (columnas de la agenda) --- */
+const emptyAgenda=()=>card(`<div class="text-center py-10"><div class="text-4xl mb-2">👩‍🎨</div><div class="font-semibold mb-1">Aún no hay profesionales</div><p class="text-sm text-gray-500 mb-4">Añade a tu equipo para crear las columnas de la agenda.</p>${state.role==='admin'?`<button data-v="servicios" class="${btn}">Añadir profesionales</button>`:'<p class="text-xs text-gray-400">Pídele al Dueño/Admin que los configure.</p>'}</div>`);
+const prosCard=()=>card(`<div class="font-semibold mb-1">Profesionales</div><p class="text-xs text-gray-500 mb-3">Cada profesional es una columna de la agenda.</p>
+  <div class="flex flex-wrap gap-2 mb-3">${PROS.map((p,i)=>`<span class="inline-flex items-center gap-1 bg-gray-100 rounded-full pl-3 pr-1 py-1 text-sm">${esc(p)}<button data-a="delPro" data-id="${i}" class="w-7 h-7 rounded-full text-gray-500" aria-label="Quitar ${esc(p)}">✕</button></span>`).join('')||'<span class="text-sm text-gray-400">Aún no hay profesionales.</span>'}</div>
+  <form data-pro="1" class="flex gap-2"><input name="n" required maxlength="30" placeholder="Nombre del profesional" class="${inp} flex-1"><button class="${btn} whitespace-nowrap">＋ Añadir</button></form>`,'mb-4');
+document.addEventListener('submit',e=>{const f=e.target;if(!f.dataset.pro)return;e.preventDefault();
+  const n=clean(new FormData(f).get('n'));if(!n)return;
+  if(PROS.some(p=>p.toLowerCase()===n.toLowerCase()))return toast('Ese profesional ya existe');
+  PROS.push(n);save();render();toast(n+' añadido a la agenda')});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a="delPro"]');if(!t)return;
+  const i=+t.dataset.id,p=PROS[i];
+  if(appts.some(a=>a.pro===p)||blocks.some(b=>b.pro===p))return toast('Tiene citas o bloqueos en la agenda: no se puede quitar');
+  if(confirm('¿Quitar a '+p+' de la agenda?')){PROS.splice(i,1);save();render()}});
+
+/* ================= ONBOARDING · AJUSTES · AYUDA ================= */
+let CENTER='';try{CENTER=localStorage.getItem('as3_clean_center')||''}catch(e){}
+const applyCenter=()=>{$('#sideName').textContent=CENTER;$('#hdrName').textContent=CENTER;document.title=CENTER?CENTER+' · AgendaSavia':'AgendaSavia'};
+function setCenter(v){CENTER=clean(v);try{localStorage.setItem('as3_clean_center',CENTER)}catch(e){}applyCenter()}
+function initCenter(){const ac=asMe();if(!CENTER&&ac)setCenter(ac.center);applyCenter()}
+function welcome(){try{if(sessionStorage.getItem('as3_welcome')){sessionStorage.removeItem('as3_welcome');go('servicios');toast('¡Bienvenido/a, '+CENTER+'! Empieza añadiendo tus profesionales')}}catch(e){}}
+function vAjustes(){
+  const ac=asMe()||{};
+  return card(`<div class="font-semibold mb-3">Nombre del centro</div><form data-center="1" class="flex gap-2"><input name="n" required minlength="2" maxlength="40" value="${esc(CENTER)}" class="${inp} flex-1"><button class="${btn}">Guardar</button></form>`,'mb-4')+
+  card(`<div class="font-semibold mb-1">WhatsApp del centro</div><p class="text-xs text-gray-500 mb-3">Teléfono de contacto de tu salón (lo usa AgendaSavia para avisos de tu suscripción).</p>
+   <div class="flex flex-col sm:flex-row gap-2"><input id="ph" type="tel" value="${esc(ac.phone||'')}" placeholder="Ej. 600 123 456" class="${inp} flex-1"><button data-a="phSave" class="${btn}">Guardar teléfono</button></div>`,'mb-4')+
+  backupCard()+card(`<div class="font-semibold mb-1">Datos de la aplicación</div><p class="text-sm text-gray-500 mb-3">Se guardan en la nube (Supabase) y se conserva una copia en este navegador. Borrarlos elimina clientes, servicios, profesionales, citas, cierres de caja y tarjetas regalo, y reinicia la app.</p><button data-a="wipe" class="px-4 py-2.5 rounded-lg border border-red-300 text-red-600 text-sm font-medium">Borrar todos los datos</button>`)+legalCard();
+}
+/* ===== CENTRO DE AYUDA Y MANUAL OPERATIVO ===== */
+const MODS=[
+ {id:'agenda',i:'📅',c:'📅 Agenda',t:'1. Agenda y Citas',g:'agenda',arts:[
+  {q:'Cómo crear una nueva cita manual',s:[
+   'Comprueba que tienes al menos un profesional: <b>Servicios → tarjeta «Profesionales»</b> (solo Dueño). Cada profesional es una columna de la agenda.',
+   'En <b>Agenda</b> <b>toca el hueco libre</b> de la hora y el profesional que quieras (se abre «Nueva cita» con la hora y el día ya rellenos) o pulsa <b>«＋ Nueva cita»</b>.',
+   'Escribe el nombre del cliente o elígelo de la lista que aparece al teclear.',
+   'Elige el <b>servicio</b> (la duración sale del propio servicio), el <b>profesional</b>, el <b>día</b> y la <b>hora</b> (tramos de 15 min entre las 09:00 y las 20:00). Añade el <b>teléfono WhatsApp</b> para poder enviarle recordatorios.',
+   'Si es una cortesía o un canje de tarjeta regalo, marca <b>«Cita a 0 € / pagada con Tarjeta Regalo»</b>: cuenta para el cupo diario y la cita se ve con borde dorado.',
+   'Pulsa <b>«Guardar cita»</b>. Si el hueco ya está ocupado o bloqueado, la app te pide confirmación; si la cita terminaría después de las 20:00, no se guarda.'],
+   tip:'Da de alta antes al cliente en <b>Clientes</b>: así su nombre sale en la lista desplegable y podrás guardar su historial. La cita solo guarda el nombre que escribas, no crea la ficha.'},
+  {q:'Cómo mover, editar o cancelar una cita',s:[
+   'En la agenda, <b>toca la cita</b> (el bloque de color).',
+   'Se abre «Editar cita»: puedes cambiar cliente, servicio, profesional y hora. <b>Mover una cita</b> es cambiar su hora o su profesional.',
+   'Pulsa <b>«Guardar cambios»</b>. Si el nuevo hueco está ocupado, la app avisa y tú decides si continuar.',
+   'Para <b>cancelar</b>, pulsa <b>«Eliminar cita»</b> y confirma.',
+   'Para avisar al cliente del cambio, usa el botón de WhatsApp de la cita: abre WhatsApp con el mensaje preparado.'],
+   tip:'Las citas ya <b>cobradas</b> no se pueden modificar. Usa las flechas ‹ › o el calendario de la parte superior para ver y crear citas de otros días; el TPV y la caja trabajan siempre con el día en curso.'},
+  {q:'Colores por tipo de servicio',s:[
+   'Entra en <b>Servicios</b> (el cambio de colores es solo para el Dueño).',
+   'Pulsa <b>«Editar»</b> en el servicio que quieras.',
+   'En <b>«Color en la agenda»</b> elige una muestra o usa el selector para un color propio.',
+   'Pulsa <b>«Guardar servicio»</b>: todas las citas de ese servicio cambian al instante.',
+   'Encima de la agenda pulsa <b>«✂️ Ver catálogo de servicios»</b> para desplegar la leyenda con cada color. El borde dorado indica una cita a 0 € / regalo.'],
+   tip:'Usa un color distinto por familia de servicio (corte, color, manos…) y evita tonos parecidos: a primera vista tienes que distinguirlos en el móvil.'},
+  {q:'Bloques de descanso o almuerzo',s:[
+   'En Agenda pulsa <b>«⏸ Bloquear horario»</b>.',
+   'Elige el <b>profesional</b> o <b>«Todos»</b> si es un cierre general (comida del equipo, formación).',
+   'Indica <b>Desde</b> y <b>Hasta</b> (la hora final debe ser posterior a la inicial) y el <b>motivo</b>: Comida, Descanso, Formación o Gestión.',
+   'Pulsa <b>«Bloquear»</b>: aparece una franja rayada gris en la columna.',
+   'Para quitarlo, <b>toca la franja rayada</b> y confirma.'],
+   tip:'El bloqueo avisa, pero no es una barrera dura: si alguien intenta crear una cita encima, la app pide confirmación y, si aceptas, la crea igualmente. Pulsa «Cancelar» para respetar el bloqueo.'},
+  {q:'Vista por profesional vs. vista general',s:[
+   '<b>Vista general:</b> es la que ves por defecto. Todas las columnas (una por profesional) se muestran lado a lado. En el móvil desliza horizontalmente.',
+   '<b>Vista por profesional:</b> en la barra superior de la agenda abre el selector <b>«Ver:»</b> y elige un nombre. Solo verás su columna.',
+   'Para volver, elige <b>«Todos (vista general)»</b>.',
+   'Recomendación: usa la general para repartir citas y detectar huecos; usa la individual para enseñarle a cada profesional su día en el móvil.'],
+   tip:'Cambiar de vista no modifica ninguna cita, solo filtra lo que ves.'}
+ ]},
+ {id:'crm',i:'👤',c:'👤 CRM y fichas',t:'2. CRM y Fichas de Clientes',g:'clientes',arts:[
+  {q:'Dar de alta un cliente y consultar su historial',s:[
+   'Ve a <b>Clientes</b> y pulsa <b>«＋ Cliente»</b>.',
+   'Escribe <b>nombre</b> y <b>teléfono</b> y pulsa «Crear cliente».',
+   'Para buscarlo, escribe en el buscador parte del nombre o del teléfono; filtra al instante y no distingue tildes.',
+   'Toca al cliente para abrir su <b>ficha</b>. Tiene tres pestañas: <b>Visitas</b>, <b>Compras</b> y <b>Consentimientos</b>.',
+   'En Visitas verás cada servicio con fecha, profesional e importe, de la más reciente a la más antigua. El Dueño ve además el <b>gasto total</b>.',
+   'Para añadir una visita pulsa <b>«＋ Registrar visita»</b>, elige servicio, profesional y fecha, y guarda.'],
+   tip:'Registrar una visita es manual y es independiente de la cita de la agenda. Hazlo al terminar el servicio para que el historial esté completo.'},
+  {q:'Notas técnicas: fórmulas de tinte, alergias y observaciones',s:[
+   'Abre la ficha del cliente y, en una visita, localiza la fila para añadir notas (si no hay visita, crea una con «＋ Registrar visita»).',
+   'Elige el <b>tipo de nota</b>: Fórmula, Piel, Alergia, Sensibilidad o General.',
+   'Escribe el texto (por ejemplo «6.3 + 7.1, oxidante 20 vol, 35 min») y pulsa <b>«Añadir nota»</b>. Se guarda con fecha y hora.',
+   'Las notas de tipo <b>Alergia</b> activan un aviso rojo ⚠ en la ficha y la etiqueta «ALERGIA» en la lista de clientes.',
+   'Para borrar una nota usa la ✕ junto a ella.'],
+   tip:'Escribe cada alergia en una nota independiente y con el nombre exacto del producto o principio activo; así el aviso rojo es claro de un vistazo.'},
+  {q:'Consentimiento informado RGPD con firma en pantalla',s:[
+   'Abre la ficha del cliente → pestaña <b>Consentimientos</b> → <b>«✍ Nuevo consentimiento»</b>.',
+   'Elige el <b>tratamiento</b> (Láser, Peeling químico o Micropigmentación). Debajo aparece el texto que se va a aceptar.',
+   'Entrega el dispositivo al cliente para que lo lea y marque las <b>tres declaraciones</b> (salud y alergias, aceptación de riesgos, tratamiento de datos RGPD).',
+   'Comprueba el <b>nombre del firmante</b> (viene relleno con el del cliente; cámbialo si firma un tutor).',
+   'El cliente <b>firma con el dedo</b> (móvil o tablet) o con ratón o lápiz táctil dentro del recuadro punteado. Si se equivoca, pulsa <b>«Borrar firma»</b> y repite.',
+   'Pulsa <b>«Firmar y guardar»</b>. La app no deja guardar si falta alguna declaración o la firma.',
+   '<b>Cómo queda guardado:</b> en la pestaña Consentimientos aparece una tarjeta con tratamiento, nombre del firmante, fecha y hora, la imagen de la firma y el texto aceptado («Ver texto aceptado»). Se almacena en el navegador de este dispositivo y no se puede editar después.'],
+   tip:'Gira la tablet en horizontal para que la firma sea más cómoda. Como son datos de salud, descarga una copia de seguridad con regularidad (Ajustes → Copia de seguridad).'}
+ ]},
+ {id:'caja',i:'💶',c:'💶 TPV y caja',t:'3. TPV, Arqueo y Cierre de Caja',g:'caja',arts:[
+  {q:'Cobrar una cita: efectivo, tarjeta o Bizum',s:[
+   'Entra en <b>Caja → TPV</b> (la sección Caja es solo para el Dueño). En «Pendientes de cobro» están las citas de hoy sin cobrar.',
+   'Pulsa <b>«Cobrar»</b> en la cita correspondiente.',
+   'Elige el método: <b>💶 Efectivo</b>, <b>💳 Tarjeta</b> o <b>📲 Bizum</b>. «Canje 0€» es para citas de regalo o cortesía; si hay una tarjeta regalo con saldo suficiente, selecciónala en el desplegable <i>antes</i> de pulsar «Canje 0€».',
+   'El cobro aparece en <b>«Cobros de hoy»</b> y suma en los totales de la parte superior.',
+   'Para vender algo sin cita (producto, extra) usa <b>«Venta rápida»</b>: concepto, importe, método y «Cobrar».'],
+   tip:'Elige siempre el método real. Si registras como «Efectivo» un pago con tarjeta, el cajón no cuadrará al final del día. Una cita cobrada no se puede editar.'},
+  {q:'Arqueo físico: contar billetes y monedas y saber si cuadra',s:[
+   'Ve a <b>Caja → «Arqueo y cierre»</b>.',
+   'Revisa el <b>«Fondo de caja inicial»</b>: el dinero que había en el cajón al abrir (por defecto 100 €). Debe ser exacto.',
+   'Cuenta el cajón y escribe, en cada casilla, <b>cuántas piezas</b> tienes (no el importe): billetes de 50, 20, 10 y 5 €, y monedas de 2 €, 1 €, 0,50, 0,20, 0,10 y 0,05.',
+   'La app calcula sola: <b>Esperado</b> = fondo inicial + cobros en efectivo de hoy · <b>Contado</b> = suma de lo que has introducido · <b>Descuadre</b> = Contado − Esperado.',
+   'Interpreta el resultado: <b style="color:#15803d">verde «Cuadra exacto»</b> (0 €), <b style="color:#b45309">ámbar «sobrante»</b> (hay más dinero del esperado) o <b style="color:#b91c1c">rojo «faltante»</b> (falta dinero).',
+   '<b>Ejemplo:</b> fondo 100 € + efectivo cobrado 85 € = esperado 185 €. Si cuentas 180 €, aparece «faltante 5,00 €».'],
+   tip:'Cuenta dos veces y no incluyas tarjeta ni Bizum: solo el efectivo físico. La app solo tiene casillas hasta 50 €; si tienes billetes mayores, regístralos como su equivalente en billetes de 50 €.'},
+  {q:'Cierre de caja diario definitivo',s:[
+   'Antes de cerrar, revisa en TPV que no queden <b>pendientes de cobro</b>.',
+   'Completa el arqueo físico (es obligatorio: si el recuento es 0 la app no deja cerrar).',
+   'Pulsa <b>«🔒 Cerrar caja del día»</b> y confirma el aviso.',
+   'Se guarda el cierre con totales por método, nº de tickets, citas a 0 €, importe esperado y descuadre. Los cobros quedan <b>bloqueados hasta mañana</b>, y no se puede reabrir la caja.',
+   'Consulta cierres anteriores en <b>Caja → Histórico</b> (por fecha o por mes). La pestaña <b>Previsión</b> usa ese histórico para estimar el día siguiente.'],
+   tip:'Cierra una sola vez, al final de la jornada y con todo cobrado. Los cierres alimentan la Gestoría: un día sin cierre no aparece en el informe.'}
+ ]},
+ {id:'gestoria',i:'📊',c:'📊 Gestoría',t:'4. Gestoría y Facturación',g:'gestoria',arts:[
+  {q:'Consultar el desglose de ingresos por periodo',s:[
+   'Entra en <b>Gestoría</b> (solo Dueño).',
+   'En <b>«Mes a exportar»</b> elige el mes (últimos 12; por defecto el mes anterior).',
+   'Revisa las cifras: <b>Facturación total</b>, <b>Base imponible</b>, <b>IVA 21 %</b> y <b>Días con cierre</b>.',
+   'La tabla inferior desglosa cada día en efectivo, tarjeta, Bizum y total.',
+   'Para ver el detalle de un día concreto (tickets, descuadre, citas a 0 €) ve a <b>Caja → Histórico</b>.'],
+   tip:'Solo cuentan los días con <b>caja cerrada</b>. Los importes incluyen IVA y la base se calcula como total ÷ 1,21.'},
+  {q:'Exportar el informe CSV para tu gestor o contable',s:[
+   'En Gestoría elige el <b>mes</b>.',
+   'Pulsa <b>«⬇ Descargar CSV para la gestoría»</b>: se descarga <i>AgendaSavia_facturacion_AAAA-MM.csv</i>.',
+   'El archivo usa «;» como separador y coma decimal, así que se abre directamente en Excel. Incluye por día: efectivo, tarjeta, Bizum, total, base, IVA, citas a 0 €, tickets y descuadre, más una fila TOTAL.',
+   'Envíalo por correo a tu gestor. Si prefieres papel o PDF, usa <b>«🖨 Imprimir»</b>.'],
+   tip:'Es un informe de control interno, no una factura con validez fiscal (consulta el Aviso Legal). Pide a tu gestor que valide las cifras.'}
+ ]},
+ {id:'whatsapp',i:'📲',c:'📲 WhatsApp',t:'5. Recordatorios por WhatsApp',g:'agenda',arts:[
+  {q:'Recordar las citas de mañana con 1 clic',s:[
+   'En <b>Agenda</b> pulsa el botón verde <b>«📲 Recordar citas de mañana»</b>. El número indica cuántas citas hay mañana.',
+   'Se abre la lista de citas del día siguiente, ordenadas por hora.',
+   'Pulsa <b>«📲 Enviar»</b> en cada cliente: se abre WhatsApp con el mensaje ya redactado («¡Hola…! Te recordamos tu cita para… mañana a las…»). Solo tienes que pulsar enviar en WhatsApp.',
+   'Al volver, la cita queda marcada como <b>✓ enviado</b> para que no repitas el aviso.',
+   'Si un cliente no tiene teléfono, pulsa <b>«＋ Teléfono»</b>, guárdalo y envía.'],
+   tip:'Guarda el teléfono al crear la cita (campo «Teléfono WhatsApp»). Si el cliente está dado de alta en <b>Clientes</b>, su teléfono se rellena solo.'},
+  {q:'Enviar un recordatorio desde una cita concreta',s:[
+   'Cada cita de la agenda tiene un botón redondo de <b>WhatsApp</b>. Púlsalo para abrir el mensaje de recordatorio de esa cita.',
+   'También puedes abrir la cita y pulsar <b>«📲 Enviar recordatorio por WhatsApp»</b>.',
+   'El mensaje dice «hoy», «mañana» o el día concreto según la fecha de la cita.'],
+   tip:'Los números españoles de 9 cifras se envían con el prefijo +34 automáticamente. Para otros países escribe el prefijo internacional.'}
+ ]},
+ {id:'faq',i:'🛠️',c:'🛠️ Errores y FAQ',t:'6. Guía Anti-Errores y Preguntas Frecuentes',g:null,arts:[
+  {q:'¿Qué hago si la caja no cuadra al final del día?',s:[
+   'Anota el descuadre que muestra el arqueo (faltante o sobrante) y no cierres todavía.',
+   'Revisa <b>Caja → TPV → «Pendientes de cobro»</b>: una cita sin cobrar o cobrada con el método equivocado (tarjeta registrada como efectivo, o al revés) es la causa más habitual.',
+   'Repasa <b>«Cobros de hoy»</b> ticket a ticket y comprueba el método de cada uno.',
+   'Verifica el <b>fondo de caja inicial</b>: debe ser lo que de verdad había en el cajón al abrir. Corrígelo y el resultado se recalcula al instante.',
+   'Vuelve a contar billetes y monedas; revisa que no haya un dígito mal escrito en alguna casilla.',
+   'Si <b>sobra</b> dinero: ¿cobraste algo en efectivo sin registrarlo? Anótalo en «Venta rápida». Si <b>falta</b>: ¿pagaste a un proveedor, diste un cambio erróneo o sacaste una propina del cajón?',
+   'Si no encuentras la causa, cierra igualmente: la diferencia queda anotada en el Histórico y tu gestor podrá verla.'],
+   tip:'Haz el arqueo todas las noches, aunque cuadre: así los errores se detectan el mismo día, cuando todavía los recuerdas.'},
+  {q:'¿Cómo soluciono un solapamiento accidental de citas?',s:[
+   'Localiza las dos citas superpuestas en la misma columna.',
+   'Toca una de ellas y cámbiala a otra <b>hora</b> o a otro <b>profesional</b> libre; la app te avisa si el nuevo hueco también está ocupado.',
+   'Si una de ellas fue un error, pulsa <b>«Eliminar cita»</b>.',
+   'Avisa al cliente afectado con el botón de WhatsApp de su cita.',
+   'Para evitarlo: usa «Bloquear horario» para descansos y no aceptes el aviso «Ese hueco ya está ocupado» salvo que sea intencionado.'],
+   tip:'Usa la vista por profesional para revisar con calma la columna afectada.'},
+  {q:'¿Qué hago si un cliente no quiere o no puede firmar en pantalla?',s:[
+   '<b>No realices el tratamiento</b> (láser, peeling, micropigmentación) sin consentimiento firmado. La app tampoco permite guardarlo sin firma.',
+   'Explícale de nuevo los riesgos con calma y deja que lea el texto completo.',
+   'Si le cuesta firmar con el dedo, ofrécele un <b>lápiz táctil</b>, un ratón o girar el dispositivo en horizontal. «Borrar firma» permite repetirla.',
+   'Si no puede firmar por sí mismo (por ejemplo, menor de edad), firma su madre, padre o tutor: escribe su nombre en «Nombre del firmante».',
+   'Si se niega, anótalo en su ficha como nota <b>General</b> y no continúes con el tratamiento.']},
+  {q:'El navegador va lento o hay un problema de caché: refrescar datos y copia de seguridad',s:[
+   '<b>Recarga primero:</b> en <b>Ajustes → «🔄 Recargar aplicación»</b> (o recarga la pestaña). No borra tus datos.',
+   '<b>Haz una copia de seguridad:</b> <b>Ajustes → Copia de seguridad → «⬇ Descargar copia»</b>. Se guarda un archivo .json con clientes, servicios, citas, cajas y consentimientos.',
+   'Cierra otras pestañas pesadas y limpia la <b>caché</b> del navegador. <b>No marques «cookies y datos del sitio»</b>: eso borraría tu información.',
+   'Los datos se guardan en el navegador, con un límite aproximado de 5 MB. Muchas firmas de consentimiento ocupan espacio: si la app deja de guardar, descarga la copia y escribe a soporte.',
+   '<b>Restaurar:</b> <b>Ajustes → «⬆ Restaurar copia»</b> y selecciona el archivo .json. Sustituye los datos actuales y reinicia la app.',
+   'No uses el modo incógnito: al cerrar la ventana se pierden los datos.'],
+   tip:'Haz una copia semanal y guarda el archivo fuera del dispositivo (Drive, iCloud o tu correo).'},
+  {q:'Cerrar sesión, contraseña olvidada y cuenta en otro dispositivo',s:[
+   'Para <b>cerrar sesión</b> pulsa «⎋ Cerrar sesión» al final del menú lateral. Volverás a la portada.',
+   'Para <b>volver a entrar</b> pulsa «Ya estoy suscrito» e introduce tu usuario o correo y tu contraseña.',
+   'Tu cuenta se guarda en la nube y la contraseña se almacena cifrada. Si la olvidas, pulsa <b>«¿Olvidaste tu contraseña?»</b> e introduce el PIN o la respuesta que definiste al registrarte.',
+   'Puedes entrar desde otro móvil u ordenador con tu usuario y contraseña: tus datos se sincronizan. Sin conexión la app sigue funcionando con la copia de este dispositivo y sube los cambios al volver internet.',
+   'Tras 5 intentos fallidos, el acceso se bloquea 30 segundos.'],
+   tip:'Descarga una copia de seguridad con regularidad y guarda tu usuario y contraseña en un gestor de contraseñas.'},
+  {q:'Soporte directo: incidencias que no se resuelven con esta guía',s:[
+   'Prueba primero con el <b>buscador</b> de este Centro de Ayuda.',
+   'Si no encuentras solución, escribe a <b>websize130@gmail.com</b> o usa el botón <b>«🛟 Reportar un problema»</b> del pie de página (abre tu correo con el mensaje preparado).',
+   'Cuéntanos qué ocurrió, los pasos que seguiste, la sección y el dispositivo. <b>No incluyas datos personales ni de salud de tus clientes.</b>']}
+ ]}
+];
+const mTxt=(m,a)=>norm([m.t,a.q,...a.s,a.tip||''].join(' ').replace(/<[^>]*>/g,' '));
+function helpArt(a,open){return `<details class="bg-white rounded-xl border border-gray-200 p-4" ${open?'open':''}><summary class="font-medium cursor-pointer">${a.q}</summary><ol class="mt-3 space-y-2.5">${a.s.map((x,i)=>`<li class="flex gap-3"><span class="shrink-0 w-6 h-6 rounded-full bg-[#111827] text-white text-xs grid place-items-center font-semibold">${i+1}</span><span class="text-sm text-gray-700 leading-relaxed">${x}</span></li>`).join('')}</ol>${a.tip?`<div class="mt-3 text-sm rounded-lg bg-amber-50 border border-amber-200 text-[#8a6d12] p-3">💡 <b>Consejo:</b> ${a.tip}</div>`:''}</details>`}
+function helpBody(){
+  const q=norm((state.hq||'').trim()),adm=state.role==='admin';
+  if(q){
+    const words=q.split(/\s+/).filter(Boolean);
+    const hits=MODS.map(m=>({m,a:m.arts.filter(a=>{const t=mTxt(m,a);return words.every(w=>t.includes(w))})})).filter(x=>x.a.length);
+    return hits.length?`<p class="text-sm text-gray-500 mb-3">${hits.reduce((n,x)=>n+x.a.length,0)} resultado(s)</p>`+hits.map(x=>`<div class="mb-4"><div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">${x.m.i} ${x.m.t}</div><div class="space-y-3">${x.a.map(a=>helpArt(a,hits.length===1&&x.a.length===1)).join('')}</div></div>`).join(''):`<div class="bg-white rounded-xl border border-gray-200 p-5 text-sm text-gray-600">No hay resultados para «${esc(state.hq)}». Prueba con otra palabra (por ejemplo «caja», «firma», «cita», «QR») o escribe a <a class="underline font-medium text-[#8a6d12]" href="mailto:${MAIL}">${MAIL}</a>.</div>`;
+  }
+  const t=state.htab&&MODS.some(m=>m.id===state.htab)?state.htab:'agenda',m=MODS.find(x=>x.id===t),nv=m.g&&NAV.find(n=>n.id===m.g);
+  return `<div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">${m.i} ${m.t}</div><div class="space-y-3">${m.arts.map((a,i)=>helpArt(a,i===0)).join('')}</div>${nv&&(!nv.admin||adm)?`<button data-v="${m.g}" class="${btn} mt-4">Ir a ${nv.label} →</button>`:nv?'<p class="text-xs text-gray-400 mt-4">🔒 Esta sección solo está disponible para el Dueño/Admin.</p>':''}`;
+}
+function vAyuda(){
+  const t=state.htab||'agenda',has=!!(state.hq||'').trim();
+  const chips=MODS.map(m=>`<button data-a="htab" data-id="${m.id}" class="px-3 py-2 rounded-full text-sm whitespace-nowrap ${!has&&t===m.id?'bg-[#111827] text-white':'bg-white border border-gray-300 text-gray-600'}">${m.c}</button>`).join('');
+  return `<div class="rounded-2xl bg-[#111827] text-white p-5 mb-4"><div class="text-lg font-bold">Centro de Ayuda</div><p class="text-sm text-gray-300 mt-1">Manual paso a paso de todas las funciones. Busca por palabra o elige un módulo.</p><input id="hq" type="search" autocomplete="off" value="${esc(state.hq||'')}" placeholder="🔍 Buscar: cobrar, firma, QR, caja no cuadra…" class="${inp} mt-3 text-gray-900"></div>
+  <div id="hchips" class="flex gap-2 overflow-x-auto pb-2 mb-3">${chips}</div>
+  <p class="text-xs text-gray-400 mb-3">Las secciones Caja, Gestoría y Ajustes solo aparecen en la vista Dueño/Admin.</p>
+  <div id="hres">${helpBody()}</div>${supportCard()}`;
+}
+document.addEventListener('input',e=>{if(e.target.id!=='hq')return;state.hq=e.target.value;$('#hres').innerHTML=helpBody();
+  $('#hchips').querySelectorAll('[data-a="htab"]').forEach(b=>{const on=!state.hq.trim()&&b.dataset.id===(state.htab||'agenda');b.className='px-3 py-2 rounded-full text-sm whitespace-nowrap '+(on?'bg-[#111827] text-white':'bg-white border border-gray-300 text-gray-600')})});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a="htab"]');if(t)state.hq=''});
+
+
+/* --- WhatsApp del centro (Ajustes) y mantenimiento --- */
+function savePhone(){const v=cleanTel($('#ph').value),l=asAcc(),a=l.find(x=>x.slug===window.AS_SLUG);if(!a)return;a.phone=v;asSave(l);window.asPushAccount&&asPushAccount();render();toast('Teléfono guardado')}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a;
+  if(a==='phSave')savePhone();
+  else if(a==='backup')backup();
+  else if(a==='restore')$('#rfile').click();
+  else if(a==='reloadApp')location.reload();
+});
+
+/* --- Copia de seguridad --- */
+const backupCard=()=>card(`<div class="font-semibold mb-1">Copia de seguridad y mantenimiento</div><p class="text-sm text-gray-500 mb-3">Descarga un archivo con todos tus datos (clientes, citas, cajas, consentimientos…) o restáuralo. Útil antes de limpiar el navegador o cambiar de dispositivo.</p>
+ <div class="flex flex-wrap gap-2"><button data-a="backup" class="${btn}">⬇ Descargar copia</button><button data-a="restore" class="px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-sm font-medium">⬆ Restaurar copia</button><button data-a="reloadApp" class="px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-sm font-medium">🔄 Recargar aplicación</button></div><input id="rfile" type="file" accept=".json,application/json" class="hidden">`,'mb-4');
+function backup(){
+  const o={app:'AgendaSavia',v:1,ts:new Date().toISOString(),data:{}};
+  try{asKeys().forEach(k=>o.data[k]=localStorage.getItem(k))}catch(e){}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:'application/json'}));
+  a.download='AgendaSavia_copia_'+today()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);toast('Copia descargada');
+}
+document.addEventListener('change',e=>{if(e.target.id!=='rfile')return;const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);
+    if(o.app!=='AgendaSavia'||!o.data)throw 0;
+    const ks=Object.keys(o.data).filter(k=>/^as3_clean(_ops|_day|_future|_center)?$/.test(k));if(!ks.length)throw 0;
+    if(!confirm('Esto sustituirá los datos actuales por los de la copia. ¿Continuar?'))return;
+    asKeys().forEach(k=>localStorage.removeItem(k));
+    ks.forEach(k=>localStorage.setItem(k,o.data[k]));location.reload()}
+   catch(x){toast('Archivo no válido: no es una copia de AgendaSavia')}};r.readAsText(f)});
+/* --- Agenda: vista por profesional --- */
+document.addEventListener('change',e=>{if(e.target.id==='apro'){state.apro=e.target.value;render()}});
+
+/* --- Editar / eliminar citas y bloqueos --- */
+function editApptModal(id){
+  const a=appts.find(x=>x.id===id);if(!a)return;
+  if(a.paid)return toast('Cita ya cobrada: no se puede modificar');
+  showModal('Editar cita',`<form id="f" class="space-y-3"><datalist id="cl">${CLIENTS.map(c=>`<option value="${esc(c.n)}">`).join('')}</datalist>
+   <div><label class="${lbl}">Cliente</label><input name="client" list="cl" required value="${esc(a.client)}" class="${inp}">${a.origen==='cliente'?'<div class="text-xs text-gray-500 mt-1">Reservada por el cliente</div>':''}</div>
+   <div><label class="${lbl}">Teléfono WhatsApp</label><input name="tel" type="tel" maxlength="20" value="${esc(telOf(a))}" class="${inp}"></div>
+   <div><label class="${lbl}">Servicio</label><select name="svc" class="${inp}">${SERVICES.map(s=>`<option value="${s.id}" ${s.id===a.svc?'selected':''}>${esc(s.name)} · ${s.dur} min</option>`).join('')}</select></div>
+   <div><label class="${lbl}">Profesional</label><select name="pro" class="${inp}">${PROS.map(p=>`<option ${p===a.pro?'selected':''}>${esc(p)}</option>`).join('')}</select></div>
+   <div class="grid grid-cols-2 gap-3"><div><label class="${lbl}">Día</label><input name="date" type="date" required min="${today()}" value="${today()}" class="${inp}"></div><div><label class="${lbl}">Hora</label><select name="start" class="${inp}">${timeOpts(a.start)}</select></div></div>
+   <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="gift" ${a.gift?'checked':''} class="w-5 h-5 accent-[#D4AF37]"> Cita a 0 € / tarjeta regalo</label>
+   ${a.estado==='pendiente'?`<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="conf" checked class="w-5 h-5 accent-[#D4AF37]"> Confirmar cita (quitar «pendiente»)</label>`:''}<button class="${sbtn}">Guardar cambios</button>
+   <button type="button" id="apWa" class="w-full py-3 rounded-lg bg-[#25D366] text-white font-semibold">📲 Enviar recordatorio por WhatsApp</button>
+   <button type="button" id="apDel" class="w-full py-2.5 text-sm text-red-600">Eliminar cita</button></form>`);
+  $('#f').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),s=S(f.get('svc')),start=+f.get('start'),pro=f.get('pro'),gift=!!f.get('gift'),d=f.get('date');
+    if(!d||d<today())return toast('Elige hoy o un día posterior');
+    if(start+s.dur>END)return toast('La cita termina después del cierre');
+    if(isToday(d)&&gift&&!a.gift&&zeroLeft()<=0)return toast('Cupo diario de citas a 0 € completo');
+    const others=isToday(d)?[...appts.filter(x=>x!==a),...blocks]:futQ().filter(x=>x.date===d);
+    if(others.some(x=>x.pro===pro&&start<x.start+x.dur&&x.start<start+s.dur)&&!confirm('Ese hueco ya está ocupado. ¿Guardar igualmente?'))return;
+    Object.assign(a,{client:clean(f.get('client')),tel:cleanTel(f.get('tel')),svc:s.id,pro,start,dur:s.dur,gift});if(a.estado==='pendiente'&&f.get('conf'))a.estado='confirmada';
+    if(!isToday(d)){/* mover la cita a otro día */
+      appts.splice(appts.indexOf(a),1);const{id:_i,paid:_p,...rest}=a,q=futQ();q.push({...rest,rid:a.rid||newRid(),date:d,rem:0});futSave(q);state.aday=d}
+    saveDay();closeModal();render();toast('Cita actualizada')};
+  $('#apWa').onclick=()=>{const t=cleanTel($('#f').tel.value);if(t){a.tel=t;saveDay()}closeModal();sendWa('t:'+a.id)};
+  $('#apDel').onclick=()=>{if(confirm('¿Eliminar esta cita?')){appts.splice(appts.indexOf(a),1);saveDay();closeModal();render();toast('Cita eliminada')}};
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-wa]'))return;
+  const t=e.target.closest('[data-a="editAppt"],[data-a="delBlock"],[data-a="htab"],[data-a="wipe"]');if(!t)return;
+  const a=t.dataset.a,id=t.dataset.id;
+  if(a==='editAppt')openModal('editAppt',+id);
+  else if(a==='delBlock'){const b=blocks[+id];if(b&&confirm('¿Quitar el bloqueo «'+b.label+'» de '+b.pro+' ('+fmt(b.start)+'–'+fmt(b.start+b.dur)+')?')){blocks.splice(+id,1);saveDay();render();toast('Bloqueo eliminado')}}
+  else if(a==='htab'){state.htab=id;render()}
+  else if(a==='wipe'&&confirm('¿Borrar TODOS los datos de AgendaSavia (en este navegador y en la nube)? Esta acción no se puede deshacer.')){
+    (async()=>{
+      const t=asToken();
+      if(t&&window.AS_SLUG){const r=await asRpc('as_wipe',{p_slug:AS_SLUG,p_token:t},8000);if(!r.data||!r.data.ok)return toast('Sin conexión: no se pudo borrar en la nube. No se ha borrado nada.')}
+      try{asKeys().forEach(k=>localStorage.removeItem(k));['as3_clean_sync','as3_clean_dirty'].forEach(k=>localStorage.removeItem(k))}catch(x){}
+      location.reload()})()}
+});
+document.addEventListener('submit',e=>{const f=e.target;if(!f.dataset.center)return;e.preventDefault();setCenter(new FormData(f).get('n'));toast('Nombre del centro actualizado')});
+
+/* ================= LEGAL · COOKIES · SOPORTE ================= */
+const MAIL='websize130@gmail.com';
+/* COMPLETA estos datos del titular antes de publicar la aplicación (LSSI-CE, art. 10) */
+const LEGAL={titular:'[Nombre o razón social del titular]',nif:'[NIF/CIF]',domicilio:'[Domicilio completo]',registro:'',fecha:'octubre de 2026'};
+const ph=v=>String(v).startsWith('[')?`<mark class="bg-amber-100 text-[#8a6d12] rounded px-1">${esc(v)}</mark>`:esc(v);
+const mail=`<a class="font-medium underline text-[#8a6d12]" href="mailto:${MAIL}">${MAIL}</a>`;
+const legalDoc=(...p)=>`<div class="text-sm text-gray-700 space-y-2 leading-relaxed">${p.map(x=>x[0]==='#'?`<h3 class="font-semibold text-[#111827] pt-2">${x.slice(1)}</h3>`:x.startsWith('• ')?`<p class="pl-4">${x}</p>`:`<p>${x}</p>`).join('')}<p class="text-xs text-gray-400 pt-2">Última actualización: ${LEGAL.fecha}</p></div>`;
+const AVISO=()=>legalDoc(
+ '#1. Datos identificativos',
+ `En cumplimiento del artículo 10 de la Ley 34/2002, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se informa de que el titular de AgendaSavia es <b>${ph(LEGAL.titular)}</b>, con NIF/CIF ${ph(LEGAL.nif)} y domicilio en ${ph(LEGAL.domicilio)}.${LEGAL.registro?' Datos registrales: '+esc(LEGAL.registro)+'.':''}`,
+ `Correo de contacto y soporte técnico (dudas y reporte de fallos): ${mail}.`,
+ '#2. Objeto',
+ 'AgendaSavia es un software de gestión para peluquerías y centros de estética: agenda, clientes y fichas técnicas, consentimientos informados, TPV y cierre de caja, tarjetas regalo y exportación de datos para la gestoría.',
+ '#3. Condiciones de uso',
+ 'El acceso y uso de la aplicación atribuye la condición de usuario e implica la aceptación de este Aviso Legal. El usuario se compromete a hacer un uso lícito, diligente y conforme a la buena fe, y a no emplear la aplicación con fines contrarios a la ley o que puedan dañar a terceros.',
+ 'El usuario es el único responsable de la información que introduce, incluidos los datos personales de sus clientes. Como responsable de esos datos, debe contar con una base jurídica para tratarlos, informar a sus clientes y recabar los consentimientos que exija la normativa, especialmente para datos de salud y de menores de edad.',
+ '#4. Consentimientos informados y normativa sectorial',
+ 'Los textos de consentimiento incluidos en la aplicación son modelos genéricos. Corresponde al centro revisarlos y adaptarlos a cada tratamiento y a la normativa sanitaria, de consumo y de protección de datos aplicable. La aplicación no sustituye el asesoramiento legal ni sanitario profesional.',
+ '#5. Facturación y fiscalidad',
+ 'El TPV, el cierre de caja y los informes para la gestoría son herramientas de control interno. La aplicación no emite facturas ni tickets con validez fiscal ni sustituye a un software de facturación homologado; las cifras exportadas deben ser verificadas por el contable o asesor del centro.',
+ '#6. Propiedad intelectual e industrial',
+ 'El diseño, el código, los textos, las marcas y los logotipos de AgendaSavia pertenecen a su titular o cuentan con licencia de uso. Queda prohibida su reproducción, distribución o transformación sin autorización expresa, salvo lo permitido por la ley.',
+ '#7. Responsabilidad',
+ 'El titular no garantiza la disponibilidad continuada de la aplicación ni la ausencia de errores, aunque procurará corregirlos con la mayor rapidez. En esta versión los datos se guardan únicamente en el navegador del usuario, por lo que corresponde a este protegerlos, mantener su dispositivo seguro y conservar las copias que considere necesarias. El titular no responderá de la pérdida de datos derivada del borrado del navegador, del cambio de dispositivo o de un uso indebido de la aplicación.',
+ '#8. Legislación y jurisdicción',
+ 'Este Aviso Legal se rige por la legislación española. Para cualquier controversia, las partes se someten a los juzgados y tribunales que correspondan conforme a la normativa vigente y, si el usuario es consumidor, a los de su domicilio.',
+ '#9. Contacto y soporte',
+ `Para dudas sobre este Aviso Legal, consultas técnicas o reporte de fallos, escribe a ${mail} o usa el botón «Reportar un problema» del pie de página.`);
+const PRIVAC=()=>legalDoc(
+ '#1. Responsable del tratamiento',
+ `<b>${ph(LEGAL.titular)}</b> (NIF/CIF ${ph(LEGAL.nif)}, ${ph(LEGAL.domicilio)}, correo ${mail}) es responsable del tratamiento de los datos de las personas que usan AgendaSavia y de quienes contactan con soporte.`,
+ 'Respecto a los datos de los clientes que cada centro introduce en la aplicación (nombre, teléfono, fichas, consentimientos…), el responsable es el propio centro. AgendaSavia es la herramienta con la que los gestiona y, en esta versión, no accede a ellos (véase el apartado 4).',
+ '#2. Datos que se tratan',
+ '• Del usuario: nombre del centro, teléfono de contacto (opcional), plan elegido, usuario y contraseña (guardada como huella cifrada, no en texto claro) y los datos que facilite al escribir a soporte (correo y contenido del mensaje).',
+ '• De los clientes del centro, introducidos por este: nombre, teléfono, historial de visitas y compras, y fichas técnicas con fórmulas de tinte, tipo de piel, alergias y sensibilidades, que pueden ser datos de salud (categoría especial, art. 9 RGPD).',
+ '• Consentimientos informados: tratamiento aceptado, nombre del firmante, firma manuscrita digitalizada, fecha y hora.',
+ '• Operativa del negocio: citas, cobros, cierres de caja y tarjetas regalo.',
+ '#3. Finalidades y base jurídica',
+ '• Prestar el servicio de gestión de la aplicación: ejecución del contrato (art. 6.1.b RGPD).',
+ '• Atender consultas e incidencias de soporte: interés legítimo (art. 6.1.f) y, en su caso, ejecución del contrato.',
+ '• Datos de salud de los clientes del centro: consentimiento explícito de la persona interesada (art. 9.2.a), que debe recabar el centro.',
+ '• Conservación de documentación contable y fiscal por el centro: obligación legal (art. 6.1.c).',
+ '#4. Dónde se almacenan los datos',
+ 'En esta versión, los datos que introduces se guardan únicamente en el almacenamiento local (localStorage) del navegador de tu dispositivo y no se envían a servidores de AgendaSavia. La aplicación no los cifra: su protección depende del dispositivo y del navegador, así que usa bloqueo de pantalla y mantén el sistema actualizado. Si borras los datos del navegador o cambias de dispositivo, la información se pierde.',
+ 'Para funcionar, la aplicación descarga su hoja de estilos desde cdn.tailwindcss.com; ese proveedor recibe tu dirección IP como parte de la conexión técnica. Los recordatorios por WhatsApp se abren con un enlace wa.me en la aplicación WhatsApp del propio centro: AgendaSavia no envía mensajes por sí misma ni guarda su contenido.',
+ 'Si en el futuro se incorporan copias en la nube u otros servicios, se actualizará esta política y, en su caso, se formalizará el contrato de encargo de tratamiento correspondiente.',
+ '#5. Destinatarios',
+ 'No cedemos datos a terceros salvo obligación legal. Los mensajes que envías a soporte viajan por correo electrónico y son gestionados por el proveedor de correo del titular (Google), con las garantías previstas en la normativa.',
+ '#6. Plazo de conservación',
+ 'Los datos locales se conservan hasta que el usuario los elimine (Ajustes → Borrar todos los datos, o limpiando el navegador). Los mensajes de soporte se conservan el tiempo necesario para resolver la consulta y, después, durante los plazos legales de prescripción. El centro debe conservar la documentación contable y fiscal durante los plazos legales (en general, entre 4 y 6 años).',
+ '#7. Tus derechos',
+ `Puedes ejercer los derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad escribiendo a ${mail}. Si eres cliente de un centro, dirígete primero al propio centro. Si consideras que no se han atendido tus derechos, puedes reclamar ante la Agencia Española de Protección de Datos (www.aepd.es).`,
+ '#8. Obligaciones del centro como responsable',
+ 'El centro debe informar a sus clientes del tratamiento de sus datos, recabar el consentimiento explícito para los datos de salud, tratar solo los datos necesarios, llevar un registro de actividades de tratamiento y aplicar medidas de seguridad adecuadas. En el caso de menores de 14 años, el consentimiento corresponde a sus padres o tutores.',
+ '#9. Recomendación',
+ 'Limita los datos de salud a lo estrictamente necesario y no los incluyas en los mensajes de soporte.');
+const COOK=()=>legalDoc(
+ '#1. ¿Qué utilizamos?',
+ 'AgendaSavia no utiliza cookies de publicidad, analítica ni seguimiento. Solo emplea el almacenamiento local del navegador (localStorage), estrictamente necesario para que la aplicación funcione y para guardar tus datos en tu dispositivo. Conforme al artículo 22.2 de la LSSI-CE, este almacenamiento esencial está exento de consentimiento; aun así, te informamos de ello.',
+ '#2. Claves de almacenamiento',
+ '• Los datos de cada centro se guardan con el prefijo s:nombre-del-centro: seguido de estas claves:',
+ '• as3_clean: clientes, servicios y profesionales.',
+ '• as3_clean_ops: caja, cobros rápidos, tarjetas regalo y cupo diario.',
+ '• as3_clean_day: citas y bloqueos del día.',
+ '• as3_clean_center: nombre del centro.',
+ '• as3_clean_future: citas de los próximos días.',
+ '• as3_clean_accounts, as3_clean_session y as3_clean_promo: cuentas de este dispositivo, sesión iniciada y códigos promocionales utilizados.',
+ '• as3_clean_cookies: registro de que has leído este aviso.',
+ '#3. Terceros',
+ 'La aplicación carga su hoja de estilos desde cdn.tailwindcss.com. Esa conexión técnica expone tu dirección IP al proveedor. No se usan para publicidad ni seguimiento.',
+ '#4. Cómo eliminarlos',
+ 'Desde Ajustes → «Borrar todos los datos» (solo Dueño/Admin; descarga antes una copia de seguridad) o desde la configuración de tu navegador (borrar datos del sitio). Ten en cuenta que borrarlos elimina tu información de la aplicación.',
+ '#5. Cambios',
+ `Si en el futuro se incorporan cookies analíticas o de terceros, solicitaremos tu consentimiento previo. Consultas: ${mail}.`);
+function openLegal(k){showModal({aviso:'Aviso Legal',privacidad:'Política de Privacidad (RGPD)',cookies:'Política de Cookies'}[k],{aviso:AVISO,privacidad:PRIVAC,cookies:COOK}[k]())}
+function supportModal(){
+  showModal('Reportar un problema / Contactar',`<form id="f" class="space-y-3">
+   <p class="text-sm text-gray-600">Se abrirá tu aplicación de correo con el mensaje preparado para <b>${MAIL}</b>.</p>
+   <div><label class="${lbl}">Tipo</label><select name="tipo" class="${inp}"><option>Reportar un fallo</option><option>Duda de uso</option><option>Sugerencia</option><option>Otro</option></select></div>
+   <div><label class="${lbl}">Asunto</label><input name="asunto" required maxlength="80" placeholder="Resumen breve" class="${inp}"></div>
+   <div><label class="${lbl}">Descripción</label><textarea name="msg" rows="5" required placeholder="¿Qué ocurrió? ¿Qué pasos seguiste?" class="${inp}"></textarea></div>
+   <label class="flex gap-2 text-sm"><input type="checkbox" name="tech" checked class="w-5 h-5 mt-0.5 shrink-0 accent-[#D4AF37]">Incluir información técnica (navegador, pantalla y sección actual). No incluye datos de clientes.</label>
+   <p class="text-xs text-gray-500">No escribas datos personales ni de salud de tus clientes en el mensaje.</p>
+   <button class="${sbtn}">✉ Abrir en mi correo</button><button type="button" id="cpMail" class="w-full py-2.5 text-sm text-blue-600 underline">Copiar ${MAIL}</button></form>`);
+  $('#f').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);
+    const tech=f.get('tech')?`\n\n---\nInformación técnica\nApp: AgendaSavia v1.0\nSección: ${state.view}\nPantalla: ${innerWidth}x${innerHeight}\nNavegador: ${navigator.userAgent}`:'';
+    location.href=`mailto:${MAIL}?subject=${encodeURIComponent('['+f.get('tipo')+'] '+f.get('asunto'))}&body=${encodeURIComponent(f.get('msg')+tech)}`};
+  $('#cpMail').onclick=()=>{(navigator.clipboard?navigator.clipboard.writeText(MAIL):Promise.reject()).then(()=>toast('Correo copiado'),()=>toast(MAIL))};
+}
+const supportCard=()=>card(`<div class="border-l-4 border-[#D4AF37] pl-3"><div class="font-semibold mb-1">🛟 Soporte técnico</div><p class="text-sm text-gray-600 mb-3">¿Dudas, fallos o sugerencias? Escríbenos a <a class="font-medium underline text-[#8a6d12]" href="mailto:${MAIL}">${MAIL}</a>.</p><button data-legal="soporte" class="${btn}">Reportar un problema / Contactar con soporte</button></div>`,'mt-6');
+const legalCard=()=>card(`<div class="font-semibold mb-3">Información legal y soporte</div><div class="flex flex-wrap gap-2">${[['aviso','Aviso Legal'],['privacidad','Política de Privacidad'],['cookies','Política de Cookies'],['soporte','🛟 Soporte']].map(([k,l])=>`<button data-legal="${k}" class="px-3 py-2 rounded-lg border border-gray-300 text-sm">${l}</button>`).join('')}</div>`,'mt-4');
+function initLegal(){
+  $('#yr').textContent=new Date().getFullYear();
+  let ok='';try{ok=localStorage.getItem('as3_clean_cookies')}catch(e){}
+  if(!ok)$('#cookies').classList.remove('hidden');
+  $('#cookOk').onclick=()=>{try{localStorage.setItem('as3_clean_cookies','1')}catch(e){}$('#cookies').classList.add('hidden')};
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-legal]');if(!t)return;const k=t.dataset.legal;if(k==='soporte')supportModal();else openLegal(k)});
+
+/* ---------- Eventos ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-v],[data-role],[data-open],[data-price],[data-toast]');
+  if(e.target.id==='modal')closeModal();
+  if(!t)return;
+  const d=t.dataset;
+  if(d.v)go(d.v);
+  else if(d.role)setRole(d.role);
+  else if(d.open)openModal(d.open);
+  else if(d.price){const s=S(d.price),v=prompt(`Nuevo precio para ${s.name} (€):`,s.price);if(v&&!isNaN(+v)){s.price=+v;render();toast('Precio actualizado')}}
+  else if(d.toast)toast(d.toast);
+});
+$('#mClose').onclick=closeModal;
+$('#burger').onclick=openSide;
+$('#scrim').onclick=closeSide;
+/* ---------- Cuentas bloqueadas por impago (el servidor debe aplicar también el bloqueo) ---------- */
+function showBlocked(){
+  document.body.classList.add('gate');const g=$('#gate');g.classList.remove('hidden');
+  g.innerHTML=`<div class="min-h-full grid place-items-center px-4 py-10"><div class="w-full max-w-md bg-white rounded-2xl border border-gray-200 p-6 text-center shadow-sm">
+   <div class="text-5xl mb-3">🔒</div><div class="text-xl font-bold mb-1">Cuenta suspendida temporalmente</div>
+   <p class="text-sm text-gray-600 mb-4">El acceso a la agenda de <b>${esc((asMe()||{}).center||'tu centro')}</b> está bloqueado por un pago pendiente. Tus datos están a salvo: en cuanto se confirme el pago (Bizum o PayPal) se reactivará el acceso.</p>
+   <a href="mailto:${MAIL}?subject=${encodeURIComponent('Reactivar cuenta AgendaSavia')}" class="block w-full py-3 rounded-lg bg-[#111827] text-white font-medium mb-2">✉ Contactar con ${MAIL}</a>
+   <button onclick="location.reload()" class="w-full py-2.5 rounded-lg border border-gray-300 text-sm font-medium mb-2">🔄 Ya he pagado: comprobar de nuevo</button>
+   <button data-logout class="w-full py-2 text-sm text-gray-500 underline">Cerrar sesión</button></div></div>`;
+}
+async function refreshStatus(){
+  const me=asMe();if(!me||!asToken())return;
+  const r=await asRpc('as_account_status',{p_slug:me.slug,p_token:asToken()},6000);
+  const st=r.data&&r.data.status;if(!st||st===(me.status||'aldia'))return;
+  asCacheAccount({slug:me.slug,status:st});if((st==='bloqueado')!==(me.status==='bloqueado'))location.reload();
+}
+if(window.AS_SLUG&&!asIsMaster(asMe())){
+  if((asMe()||{}).status==='bloqueado')showBlocked();
+  else{setRole('admin');initCenter();initLegal();welcome()}
+  refreshStatus();
+}
+</script>
+<script>
+/* ===== PORTADA · FLUJO CLIENTE · ACCESO PROFESIONAL ===== */
+(function(){
+const G=$('#gate'),SES_K='as3_clean_session',PRO_K='as3_clean_promo';
+const gj=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??d}catch(e){return d}};
+const logo=`<div class="text-center mb-8"><div class="w-16 h-16 mx-auto rounded-2xl bg-[#D4AF37] text-[#111827] grid place-items-center text-3xl font-black mb-3">S</div><div class="text-3xl font-extrabold tracking-tight text-[#111827]">Agenda<span class="text-[#D4AF37]">Savia</span></div></div>`;
+const wide=`${btn} w-full !py-3.5 !text-base`;
+function shell(h,back){
+  G.innerHTML=`<div class="min-h-full flex flex-col px-4 py-8" style="padding-top:calc(2rem + env(safe-area-inset-top,0px))"><div class="w-full max-w-md m-auto">${back?`<button data-g="${back}" class="text-sm text-gray-500 mb-4 py-1">← Volver</button>`:''}${h}</div></div>`;
+  G.scrollTop=0;
+}
+const bigBtn=(g,ic,t,s,dark)=>`<button data-g="${g}" class="w-full text-left rounded-2xl p-5 flex items-center gap-4 active:scale-[.98] transition shadow-sm ${dark?'bg-[#111827] text-white':'bg-white border-2 border-[#D4AF37] text-[#111827]'}"><span class="text-4xl">${ic}</span><span><span class="block text-xl font-bold">${t}</span><span class="block text-sm ${dark?'text-gray-300':'text-gray-500'}">${s}</span></span></button>`;
+
+/* ---------- Portada: acceso exclusivo para profesionales (B2B) ---------- */
+function landing(){
+  try{history.replaceState(null,'',location.pathname)}catch(e){}
+  shell(`${logo}<p class="text-center text-gray-500 -mt-4 mb-6">Software de gestión para peluquerías y centros de estética.<br><span class="text-xs">Acceso exclusivo para profesionales: dueños de salón y empleados.</span></p><div class="space-y-4">${bigBtn('login','🔑','Iniciar sesión','Entra con tu usuario o correo y contraseña',1)}${bigBtn('reg','📝','Crear cuenta de salón','19 €/mes o 149 €/año · 14 días gratis',0)}</div>`);
+}
+
+/* ---------- Profesional: registro ---------- */
+let R={plan:null,promo:null};
+const plansReg=()=>PLANS.map(p=>planBox(p,{promo:R.promo,on:R.plan,gate:1})).join('')+(R.promo&&R.plan==='anual'?'<p class="text-xs text-amber-700">BIENVENIDA30 solo se aplica al Plan Mensual.</p>':'');
+const RQS=['PIN de recuperación (4-8 cifras)','¿Cómo se llamaba tu primera mascota?','¿En qué ciudad nació tu madre o tu padre?','¿Cómo se llamaba tu primer colegio?','¿Cuál era tu comida favorita de pequeño/a?'];
+const normAns=s=>norm(String(s||'')).replace(/\s+/g,' ').trim();
+function register(){
+  R={plan:'mensual',promo:null};
+  shell(`<h2 class="text-2xl font-bold mb-1">Crea tu cuenta</h2><p class="text-sm text-gray-500 mb-4">14 días de prueba gratis · sin permanencia.</p>
+  <form data-gf="reg" class="space-y-4" autocomplete="off">
+   <div><label class="${lbl}">Correo electrónico o usuario</label><input name="user" id="ruser" required minlength="3" maxlength="60" autocapitalize="none" autocomplete="off" placeholder="tu@correo.com" class="${inp}"></div>
+   <div id="rmaster" class="hidden rounded-xl bg-[#111827] text-[#D4AF37] text-sm p-3">👑 <b>Cuenta maestra detectada</b>: registro rápido, solo necesitas una contraseña.</div>
+   <fieldset id="rsalon" class="space-y-4">
+    <div><label class="${lbl}">Nombre del salón / centro de estética</label><input name="center" required minlength="2" maxlength="40" placeholder="Ej. Estética Luna" class="${inp}"></div>
+    <div><label class="${lbl}">Teléfono / WhatsApp del centro <span class="text-gray-400 font-normal">(opcional)</span></label><input name="phone" type="tel" maxlength="20" placeholder="Ej. 600 123 456" class="${inp}"></div>
+    <div><div class="${lbl}">Elige tu plan <span class="text-red-600">*</span></div><div id="rplans" class="space-y-3 pt-2">${plansReg()}</div><div id="rplanErr" class="text-sm text-red-600 mt-1 hidden">Selecciona un plan para continuar.</div></div>
+    <div><label class="${lbl}">¿Tienes un código promocional? <span class="text-gray-400 font-normal">(Plan Mensual)</span></label><div class="flex gap-2"><input id="rpromo" autocomplete="off" placeholder="Ej. BIENVENIDA30" class="${inp} flex-1 uppercase"><button type="button" data-g="promo" class="${btn}">Aplicar</button></div><div id="rpm" class="text-sm mt-1 min-h-[1.25rem]"></div></div>
+   </fieldset>
+   <div class="grid sm:grid-cols-2 gap-3"><div><label class="${lbl}">Contraseña (mín. 8)</label><input name="pw" type="password" required minlength="8" maxlength="72" autocomplete="new-password" class="${inp}"></div><div><label class="${lbl}">Repite la contraseña</label><input name="pw2" type="password" required minlength="8" maxlength="72" autocomplete="new-password" class="${inp}"></div></div>
+   <fieldset id="rextra" class="space-y-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-3 space-y-3"><div class="text-sm font-medium text-gray-700">🔐 Recuperación de contraseña</div><p class="text-xs text-gray-500 -mt-1">Si algún día olvidas tu contraseña, podrás crear una nueva respondiendo a esta pregunta. Guárdala en un lugar seguro.</p>
+    <div><label class="${lbl}">PIN o pregunta de seguridad</label><select name="rq" class="${inp}">${RQS.map(q=>`<option>${q}</option>`).join('')}</select></div>
+    <div><label class="${lbl}">Tu PIN o tu respuesta</label><input name="ra" required minlength="4" maxlength="40" autocomplete="off" placeholder="Mín. 4 caracteres" class="${inp}"></div></div>
+    <label class="flex gap-2 text-sm text-gray-600"><input type="checkbox" name="ok" class="w-5 h-5 mt-0.5 shrink-0 accent-[#D4AF37]"><span>He leído y acepto el <button type="button" data-legal="aviso" class="underline text-[#8a6d12]">Aviso Legal</button> y la <button type="button" data-legal="privacidad" class="underline text-[#8a6d12]">Política de Privacidad</button>.</span></label>
+   </fieldset>
+   <button id="rsubmit" class="${wide}">Crear cuenta y entrar</button></form>`,'landing');
+}
+/* Si el correo es el de la cuenta maestra, se ocultan (y desactivan) los datos del salón */
+function toggleMaster(v){const m=String(v||'').trim().toLowerCase()===AS_ADMIN_EMAIL;
+  ['#rsalon','#rextra'].forEach(id=>{const f=$(id);if(f){f.disabled=m;f.classList.toggle('hidden',m)}});
+  $('#rmaster').classList.toggle('hidden',!m);$('#rsubmit').textContent=m?'Crear cuenta maestra y entrar':'Crear cuenta y entrar'}
+function applyRegPromo(){
+  const r=promoCheck($('#rpromo').value),m=$('#rpm');
+  R.promo=r.ok?r.c:null;m.className='text-sm mt-1 min-h-[1.25rem] '+r.cls;m.innerHTML=r.msg;
+  if(r.ok&&R.plan!=='mensual'){R.plan='mensual'}
+  $('#rplans').innerHTML=plansReg();
+}
+async function hashPw(pw,salt){
+  try{if(window.crypto&&crypto.subtle){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']),
+    b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:100000,hash:'SHA-256'},k,256);
+    return 'p:'+[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(e){}
+  let h=5381;const s=salt+pw;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return 'w:'+(h>>>0).toString(16);
+}
+const rnd=()=>{try{return [...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){return String(Date.now())+Math.random()}};
+function startSession(slug,welcome){
+  try{localStorage.setItem(SES_K,slug);if(welcome)sessionStorage.setItem('as3_welcome','1')}catch(e){return toast('No se pudo iniciar la sesión en este navegador')}
+  try{history.replaceState(null,'',location.pathname)}catch(e){}
+  location.reload();
+}
+async function doReg(d){
+  const user=String(d.get('user')||'').trim().toLowerCase(),pw=String(d.get('pw')),list=asAcc();
+  if(!/^[a-z0-9._@+-]{3,60}$/.test(user))return toast('Correo o usuario: 3-60 caracteres (letras, números . _ - @ +)');
+  if(pw.length<8)return toast('La contraseña debe tener al menos 8 caracteres');
+  if(pw!==d.get('pw2'))return toast('Las contraseñas no coinciden');
+  if(list.some(a=>a.user===user))return toast('Esa cuenta ya existe en este dispositivo. Inicia sesión.');
+  const created=new Date().toISOString(),salt=rnd(),hash=await hashPw(pw,salt);
+  /* ---- Registro ultrarrápido de la cuenta maestra (solo correo y contraseña) ---- */
+  if(user===AS_ADMIN_EMAIL){
+    let slug='master-admin',token='',cloud=false;
+    const rr=await asRpc('as_register',{p_slug:slug,p_exact:true,p:{center:'Master Admin',phone:'',user,salt,hash,rq:'',rsalt:'',rhash:'',plan:'master',promo:'',created}},12000);
+    if(rr.data&&rr.data.ok){slug=rr.data.slug;token=rr.data.token;cloud=true}
+    else if(rr.data&&rr.data.error==='user_taken')return toast('Esa cuenta ya existe. Inicia sesión.');
+    list.push({slug,center:'Master Admin',phone:'',user,salt,hash,plan:'master',promo:null,created,cloud,role:'master'});
+    asSave(list);asSetToken(token);return startSession(slug,false);
+  }
+  const center=clean(d.get('center')||''),phone=cleanTel(d.get('phone'));
+  if(center.length<2)return toast('Escribe el nombre de tu centro');
+  if(!R.plan){$('#rplanErr').classList.remove('hidden');$('#rplanErr').scrollIntoView({block:'center',behavior:'smooth'});return toast('Selecciona un plan')}
+  const rq=String(d.get('rq')||''),ra=normAns(d.get('ra'));
+  if(!RQS.includes(rq))return toast('Elige un PIN o una pregunta de seguridad');
+  if(rq===RQS[0]&&!/^\d{4,8}$/.test(ra))return toast('El PIN debe tener entre 4 y 8 cifras');
+  if(ra.length<4)return toast('La respuesta debe tener al menos 4 caracteres');
+  if(!d.get('ok'))return toast('Debes aceptar el Aviso Legal y la Política de Privacidad');
+  const promo=promoOk(R.promo,R.plan)?R.promo:null;   /* BIENVENIDA30 solo en el Plan Mensual */
+  const base=norm(center).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'centro';let slug=base,n=2;
+  while(list.some(a=>a.slug===slug))slug=base+'-'+n++;
+  const rsalt=rnd(),rhash=await hashPw(ra,rsalt);
+  /* La cuenta se valida y se crea en la tabla «centros» de Supabase (usuario único) */
+  let cloud=false,token='';
+  const rr=await asRpc('as_register',{p_slug:slug,p_exact:false,p:{center,phone,user,salt,hash,rq,rsalt,rhash,plan:R.plan,promo:promo||'',created}},12000);
+  if(rr.data&&rr.data.ok){slug=rr.data.slug;token=rr.data.token;cloud=true}
+  else if(rr.data&&rr.data.error==='user_taken')return toast('Esa cuenta ya existe. Elige otro correo o usuario');
+  else if(rr.data&&rr.data.error)return toast('No se pudo crear la cuenta ('+rr.data.error+')');
+  else if(window.asHasCloud&&asHasCloud()){toast('Sin conexión: la cuenta se crea en este dispositivo y se subirá a la nube al entrar con conexión');await new Promise(r=>setTimeout(r,1800))}
+  if(!list.length){['as3_clean','as3_clean_ops','as3_clean_day'].forEach(k=>{try{const v=localStorage.getItem(k);if(v)localStorage.setItem('s:'+slug+':'+k,v)}catch(e){}})}
+  list.push({slug,center,phone,user,salt,hash,rq,rsalt,rhash,plan:R.plan,promo,created,cloud,status:'aldia'});
+  asSave(list);asSetToken(token);
+  startSession(slug,true);
+}
+
+/* ---------- Profesional: login ---------- */
+let fails=0,lockUntil=0;
+function loginView(){
+  shell(`<h2 class="text-2xl font-bold mb-1">Iniciar sesión</h2><p class="text-sm text-gray-500 mb-4">Entra con el correo o usuario y la contraseña de tu cuenta.</p>
+  ${asAcc().length||(window.asHasCloud&&asHasCloud())?'':`<div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 text-[#8a6d12] text-sm p-3">En este dispositivo todavía no hay ninguna cuenta. Pulsa «Registrarme» para crear la tuya.</div>`}
+  <form data-gf="login" class="space-y-4"><div><label class="${lbl}">Correo o usuario</label><input name="user" required autocapitalize="none" autocomplete="username" class="${inp}"></div><div><label class="${lbl}">Contraseña</label><input name="pw" type="password" required autocomplete="current-password" class="${inp}"></div><div id="lerr" class="text-sm text-red-600 min-h-[1.25rem]"></div><button class="${wide}">Entrar</button></form>
+  <div class="text-sm text-center text-gray-500 mt-4 space-y-1"><div><button data-g="forgot" class="underline text-[#8a6d12]">¿Olvidaste tu contraseña?</button></div><div><button data-g="reg" class="underline">¿Aún no tienes cuenta? Regístrate</button></div><div>¿Problemas para entrar? Escribe a <a class="underline text-[#8a6d12]" href="mailto:${MAIL}">${MAIL}</a></div></div>`,'landing');
+}
+async function doLogin(d){
+  const e=$('#lerr'),now=Date.now();
+  if(now<lockUntil){e.textContent='Demasiados intentos. Espera '+Math.ceil((lockUntil-now)/1000)+' s.';return}
+  const user=String(d.get('user')).trim().toLowerCase(),pw=String(d.get('pw')),la=asAcc().find(x=>x.user===user);
+  const fail=()=>{fails++;if(fails>=5){lockUntil=Date.now()+30000;fails=0;e.textContent='Demasiados intentos. Espera 30 s.'}else e.textContent='Usuario o contraseña incorrectos.'};
+  e.textContent='';
+  /* 1) Validación en la tabla «centros» de Supabase */
+  const sr=await asRpc('as_user_salt',{p_user:user},9000);
+  if(!sr.error){
+    if(sr.data){
+      const h=await hashPw(pw,sr.data),lr=await asRpc('as_login',{p_user:user,p_hash:h},9000);
+      if(lr.data){
+        if(lr.data.ok){
+          const ac=lr.data.account;
+          asCacheAccount({slug:ac.slug,center:ac.center,phone:ac.phone||'',user:ac.user,salt:sr.data,hash:h,rq:ac.rq,rsalt:ac.rsalt,plan:ac.plan,promo:ac.promo||null,created:ac.created,cloud:true,...(ac.status?{status:ac.status}:{})});
+          asSetToken(lr.data.token);fails=0;return startSession(ac.slug,false);
+        }
+        if(lr.data.error==='locked'){e.textContent='Demasiados intentos. Espera '+(lr.data.secs||30)+' s.';return}
+        return fail();
+      }
+    }else if(la){
+      /* cuenta creada en este dispositivo antes de la nube: se comprueba en local y se migra a Supabase */
+      if((await hashPw(pw,la.salt))!==la.hash)return fail();
+      const mr=await asRpc('as_register',{p_slug:la.slug,p_exact:true,p:{center:la.center,phone:la.phone||'',user:la.user,salt:la.salt,hash:la.hash,rq:la.rq,rsalt:la.rsalt,rhash:la.rhash,plan:la.plan,promo:la.promo||'',created:la.created}},12000);
+      if(mr.data&&mr.data.ok){asCacheAccount({slug:la.slug,cloud:true});asSetToken(mr.data.token)}
+      fails=0;return startSession(la.slug,false);
+    }else return fail();
+  }
+  /* 2) Sin conexión o error del servidor: caché local de este dispositivo */
+  if(!la){e.textContent='Sin conexión: no se puede comprobar la cuenta. Inténtalo de nuevo con internet.';return}
+  if((await hashPw(pw,la.salt))!==la.hash)return fail();
+  fails=0;startSession(la.slug,false);
+}
+
+/* ---------- Profesional: recuperar contraseña (PIN / pregunta de seguridad) ---------- */
+let FG=null,rFails=0,rLock=0;
+function forgotView(){
+  FG=null;
+  shell(`<h2 class="text-2xl font-bold mb-1">Recuperar contraseña</h2><p class="text-sm text-gray-500 mb-4">Escribe tu usuario y te pediremos tu PIN o tu pregunta de seguridad.</p>
+  <form data-gf="forgot1" class="space-y-4"><div><label class="${lbl}">Usuario</label><input name="user" required autocapitalize="none" autocomplete="username" class="${inp}"></div><div id="ferr" class="text-sm text-red-600 min-h-[1.25rem]"></div><button class="${wide}">Continuar</button></form>`,'login');
+}
+async function doForgot1(d){
+  const e=$('#ferr'),user=String(d.get('user')).trim().toLowerCase(),la=asAcc().find(x=>x.user===user);
+  e.textContent='';
+  const r=await asRpc('as_rq',{p_user:user},9000);let src=null;
+  if(!r.error){
+    if(r.data){if(!r.data.rq){e.innerHTML='Esta cuenta se creó sin PIN de recuperación. Escribe a <a class="underline" href="mailto:'+MAIL+'">'+MAIL+'</a>.';return}src={cloud:true,rq:r.data.rq,rsalt:r.data.rsalt}}
+    else if(la){if(!la.rhash){e.innerHTML='Esta cuenta se creó sin PIN de recuperación. Escribe a <a class="underline" href="mailto:'+MAIL+'">'+MAIL+'</a>.';return}src={cloud:false,rq:la.rq,rsalt:la.rsalt}}
+    else{e.textContent='No encontramos ese usuario.';return}
+  }else if(la&&!la.cloud){
+    if(!la.rhash){e.innerHTML='Esta cuenta se creó sin PIN de recuperación. Escribe a <a class="underline" href="mailto:'+MAIL+'">'+MAIL+'</a>.';return}
+    src={cloud:false,rq:la.rq,rsalt:la.rsalt};
+  }else{e.textContent=la?'Necesitas conexión a internet para recuperar la contraseña.':'No se pudo comprobar el usuario. Revisa tu conexión e inténtalo de nuevo.';return}
+  FG={user,...src};forgotView2();
+}
+function forgotView2(){
+  shell(`<h2 class="text-2xl font-bold mb-1">Recuperar contraseña</h2><p class="text-sm text-gray-500 mb-4">Usuario: <b>${esc(FG.user)}</b></p>
+  <form data-gf="forgot2" class="space-y-4" autocomplete="off"><div><label class="${lbl}">${esc(FG.rq)}</label><input name="ra" required autocomplete="off" class="${inp}"></div>
+  <div class="grid sm:grid-cols-2 gap-3"><div><label class="${lbl}">Nueva contraseña (mín. 8)</label><input name="pw" type="password" required minlength="8" maxlength="72" autocomplete="new-password" class="${inp}"></div><div><label class="${lbl}">Repite la contraseña</label><input name="pw2" type="password" required minlength="8" maxlength="72" autocomplete="new-password" class="${inp}"></div></div>
+  <div id="ferr" class="text-sm text-red-600 min-h-[1.25rem]"></div><button class="${wide}">Cambiar contraseña y entrar</button></form>`,'forgot');
+}
+async function doForgot2(d){
+  const e=$('#ferr'),now=Date.now();
+  if(now<rLock){e.textContent='Demasiados intentos. Espera '+Math.ceil((rLock-now)/1000)+' s.';return}
+  const pw=String(d.get('pw'));
+  if(pw.length<8){e.textContent='La contraseña debe tener al menos 8 caracteres.';return}
+  if(pw!==d.get('pw2')){e.textContent='Las contraseñas no coinciden.';return}
+  if(!FG){forgotView();return}
+  const rhash=await hashPw(normAns(d.get('ra')),FG.rsalt),nsalt=rnd(),nhash=await hashPw(pw,nsalt);
+  const bad=()=>{rFails++;if(rFails>=5){rLock=Date.now()+30000;rFails=0;e.textContent='Demasiados intentos. Espera 30 s.'}else e.textContent='La respuesta no es correcta.'};
+  if(FG.cloud){
+    const r=await asRpc('as_recover',{p_user:FG.user,p_rhash:rhash,p_salt:nsalt,p_hash:nhash},9000);
+    if(r.data&&r.data.ok){
+      const ac=r.data.account;
+      asCacheAccount({slug:ac.slug,center:ac.center,phone:ac.phone||'',user:ac.user,salt:nsalt,hash:nhash,rq:ac.rq,rsalt:ac.rsalt,plan:ac.plan,promo:ac.promo||null,created:ac.created,cloud:true});
+      asSetToken(r.data.token);rFails=0;fails=0;return startSession(ac.slug,false);
+    }
+    if(r.data&&r.data.error==='locked'){e.textContent='Demasiados intentos. Espera '+Math.max(1,Math.ceil((r.data.secs||300)/60))+' min.';return}
+    if(r.data)return bad();
+    e.textContent='Necesitas conexión a internet para cambiar la contraseña.';return;
+  }
+  const list=asAcc(),a=list.find(x=>x.user===FG.user);
+  if(!a||!a.rhash){forgotView();return}
+  if(rhash!==a.rhash)return bad();
+  a.salt=nsalt;a.hash=nhash;asSave(list);
+  rFails=0;fails=0;startSession(a.slug,false);
+}
+
+/* ---------- Eventos ---------- */
+G.addEventListener('click',e=>{
+  const t=e.target.closest('[data-g]');if(!t)return;const a=t.dataset.g,id=t.dataset.id;
+  if(a==='landing')landing();
+  else if(a==='reg')register();
+  else if(a==='login')loginView();
+  else if(a==='forgot')forgotView();
+  else if(a==='plan'){R.plan=id;$('#rplans').innerHTML=plansReg();$('#rplanErr').classList.add('hidden')}
+  else if(a==='promo')applyRegPromo();
+});
+G.addEventListener('input',e=>{if(e.target.id==='ruser')toggleMaster(e.target.value)});
+G.addEventListener('submit',async e=>{const f=e.target;if(!f.dataset.gf)return;e.preventDefault();
+  const g=f.dataset.gf;if(g==='reg')await doReg(new FormData(f));else if(g==='forgot1')doForgot1(new FormData(f));else if(g==='forgot2')await doForgot2(new FormData(f));else await doLogin(new FormData(f))});
+G.addEventListener('keydown',e=>{if(e.target.id==='rpromo'&&e.key==='Enter'){e.preventDefault();applyRegPromo()}});
+document.addEventListener('click',async e=>{if(e.target.closest('#logout,[data-logout]')&&confirm('¿Cerrar sesión?')){
+  try{await Promise.race([asFlush(),new Promise(r=>setTimeout(r,3000))])}catch(x){}
+  try{localStorage.removeItem(SES_K);localStorage.removeItem('as3_clean_token')}catch(x){}location.reload()}});
+
+/* Mantener sincronizado el nombre del centro con la cuenta */
+const _setCenter=setCenter;
+setCenter=function(v){_setCenter(v);const l=asAcc(),a=l.find(x=>x.slug===window.AS_SLUG);if(a&&CENTER){a.center=CENTER;asSave(l);window.asPushAccount&&asPushAccount()}};
+
+/* ---------- Arranque ---------- */
+if(!window.AS_SLUG){
+  document.body.classList.add('gate');G.classList.remove('hidden');
+  landing();
+}
+})();
+</script>
+<script>
+/* ===== DASHBOARD MASTER ADMIN (solo cuenta websize130@gmail.com) =====
+   Datos: RPC «as_admin_list» / «as_admin_set_status» en Supabase si existen; si no, cuentas de este dispositivo.
+   IMPORTANTE: la comprobación real de permisos y del bloqueo debe hacerse en el servidor (las RPC validan el token). */
+(function(){
+const M=$('#master');
+const ST={aldia:{i:'🟢',t:'Al día',c:'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30'},pendiente:{i:'🟡',t:'Pendiente',c:'bg-amber-500/15 text-amber-300 ring-amber-500/30'},bloqueado:{i:'🔴',t:'Bloqueado',c:'bg-red-500/15 text-red-300 ring-red-500/30'}};
+let rows=[],src='local',q='',fil='todos',loading=false;
+const mapRow=a=>({slug:String(a.slug||''),center:String(a.center||a.center_name||'—'),user:String(a.user||a.user_email||''),phone:String(a.phone||''),plan:String(a.plan||''),promo:a.promo?String(a.promo):'',created:a.created||a.created_at||'',status:ST[a.status]?a.status:'aldia'});
+/* Ingreso mensual estimado de un salón (MRR): mensual 19 € (13,30 € el 1.er mes con BIENVENIDA30) · anual 149/12 */
+function mrr(r){if(r.status==='bloqueado')return 0;const p=PLANS.find(x=>x.id===r.plan);if(!p)return 0;
+  if(p.id==='anual')return p.p/12;const first=r.promo===PROMO.code&&r.created&&(Date.now()-new Date(r.created))<30*864e5;return first?firstPrice(p,r.promo):p.p}
+const arr=r=>{if(r.status==='bloqueado')return 0;const p=PLANS.find(x=>x.id===r.plan);if(!p)return 0;return p.id==='anual'?p.p:(r.promo===PROMO.code?firstPrice(p,r.promo)+p.p*11:p.p*12)};
+const amount=r=>{const p=PLANS.find(x=>x.id===r.plan);return p?eu2(p.p)+'/'+p.per:'—'};
+async function load(){
+  loading=true;paint();
+  const r=await asRpc('as_admin_list',{p_token:asToken()},9000);
+  if(Array.isArray(r.data)){rows=r.data.map(mapRow).filter(x=>x.user.toLowerCase()!==AS_ADMIN_EMAIL);src='cloud'}
+  else{rows=asAcc().filter(a=>!asIsMaster(a)).map(mapRow);src='local'}
+  loading=false;paint();
+}
+async function setStatus(slug,st){
+  const r0=rows.find(x=>x.slug===slug);if(!r0||!ST[st])return;const prev=r0.status;r0.status=st;paint();
+  const l=asAcc(),a=l.find(x=>x.slug===slug);if(a){a.status=st;asSave(l)}
+  const r=await asRpc('as_admin_set_status',{p_token:asToken(),p_slug:slug,p_status:st},8000);
+  if(src==='cloud'&&!(r.data&&r.data.ok)){r0.status=prev;if(a){a.status=prev;asSave(l)}paint();return toast('No se pudo guardar el estado en la nube')}
+  toast(ST[st].i+' '+r0.center+' · '+ST[st].t);
+}
+const kpiD=(l,v,s,ic)=>`<div class="mcard p-4"><div class="flex items-center justify-between text-xs text-gray-400"><span>${l}</span><span class="text-lg">${ic}</span></div><div class="text-2xl font-extrabold text-white mt-1">${v}</div>${s?`<div class="text-xs text-gray-500 mt-1">${s}</div>`:''}</div>`;
+function list(){const n=norm(q.trim());return rows.filter(r=>(fil==='todos'||r.status===fil)&&(!n||norm(r.center+' '+r.user+' '+r.phone+' '+r.slug).includes(n)))}
+function tbody(){
+  const L=list();
+  if(!L.length)return `<tr><td colspan="7" class="px-4 py-10 text-center text-gray-500">${rows.length?'Ningún salón coincide con el filtro.':'Todavía no hay salones registrados.'}</td></tr>`;
+  return L.map(r=>{const s=ST[r.status],bl=r.status==='bloqueado';
+    return `<tr class="border-t border-gray-800 hover:bg-white/[.02]">
+      <td class="px-4 py-3"><div class="font-semibold text-white">${esc(r.center)}</div><div class="text-xs text-gray-500">${esc(r.slug)}${r.created?' · alta '+fd(r.created):''}</div></td>
+      <td class="px-4 py-3 text-gray-300">${esc(r.user)||'—'}</td>
+      <td class="px-4 py-3 text-gray-300 whitespace-nowrap">${esc(r.phone)||'<span class="text-gray-600">—</span>'}</td>
+      <td class="px-4 py-3 whitespace-nowrap"><div class="text-gray-200">${esc(planName(r.plan))}</div><div class="text-xs text-gray-500">${amount(r)}</div></td>
+      <td class="px-4 py-3">${r.promo?`<span class="text-xs font-semibold rounded-full px-2 py-0.5 bg-[#D4AF37]/15 text-[#D4AF37]">${esc(r.promo)}</span>`:'<span class="text-gray-600">—</span>'}</td>
+      <td class="px-4 py-3"><select data-mst="${esc(r.slug)}" class="text-xs rounded-full px-2 py-1 ring-1 ${s.c}" ${bl?'disabled':''}>${['aldia','pendiente'].map(k=>`<option value="${k}" ${r.status===k?'selected':''}>${ST[k].i} ${ST[k].t}</option>`).join('')}${bl?'<option selected>🔴 Bloqueado</option>':''}</select></td>
+      <td class="px-4 py-3"><div class="flex gap-2 justify-end">
+        <button data-mwa="${esc(r.slug)}" title="WhatsApp: aviso de pago o novedades" class="w-9 h-9 rounded-lg bg-[#25D366]/15 text-[#25D366] grid place-items-center hover:bg-[#25D366]/25">📲</button>
+        <button data-mlock="${esc(r.slug)}" title="${bl?'Reactivar cuenta':'Bloquear cuenta'}" class="h-9 px-3 rounded-lg text-xs font-semibold whitespace-nowrap ${bl?'bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25':'bg-red-500/15 text-red-300 hover:bg-red-500/25'}">${bl?'🔓 Reactivar':'🔒 Bloquear'}</button>
+      </div></td></tr>`}).join('');
+}
+function paint(){
+  const act=rows.filter(r=>r.status!=='bloqueado'),m=act.reduce((s,r)=>s+mrr(r),0),y=act.reduce((s,r)=>s+arr(r),0);
+  const cnt=k=>rows.filter(r=>r.status===k).length,cup=rows.filter(r=>r.promo).length;
+  const chip=(k,l)=>`<button data-mfil="${k}" class="px-3 py-1.5 rounded-full text-xs font-medium ${fil===k?'bg-[#D4AF37] text-[#111827]':'bg-white/5 text-gray-300 hover:bg-white/10'}">${l}</button>`;
+  M.innerHTML=`<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6" style="padding-top:calc(1.5rem + env(safe-area-inset-top,0px))">
+   <header class="flex flex-wrap items-center gap-3 mb-6">
+     <div class="w-11 h-11 rounded-xl bg-[#D4AF37] text-[#111827] grid place-items-center text-xl font-black">S</div>
+     <div class="mr-auto"><div class="text-xl font-extrabold text-white">Agenda<span class="text-[#D4AF37]">Savia</span> <span class="text-gray-400 font-medium">· Master Admin</span></div>
+       <div class="text-xs text-gray-500">${esc(AS_ADMIN_EMAIL)} · ${src==='cloud'?'☁️ Datos de la nube':'💾 Datos de este dispositivo'}${loading?' · cargando…':''}</div></div>
+     <button data-mref class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm">🔄 Actualizar</button>
+     <button data-mcast class="px-3 py-2 rounded-lg bg-[#25D366] text-[#0B0F19] text-sm font-semibold">📣 Difusión</button>
+     <button data-logout class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm">⎋ Salir</button>
+   </header>
+   <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
+     ${kpiD('Total salones',rows.length,act.length+' con acceso','🏬')}
+     ${kpiD('Ingresos estimados / mes',eu2(m),'MRR de cuentas activas','💶')}
+     ${kpiD('Ingresos estimados / año',eu2(y),'Proyección 12 meses','📈')}
+     ${kpiD('Al día',cnt('aldia'),'Pagos correctos','🟢')}
+     ${kpiD('Pendientes',cnt('pendiente'),'Pago manual por confirmar','🟡')}
+     ${kpiD('Bloqueados',cnt('bloqueado'),cup+' cupón(es) '+PROMO.code+' usados','🔴')}
+   </div>
+   ${src==='local'?'<div class="mcard p-3 mb-4 text-xs text-amber-300 !border-amber-500/30">⚠ No se pudo leer la lista global de Supabase (RPC <code>as_admin_list</code>). Se muestran solo los salones registrados en este dispositivo.</div>':''}
+   <div class="mcard overflow-hidden">
+     <div class="flex flex-wrap items-center gap-2 p-4 border-b border-gray-800">
+       <div class="font-semibold text-white mr-auto">Clientes / salones registrados</div>
+       ${chip('todos','Todos')}${chip('aldia','🟢 Al día')}${chip('pendiente','🟡 Pendiente')}${chip('bloqueado','🔴 Bloqueado')}
+       <input id="mq" type="search" value="${esc(q)}" placeholder="🔍 Buscar salón, correo o teléfono" class="w-full sm:w-64 rounded-lg px-3 py-2 text-sm">
+     </div>
+     <div class="overflow-x-auto"><table class="w-full text-sm min-w-[900px]"><thead class="text-left text-xs uppercase tracking-wide text-gray-500 bg-white/[.02]"><tr>
+       <th class="px-4 py-3">Salón</th><th class="px-4 py-3">Correo / usuario</th><th class="px-4 py-3">Teléfono</th><th class="px-4 py-3">Plan</th><th class="px-4 py-3">Cupón</th><th class="px-4 py-3">Estado de pago</th><th class="px-4 py-3 text-right">Acciones</th></tr></thead>
+       <tbody id="mtb">${tbody()}</tbody></table></div>
+   </div>
+   <p class="text-xs text-gray-600 mt-4">Pagos manuales por Bizum / PayPal: marca 🟡 Pendiente cuando venza una cuota, avisa por WhatsApp y usa 🔒 Bloquear si no se abona. Reactivar devuelve el acceso a la agenda.</p>
+  </div>`;
+}
+/* ---- WhatsApp a un salón: avisos de pago o novedades ---- */
+const TPL={
+  pago:r=>`¡Hola ${r.center}! Te escribimos de AgendaSavia. Tu cuota del ${planName(r.plan)} (${amount(r)}) está pendiente de pago. Puedes abonarla por Bizum o PayPal y tu acceso seguirá activo. ¡Gracias!`,
+  bloqueo:r=>`Hola ${r.center}, tu acceso a AgendaSavia se ha suspendido temporalmente por un pago pendiente. En cuanto recibamos el pago por Bizum o PayPal lo reactivamos al momento.`,
+  reactivado:r=>`¡Hola ${r.center}! Hemos recibido tu pago y tu acceso a AgendaSavia vuelve a estar activo. ¡Gracias por confiar en nosotros!`,
+  novedades:r=>`¡Hola ${r.center}! Tenemos novedades en AgendaSavia: ya puedes enviar recordatorios de citas por WhatsApp con 1 clic desde tu agenda. Cualquier duda, responde a este mensaje.`};
+const TPLN={pago:'💶 Aviso de pago',bloqueo:'🔒 Aviso de bloqueo',reactivado:'✅ Cuenta reactivada',novedades:'📣 Novedades'};
+function waModal(slug,k){
+  const r=rows.find(x=>x.slug===slug);if(!r)return;k=k||(r.status==='bloqueado'?'bloqueo':r.status==='pendiente'?'pago':'novedades');
+  const tel=waPhone(r.phone);
+  showModal('📲 WhatsApp · '+r.center,`<div class="space-y-3">
+    <div class="flex flex-wrap gap-2">${Object.keys(TPL).map(x=>`<button data-mtpl="${x}" data-id="${esc(slug)}" class="px-3 py-1.5 rounded-full text-xs ${x===k?'bg-[#111827] text-white':'border border-gray-300 text-gray-600'}">${TPLN[x]}</button>`).join('')}</div>
+    <textarea id="mwaTxt" rows="5" class="${inp}">${esc(TPL[k](r))}</textarea>
+    ${tel?`<a id="mwaGo" href="#" target="_blank" rel="noopener" class="block text-center w-full py-3 rounded-lg bg-[#25D366] text-white font-semibold">Abrir WhatsApp (+${tel})</a>`:'<p class="text-sm text-red-600">Este salón no tiene teléfono registrado.</p>'}</div>`);
+  const go=$('#mwaGo');if(go){const upd=()=>go.href='https://wa.me/'+tel+'?text='+encodeURIComponent($('#mwaTxt').value);upd();$('#mwaTxt').oninput=upd}
+}
+function castModal(){
+  const L=rows.filter(r=>r.status!=='bloqueado'&&waPhone(r.phone));
+  showModal('📣 Difusión de novedades',`<div class="space-y-3"><p class="text-sm text-gray-600">Escribe el mensaje y envíalo salón a salón con un clic. Usa <b>{salon}</b> para poner el nombre de cada centro.</p>
+    <textarea id="castTxt" rows="4" class="${inp}">¡Hola {salon}! Tenemos novedades en AgendaSavia: </textarea>
+    <div id="castList" class="max-h-72 overflow-y-auto"></div>${L.length?'':'<p class="text-sm text-gray-500">No hay salones activos con teléfono.</p>'}</div>`);
+  const paintL=()=>{const t=$('#castTxt').value;$('#castList').innerHTML=L.map(r=>`<div class="flex items-center gap-3 py-2 border-t first:border-0"><div class="flex-1 min-w-0"><div class="font-medium truncate">${esc(r.center)}</div><div class="text-xs text-gray-500">${esc(r.phone)}</div></div><a href="https://wa.me/${waPhone(r.phone)}?text=${encodeURIComponent(t.split('{salon}').join(r.center))}" target="_blank" rel="noopener" data-sent class="shrink-0 px-3 py-2 rounded-lg bg-[#25D366] text-white text-sm font-semibold">📲 Enviar</a></div>`).join('')};
+  paintL();$('#castTxt').oninput=paintL;
+}
+M.addEventListener('click',e=>{
+  const t=e.target.closest('[data-mwa],[data-mlock],[data-mfil],[data-mref],[data-mcast]');if(!t)return;const d=t.dataset;
+  if(d.mwa)waModal(d.mwa);
+  else if(d.mlock){const r=rows.find(x=>x.slug===d.mlock);if(!r)return;const bl=r.status==='bloqueado';
+    if(confirm(bl?'¿Reactivar el acceso de '+r.center+'?':'¿Bloquear el acceso de '+r.center+' a la agenda?'))setStatus(r.slug,bl?'aldia':'bloqueado')}
+  else if(d.mfil){fil=d.mfil;paint()}
+  else if(d.mref!==undefined)load();
+  else if(d.mcast!==undefined)castModal();
+});
+M.addEventListener('change',e=>{const s=e.target.dataset.mst;if(s)setStatus(s,e.target.value)});
+M.addEventListener('input',e=>{if(e.target.id==='mq'){q=e.target.value;$('#mtb').innerHTML=tbody()}});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-mtpl]');if(t)waModal(t.dataset.id,t.dataset.mtpl);
+  const s=e.target.closest('[data-sent]');if(s)setTimeout(()=>{s.textContent='✓ Enviado';s.className='shrink-0 px-3 py-2 rounded-lg border border-[#25D366] text-[#128C7E] text-sm font-semibold'},50)});
+if(window.AS_SLUG&&asIsMaster(asMe())){
+  document.body.classList.add('gate');M.classList.remove('hidden');document.title='Master Admin · AgendaSavia';
+  paint();load();
+}
+})();
+</script>
+</body>
+</html>
