@@ -191,7 +191,7 @@ async function push(){
 async function pull(){
   if(!window.AS_SLUG)return;const tok=asToken();if(!tok)return;
   const r=await asRpc('as_load',{p_slug:AS_SLUG,p_token:tok},12000);
-  if(!r.data)return;if(r.data.error==='unauthorized'){authBad();return}
+  if(!r.data)return;if(r.data.error==='unauthorized'){authBad();return}if(r.data.error)return;
   const dirty=jget('as3_clean_dirty',{}),st=jget('as3_clean_sync',{});let applied=false,needPush=false;
   const dd=r.data.datos;
   if(dd){
@@ -1224,7 +1224,7 @@ const AVISO=()=>legalDoc(
  '#6. Propiedad intelectual e industrial',
  'El diseño, el código, los textos, las marcas y los logotipos de AgendaSavia pertenecen a su titular o cuentan con licencia de uso. Queda prohibida su reproducción, distribución o transformación sin autorización expresa, salvo lo permitido por la ley.',
  '#7. Responsabilidad',
- 'El titular no garantiza la disponibilidad continuada de la aplicación ni la ausencia de errores, aunque procurará corregirlos con la mayor rapidez. En esta versión los datos se guardan únicamente en el navegador del usuario, por lo que corresponde a este protegerlos, mantener su dispositivo seguro y conservar las copias que considere necesarias. El titular no responderá de la pérdida de datos derivada del borrado del navegador, del cambio de dispositivo o de un uso indebido de la aplicación.',
+ 'El titular no garantiza la disponibilidad continuada de la aplicación ni la ausencia de errores, aunque procurará corregirlos con la mayor rapidez. Los datos se guardan en la nube (Supabase, UE) y en una copia local del navegador. Corresponde al usuario mantener sus dispositivos y credenciales seguros y descargar las copias de seguridad que considere necesarias. El titular no responderá de la pérdida de datos derivada de un uso indebido de la aplicación o de las credenciales.',
  '#8. Legislación y jurisdicción',
  'Este Aviso Legal se rige por la legislación española. Para cualquier controversia, las partes se someten a los juzgados y tribunales que correspondan conforme a la normativa vigente y, si el usuario es consumidor, a los de su domicilio.',
  '#9. Contacto y soporte',
@@ -1244,9 +1244,9 @@ const PRIVAC=()=>legalDoc(
  '• Datos de salud de los clientes del centro: consentimiento explícito de la persona interesada (art. 9.2.a), que debe recabar el centro.',
  '• Conservación de documentación contable y fiscal por el centro: obligación legal (art. 6.1.c).',
  '#4. Dónde se almacenan los datos',
- 'En esta versión, los datos que introduces se guardan únicamente en el almacenamiento local (localStorage) del navegador de tu dispositivo y no se envían a servidores de AgendaSavia. La aplicación no los cifra: su protección depende del dispositivo y del navegador, así que usa bloqueo de pantalla y mantén el sistema actualizado. Si borras los datos del navegador o cambias de dispositivo, la información se pierde.',
+ 'Los datos de la cuenta y del centro se guardan en una base de datos de Supabase alojada en la Unión Europea (Irlanda), que actúa como encargado del tratamiento, y se conserva además una copia en el almacenamiento local (localStorage) del navegador para poder trabajar sin conexión. El acceso a la nube exige iniciar sesión; las contraseñas se guardan cifradas y nunca en texto claro. Usa bloqueo de pantalla en tus dispositivos y mantén el sistema actualizado.',
  'Para funcionar, la aplicación descarga su hoja de estilos desde cdn.tailwindcss.com; ese proveedor recibe tu dirección IP como parte de la conexión técnica. Los recordatorios por WhatsApp se abren con un enlace wa.me en la aplicación WhatsApp del propio centro: AgendaSavia no envía mensajes por sí misma ni guarda su contenido.',
- 'Si en el futuro se incorporan copias en la nube u otros servicios, se actualizará esta política y, en su caso, se formalizará el contrato de encargo de tratamiento correspondiente.',
+ 'Si se incorporan nuevos proveedores o servicios, se actualizará esta política y, en su caso, el contrato de encargo de tratamiento correspondiente.',
  '#5. Destinatarios',
  'No cedemos datos a terceros salvo obligación legal. Los mensajes que envías a soporte viajan por correo electrónico y son gestionados por el proveedor de correo del titular (Google), con las garantías previstas en la normativa.',
  '#6. Plazo de conservación',
