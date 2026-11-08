@@ -9,6 +9,9 @@ import {
   MSG, NET, PROTOCOL_VERSION, ANIM, ANIM_MAX, sanitizeName, sanitizeRoom,
 } from '../public/src/net/protocol.js';
 import { BREED_BY_ID, BREED_IDS, ABILITY } from '../public/src/breeds/BreedData.js';
+import { sanitizeCosmetics } from '../public/src/cosmetics/CosmeticData.js';
+import { GOLDEN_BONES } from '../public/src/worlds/GoldenBones.js';
+import { handleTv, dropTv } from './tv.js';
 import { ROCKS, DIG_SPOTS, BOULDERS, INTERACT } from '../public/src/world/InteractableLayout.js';
 import {
   initRoomZones, getZone, zoneMembers, broadcastZone, moveToZone, onClientLeaving, releaseZoneBoulders,
@@ -170,10 +173,12 @@ class Client {
     this.lastAbility = 0;
     this.lastStateAt = 0;
     this.zone = null;
+    this.cos = {};
+    this.goldenAt = new Map();
   }
 
   info() {
-    return { id: this.id, name: this.name, b: this.breed, z: this.zone, p: this.p, r: this.r, a: this.a, score: this.score };
+    return { id: this.id, name: this.name, b: this.breed, z: this.zone, c: this.cos, p: this.p, r: this.r, a: this.a, score: this.score };
   }
 
   send(obj) {
@@ -251,6 +256,7 @@ function handleMessage(client, msg) {
       const room = getOrCreateRoom(code);
       client.name = sanitizeName(msg.name);
       client.breed = breed;
+      client.cos = sanitizeCosmetics(msg.c);
       client.score = 0;
       client.room = room;
       client.zone = HUB_ZONE;
@@ -320,6 +326,29 @@ function handleMessage(client, msg) {
 
     case MSG.ACT:
       if (client.room) handleAct(client.room, client, msg);
+      break;
+
+    case MSG.COSMETICS:
+      // Solo estética: se valida que los ids existan y estén en su ranura.
+      if (!client.room) return;
+      client.cos = sanitizeCosmetics(msg.c);
+      client.room.broadcast({ t: MSG.PLAYER_COSMETICS, id: client.id, c: client.cos });
+      break;
+
+    case MSG.GOLDEN: {
+      // Hueso Dorado: cada jugador tiene su propia colección; el servidor valida
+      // zona y distancia y lo anuncia a toda la sala.
+      const bone = GOLDEN_BONES.find((b) => b.id === msg.i);
+      if (!client.room || !bone || bone.zone !== client.zone) return;
+      if (Math.hypot(client.p[0] - bone.x, client.p[2] - bone.z) > 3.5) return;
+      if (client.goldenAt.has(bone.id)) return;
+      client.goldenAt.set(bone.id, Date.now());
+      client.room.broadcast({ t: MSG.GOLDEN_FOUND, i: bone.id, by: client.id, name: client.name });
+      break;
+    }
+
+    case MSG.TV_HOST: case MSG.TV_JOIN: case MSG.TV_INPUT: case MSG.TV_FEEDBACK:
+      handleTv(client, msg);
       break;
 
     case MSG.COLLECT: {
@@ -441,10 +470,17 @@ wss.on('connection', (ws) => {
     } catch {
       return;
     }
-    if (msg && typeof msg.t === 'string') handleMessage(client, msg);
+    if (msg && typeof msg.t === 'string') {
+      try {
+        handleMessage(client, msg);
+      } catch (err) {
+        console.error('Mensaje inválido de', client.name, err?.message);
+      }
+    }
   });
 
   ws.on('close', () => {
+    dropTv(client);
     leaveRoom(client);
     clients.delete(ws);
   });

@@ -12,7 +12,14 @@ export class Dialog {
     this.nextBtn.addEventListener('click', () => this.next());
   }
 
-  open(pages, onClose = null) {
+  /** speaker: { name, title, portrait, color } (por defecto, Isabel). */
+  open(pages, onClose = null, speaker = null) {
+    const sp = speaker || { name: 'Isabel', title: 'la bruja guía', portrait: '🧙‍♀️', color: '#b47cff' };
+    document.getElementById('dialog-name').textContent = `${sp.name}, ${sp.title}`;
+    const portrait = document.getElementById('dialog-portrait');
+    portrait.textContent = sp.portrait;
+    portrait.style.background = `radial-gradient(circle, #fff6e0, ${sp.color})`;
+    this.root.style.borderColor = sp.color;
     this.pages = pages;
     this.index = 0;
     this.onClose = onClose;

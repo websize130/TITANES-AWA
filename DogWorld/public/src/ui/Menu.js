@@ -43,6 +43,15 @@ export class Menu {
     });
     this.shareBtn.addEventListener('click', () => this.share());
     this.changeDogBtn.addEventListener('click', () => this.onChangeDog?.());
+    // Modo TV en esta pantalla, o convertir este dispositivo en mando.
+    this.onTvMode = null;
+    document.getElementById('btn-tv').addEventListener('click', () => {
+      Fullscreen.enter();
+      this.onTvMode?.();
+    });
+    document.getElementById('btn-pad').addEventListener('click', () => {
+      location.href = `${location.pathname}?mando=`;
+    });
   }
 
   async submit() {

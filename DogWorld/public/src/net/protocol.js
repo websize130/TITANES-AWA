@@ -1,11 +1,11 @@
 // Protocolo compartido cliente/servidor (el servidor lo importa también).
 // Mensajes JSON pequeños con claves cortas para ahorrar ancho de banda.
 
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 export const MSG = Object.freeze({
   // Cliente -> Servidor
-  JOIN: 'join',         // { t, v, room, name, b:breedId }
+  JOIN: 'join',         // { t, v, room, name, b:breedId, c:cosmetics }
   ROOM_QUERY: 'rq',     // { t, room }  -> ROOM_INFO (para la pantalla de selección)
   BREED: 'breed',       // { t, b }  cambiar de raza dentro de la sala
   ABILITY: 'ab',        // { t, a, p:[x,y,z], r, x? }  (también S->C con id)
@@ -14,6 +14,12 @@ export const MSG = Object.freeze({
   PORTAL: 'portal',     // { t, w|null }  listo (o no) junto a un portal del Hub
   EXIT: 'exit',         // { t }  volver al Hub desde un mundo
   ACT: 'act',           // { t, k, v }  interruptor / placa / reliquia
+  COSMETICS: 'cos',     // { t, c:{head,eyes,neck,back} }  accesorios equipados
+  GOLDEN: 'gold',       // { t, i }  he recogido el Hueso Dorado i
+  TV_HOST: 'tvh',       // { t }  esta pantalla es una TV: pide código
+  TV_JOIN: 'tvj',       // { t, code }  este móvil quiere ser el mando de esa TV
+  TV_INPUT: 'tvi',      // { t, m:[x,y], l:[dx,dy], b:bits }  mando -> TV (reenviado)
+  TV_FEEDBACK: 'tvf',   // { t, hap?:[ms], st? }  TV -> mando (vibración / estado)
   PING: 'ping',         // { t, ts }
 
   // Servidor -> Cliente
@@ -27,6 +33,11 @@ export const MSG = Object.freeze({
   PORTAL_STATUS: 'ps',  // { t, w, ready:[id], ms }  cuenta atrás compartida del portal
   MISSION: 'ms',        // { t, z, k, solved?|door?, by }
   WORLD_COMPLETE: 'wc', // { t, w, by, name, progress:[worldId] }
+  PLAYER_COSMETICS: 'pcos', // { t, id, c }
+  GOLDEN_FOUND: 'goldf', // { t, i, by, name }
+  TV_CODE: 'tvc',       // { t, code }  código de emparejamiento para la TV
+  TV_PAIRED: 'tvok',    // { t, role:'tv'|'pad', code }
+  TV_LOST: 'tvbye',     // { t }  la otra parte se ha desconectado
   PLAYER_JOIN: 'pj',    // { t, player: PlayerInfo }
   PLAYER_LEAVE: 'pl',   // { t, id }
   SNAPSHOT: 'snap',     // { t, ts, s:[[id, x, y, z, yaw, anim], ...] }

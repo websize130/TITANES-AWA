@@ -26,9 +26,12 @@
     <!-- HUD de partida: ultra limpio, sin marcas ni logos -->
     <div id="hud" class="hidden" aria-live="polite">
       <div class="hud-top-left">
-        <div class="hud-pill" id="hud-bones" title="Huesos dorados">
-          <svg class="hud-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4a2.5 2.5 0 0 0-2.4 3.2A2.5 2.5 0 1 0 7.2 11L13 16.8a2.5 2.5 0 1 0 3.8 2.1 2.5 2.5 0 1 0 2.1-3.8L13 9.2A2.5 2.5 0 1 0 9 5.1 2.5 2.5 0 0 0 7.5 4z"/></svg>
+        <div class="hud-pill" id="hud-bones" title="Galletas">
+          <span class="hud-emoji">🍪</span>
           <span id="hud-bones-count">0</span>
+        </div>
+        <div class="hud-pill hud-small hud-golden" id="hud-golden" title="Huesos Dorados">
+          <span class="hud-emoji">🦴</span><span id="hud-golden-count">0/15</span>
         </div>
       </div>
       <div class="hud-top-right">
@@ -74,15 +77,82 @@
       </button>
     </div>
 
-    <!-- Diálogo con Isabel, la bruja guía -->
+    <!-- Tienda de Ropa de Cheila -->
+    <div id="shop" class="shop hidden" tabindex="-1" role="dialog" aria-label="Tienda de Ropa de Cheila">
+      <div class="shop-card">
+        <header class="shop-head">
+          <div class="shop-avatar" aria-hidden="true">👗</div>
+          <div class="shop-title">
+            <h2>Tienda de Ropa de Cheila</h2>
+            <p id="shop-say"></p>
+          </div>
+          <div class="shop-wallet">🍪 <span id="shop-cookies">0</span></div>
+          <button class="shop-close" id="shop-close" aria-label="Salir de la tienda">✕</button>
+        </header>
+        <div class="shop-body">
+          <section class="shop-preview">
+            <canvas id="shop-canvas" aria-label="Probador 3D"></canvas>
+            <div class="shop-equipped" id="shop-equipped" aria-label="Accesorios puestos"></div>
+          </section>
+          <section class="shop-catalog">
+            <nav class="shop-tabs" id="shop-tabs"></nav>
+            <div class="shop-grid" id="shop-grid"></div>
+          </section>
+        </div>
+        <div class="shop-confetti" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <!-- Diálogo con los personajes -->
     <div id="dialog" class="dialog hidden" role="dialog" aria-live="polite">
-      <div class="dialog-portrait" aria-hidden="true">🧙‍♀️</div>
+      <div class="dialog-portrait" id="dialog-portrait" aria-hidden="true">🧙‍♀️</div>
       <div class="dialog-body">
-        <strong>Isabel, la bruja guía</strong>
+        <strong id="dialog-name">Isabel, la bruja guía</strong>
         <p id="dialog-text"></p>
         <div class="dialog-actions">
           <span class="dialog-page" id="dialog-page"></span>
           <button class="btn-primary btn-small" id="dialog-next">Siguiente</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modo TV: código de emparejamiento (esquina, no tapa el juego) -->
+    <div id="tv-pair" class="tv-pair hidden" aria-live="polite">
+      <div class="tv-pair-title">🎮 Conecta tu móvil como mando</div>
+      <div class="tv-code" id="tv-code">····</div>
+      <div class="tv-url" id="tv-url"></div>
+      <div class="tv-status" id="tv-status"></div>
+    </div>
+
+    <!-- Mando remoto (móvil/tablet) -->
+    <div id="pad" class="pad hidden">
+      <div class="pad-pair" id="pad-pair">
+        <h2>🎮 Mando de DogWorld</h2>
+        <p>Escribe el código que aparece en la tele</p>
+        <div class="pad-code"><span class="pad-digit"></span><span class="pad-digit"></span><span class="pad-digit"></span><span class="pad-digit"></span></div>
+        <div class="pad-keys" id="pad-keys"></div>
+        <p class="pad-status" id="pad-status"></p>
+        <a class="pad-back" href="/">← Volver al juego</a>
+      </div>
+      <div class="pad-play hidden" id="pad-play">
+        <div class="pad-top">
+          <span class="pad-dot"></span><span id="pad-tv">📺 TV</span>
+          <span class="pad-cookies" id="pad-cookies">🍪 0</span>
+          <span class="pad-hint" id="pad-hint"></span>
+          <button class="pad-small" data-bit="BACK" aria-label="Atrás">↩</button>
+          <button class="pad-small" data-bit="START" aria-label="Menú">☰</button>
+        </div>
+        <div class="pad-stick-zone" id="pad-stick-zone">
+          <div class="pad-stick" id="pad-stick"><div class="pad-knob"></div></div>
+          <span class="pad-label">Mover</span>
+        </div>
+        <div class="pad-look" id="pad-look"><span>🎥 Desliza para mirar</span></div>
+        <button class="pad-btn pad-sprint" data-bit="SPRINT" aria-label="Correr">🏃</button>
+        <div class="pad-face">
+          <button class="pad-btn pad-y" data-bit="Y" aria-label="Gesto">🐾<small>Gesto</small></button>
+          <button class="pad-btn pad-x" data-bit="X" aria-label="Interactuar">💬<small>Hablar</small></button>
+          <button class="pad-btn pad-b" data-bit="B" aria-label="Habilidad"><span id="pad-ab-icon">✨</span><small id="pad-ab-name">Habilidad</small></button>
+          <button class="pad-btn pad-a" data-bit="A" aria-label="Saltar">⬆<small>Saltar</small></button>
         </div>
       </div>
     </div>
@@ -146,6 +216,10 @@
         <div class="menu-row">
           <button class="btn-ghost" id="btn-fullscreen">Pantalla completa</button>
           <button class="btn-ghost" id="btn-share">Invitar</button>
+        </div>
+        <div class="menu-row">
+          <button class="btn-ghost btn-tv" id="btn-tv">📺 Modo TV</button>
+          <button class="btn-ghost btn-tv" id="btn-pad">🎮 Usar como mando</button>
         </div>
         <p class="menu-status" id="menu-status"></p>
         <p class="menu-help" id="menu-help"></p>

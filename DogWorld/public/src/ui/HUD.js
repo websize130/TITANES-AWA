@@ -132,6 +132,10 @@ export class HUD {
     this.players.textContent = String(n);
   }
 
+  setGolden(n, total) {
+    document.getElementById('hud-golden-count').textContent = `${n}/${total}`;
+  }
+
   /** 'online' | 'offline' | 'local' */
   setNetwork(state) {
     this.netDot.classList.toggle('online', state === 'online');

@@ -18,6 +18,7 @@ export class InputManager {
     this.emotePressed = false;        // gesto de personalidad
     this.interactPressed = false;     // hablar / pulsar (R)
     this.sprint = false;
+    this.remote = null;             // mando remoto (Modo TV)
 
     this.isTouchDevice = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 
@@ -60,15 +61,17 @@ export class InputManager {
     if (!this.enabled) return;
     this.gamepad.poll();
 
-    let x = this.keyboard.moveX + (this.touch ? this.touch.moveX : 0) + this.gamepad.moveX;
-    let y = this.keyboard.moveY + (this.touch ? this.touch.moveY : 0) + this.gamepad.moveY;
+    // Fuentes: teclado, táctil, mando físico y móvil en Modo TV (this.remote).
+    const r = this.remote;
+    let x = this.keyboard.moveX + (this.touch ? this.touch.moveX : 0) + this.gamepad.moveX + (r ? r.moveX : 0);
+    let y = this.keyboard.moveY + (this.touch ? this.touch.moveY : 0) + this.gamepad.moveY + (r ? r.moveY : 0);
     const len = Math.hypot(x, y);
     if (len > 1) { x /= len; y /= len; }
     this.move.x = x;
     this.move.y = y;
 
-    this.jumpHeld = this.keyboard.jumpHeld || (this.touch?.jumpHeld ?? false) || this.gamepad.jumpHeld;
-    this.sprint = this.keyboard.sprint || this.gamepad.sprint;
+    this.jumpHeld = this.keyboard.jumpHeld || (this.touch?.jumpHeld ?? false) || this.gamepad.jumpHeld || Boolean(r?.jumpHeld);
+    this.sprint = this.keyboard.sprint || this.gamepad.sprint || Boolean(r?.sprint);
   }
 
   /** Consumir los eventos de un solo frame. Llamar al final del frame. */

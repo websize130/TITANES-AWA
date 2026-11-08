@@ -5,6 +5,7 @@ import { ANIM } from '../net/protocol.js';
 import { getBreed } from '../breeds/BreedData.js';
 import { buildDogModel, disposeDogModel } from '../breeds/DogModel.js';
 import { GESTURES, resetPose, poseIdle, poseRun, poseAir } from '../breeds/DogPoses.js';
+import { attachCosmetics, animateCosmetics } from '../cosmetics/CosmeticModels.js';
 
 const _v = new THREE.Vector3();
 const _d = new THREE.Vector3();
@@ -26,6 +27,8 @@ export class DogAvatar {
     this.gestureName = null;
     this.carrying = false;
     this.label = null;
+    this.cosmetics = [];
+    this.cosmeticSet = {};
 
     // Contexto para los gestos (sin asignaciones por frame).
     const self = this;
@@ -88,6 +91,13 @@ export class DogAvatar {
     this.fx.emit(type, _v.x, _v.y, _v.z, dir);
   }
 
+  /** Equipa accesorios { head, eyes, neck, back } (ids del catálogo). */
+  setCosmetics(equipped) {
+    for (const h of this.cosmetics) h.parent?.remove(h);
+    this.cosmeticSet = { ...(equipped || {}) };
+    this.cosmetics = attachCosmetics(this.model, this.breed, this.cosmeticSet);
+  }
+
   /** Ladrido rápido (efecto + boca). */
   bark() {
     this.barkTimer = 0.3;
@@ -122,6 +132,7 @@ export class DogAvatar {
       if (this.carrying) GESTURES.goliathCarry(md);
     }
     this.anim = anim;
+    if (this.cosmetics.length) animateCosmetics(this.cosmetics, this.time, this.speed01);
 
     if (this.barkTimer > 0) {
       this.barkTimer -= dt;

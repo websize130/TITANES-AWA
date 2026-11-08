@@ -185,6 +185,7 @@ export class AbilitySystem {
         if (msg.x?.hit === this.myId) {
           // Me han placado: empujón en la dirección de la embestida.
           this.player.applyImpulse(Math.sin(msg.r) * 11, 6, Math.cos(msg.r) * 11);
+          this.onHit?.();
           this.hud.toast(`¡${remote?.name ?? 'Alguien'} te ha placado!`, 1500);
         }
         break;

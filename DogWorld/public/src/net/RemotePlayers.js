@@ -16,6 +16,7 @@ class RemotePlayer {
     this.fx = fx;
     this.avatar = new DogAvatar(info.b, fx);
     this.avatar.setName(info.name);
+    this.avatar.setCosmetics(info.c);
     this.carrying = false;
     // Búfer circular de [tiempo, x, y, z, yaw, anim] (sin asignaciones por mensaje).
     this.buf = new Float64Array(BUFFER_SIZE * 6);
@@ -137,8 +138,10 @@ export class RemotePlayers {
     if (!p || p.breedId === breedId) return p;
     const old = p.avatar;
     this.scene.remove(old.root);
+    const cos = old.cosmeticSet;
     p.avatar = new DogAvatar(breedId, this.fx);
     p.avatar.setName(p.name);
+    p.avatar.setCosmetics(cos);
     p.avatar.root.position.copy(old.root.position);
     p.avatar.root.rotation.y = old.root.rotation.y;
     p.breedId = breedId;
@@ -147,6 +150,11 @@ export class RemotePlayers {
     p.avatar.root.visible = p.zone === (this.myZone ?? 'hub');
     this.fx?.emit('sparkle', p.avatar.root.position.x, p.avatar.root.position.y + 1, p.avatar.root.position.z);
     return p;
+  }
+
+  /** Accesorios equipados por otro jugador. */
+  setCosmetics(id, c) {
+    this.players.get(id)?.avatar.setCosmetics(c);
   }
 
   /** Jugador remoto más cercano delante (para el placaje). */

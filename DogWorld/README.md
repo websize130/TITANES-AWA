@@ -74,6 +74,45 @@ modo local y el progreso se guarda en el navegador.
 
 Los datos de mundos y misiones están en `public/src/worlds/WorldData.js` (compartido con el servidor).
 
+## Personajes del castillo
+
+Acércate y pulsa **R** (o 💬 en móvil / B en mando) para hablar con ellos.
+
+| Personaje | Dónde | Qué hace |
+|---|---|---|
+| Isabel, la bruja guía | Plaza de los Portales | Explica los portales, qué razas faltan y qué está sellado |
+| Cheila | Su puesto rosa junto a la explanada | **Tienda de Ropa**: accesorios para los perros |
+| Chalai, la pastelera | Puesto de galletas | Regala una bandeja de 15 🍪 al día |
+| Chukymary, el maestro | Dojo (tatami rojo) | Lecciones sobre controles y habilidades |
+| Josh Pablosky, el caballero | Junto al puente | Guardián de los Huesos Dorados: recompensas con 5, 10 y 15 |
+| PixelHugo, el monje pixelado | Con su perro de bloques | Explica el Modo TV y regala gafas pixeladas |
+| MagaLuna, la maga | Círculo de cristales rojos | Bendición de súper salto (20 s, cada minuto) |
+
+Los aspectos siguen las ilustraciones de referencia (modelos procedurales, sustituibles por GLB).
+Los datos están en `public/src/npcs/NpcData.js`.
+
+## Galletas, Tienda de Cheila y Huesos Dorados
+
+- **Galletas 🍪** (moneda): galletas sueltas del Hub (+1, reaparecen), tesoros de rocas/montículos (+2/+3),
+  reliquias de los mundos (+5), Huesos Dorados (+10) y el regalo diario de Chalai (+15).
+- **Tienda de Cheila**: 19 accesorios en 4 ranuras (sombreros, gafas, cuello, espalda) con probador 3D,
+  compra, equipar/quitar y recompensas especiales. Los accesorios se ven en multijugador.
+  Navegable con ratón, táctil, teclado (flechas, Intro, Q/E, Esc) y con el móvil en Modo TV.
+- **Huesos Dorados 🦴**: 15 coleccionables únicos (3 en el Hub y 2 por mundo) sobre pilares. Cada jugador
+  conserva su álbum; el servidor valida la recogida y la anuncia a la sala.
+- Monedero, accesorios y álbum se guardan en el navegador (`localStorage`). Al ser solo estética, el
+  servidor valida que los accesorios existan, no que se hayan comprado.
+
+## Modo TV / Mando remoto
+
+1. En la tele u ordenador grande: menú → **📺 Modo TV** (o abrir `/?tv`). Aparece un código de 4 cifras.
+2. En el móvil/tablet: menú → **🎮 Usar como mando** (o abrir `/?mando=CÓDIGO`) y escribir el código.
+3. El móvil se convierte en un mando táctil (stick, cámara, A saltar, B habilidad, X hablar, Y gesto,
+   correr, menú y atrás) con vibración. La tele muestra el juego a pantalla completa sin controles
+   táctiles ni paneles. En menús, selección de perro, tienda y diálogos el stick funciona como cruceta.
+
+El móvil no carga el mundo 3D (ahorra batería). Requiere el servidor (el emparejamiento va por WebSocket).
+
 ## Estructura
 
 ```
@@ -87,6 +126,10 @@ public/src/ui/BreedSelect.js  Tarjetas interactivas + vista 3D animada de la raz
 public/src/worlds/          WorldData (mundos y misiones), PortalHall (plaza + portales), Isabel, ThemedWorld,
                             WorldThemes (estética), PortalFX (shaders de portal), IsabelLines (diálogos)
 server/zones.js             Zonas por sala: portales con cuenta atrás, estado de misiones y desbloqueos
+server/tv.js                Emparejamiento TV ↔ móvil y reenvío de entradas/vibración
+public/src/npcs/            NpcData (personajes), NpcModel (humanoide procedural), Npcs, NpcInteractions
+public/src/cosmetics/       Catálogo de accesorios y sus modelos 3D
+public/src/ui/Shop.js       Tienda de Ropa de Cheila · ui/RemotePad.js mando del móvil · core/TvMode.js
 public/src/net/             protocol.js (compartido con el servidor), NetworkClient, RemotePlayers
 public/src/world/           Hub: terreno de islas flotantes, castillo, props, césped, cielo, coleccionables
 ```

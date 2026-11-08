@@ -1,4 +1,5 @@
-// Huesos dorados coleccionables (InstancedMesh: una draw call para todos).
+// Galletas coleccionables del Hub: la moneda de la Tienda de Cheila
+// (InstancedMesh: una draw call para todas).
 // El servidor es la autoridad: el cliente predice la recogida y el servidor confirma.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -9,19 +10,31 @@ import { glowTexture } from './Textures.js';
 const PICKUP_RADIUS = 1.3;
 const HIDDEN = new THREE.Matrix4().makeScale(0, 0, 0);
 
-function boneGeometry() {
-  const shaft = new THREE.CylinderGeometry(0.13, 0.13, 0.9, 10);
-  shaft.rotateZ(Math.PI / 2);
-  const parts = [shaft];
-  for (const sx of [-1, 1]) {
-    for (const sy of [-1, 1]) {
-      const knob = new THREE.SphereGeometry(0.2, 12, 8);
-      knob.translate(sx * 0.47, sy * 0.13, 0);
-      parts.push(knob);
+function cookieGeometry() {
+  // Galleta redonda con pepitas de chocolate (vértices de color).
+  const disc = new THREE.CylinderGeometry(0.42, 0.42, 0.12, 20).toNonIndexed();
+  disc.rotateX(Math.PI / 2);
+  const parts = [disc];
+  const chips = [];
+  for (let i = 0; i < 9; i++) {
+    const a = i * 2.4;
+    const r = 0.12 + (i % 3) * 0.1;
+    for (const side of [-1, 1]) {
+      const c = new THREE.SphereGeometry(0.055, 6, 4).toNonIndexed();
+      c.translate(Math.cos(a) * r, Math.sin(a) * r, side * 0.06);
+      chips.push(c);
     }
   }
-  // Las esferas y el cilindro no comparten índices/uv idénticos: normalizamos a no indexado.
-  return mergeGeometries(parts.map((g) => g.toNonIndexed()));
+  parts.push(...chips);
+  const color = (geo, hex) => {
+    const col = new THREE.Color(hex);
+    const arr = new Float32Array(geo.attributes.position.count * 3);
+    for (let i = 0; i < arr.length; i += 3) col.toArray(arr, i);
+    geo.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+  };
+  color(disc, '#d9a05a');
+  for (const c of chips) color(c, '#4a2a14');
+  return mergeGeometries(parts);
 }
 
 export class Collectibles {
@@ -33,9 +46,9 @@ export class Collectibles {
     this.onCollect = null; // (id) => void
 
     const mat = new THREE.MeshStandardMaterial({
-      color: '#ffcf4a', metalness: 0.9, roughness: 0.22, emissive: '#ff9d00', emissiveIntensity: 0.45,
+      vertexColors: true, roughness: 0.75, emissive: '#5a3008', emissiveIntensity: 0.35,
     });
-    this.mesh = new THREE.InstancedMesh(boneGeometry(), mat, this.count);
+    this.mesh = new THREE.InstancedMesh(cookieGeometry(), mat, this.count);
     this.mesh.castShadow = true;
     this.mesh.frustumCulled = false;
 
@@ -45,7 +58,7 @@ export class Collectibles {
     const haloGeo = new THREE.BufferGeometry();
     haloGeo.setAttribute('position', new THREE.BufferAttribute(haloPos, 3));
     this.halos = new THREE.Points(haloGeo, new THREE.PointsMaterial({
-      map: glowTexture(), color: '#ffd76a', size: 2.4, transparent: true, opacity: 0.55,
+      map: glowTexture(), color: '#ffc38a', size: 2.2, transparent: true, opacity: 0.55,
       depthWrite: false, blending: THREE.AdditiveBlending,
     }));
 

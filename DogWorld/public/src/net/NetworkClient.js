@@ -38,6 +38,14 @@ export class NetworkClient {
     this.onPortalStatus = null; // (msg) => void
     this.onMission = null;      // (msg) => void
     this.onWorldComplete = null; // (msg) => void
+    this.onPlayerCosmetics = null; // (id, c) => void
+    this.onGoldenFound = null;  // (msg) => void
+    this.onTvCode = null;       // (code) => void
+    this.onTvPaired = null;     // (msg) => void
+    this.onTvLost = null;       // () => void
+    this.onTvInput = null;      // (msg) => void
+    this.onTvFeedback = null;   // (msg) => void
+    this.cosmetics = {};        // accesorios a enviar al entrar en la sala
 
     this.pingTimer = null;
   }
@@ -95,6 +103,21 @@ export class NetworkClient {
   act(k, v) {
     this.send({ t: MSG.ACT, k, v });
   }
+
+  sendCosmetics(c) {
+    this.cosmetics = { ...c };
+    if (this.joined) this.send({ t: MSG.COSMETICS, c: this.cosmetics });
+  }
+
+  golden(i) {
+    this.send({ t: MSG.GOLDEN, i });
+  }
+
+  // ------------------------------------------------------------ Modo TV
+  tvHost() { this.send({ t: MSG.TV_HOST }); }
+  tvJoin(code) { this.send({ t: MSG.TV_JOIN, code }); }
+  tvInput(m, l, b) { this.send({ t: MSG.TV_INPUT, m, l, b }); }
+  tvFeedback(obj) { this.send({ t: MSG.TV_FEEDBACK, ...obj }); }
 
   ability(msg) {
     msg.t = MSG.ABILITY;
@@ -169,7 +192,7 @@ export class NetworkClient {
 
   sendJoin() {
     const { room, name, breed } = this.joinInfo;
-    this.send({ t: MSG.JOIN, v: PROTOCOL_VERSION, room, name, b: breed });
+    this.send({ t: MSG.JOIN, v: PROTOCOL_VERSION, room, name, b: breed, c: this.cosmetics });
   }
 
   handle(msg) {
@@ -207,6 +230,13 @@ export class NetworkClient {
       case MSG.PORTAL_STATUS: this.onPortalStatus?.(msg); break;
       case MSG.MISSION: this.onMission?.(msg); break;
       case MSG.WORLD_COMPLETE: this.onWorldComplete?.(msg); break;
+      case MSG.PLAYER_COSMETICS: this.onPlayerCosmetics?.(msg.id, msg.c); break;
+      case MSG.GOLDEN_FOUND: this.onGoldenFound?.(msg); break;
+      case MSG.TV_CODE: this.onTvCode?.(msg.code); break;
+      case MSG.TV_PAIRED: this.onTvPaired?.(msg); break;
+      case MSG.TV_LOST: this.onTvLost?.(); break;
+      case MSG.TV_INPUT: this.onTvInput?.(msg); break;
+      case MSG.TV_FEEDBACK: this.onTvFeedback?.(msg); break;
       case MSG.ERROR:
         this.onError?.(msg);
         if (this._pendingJoin) {

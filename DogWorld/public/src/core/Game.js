@@ -20,6 +20,14 @@ import { ThemedWorld } from '../worlds/ThemedWorld.js';
 import { WORLD_BY_ID, WORLDS, HUB_ZONE, PORTAL_PLAZA } from '../worlds/WorldData.js';
 import { isabelPages } from '../worlds/IsabelLines.js';
 import { Dialog } from '../ui/Dialog.js';
+import { Shop } from '../ui/Shop.js';
+import { Wallet } from './Wallet.js';
+import { Npcs } from '../npcs/Npcs.js';
+import { interactWithNpc } from '../npcs/NpcInteractions.js';
+import { GoldenBoneField } from '../worlds/GoldenBoneField.js';
+import { GOLDEN_BONES, GOLDEN_BONE_REWARD } from '../worlds/GoldenBones.js';
+import { terrainHeight } from '../world/Terrain.js';
+import { TvHost, PAD } from './TvMode.js';
 
 const PROGRESS_KEY = 'dogworld.progress';
 const ISABEL_KEY = 'dogworld.isabel';
@@ -48,6 +56,12 @@ export class Game {
     this.world = new HubWorld(this.scene, this.quality);
     this.world.interactables = new Interactables(this.scene, this.world.collision, this.effects);
     this.portalHall = new PortalHall(this.scene, this.world.collision, this.effects);
+    // Monedero persistente, NPCs del castillo y Huesos Dorados del Hub.
+    this.wallet = new Wallet();
+    this.npcs = new Npcs(this.scene, this.world.collision, this.effects);
+    this.hubGolden = new GoldenBoneField('hub', this.scene, this.world.collision, terrainHeight, this.wallet);
+    this.goldField = this.hubGolden;
+    this.shop = new Shop();
 
     // Zonas: 'hub' o el id de un mundo temático. activeWorld/activeScene apuntan a la zona actual.
     this.zone = HUB_ZONE;
@@ -90,6 +104,23 @@ export class Game {
     this.abilities.onLocalScore = (gain) => this.addLocalScore(gain);
     this.applyBreed(this.player.breed.id);
     this.remotes.setMyZone(HUB_ZONE, this.scene);
+    this.player.avatar.setCosmetics(this.wallet.equipped);
+    this.net.cosmetics = { ...this.wallet.equipped };
+    this.shop.onEquip = (eq) => {
+      this.player.avatar.setCosmetics(eq);
+      this.net.sendCosmetics(eq);
+    };
+    this.shop.onClose = () => this.resume();
+    // Modo TV: la pantalla grande recibe las entradas de un móvil emparejado.
+    this.tv = new TvHost(this);
+    this.menu.onTvMode = () => this.tv.enable();
+    this.abilities.onHit = () => this.tv.haptic([90, 40, 90]);
+    const refreshWallet = () => {
+      this.hud.setBones(this.wallet.cookies);
+      this.hud.setGolden(this.wallet.golden.size, GOLDEN_BONES.length);
+    };
+    this.wallet.onChange(refreshWallet);
+    refreshWallet();
     this.setProgress(this.loadLocalProgress());
 
     this.state = 'menu';
@@ -147,8 +178,6 @@ export class Game {
       this.world.collectibles.setCollected(msg.collected);
       this.world.interactables.applyState(msg.objects);
       this.refreshCarrying();
-      this.localScore = 0;
-      this.hud.setBones(0);
       this.hud.setPlayers(this.remotes.count + 1);
       this.hud.setNetwork('online');
     };
@@ -174,15 +203,14 @@ export class Game {
     net.onCollected = (msg) => {
       this.world.collectibles.confirmCollected(msg.id);
       if (msg.by === net.playerId) {
-        this.localScore = msg.score;
-        this.hud.setBones(msg.score);
+        this.wallet.addCookies(1);
+        this.tv?.haptic([15]);
       }
     };
     net.onScore = (msg) => {
       if (msg.id === net.playerId) {
-        this.localScore = msg.score;
-        this.hud.setBones(msg.score);
-        this.hud.toast(`¡Tesoro! +${msg.gain} huesos`, 1500);
+        this.wallet.addCookies(msg.gain);
+        this.hud.toast(`¡Premio! +${msg.gain} 🍪`, 1500);
       } else {
         const p = this.remotes.players.get(msg.id);
         if (p) this.hud.toast(`${p.name} encontró un tesoro (+${msg.gain})`, 1500);
@@ -201,6 +229,11 @@ export class Game {
       }
     };
     net.onRespawn = (id) => this.world.collectibles.respawn(id);
+    net.onPlayerCosmetics = (id, c) => this.remotes.setCosmetics(id, c);
+    net.onGoldenFound = (msg) => {
+      if (msg.by === net.playerId) return;
+      this.hud.toast(`🦴 ¡${msg.name} ha encontrado un Hueso Dorado!`, 2200);
+    };
     net.onZone = (msg) => this.enterZone(msg.z, msg.state);
     net.onPlayerZone = (msg) => {
       const p = this.remotes.setZone(msg.id, msg.z, msg.p);
@@ -271,9 +304,8 @@ export class Game {
   }
 
   addLocalScore(gain) {
-    this.localScore += gain;
-    this.hud.setBones(this.localScore);
-    if (gain > 1) this.hud.toast(`¡Tesoro! +${gain} huesos`, 1500);
+    this.wallet.addCookies(gain);
+    if (gain > 1) this.hud.toast(`¡Premio! +${gain} 🍪`, 1500);
   }
 
   refreshCarrying() {
@@ -378,8 +410,6 @@ export class Game {
       this.hud.setPlayers(1);
       this.world.collectibles.setCollected([]);
       this.world.interactables.resetLocal();
-      this.localScore = 0;
-      this.hud.setBones(0);
       this.applyBreed(breedId);
       this.startRun();
       this.hud.toast('Sin servidor: modo local');
@@ -431,7 +461,7 @@ export class Game {
   frame() {
     const dt = Math.min(this.clock.getDelta(), 0.05);
     // La selección tiene su propio renderer: no gastar GPU en el mundo detrás.
-    if (this.breedSelect.isOpen) return;
+    if (this.breedSelect.isOpen || this.shop.isOpen) return;
     this.elapsed += dt;
     const t = this.elapsed;
 
@@ -439,10 +469,15 @@ export class Game {
 
     const playing = this.state === 'playing' && !this.transitioning;
     if (playing) {
-      if (this.input.abilityPressed) this.abilities.activate();
+      if (this.input.abilityPressed) {
+        this.abilities.activate();
+        this.tv.haptic([25]);
+      }
       this.abilities.update(dt);
       this.player.update(dt);
       this.cameraRig.update(dt, this.player);
+      const gold = this.goldField?.update(dt, t, this.player.position);
+      if (gold) this.collectGolden(gold);
       if (this.zone === HUB_ZONE) {
         this.world.collectibles.update(t, this.player.position);
         this.updateHubPortals(dt);
@@ -465,12 +500,15 @@ export class Game {
     this.effects.update(dt);
     if (this.zone === HUB_ZONE) {
       this.portalHall.update(dt, this.player.avatar.root.visible ? this.player.position : null, this.portalReadyId);
+      this.npcs.update(dt, this.player.avatar.root.visible ? this.player.position : null);
+      if (!playing) this.goldField?.update(dt, t, null);
       this.world.update(t, dt, this.camera, playing ? this.player.position : this.camera.position);
     } else {
       this.themed.sky.position.copy(this.camera.position);
     }
     this.renderer.render(this.activeScene, this.camera);
     this.input.endFrame();
+    if (this.tv.active) this.tv.sendState();
 
     this.adaptResolution(dt);
   }
@@ -557,11 +595,14 @@ export class Game {
       // Cada expedición empieza con un mundo recién construido (estado limpio).
       ctx = new ThemedWorld(WORLD_BY_ID[zone], this.quality, this.effects);
       ctx.bridge = this.makeBridge();
+      ctx.goldField = new GoldenBoneField(zone, ctx.scene, ctx.collision, (x, z) => ctx.padTop(x, z), this.wallet);
       if (state) ctx.applyState(state);
       this.themed = ctx;
       scene = ctx.scene;
     }
     this.zone = zone;
+    this.goldField = zone === HUB_ZONE ? this.hubGolden : ctx.goldField;
+    this.goldField.refresh();
     this.activeWorld = ctx;
     this.activeScene = scene;
     scene.add(this.player.avatar.root);
@@ -646,15 +687,24 @@ export class Game {
     const pos = this.player.position;
     let action = null;
     if (this.zone === HUB_ZONE) {
+      const npc = this.npcs.nearest(pos);
       if (this.portalHall.nearIsabel(pos)) {
-        action = { label: 'Hablar con Isabel', icon: '💬', run: () => this.talkToIsabel() };
+        action = { label: 'Hablar con Isabel', icon: '💬', run: () => { this.dialogAt = this.portalHall.isabelPos; this.talkToIsabel(); } };
         if (!this.isabelWaved) {
           this.isabelWaved = true;
           this.portalHall.isabel.wave();
         }
+      } else if (npc) {
+        this.isabelWaved = false;
+        const icon = npc.def.role === 'shop' ? '👗' : '💬';
+        action = { label: `Hablar con ${npc.def.name}`, icon, run: () => { this.dialogAt = npc.pos; interactWithNpc(this, npc); } };
       } else {
         this.isabelWaved = false;
-        if (this.dialog.isOpen) this.dialog.close();
+      }
+      // Alejarse cierra la conversación.
+      if (this.dialog.isOpen && this.dialogAt && Math.hypot(pos.x - this.dialogAt.x, pos.z - this.dialogAt.z) > 5) {
+        this.dialog.onClose = null;
+        this.dialog.close();
       }
     } else {
       const a = this.themed.interactAt(pos);
@@ -667,6 +717,62 @@ export class Game {
     }
     this.hud.setPrompt(action ? action.label : null, action?.icon);
     if (action && this.input.interactPressed) action.run();
+  }
+
+  /**
+   * Mando remoto (Modo TV) fuera del juego: menú, selección de perro, tienda y
+   * diálogos se manejan con el stick como cruceta. Devuelve true si se consumió.
+   */
+  handleRemoteMenu(pressed) {
+    const key = (k) => ({ key: k, preventDefault() {}, target: document.body });
+    const dir = pressed & PAD.LEFT ? 'ArrowLeft' : pressed & PAD.RIGHT ? 'ArrowRight' : pressed & PAD.UP ? 'ArrowUp' : pressed & PAD.DOWN ? 'ArrowDown' : null;
+    if (this.breedSelect.isOpen) {
+      if (dir) this.breedSelect.onKey(key(dir));
+      if (pressed & PAD.A) this.breedSelect.confirm();
+      if (pressed & (PAD.BACK | PAD.START)) document.getElementById('sel-back').click();
+      return true;
+    }
+    if (this.shop.isOpen) {
+      if (dir) this.shop.onKey(key(dir));
+      if (pressed & PAD.A) this.shop.onKey(key('Enter'));
+      if (pressed & PAD.X) this.shop.onKey(key('q'));
+      if (pressed & PAD.Y) this.shop.onKey(key('e'));
+      if (pressed & (PAD.B | PAD.BACK)) this.shop.close();
+      return true;
+    }
+    if (this.dialog.isOpen && (pressed & (PAD.A | PAD.X))) {
+      this.dialog.next();
+      return true;
+    }
+    if (this.state === 'menu') {
+      if (pressed & (PAD.A | PAD.START)) this.menu.form.requestSubmit();
+      return true;
+    }
+    return false;
+  }
+
+  /** Tienda de Cheila: pausa el juego mientras está abierta. */
+  openShop() {
+    if (this.shop.isOpen) return;
+    this.state = 'shop';
+    this.input.setEnabled(false);
+    this.hud.show(false);
+    this.shop.open(this.wallet, this.player.breed.id);
+  }
+
+  /** Hueso Dorado: álbum persistente + galletas; el servidor lo anuncia a la sala. */
+  collectGolden(def) {
+    if (!this.wallet.addGolden(def.id)) return;
+    this.wallet.addCookies(GOLDEN_BONE_REWARD);
+    if (this.isOnlineNow) this.net.golden(def.id);
+    const p = this.player.position;
+    this.effects.emit('gold', p.x, p.y + 1.5, p.z);
+    this.effects.emit('confetti', p.x, p.y + 1.5, p.z);
+    navigator.vibrate?.([40, 60, 40]);
+    this.tv?.haptic([40, 60, 80]);
+    const n = this.wallet.golden.size;
+    this.hud.setBanner(`🦴 ¡Hueso Dorado! (${n}/${GOLDEN_BONES.length})<small>+${GOLDEN_BONE_REWARD} 🍪 · llévaselos a Josh Pablosky para conseguir recompensas</small>`, true);
+    setTimeout(() => this.hud.setBanner(null), 3200);
   }
 
   talkToIsabel() {
@@ -690,6 +796,7 @@ export class Game {
     for (let i = 0; i < 6; i++) setTimeout(() => this.effects.emit('confetti', p.x, p.y + 2, p.z), i * 250);
     this.hud.setBanner(`🏆 ¡Reliquia recuperada: ${def.relicName}!<small>${byName} la ha recogido · volviendo al castillo…</small>`, true);
     navigator.vibrate?.([30, 50, 30]);
+    this.tv.haptic([50, 50, 50, 50, 200]);
     const zone = this.zone;
     setTimeout(() => {
       if (this.zone === zone) this.exitWorld();

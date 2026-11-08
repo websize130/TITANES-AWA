@@ -68,7 +68,9 @@ export class PlayerController {
     this.breed = getBreed(breedId);
     this.stats = this.breed.stats;
     this.radius = CFG.radius * Math.max(0.8, Math.min(1.25, this.stats.scale));
+    const cos = this.avatar?.cosmeticSet;
     this.avatar = new DogAvatar(this.breed.id, this.fx);
+    if (cos) this.avatar.setCosmetics(cos);
     this.avatar.root.position.copy(this.position);
     this.avatar.root.rotation.y = this.yaw;
     this.avatar.root.visible = visible;
