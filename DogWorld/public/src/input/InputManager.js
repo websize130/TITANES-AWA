@@ -16,6 +16,7 @@ export class InputManager {
     this.jumpPressed = false;        // flanco de subida en este frame
     this.abilityPressed = false;      // habilidad de la raza
     this.emotePressed = false;        // gesto de personalidad
+    this.interactPressed = false;     // hablar / pulsar (R)
     this.sprint = false;
 
     this.isTouchDevice = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
@@ -47,6 +48,7 @@ export class InputManager {
   pressJump() { if (this.enabled) this.jumpPressed = true; }
   pressAbility() { if (this.enabled) this.abilityPressed = true; }
   pressEmote() { if (this.enabled) this.emotePressed = true; }
+  pressInteract() { if (this.enabled) this.interactPressed = true; }
   addLook(dx, dy) {
     if (!this.enabled) return;
     this.look.x += dx;
@@ -76,5 +78,6 @@ export class InputManager {
     this.jumpPressed = false;
     this.abilityPressed = false;
     this.emotePressed = false;
+    this.interactPressed = false;
   }
 }

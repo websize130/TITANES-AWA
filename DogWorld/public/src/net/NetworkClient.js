@@ -17,7 +17,7 @@ export class NetworkClient {
     this.sendInterval = 1 / NET.SEND_RATE_HZ;
     this.sendAccum = 0;
     this.lastSent = { x: NaN, y: NaN, z: NaN, r: NaN, a: -1 };
-    this.keepAlive = 0;
+    this.lastSendAt = 0;
 
     // Callbacks (asignados por Game).
     this.onStatus = null;       // (connected: boolean) => void
@@ -33,6 +33,11 @@ export class NetworkClient {
     this.onAbility = null;      // (msg) => void
     this.onObject = null;       // (msg) => void
     this.onScore = null;        // (msg) => void
+    this.onZone = null;         // (msg) => void  yo cambio de zona
+    this.onPlayerZone = null;   // (msg) => void  otro jugador cambia de zona
+    this.onPortalStatus = null; // (msg) => void
+    this.onMission = null;      // (msg) => void
+    this.onWorldComplete = null; // (msg) => void
 
     this.pingTimer = null;
   }
@@ -76,6 +81,19 @@ export class NetworkClient {
   changeBreed(breed) {
     if (this.joinInfo) this.joinInfo.breed = breed;
     this.send({ t: MSG.BREED, b: breed });
+  }
+
+  /** Listo junto a un portal del Hub (w) o fuera de él (null). */
+  portal(w) {
+    this.send({ t: MSG.PORTAL, w });
+  }
+
+  exitWorld() {
+    this.send({ t: MSG.EXIT });
+  }
+
+  act(k, v) {
+    this.send({ t: MSG.ACT, k, v });
   }
 
   ability(msg) {
@@ -184,6 +202,11 @@ export class NetworkClient {
       case MSG.ABILITY: this.onAbility?.(msg); break;
       case MSG.OBJECT: this.onObject?.(msg); break;
       case MSG.SCORE: this.onScore?.(msg); break;
+      case MSG.ZONE: this.onZone?.(msg); break;
+      case MSG.PLAYER_ZONE: this.onPlayerZone?.(msg); break;
+      case MSG.PORTAL_STATUS: this.onPortalStatus?.(msg); break;
+      case MSG.MISSION: this.onMission?.(msg); break;
+      case MSG.WORLD_COMPLETE: this.onWorldComplete?.(msg); break;
       case MSG.ERROR:
         this.onError?.(msg);
         if (this._pendingJoin) {
@@ -207,16 +230,17 @@ export class NetworkClient {
   update(dt, pos, yaw, anim) {
     if (!this.joined) return;
     this.sendAccum += dt;
-    this.keepAlive += dt;
     if (this.sendAccum < this.sendInterval) return;
     this.sendAccum %= this.sendInterval;
 
     const l = this.lastSent;
     const moved = Math.abs(pos.x - l.x) > 0.01 || Math.abs(pos.y - l.y) > 0.01 || Math.abs(pos.z - l.z) > 0.01
       || Math.abs(yaw - l.r) > 0.02 || anim !== l.a;
-    if (!moved && this.keepAlive < 2) return;
+    // Latido en tiempo real (no de frames): reenvía el estado aunque el móvil vaya lento.
+    const now = performance.now();
+    if (!moved && now - this.lastSendAt < 1000) return;
 
-    this.keepAlive = 0;
+    this.lastSendAt = now;
     l.x = pos.x; l.y = pos.y; l.z = pos.z; l.r = yaw; l.a = anim;
     this.send({ t: MSG.STATE, p: [round2(pos.x), round2(pos.y), round2(pos.z)], r: round2(yaw), a: anim });
   }

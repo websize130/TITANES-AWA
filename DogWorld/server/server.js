@@ -10,6 +10,10 @@ import {
 } from '../public/src/net/protocol.js';
 import { BREED_BY_ID, BREED_IDS, ABILITY } from '../public/src/breeds/BreedData.js';
 import { ROCKS, DIG_SPOTS, BOULDERS, INTERACT } from '../public/src/world/InteractableLayout.js';
+import {
+  initRoomZones, getZone, zoneMembers, broadcastZone, moveToZone, onClientLeaving, releaseZoneBoulders,
+  handlePortal, tickPortals, handleExit, handleAct, abilityOnObjective, onWorldBoulderDropped, HUB_ZONE,
+} from './zones.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -107,6 +111,7 @@ class Room {
     this.rocks = ROCKS.map(() => 0);        // 0 = intacta, si no timestamp de reaparición
     this.digs = DIG_SPOTS.map(() => 0);     // 0 = con tesoro, si no timestamp de reaparición
     this.boulders = BOULDERS.map((b) => ({ p: [b.x, null, b.z], h: 0 })); // h = id del portador
+    initRoomZones(this);
   }
 
   broadcast(obj, exceptId = -1) {
@@ -142,7 +147,7 @@ class Room {
       if (b.h !== client.id) return;
       b.h = 0;
       b.p = [client.p[0], client.p[1], client.p[2]];
-      this.broadcast({ t: MSG.OBJECT, k: 'boulder', i, s: [b.p[0], b.p[1], b.p[2], 0] });
+      broadcastZone(this, HUB_ZONE, { t: MSG.OBJECT, z: HUB_ZONE, k: 'boulder', i, s: [b.p[0], b.p[1], b.p[2], 0] });
     });
   }
 }
@@ -164,10 +169,11 @@ class Client {
     this.alive = true;
     this.lastAbility = 0;
     this.lastStateAt = 0;
+    this.zone = null;
   }
 
   info() {
-    return { id: this.id, name: this.name, b: this.breed, p: this.p, r: this.r, a: this.a, score: this.score };
+    return { id: this.id, name: this.name, b: this.breed, z: this.zone, p: this.p, r: this.r, a: this.a, score: this.score };
   }
 
   send(obj) {
@@ -192,7 +198,7 @@ function getOrCreateRoom(code) {
 function leaveRoom(client) {
   const room = client.room;
   if (!room) return;
-  room.releaseBoulders(client);
+  onClientLeaving(room, client);
   room.players.delete(client.id);
   client.room = null;
   room.broadcast({ t: MSG.PLAYER_LEAVE, id: client.id });
@@ -247,6 +253,7 @@ function handleMessage(client, msg) {
       client.breed = breed;
       client.score = 0;
       client.room = room;
+      client.zone = HUB_ZONE;
       room.players.set(client.id, client);
 
       client.send({
@@ -256,6 +263,7 @@ function handleMessage(client, msg) {
         players: room.infoList().filter((p) => p.id !== client.id),
         collected: [...room.collected.keys()],
         objects: room.objectsState(),
+        progress: [...room.progress],
       });
       room.broadcast({ t: MSG.PLAYER_JOIN, player: client.info() }, client.id);
       break;
@@ -268,7 +276,7 @@ function handleMessage(client, msg) {
         client.send({ t: MSG.ERROR, code: 'breed', msg: `${BREED_BY_ID[msg.b].name} ya está en esta sala.`, taken: room.takenBreeds(client.id) });
         return;
       }
-      room.releaseBoulders(client);
+      releaseZoneBoulders(room, client);
       client.breed = msg.b;
       client.lastAbility = 0;
       room.broadcast({ t: MSG.PLAYER_BREED, id: client.id, b: client.breed });
@@ -286,7 +294,10 @@ function handleMessage(client, msg) {
       const elapsed = Math.min(5, (now - client.lastStateAt) / 1000);
       const allowed = MAX_SPEED * elapsed + 3;
       const nearSpawn = Math.abs(x) < 6 && Math.abs(z - 20) < 6;
-      if (Math.hypot(x - client.p[0], z - client.p[2]) > allowed && !nearSpawn) return;
+      if (Math.hypot(x - client.p[0], z - client.p[2]) > allowed && !nearSpawn) {
+        if (process.env.DOGWORLD_DEBUG) console.log("[st] rechazado", client.name, [x, z], client.p, allowed.toFixed(1));
+        return;
+      }
       client.lastStateAt = now;
       client.p = [round2(x), round2(y), round2(z)];
       client.r = round2(msg.r);
@@ -299,10 +310,22 @@ function handleMessage(client, msg) {
       handleAbility(client, msg);
       break;
 
+    case MSG.PORTAL:
+      if (client.room) handlePortal(client.room, client, msg);
+      break;
+
+    case MSG.EXIT:
+      if (client.room) handleExit(client.room, client);
+      break;
+
+    case MSG.ACT:
+      if (client.room) handleAct(client.room, client, msg);
+      break;
+
     case MSG.COLLECT: {
       const room = client.room;
       const id = msg.id;
-      if (!room || !Number.isInteger(id) || id < 0 || id >= NET.COLLECTIBLE_COUNT) return;
+      if (!room || client.zone !== HUB_ZONE || !Number.isInteger(id) || id < 0 || id >= NET.COLLECTIBLE_COUNT) return;
       if (room.collected.has(id)) return; // otro jugador llegó antes
       room.collected.set(id, Date.now() + NET.COLLECTIBLE_RESPAWN_MS);
       client.score += 1;
@@ -337,13 +360,16 @@ function handleAbility(client, msg) {
 
   const x = msg.x && typeof msg.x === 'object' ? msg.x : {};
   const out = { t: MSG.ABILITY, id: client.id, a: msg.a, p: msg.p.map(round2), r: round2(msg.r) };
+  const inHub = client.zone === HUB_ZONE;
+  // Dentro de un mundo, la habilidad puede resolver un objetivo de misión.
+  if (!inHub && typeof x.obj === 'string') abilityOnObjective(room, client, msg.a, x.obj, msg.p);
 
   switch (msg.a) {
     case ABILITY.TACKLE: {
-      if (Number.isInteger(x.rock) && x.rock >= 0 && x.rock < ROCKS.length && !room.rocks[x.rock]
+      if (inHub && Number.isInteger(x.rock) && x.rock >= 0 && x.rock < ROCKS.length && !room.rocks[x.rock]
         && dist2D(msg.p, ROCKS[x.rock]) < INTERACT.TACKLE_RANGE + 1) {
         room.rocks[x.rock] = now + INTERACT.ROCK_RESPAWN_MS;
-        room.broadcast({ t: MSG.OBJECT, k: 'rock', i: x.rock, s: 1 });
+        broadcastZone(room, HUB_ZONE, { t: MSG.OBJECT, z: HUB_ZONE, k: 'rock', i: x.rock, s: 1 });
         client.addScore(INTERACT.ROCK_REWARD);
       }
       if (Number.isInteger(x.hit) && room.players.has(x.hit) && x.hit !== client.id) {
@@ -353,21 +379,22 @@ function handleAbility(client, msg) {
       break;
     }
     case ABILITY.DIG: {
-      if (Number.isInteger(x.dig) && x.dig >= 0 && x.dig < DIG_SPOTS.length && !room.digs[x.dig]
+      if (inHub && Number.isInteger(x.dig) && x.dig >= 0 && x.dig < DIG_SPOTS.length && !room.digs[x.dig]
         && dist2D(msg.p, DIG_SPOTS[x.dig]) < INTERACT.DIG_RANGE + 1) {
         room.digs[x.dig] = now + INTERACT.DIG_RESPAWN_MS;
-        room.broadcast({ t: MSG.OBJECT, k: 'dig', i: x.dig, s: 1 });
+        broadcastZone(room, HUB_ZONE, { t: MSG.OBJECT, z: HUB_ZONE, k: 'dig', i: x.dig, s: 1 });
         client.addScore(INTERACT.DIG_REWARD);
       }
       break;
     }
     case ABILITY.LIFT: {
+      const boulders = inHub ? room.boulders : getZone(room, client.zone).boulders;
       const i = Number.isInteger(x.lift) ? x.lift : Number.isInteger(x.drop) ? x.drop : -1;
-      if (i < 0 || i >= BOULDERS.length) return;
-      const b = room.boulders[i];
+      if (i < 0 || i >= boulders.length) return;
+      const b = boulders[i];
       if (Number.isInteger(x.lift)) {
         const bx = { x: b.p[0], z: b.p[2] };
-        if (b.h || room.boulders.some((o) => o.h === client.id) || dist2D(msg.p, bx) > INTERACT.LIFT_RANGE + 1) return;
+        if (b.h || boulders.some((o) => o.h === client.id) || dist2D(msg.p, bx) > INTERACT.LIFT_RANGE + 1) return;
         b.h = client.id;
       } else {
         const p = x.p;
@@ -376,13 +403,14 @@ function handleAbility(client, msg) {
         b.h = 0;
         b.p = p.map(round2);
       }
-      room.broadcast({ t: MSG.OBJECT, k: 'boulder', i, s: [b.p[0], b.p[1], b.p[2], b.h] });
+      broadcastZone(room, client.zone, { t: MSG.OBJECT, z: client.zone, k: 'boulder', i, s: [b.p[0], b.p[1], b.p[2], b.h] });
+      if (!inHub && !b.h) onWorldBoulderDropped(room, client);
       return; // el estado del objeto ya informa a todos
     }
     default:
       break; // party, sprint, ice, sniff: solo efecto visual/buff en los clientes
   }
-  room.broadcast(out, client.id);
+  broadcastZone(room, client.zone, out, client.id);
 }
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -428,13 +456,16 @@ wss.on('connection', (ws) => {
 setInterval(() => {
   const now = Date.now();
   for (const room of rooms.values()) {
-    const s = [];
+    // Instantáneas por zona: cada jugador solo recibe a los de su misma zona.
+    const byZone = new Map();
     for (const c of room.players.values()) {
       if (!c.dirty) continue;
       c.dirty = false;
-      s.push([c.id, c.p[0], c.p[1], c.p[2], c.r, c.a]);
+      if (!byZone.has(c.zone)) byZone.set(c.zone, []);
+      byZone.get(c.zone).push([c.id, c.p[0], c.p[1], c.p[2], c.r, c.a]);
     }
-    if (s.length) room.broadcast({ t: MSG.SNAPSHOT, ts: now, s });
+    for (const [zone, s] of byZone) broadcastZone(room, zone, { t: MSG.SNAPSHOT, ts: now, s });
+    tickPortals(room, now);
 
     for (const [id, respawnAt] of room.collected) {
       if (now >= respawnAt) {
@@ -445,13 +476,13 @@ setInterval(() => {
     for (let i = 0; i < room.rocks.length; i++) {
       if (room.rocks[i] && now >= room.rocks[i]) {
         room.rocks[i] = 0;
-        room.broadcast({ t: MSG.OBJECT, k: 'rock', i, s: 0 });
+        broadcastZone(room, HUB_ZONE, { t: MSG.OBJECT, z: HUB_ZONE, k: 'rock', i, s: 0 });
       }
     }
     for (let i = 0; i < room.digs.length; i++) {
       if (room.digs[i] && now >= room.digs[i]) {
         room.digs[i] = 0;
-        room.broadcast({ t: MSG.OBJECT, k: 'dig', i, s: 0 });
+        broadcastZone(room, HUB_ZONE, { t: MSG.OBJECT, z: HUB_ZONE, k: 'dig', i, s: 0 });
       }
     }
   }

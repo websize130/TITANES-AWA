@@ -1,7 +1,7 @@
 // Protocolo compartido cliente/servidor (el servidor lo importa también).
 // Mensajes JSON pequeños con claves cortas para ahorrar ancho de banda.
 
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 export const MSG = Object.freeze({
   // Cliente -> Servidor
@@ -11,14 +11,22 @@ export const MSG = Object.freeze({
   ABILITY: 'ab',        // { t, a, p:[x,y,z], r, x? }  (también S->C con id)
   STATE: 'st',          // { t, p:[x,y,z], r:yaw, a:anim }
   COLLECT: 'col',       // { t, id }
+  PORTAL: 'portal',     // { t, w|null }  listo (o no) junto a un portal del Hub
+  EXIT: 'exit',         // { t }  volver al Hub desde un mundo
+  ACT: 'act',           // { t, k, v }  interruptor / placa / reliquia
   PING: 'ping',         // { t, ts }
 
   // Servidor -> Cliente
-  WELCOME: 'welcome',   // { t, id, room, players:[PlayerInfo], collected:[id], objects }
+  WELCOME: 'welcome',   // { t, id, room, players:[PlayerInfo], collected:[id], objects, progress }
   ROOM_INFO: 'ri',      // { t, room, players:[{ name, b }], max }
   PLAYER_BREED: 'pb',   // { t, id, b }
-  OBJECT: 'obj',        // { t, k:'rock'|'dig'|'boulder', i, s }
+  OBJECT: 'obj',        // { t, z, k:'rock'|'dig'|'boulder', i, s }
   SCORE: 'score',       // { t, id, score, gain }
+  ZONE: 'zone',         // { t, z, players:[id], state? }  has cambiado de zona
+  PLAYER_ZONE: 'pz',    // { t, id, z, p }  otro jugador cambió de zona
+  PORTAL_STATUS: 'ps',  // { t, w, ready:[id], ms }  cuenta atrás compartida del portal
+  MISSION: 'ms',        // { t, z, k, solved?|door?, by }
+  WORLD_COMPLETE: 'wc', // { t, w, by, name, progress:[worldId] }
   PLAYER_JOIN: 'pj',    // { t, player: PlayerInfo }
   PLAYER_LEAVE: 'pl',   // { t, id }
   SNAPSHOT: 'snap',     // { t, ts, s:[[id, x, y, z, yaw, anim], ...] }

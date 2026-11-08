@@ -47,6 +47,14 @@
         <span class="ab-emote">Q gesto</span>
       </div>
       <div class="hud-buff" id="hud-buff"></div>
+      <!-- Misión del mundo actual -->
+      <div class="hud-mission hidden" id="hud-mission">
+        <div class="hm-title" id="hm-title"></div>
+        <ul id="hm-list"></ul>
+      </div>
+      <!-- Acción contextual (hablar con Isabel, pulsar interruptor…) -->
+      <div class="hud-prompt hidden" id="hud-prompt"><span class="key" id="hud-prompt-key">R</span><span id="hud-prompt-text"></span></div>
+      <div class="hud-banner hidden" id="hud-banner"></div>
     </div>
 
     <!-- Controles táctiles (solo dispositivos táctiles) -->
@@ -60,9 +68,29 @@
       <button class="touch-btn touch-action ability-btn" id="btn-action" aria-label="Habilidad">
         <span class="ab-icon">🎉</span><span class="cd-fill"></span>
       </button>
+      <button class="touch-btn touch-interact hidden" id="btn-interact" aria-label="Interactuar">💬</button>
       <button class="touch-btn touch-emote" id="btn-emote" aria-label="Gesto de personalidad">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-1.7 0-3 1.6-3 3.5S10.3 10 12 10s3-1.6 3-3.5S13.7 3 12 3zM5.5 8C4.1 8 3 9.3 3 11s1.1 3 2.5 3S8 12.7 8 11 6.9 8 5.5 8zm13 0C17.1 8 16 9.3 16 11s1.1 3 2.5 3S21 12.7 21 11s-1.1-3-2.5-3zM12 12c-3 0-6 3.3-6 6 0 1.7 1.3 3 3 3 1.2 0 2-.6 3-.6s1.8.6 3 .6c1.7 0 3-1.3 3-3 0-2.7-3-6-6-6z"/></svg>
       </button>
+    </div>
+
+    <!-- Diálogo con Isabel, la bruja guía -->
+    <div id="dialog" class="dialog hidden" role="dialog" aria-live="polite">
+      <div class="dialog-portrait" aria-hidden="true">🧙‍♀️</div>
+      <div class="dialog-body">
+        <strong>Isabel, la bruja guía</strong>
+        <p id="dialog-text"></p>
+        <div class="dialog-actions">
+          <span class="dialog-page" id="dialog-page"></span>
+          <button class="btn-primary btn-small" id="dialog-next">Siguiente</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transición entre mundos -->
+    <div id="fade" class="fade">
+      <div class="fade-title" id="fade-title"></div>
+      <div class="fade-sub" id="fade-sub"></div>
     </div>
 
     <!-- Selección de raza: tarjetas interactivas + vista 3D animada -->

@@ -128,6 +128,11 @@ export class Effects {
     this._c = new THREE.Color();
   }
 
+  /** Mueve las partículas a otra escena. */
+  attach(scene) {
+    scene.add(this.points);
+  }
+
   setViewportHeight(h) {
     this.material.uniforms.scale.value = h * 0.9;
   }

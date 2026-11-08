@@ -164,13 +164,16 @@ export function buildCastle(collision, quality) {
     bg.translate(0, j * 1.8, -0.15);
     bars.push(bg);
   }
-  gate.add(new THREE.Mesh(mergeGeometries(bars), M.gold));
+  const barsMesh = new THREE.Mesh(mergeGeometries(bars), M.gold);
+  gate.add(barsMesh);
   // Escudo sobre el arco.
   const crest = new THREE.Mesh(new THREE.CircleGeometry(0.9, 6), M.gold);
   crest.position.set(0, 9.2, 0.75);
   gate.add(crest);
   group.add(gate);
-  collision.addBoxCentered(0, BASE_Y - 2, frontZ, 6, 11, 3); // portón cerrado (se abrirá al "despertar")
+  // Portón cerrado: se abre cuando el equipo recupera la Corona (el castillo "despierta").
+  const gateCollider = collision.addBoxCentered(0, BASE_Y - 2, frontZ, 6, 11, 3);
+  let gateOpen = false;
 
   const gateLight = new THREE.PointLight('#ffa040', 30, 18, 2);
   gateLight.position.set(0, BASE_Y + 3, frontZ + 4);
@@ -218,6 +221,17 @@ export function buildCastle(collision, quality) {
     group,
     update(t) {
       for (let i = 0; i < animated.length; i++) animated[i].update(t);
+      if (gateOpen && barsMesh.position.y < 7) barsMesh.position.y += 0.05;
+    },
+    /** El castillo despierta: rejas arriba, puerta abierta y luz dorada. */
+    openGate() {
+      if (gateOpen) return;
+      gateOpen = true;
+      door.visible = false;
+      gateCollider.maxY = -1000;
+      gateCollider.minY = -1001;
+      gateLight.color.set('#ffd84a');
+      gateLight.intensity = 60;
     },
   };
 }

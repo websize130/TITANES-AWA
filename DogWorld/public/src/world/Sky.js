@@ -8,20 +8,16 @@ import { mulberry32, glowTexture } from './Textures.js';
 export const SKY_TOP = new THREE.Color('#1f6fe0');
 export const SKY_HORIZON = new THREE.Color('#bfe3ff');
 
-export function buildSky(quality) {
-  const group = new THREE.Group();
-  group.name = 'Sky';
-  const rnd = mulberry32(77);
-
-  // Cúpula con degradado (sin texturas).
+/** Cúpula de cielo con degradado y sol (reutilizable en los mundos temáticos). */
+export function makeSkyDome(top, horizon, sunDir = new THREE.Vector3(0.35, 0.55, -0.75)) {
   const skyMat = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
     fog: false,
     uniforms: {
-      top: { value: SKY_TOP },
-      horizon: { value: SKY_HORIZON },
-      sunDir: { value: new THREE.Vector3(0.35, 0.55, -0.75).normalize() },
+      top: { value: new THREE.Color(top) },
+      horizon: { value: new THREE.Color(horizon) },
+      sunDir: { value: sunDir.clone().normalize() },
     },
     vertexShader: /* glsl */`
       varying vec3 vDir;
@@ -46,6 +42,14 @@ export function buildSky(quality) {
   const dome = new THREE.Mesh(new THREE.SphereGeometry(900, 32, 16), skyMat);
   dome.frustumCulled = false;
   dome.renderOrder = -1;
+  return dome;
+}
+
+export function buildSky(quality) {
+  const group = new THREE.Group();
+  group.name = 'Sky';
+  const rnd = mulberry32(77);
+  const dome = makeSkyDome(SKY_TOP, SKY_HORIZON);
   group.add(dome);
 
   // Nubes: grupos de esferas fusionadas (una malla por nube).

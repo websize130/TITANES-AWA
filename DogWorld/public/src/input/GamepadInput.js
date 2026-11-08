@@ -31,6 +31,9 @@ export class GamepadInput {
       const jump = gp.buttons[0]?.pressed ?? false;      // A / Cruz
       const action = gp.buttons[2]?.pressed ?? false;    // X / Cuadrado: habilidad
       const emote = gp.buttons[3]?.pressed ?? false;     // Y / Triángulo: gesto
+      const interact = gp.buttons[1]?.pressed ?? false;  // B / Círculo: interactuar
+      if (interact && !this.prevInteract) this.input.pressInteract();
+      this.prevInteract = interact;
       if (jump && !this.prevJump) this.input.pressJump();
       if (action && !this.prevAction) this.input.pressAbility();
       if (emote && !this.prevEmote) this.input.pressEmote();

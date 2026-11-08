@@ -15,6 +15,14 @@ import { AbilitySystem } from '../breeds/AbilitySystem.js';
 import { getBreed, BREED_BY_ID } from '../breeds/BreedData.js';
 import { Fullscreen } from './Fullscreen.js';
 import { getQualityProfile } from './Quality.js';
+import { PortalHall } from '../worlds/PortalHall.js';
+import { ThemedWorld } from '../worlds/ThemedWorld.js';
+import { WORLD_BY_ID, WORLDS, HUB_ZONE, PORTAL_PLAZA } from '../worlds/WorldData.js';
+import { isabelPages } from '../worlds/IsabelLines.js';
+import { Dialog } from '../ui/Dialog.js';
+
+const PROGRESS_KEY = 'dogworld.progress';
+const ISABEL_KEY = 'dogworld.isabel';
 
 export class Game {
   constructor(canvas) {
@@ -39,6 +47,19 @@ export class Game {
     this.effects = new Effects(this.scene, this.quality.particles ? 700 : 350);
     this.world = new HubWorld(this.scene, this.quality);
     this.world.interactables = new Interactables(this.scene, this.world.collision, this.effects);
+    this.portalHall = new PortalHall(this.scene, this.world.collision, this.effects);
+
+    // Zonas: 'hub' o el id de un mundo temático. activeWorld/activeScene apuntan a la zona actual.
+    this.zone = HUB_ZONE;
+    this.activeWorld = this.world;
+    this.activeScene = this.scene;
+    this.themed = null;
+    this.portalReadyId = null;
+    this.portalStatus = new Map(); // worldId -> { ready:[ids], endsAt }
+    this.localPortalT = 0;
+    this.transitioning = false;
+    this.dialog = new Dialog();
+    this.progress = new Set();
 
     const saved = loadProfile();
     this.player = new PlayerController(this.world, this.input, BREED_BY_ID[saved.breed] ? saved.breed : 'rufus', this.effects);
@@ -68,6 +89,8 @@ export class Game {
     });
     this.abilities.onLocalScore = (gain) => this.addLocalScore(gain);
     this.applyBreed(this.player.breed.id);
+    this.remotes.setMyZone(HUB_ZONE, this.scene);
+    this.setProgress(this.loadLocalProgress());
 
     this.state = 'menu';
     this.online = false;
@@ -117,6 +140,8 @@ export class Game {
       if (!connected && this.state === 'playing') this.hud.toast('Conexión perdida, reconectando…');
     };
     net.onWelcome = (msg) => {
+      if (this.zone !== HUB_ZONE) this.switchZone(HUB_ZONE, null);
+      this.setProgress(new Set(msg.progress || []));
       this.remotes.clear();
       for (const p of msg.players) this.remotes.add(p);
       this.world.collectibles.setCollected(msg.collected);
@@ -165,7 +190,8 @@ export class Game {
     };
     net.onAbility = (msg) => this.abilities.onRemoteAbility(msg);
     net.onObject = (msg) => {
-      const inter = this.world.interactables;
+      if ((msg.z ?? HUB_ZONE) !== this.zone) return;
+      const inter = this.activeWorld.interactables;
       if (msg.k === 'rock') inter.setRock(msg.i, msg.s);
       else if (msg.k === 'dig') inter.setDig(msg.i, msg.s);
       else if (msg.k === 'boulder') {
@@ -175,6 +201,35 @@ export class Game {
       }
     };
     net.onRespawn = (id) => this.world.collectibles.respawn(id);
+    net.onZone = (msg) => this.enterZone(msg.z, msg.state);
+    net.onPlayerZone = (msg) => {
+      const p = this.remotes.setZone(msg.id, msg.z, msg.p);
+      if (!p) return;
+      if (msg.z === this.zone) this.hud.toast(`${p.name} se une a la expedición`, 1600);
+      else if (msg.z !== HUB_ZONE && this.zone === HUB_ZONE) this.hud.toast(`${p.name} ha viajado a ${WORLD_BY_ID[msg.z].title}`, 1800);
+    };
+    net.onPortalStatus = (msg) => {
+      if (msg.ready.length) this.portalStatus.set(msg.w, { ready: msg.ready, endsAt: performance.now() + msg.ms });
+      else this.portalStatus.delete(msg.w);
+      if (!msg.ready.length) this.portalHall.setStatus(msg.w, null, this.progress);
+    };
+    net.onMission = (msg) => {
+      if (msg.z !== this.zone || !this.themed) return;
+      const who = msg.by === net.playerId ? 'Tú' : this.remotes.players.get(msg.by)?.name ?? 'Alguien';
+      if (msg.solved) {
+        const obj = this.themed.objectives.find((o) => o.key === msg.k);
+        this.themed.applySolved(msg.k, true);
+        if (obj) this.hud.toast(`✔ ${who}: ${obj.def.label.split(':')[0]} ¡reto superado!`, 2000);
+      } else if (msg.door) {
+        this.themed.openDoor(msg.k, msg.door);
+        this.hud.toast(`⏱ ¡${who} abrió la puerta! ¡Corred!`, 1500);
+      }
+    };
+    net.onWorldComplete = (msg) => {
+      this.setProgress(new Set(msg.progress));
+      if (msg.w === this.zone) this.celebrate(msg.name);
+      else this.hud.toast(`🏆 El equipo de ${msg.name} completó ${WORLD_BY_ID[msg.w].title}`, 2500);
+    };
     net.onError = (msg) => {
       if (this._breedConfirm && msg.code === 'breed') {
         const err = new Error(msg.msg);
@@ -240,6 +295,7 @@ export class Game {
   // ---------------------------------------------------------------------------
   /** Botón principal del menú: continuar o pasar a la selección de perro. */
   async onMenuPlay(profile) {
+    if (this.zone !== HUB_ZONE) this.switchZone(HUB_ZONE, null);
     const sameRoom = this.profile && this.menu.inGame && this.profile.room === profile.room && this.profile.name === profile.name;
     if (sameRoom) {
       this.resume();
@@ -381,29 +437,266 @@ export class Game {
 
     this.input.update();
 
-    if (this.state === 'playing') {
+    const playing = this.state === 'playing' && !this.transitioning;
+    if (playing) {
       if (this.input.abilityPressed) this.abilities.activate();
       this.abilities.update(dt);
       this.player.update(dt);
       this.cameraRig.update(dt, this.player);
-      this.world.collectibles.update(t, this.player.position);
+      if (this.zone === HUB_ZONE) {
+        this.world.collectibles.update(t, this.player.position);
+        this.updateHubPortals(dt);
+      } else {
+        this.themed.update(dt, this.player, this.abilities.sniffActive);
+        this.hud.setMission(this.themed.def, this.themed.missionList());
+      }
+      this.updateInteract();
       this.updateBuffs();
     } else {
       // Fondo del menú: cámara cinematográfica. Los demás jugadores siguen moviéndose.
       if (this.menu.inGame) this.cameraRig.update(dt, this.player);
       else this.cameraRig.updateAttract(t);
-      this.world.collectibles.update(t, null);
+      if (this.zone === HUB_ZONE) this.world.collectibles.update(t, null);
     }
     if (this.online) this.net.update(dt, this.player.position, this.player.yaw, this.player.anim);
 
     this.remotes.update(dt);
-    this.world.interactables.update(dt, (id) => this.getAvatarById(id), this.abilities.sniffActive);
+    this.activeWorld.interactables.update(dt, (id) => this.getAvatarById(id), this.abilities.sniffActive);
     this.effects.update(dt);
-    this.world.update(t, dt, this.camera, this.state === 'playing' ? this.player.position : this.camera.position);
-    this.renderer.render(this.scene, this.camera);
+    if (this.zone === HUB_ZONE) {
+      this.portalHall.update(dt, this.player.avatar.root.visible ? this.player.position : null, this.portalReadyId);
+      this.world.update(t, dt, this.camera, playing ? this.player.position : this.camera.position);
+    } else {
+      this.themed.sky.position.copy(this.camera.position);
+    }
+    this.renderer.render(this.activeScene, this.camera);
     this.input.endFrame();
 
     this.adaptResolution(dt);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Zonas, portales, Isabel y misiones
+  // ---------------------------------------------------------------------------
+  loadLocalProgress() {
+    if (new URLSearchParams(location.search).has('unlockall')) return new Set(WORLDS.map((w) => w.id));
+    try { return new Set(JSON.parse(localStorage.getItem(PROGRESS_KEY)) || []); } catch { return new Set(); }
+  }
+
+  setProgress(progress) {
+    this.progress = progress;
+    this.portalHall.setProgress(progress);
+    if (progress.has('fortress')) this.world.castle.openGate();
+    if (!this.online) {
+      try { localStorage.setItem(PROGRESS_KEY, JSON.stringify([...progress])); } catch { /* */ }
+    }
+  }
+
+  get isOnlineNow() {
+    return this.online && this.net.joined;
+  }
+
+  /** Puente entre el mundo temático y la red (o la lógica local sin servidor). */
+  makeBridge() {
+    return {
+      isOnline: () => this.isOnlineNow,
+      act: (k, v) => this.net.act(k, v),
+      solveLocal: (k) => {
+        const obj = this.themed?.objectives.find((o) => o.key === k);
+        if (!obj || obj.solved) return;
+        this.themed.applySolved(k, true);
+        this.hud.toast(`✔ ${obj.def.label.split(':')[0]}: ¡reto superado!`, 2000);
+      },
+      completeLocal: () => {
+        if (!this.themed || this.themed.complete) return;
+        const p = new Set(this.progress);
+        p.add(this.themed.id);
+        this.setProgress(p);
+        this.celebrate(this.profile?.name ?? 'Tú');
+      },
+      exit: () => this.exitWorld(),
+    };
+  }
+
+  exitWorld() {
+    if (this.zone === HUB_ZONE) return;
+    if (this.isOnlineNow) this.net.exitWorld();
+    else this.enterZone(HUB_ZONE, null);
+  }
+
+  /** Transición con fundido hacia una zona (Hub o mundo). */
+  enterZone(zone, state) {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    const def = WORLD_BY_ID[zone];
+    const fade = document.getElementById('fade');
+    document.documentElement.style.setProperty('--world', def ? def.color : '#6b33b8');
+    document.getElementById('fade-title').textContent = def ? def.title : 'Castillo del Despertar';
+    document.getElementById('fade-sub').textContent = def ? def.intro : 'De vuelta en la Plaza de los Portales';
+    fade.classList.add('show');
+    this.dialog.close();
+    setTimeout(() => {
+      this.switchZone(zone, state);
+      setTimeout(() => {
+        fade.classList.remove('show');
+        this.transitioning = false;
+      }, def ? 900 : 350);
+    }, 480);
+  }
+
+  /** Cambio inmediato de zona (sin fundido). */
+  switchZone(zone, state) {
+    const prev = this.themed;
+    let ctx;
+    let scene;
+    if (zone === HUB_ZONE) {
+      ctx = this.world;
+      scene = this.scene;
+      this.themed = null;
+    } else {
+      // Cada expedición empieza con un mundo recién construido (estado limpio).
+      ctx = new ThemedWorld(WORLD_BY_ID[zone], this.quality, this.effects);
+      ctx.bridge = this.makeBridge();
+      if (state) ctx.applyState(state);
+      this.themed = ctx;
+      scene = ctx.scene;
+    }
+    this.zone = zone;
+    this.activeWorld = ctx;
+    this.activeScene = scene;
+    scene.add(this.player.avatar.root);
+    this.effects.attach(scene);
+    this.remotes.setMyZone(zone, scene);
+    this.player.setWorld(ctx);
+    this.abilities.world = ctx;
+    this.abilities.localHeld = -1;
+    this.player.carrying = false;
+    this.player.velocity.set(0, 0, 0);
+    if (zone === HUB_ZONE) {
+      const p = PORTAL_PLAZA.returnSpawn;
+      this.player.position.set(p.x, this.portalHall.plazaTop + 0.1, p.z);
+      this.player.yaw = 0;
+      this.cameraRig.yaw = Math.PI; // mirando a los portales
+      this.hud.setMission(null);
+    } else {
+      this.player.position.copy(ctx.spawnPoint);
+      this.player.yaw = Math.PI;
+      this.cameraRig.yaw = 0;
+    }
+    this.cameraRig.pitch = 0.32;
+    this.cameraRig.initialized = false;
+    this.portalReadyId = null;
+    this.localPortalT = 0;
+    this.hud.setBanner(null);
+    this.hud.setPrompt(null);
+    if (prev && prev !== ctx) disposeWorld(prev);
+  }
+
+  /** Portales del Hub: listo / cuenta atrás compartida / portales sellados. */
+  updateHubPortals(dt) {
+    const portal = this.portalHall.portalAt(this.player.position);
+    const id = portal && !portal.locked ? portal.world.id : null;
+    if (portal?.locked && this.lastLockedHint !== portal.world.id) {
+      this.lastLockedHint = portal.world.id;
+      const req = portal.world.requires.filter((r) => !this.progress.has(r)).map((r) => WORLD_BY_ID[r].title);
+      this.hud.toast(`🔒 Isabel: «Este portal se abrirá cuando completéis ${req.join(', ')}»`, 2600);
+    } else if (!portal) {
+      this.lastLockedHint = null;
+    }
+
+    if (id !== this.portalReadyId) {
+      this.portalReadyId = id;
+      if (this.isOnlineNow) this.net.portal(id);
+      else this.localPortalT = id ? 1.5 : 0;
+      if (id) navigator.vibrate?.(20);
+    }
+
+    // Estado de los portales con jugadores esperando.
+    const now = performance.now();
+    const hubCount = this.remotes.countInZone(HUB_ZONE) + 1;
+    for (const [w, st] of this.portalStatus) {
+      const secs = Math.max(0, Math.ceil((st.endsAt - now) / 1000));
+      this.portalHall.setStatus(w, `🐾 ${st.ready.length}/${hubCount} · ${secs}s`, this.progress);
+    }
+
+    if (!id) {
+      this.hud.setBanner(null);
+      return;
+    }
+    const def = WORLD_BY_ID[id];
+    if (this.isOnlineNow) {
+      const st = this.portalStatus.get(id);
+      // Reenviar "listo" si el servidor aún no nos cuenta (latencia, posición sin validar…).
+      if ((!st || !st.ready.includes(this.net.playerId)) && now - (this.portalResendAt ?? 0) > 1000) {
+        this.portalResendAt = now;
+        this.net.portal(id);
+      }
+      const n = st ? st.ready.length : 1;
+      const secs = st ? Math.max(0, (st.endsAt - now) / 1000).toFixed(1) : '…';
+      this.hud.setBanner(`🌀 ${def.title}<small>Equipo listo: ${n}/${hubCount} · viaje en ${secs} s — quien se quede atrás podrá unirse después</small>`);
+    } else {
+      this.localPortalT -= dt;
+      this.hud.setBanner(`🌀 ${def.title}<small>Viajando en ${Math.max(0, this.localPortalT).toFixed(1)} s…</small>`);
+      if (this.localPortalT <= 0) this.enterZone(id, null);
+    }
+  }
+
+  /** Acción contextual: hablar con Isabel o pulsar interruptores. */
+  updateInteract() {
+    const pos = this.player.position;
+    let action = null;
+    if (this.zone === HUB_ZONE) {
+      if (this.portalHall.nearIsabel(pos)) {
+        action = { label: 'Hablar con Isabel', icon: '💬', run: () => this.talkToIsabel() };
+        if (!this.isabelWaved) {
+          this.isabelWaved = true;
+          this.portalHall.isabel.wave();
+        }
+      } else {
+        this.isabelWaved = false;
+        if (this.dialog.isOpen) this.dialog.close();
+      }
+    } else {
+      const a = this.themed.interactAt(pos);
+      if (a) action = { label: a.label, icon: '👆', run: a.run };
+    }
+    if (this.dialog.isOpen) {
+      this.hud.setPrompt(null); // el diálogo ya tiene su botón (R también avanza)
+      if (this.input.interactPressed) this.dialog.next();
+      return;
+    }
+    this.hud.setPrompt(action ? action.label : null, action?.icon);
+    if (action && this.input.interactPressed) action.run();
+  }
+
+  talkToIsabel() {
+    let firstTime = true;
+    try { firstTime = !localStorage.getItem(ISABEL_KEY); } catch { /* */ }
+    const team = [this.player.breed.id];
+    for (const p of this.remotes.players.values()) team.push(p.breedId);
+    this.portalHall.isabel.wave();
+    this.dialog.open(isabelPages({ progress: this.progress, team, firstTime }), () => {
+      try { localStorage.setItem(ISABEL_KEY, '1'); } catch { /* */ }
+    });
+  }
+
+  /** ¡Reliquia recuperada! Fiesta y vuelta al castillo. */
+  celebrate(byName) {
+    const def = this.themed?.def;
+    if (!def || this.themed.complete) return;
+    this.themed.complete = true;
+    this.themed.updateRelicLabel();
+    const p = this.player.position;
+    for (let i = 0; i < 6; i++) setTimeout(() => this.effects.emit('confetti', p.x, p.y + 2, p.z), i * 250);
+    this.hud.setBanner(`🏆 ¡Reliquia recuperada: ${def.relicName}!<small>${byName} la ha recogido · volviendo al castillo…</small>`, true);
+    navigator.vibrate?.([30, 50, 30]);
+    const zone = this.zone;
+    setTimeout(() => {
+      if (this.zone === zone) this.exitWorld();
+      const next = WORLDS.filter((w) => !this.progress.has(w.id) && w.requires.every((r) => this.progress.has(r)));
+      if (this.progress.has('fortress')) setTimeout(() => this.hud.toast('👑 ¡El castillo ha despertado! Su portón está abierto', 4000), 1500);
+      else if (next.length) setTimeout(() => this.hud.toast(`✨ Isabel: «¡Nuevo portal abierto: ${next.map((w) => w.title).join(' y ')}!»`, 3500), 1500);
+    }, 6000);
   }
 
   /** Indicadores de efectos activos (solo toca el DOM cuando cambian). */
@@ -442,4 +735,9 @@ function withTimeout(promise, ms) {
     promise,
     new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado')), ms)),
   ]);
+}
+
+/** Libera la geometría propia de un mundo que ya no se usa (los materiales compartidos se conservan). */
+function disposeWorld(world) {
+  world.group.traverse((o) => { if (o.geometry && !o.isSprite) o.geometry.dispose(); });
 }

@@ -12,6 +12,7 @@ class RemotePlayer {
     this.name = info.name;
     this.score = info.score ?? 0;
     this.breedId = info.b;
+    this.zone = info.z ?? 'hub';
     this.fx = fx;
     this.avatar = new DogAvatar(info.b, fx);
     this.avatar.setName(info.name);
@@ -117,6 +118,7 @@ export class RemotePlayers {
     const p = new RemotePlayer(info, this.fx);
     this.players.set(info.id, p);
     this.scene.add(p.avatar.root);
+    p.avatar.root.visible = p.zone === (this.myZone ?? 'hub');
     return p;
   }
 
@@ -142,6 +144,7 @@ export class RemotePlayers {
     p.breedId = breedId;
     old.dispose();
     this.scene.add(p.avatar.root);
+    p.avatar.root.visible = p.zone === (this.myZone ?? 'hub');
     this.fx?.emit('sparkle', p.avatar.root.position.x, p.avatar.root.position.y + 1, p.avatar.root.position.z);
     return p;
   }
@@ -153,6 +156,7 @@ export class RemotePlayers {
     let best = null;
     let bd = range;
     for (const p of this.players.values()) {
+      if (p.zone !== this.myZone) continue;
       const rp = p.avatar.root.position;
       const dx = rp.x - pos.x;
       const dz = rp.z - pos.z;
@@ -182,6 +186,36 @@ export class RemotePlayers {
 
   update(dt) {
     const now = performance.now();
-    for (const p of this.players.values()) p.update(now, dt);
+    for (const p of this.players.values()) if (p.zone === this.myZone) p.update(now, dt);
+  }
+
+  /** Cambia la escena/zona visible: solo se ven los perros de mi misma zona. */
+  setMyZone(zone, scene) {
+    this.myZone = zone;
+    this.scene = scene;
+    for (const p of this.players.values()) {
+      scene.add(p.avatar.root);
+      p.avatar.root.visible = p.zone === zone;
+    }
+  }
+
+  /** Otro jugador cambió de zona (entró en un mundo o volvió al Hub). */
+  setZone(id, zone, pos) {
+    const p = this.players.get(id);
+    if (!p) return null;
+    p.zone = zone;
+    p.avatar.root.visible = zone === this.myZone;
+    if (pos) {
+      p.size = 0;
+      p.pushRaw(performance.now(), pos[0], pos[1], pos[2], 0, 0);
+      p.avatar.root.position.set(pos[0], pos[1], pos[2]);
+    }
+    return p;
+  }
+
+  countInZone(zone) {
+    let n = 0;
+    for (const p of this.players.values()) if (p.zone === zone) n++;
+    return n;
   }
 }

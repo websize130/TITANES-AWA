@@ -31,6 +31,7 @@ export class TouchControls {
     this.bindButton(this.btnJump, () => { this.jumpHeld = true; this.input.pressJump(); }, () => { this.jumpHeld = false; });
     this.bindButton(this.btnAction, () => this.input.pressAbility(), null);
     this.bindButton(this.btnEmote, () => this.input.pressEmote(), null);
+    this.bindButton(document.getElementById('btn-interact'), () => this.input.pressInteract(), null);
   }
 
   setVisible(visible) {

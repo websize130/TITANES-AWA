@@ -12,7 +12,9 @@ const ICE_POOL = 8;
 const BOULDER_SIZE = 1.5;
 
 export class Interactables {
-  constructor(scene, collision, fx) {
+  constructor(scene, collision, fx, layout = { rocks: ROCKS, digs: DIG_SPOTS, boulders: BOULDERS }, heightFn = terrainHeight) {
+    this.layout = layout;
+    this.heightFn = heightFn;
     this.collision = collision;
     this.fx = fx;
     this.group = new THREE.Group();
@@ -27,8 +29,8 @@ export class Interactables {
       emissive: '#ffb020', emissiveIntensity: 0.0,
     });
     this.crackMat = crackMat;
-    this.rocks = ROCKS.map((r, i) => {
-      const y = terrainHeight(r.x, r.z);
+    this.rocks = layout.rocks.map((r, i) => {
+      const y = heightFn(r.x, r.z);
       const parts = [];
       for (let k = 0; k < 5; k++) {
         const s = 0.55 + rnd() * 0.4;
@@ -58,8 +60,8 @@ export class Interactables {
     // ---------------- Montículos de tierra ----------------
     const dirtMat = new THREE.MeshStandardMaterial({ color: '#7a5233', roughness: 1, bumpMap: rockNoiseTexture(), bumpScale: 1 });
     const holeMat = new THREE.MeshBasicMaterial({ color: '#2a1a10' });
-    this.digs = DIG_SPOTS.map((d) => {
-      const y = terrainHeight(d.x, d.z);
+    this.digs = layout.digs.map((d) => {
+      const y = heightFn(d.x, d.z);
       const mound = new THREE.Mesh(new THREE.SphereGeometry(0.9, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), dirtMat);
       mound.scale.set(1, 0.45, 1);
       mound.position.set(d.x, y - 0.05, d.z);
@@ -90,11 +92,11 @@ export class Interactables {
     }
     boulderGeo.computeVertexNormals();
     const boulderMat = new THREE.MeshStandardMaterial({ color: '#b39a8a', roughness: 0.9, bumpMap: rockNoiseTexture(), bumpScale: 2 });
-    this.boulders = BOULDERS.map((b) => {
+    this.boulders = layout.boulders.map((b) => {
       const mesh = new THREE.Mesh(boulderGeo, boulderMat);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      const y = terrainHeight(b.x, b.z);
+      const y = heightFn(b.x, b.z);
       const half = BOULDER_SIZE / 2;
       const col = collision.addBox(b.x - half, y - 0.5, b.z - half, b.x + half, y + BOULDER_SIZE * 0.95, b.z + half);
       this.group.add(mesh);
@@ -134,7 +136,7 @@ export class Interactables {
   resetLocal() {
     this.rocks.forEach((_, i) => this.setRock(i, 0, true));
     this.digs.forEach((_, i) => this.setDig(i, 0, true));
-    BOULDERS.forEach((b, i) => this.setBoulder(i, [b.x, null, b.z, 0]));
+    this.layout.boulders.forEach((b, i) => this.setBoulder(i, [b.x, null, b.z, 0]));
   }
 
   setRock(i, broken, silent = false) {
@@ -172,7 +174,7 @@ export class Interactables {
     if (!b || !Array.isArray(s)) return;
     b.holder = s[3] || 0;
     if (!b.holder) {
-      const y = s[1] == null ? terrainHeight(s[0], s[2]) : s[1];
+      const y = s[1] == null ? this.heightFn(s[0], s[2]) : s[1];
       this.placeBoulder(b, s[0], Number.isFinite(y) ? y : 0, s[2]);
     } else {
       b.col.maxY = -1000;

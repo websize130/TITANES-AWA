@@ -173,7 +173,7 @@ export function buildTerrain(quality) {
 }
 
 /** Cono rocoso irregular invertido bajo cada isla (con tono lavanda como la referencia). */
-export function buildIslandUnderside(cx, cz, radiusFn, topY, depth, seed, radial = 64, rings = 14) {
+export function buildIslandUnderside(cx, cz, radiusFn, topY, depth, seed, radial = 64, rings = 14, palette = null) {
   const rnd = mulberry32(seed);
   const points = [];
   for (let i = 0; i <= rings; i++) {
@@ -186,8 +186,8 @@ export function buildIslandUnderside(cx, cz, radiusFn, topY, depth, seed, radial
   const pos = geo.attributes.position;
   const colors = new Float32Array(pos.count * 3);
   const tmp = new THREE.Color();
-  const top = new THREE.Color('#a68aa6');
-  const bottom = new THREE.Color('#4b3558');
+  const top = new THREE.Color(palette?.[0] ?? '#a68aa6');
+  const bottom = new THREE.Color(palette?.[1] ?? '#4b3558');
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
     const y = pos.getY(i);

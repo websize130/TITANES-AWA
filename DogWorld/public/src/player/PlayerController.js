@@ -94,8 +94,14 @@ export class PlayerController {
     if (this.grounded) this.emoteT = 3.2;
   }
 
+  /** Cambia el mundo de colisiones (Hub o mundo temático). */
+  setWorld(world) {
+    this.world = world;
+    this.collision = world.collision;
+  }
+
   respawn() {
-    this.position.copy(this.world.spawnPoint);
+    this.position.copy(this.world.respawnPoint?.() ?? this.world.spawnPoint);
     this.velocity.set(0, 0, 0);
     this.yaw = Math.PI;
     this.onRespawn?.();

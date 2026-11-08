@@ -50,6 +50,13 @@ export class AbilitySystem {
     const pos = p.position;
     const yaw = p.yaw;
     let extra;
+    // Dentro de un mundo: ¿hay un objetivo de misión al alcance de esta habilidad?
+    const mission = this.world.objectiveFor?.(ab.id, pos) ?? null;
+    if (mission) {
+      extra = { obj: mission.key };
+      if (!this.isOnline()) this.world.bridge.solveLocal(mission.key);
+      this.hud.toast(`${ab.icon} ¡${mission.def.label.split(':')[0]} lo consigue!`, 1400);
+    }
 
     switch (ab.id) {
       case ABILITY.SPRINT:
@@ -65,7 +72,7 @@ export class AbilitySystem {
         this.actionT = 0.45;
         const fx = Math.sin(yaw); const fz = Math.cos(yaw);
         const ax = pos.x + fx * 1.8; const az = pos.z + fz * 1.8;
-        extra = {};
+        extra = extra || {};
         const rock = this.world.interactables.nearestRock(ax, az, INTERACT.TACKLE_RANGE);
         if (rock >= 0) {
           extra.rock = rock;
@@ -87,13 +94,13 @@ export class AbilitySystem {
         this.actionT = ab.duration;
         const i = this.world.interactables.nearestDig(pos.x, pos.z, INTERACT.DIG_RANGE);
         if (i >= 0) {
-          extra = { dig: i };
+          extra = { ...extra, dig: i };
           if (!this.isOnline()) {
             this.world.interactables.setDig(i, 1);
             this.giveLocal(INTERACT.DIG_REWARD);
             setTimeout(() => this.world.interactables.setDig(i, 0, true), INTERACT.DIG_RESPAWN_MS);
           }
-        } else {
+        } else if (!mission) {
           this.hud.toast('Aquí no hay nada… ¡busca un montículo con una X!', 1600);
         }
         break;
@@ -251,6 +258,10 @@ export class AbilitySystem {
         this.world.interactables.forEachScentTarget((tx, ty, tz) => {
           if (Math.hypot(tx - ox, tz - oz) < 40) this.fx.emitTrail(ox, oy, oz, tx, ty, tz, '#9dff7a');
         });
+        // En los mundos, el olfato señala los objetivos pendientes.
+        for (const o of this.world.objectives || []) {
+          if (!o.solved) this.fx.emitTrail(ox, oy, oz, o.def.x, 1, o.def.z, '#7fd8ff');
+        }
         const col = this.world.collectibles;
         let n = 0;
         for (let i = 0; i < col.count && n < 4; i++) {

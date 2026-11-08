@@ -45,6 +45,7 @@ export class KeyboardMouseInput {
       if (code === 'Space') { this.input.pressJump(); e.preventDefault(); }
       if (code === 'KeyE' || code === 'KeyF') this.input.pressAbility();
       if (code === 'KeyQ' || code === 'KeyG') this.input.pressEmote();
+      if (code === 'KeyR' || code === 'Enter') this.input.pressInteract();
     } else {
       this.keys.delete(code);
     }

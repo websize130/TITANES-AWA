@@ -19,6 +19,10 @@ export class HUD {
     this.buffEl = document.getElementById('hud-buff');
     this.buffText = '';
     this.readyTimer = 0;
+    // Panel de misión plegable (un toque en el título).
+    document.getElementById('hud-mission').addEventListener('click', (e) => {
+      e.currentTarget.classList.toggle('collapsed');
+    });
   }
 
   /** Muestra el icono y color de la habilidad de la raza actual. */
@@ -54,6 +58,62 @@ export class HUD {
     if (text === this.buffText) return;
     this.buffText = text;
     this.buffEl.innerHTML = text;
+  }
+
+  // --------------------------------------------------------- mundos
+  /** Panel de misión: lista de objetivos con el icono de la raza que los resuelve. */
+  setMission(world, list) {
+    const el = document.getElementById('hud-mission');
+    if (!world) {
+      el.classList.add('hidden');
+      this.missionKey = null;
+      return;
+    }
+    const key = world.id + list.map((o) => (o.solved ? 1 : 0)).join('');
+    if (key === this.missionKey) return;
+    this.missionKey = key;
+    el.classList.remove('hidden');
+    document.documentElement.style.setProperty('--world', world.color);
+    document.getElementById('hm-title').textContent = world.title;
+    const ul = document.getElementById('hm-list');
+    ul.innerHTML = '';
+    for (const o of list) {
+      const li = document.createElement('li');
+      li.className = o.solved ? 'done' : '';
+      li.innerHTML = '<span class="ic"></span><span class="tx"></span>';
+      li.querySelector('.ic').textContent = o.solved ? '✔' : o.icon;
+      li.querySelector('.tx').textContent = o.label;
+      ul.appendChild(li);
+    }
+    const relic = document.createElement('li');
+    relic.className = 'relic';
+    const all = list.every((o) => o.solved);
+    relic.innerHTML = '<span class="ic">🏆</span><span class="tx"></span>';
+    relic.querySelector('.tx').textContent = all ? `¡A por la reliquia: ${world.relicName}!` : `Reliquia: ${world.relicName}`;
+    ul.appendChild(relic);
+  }
+
+  /** Acción contextual (tecla R / botón táctil). */
+  setPrompt(text, icon = '💬') {
+    if (text === this.promptText) return;
+    this.promptText = text;
+    const el = document.getElementById('hud-prompt');
+    el.classList.toggle('hidden', !text);
+    if (text) document.getElementById('hud-prompt-text').textContent = text;
+    const btn = document.getElementById('btn-interact');
+    btn.classList.toggle('hidden', !text);
+    btn.textContent = icon;
+    document.getElementById('hud-prompt-key').classList.toggle('hidden', !document.getElementById('touch-layer').classList.contains('hidden'));
+  }
+
+  /** Cartel central (cuenta atrás de portal, misión cumplida…). */
+  setBanner(html, big = false) {
+    if (html === this.bannerHtml) return;
+    this.bannerHtml = html;
+    const el = document.getElementById('hud-banner');
+    el.classList.toggle('hidden', !html);
+    el.classList.toggle('big', big);
+    if (html) el.innerHTML = html;
   }
 
   show(visible) {
