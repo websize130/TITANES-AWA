@@ -21,6 +21,7 @@ import {
 } from './WorldData.js';
 import { getBreed } from '../breeds/BreedData.js';
 import { mergeStatic } from '../world/mergeStatic.js';
+import { buildFlowerPatches, Butterflies } from '../world/Life.js';
 
 const PLATE_WINDOW = 1.3;
 const HIDDEN = -1000;
@@ -70,6 +71,24 @@ export class ThemedWorld {
     // Los engranajes giran: se quedan fuera de la fusión.
     for (const g of decor.userData.gears || []) g.traverse((o) => { o.userData.dynamic = true; });
     mergeStatic(decor);
+    // Vida: flores y mariposas en los mundos al aire libre.
+    if (['park', 'forest', 'desert', 'ice'].includes(def.id)) {
+      const big = def.pads.filter((p) => p[2] >= 8);
+      const sample = (r) => {
+        const [px, pz, w, d, top] = big[Math.floor(r() * big.length)];
+        const side = r() < 0.5 ? -1 : 1;
+        const x = px + side * (w / 2 - 1 - r() * 1.6);
+        const z = pz + (r() - 0.5) * (d - 2);
+        return { x, z, y: top };
+      };
+      if (def.id !== 'ice') this.group.add(buildFlowerPatches(sample, quality.name === 'low' ? 200 : 520, def.id.length * 7));
+      if (def.id !== 'desert') {
+        const homes = big.map(([px, pz, w, d, top]) => ({ x: px, z: pz, y: top }));
+        this.butterflies = new Butterflies(homes, quality.name === 'low' ? 8 : 18, def.id.length);
+        if (def.id === 'ice') for (let i = 0; i < 18; i++) { this.butterflies.right.setColorAt(i, new THREE.Color('#dff4ff')); this.butterflies.left.setColorAt(i, new THREE.Color('#dff4ff')); }
+        this.group.add(this.butterflies.group);
+      }
+    }
     this.group.userData.gears = decor.userData.gears;
     this.group.userData.snow = decor.userData.snow;
 
@@ -711,6 +730,7 @@ export class ThemedWorld {
     }
 
     // Decorado animado.
+    this.butterflies?.update(t);
     const gears = this.group.userData.gears;
     if (gears) for (const g of gears) g.rotation.x += dt * g.userData.spin;
     const snow = this.group.userData.snow;

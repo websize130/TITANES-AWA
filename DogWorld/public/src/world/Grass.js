@@ -55,12 +55,13 @@ export function buildGrass(quality) {
       .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
         normal = normalize(vNormal);`)
       .replace('vec4 diffuseColor = vec4( diffuse, opacity );', `
-        vec3 baseC = vec3(0.16, 0.42, 0.10);
-        vec3 tipC = vec3(0.62, 0.86, 0.28);
+        vec3 baseC = vec3(0.12, 0.38, 0.06);
+        vec3 tipC = vec3(0.6, 0.92, 0.22);
         vec4 diffuseColor = vec4(mix(baseC, tipC, vHeight), opacity);`);
   };
 
   const mesh = new THREE.InstancedMesh(blade, mat, count);
+  const tint = new THREE.Color();
   const rnd = mulberry32(42);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
@@ -81,7 +82,12 @@ export function buildGrass(quality) {
     q.setFromAxisAngle(up, rnd() * Math.PI);
     const sc = 0.7 + rnd() * 0.8;
     s.set(sc, sc * (0.8 + rnd() * 0.6), sc);
-    mesh.setMatrixAt(n++, m.compose(p, q, s));
+    mesh.setMatrixAt(n, m.compose(p, q, s));
+    // Variación de color por brizna: verdes amarillentos, intensos y alguno azulado.
+    const v = rnd();
+    tint.setRGB(0.85 + v * 0.3, 0.9 + rnd() * 0.2, 0.7 + rnd() * 0.45);
+    if (v > 0.92) tint.setRGB(1.25, 1.15, 0.6);
+    mesh.setColorAt(n++, tint);
   }
   mesh.count = n;
   mesh.receiveShadow = true;

@@ -5,8 +5,8 @@ import { getMaterials, scaleUVs, shadow } from './Materials.js';
 import { buildIslandUnderside } from './Terrain.js';
 import { mulberry32, glowTexture } from './Textures.js';
 
-export const SKY_TOP = new THREE.Color('#1f6fe0');
-export const SKY_HORIZON = new THREE.Color('#bfe3ff');
+export const SKY_TOP = new THREE.Color('#1a62e6');
+export const SKY_HORIZON = new THREE.Color('#a9dcff');
 
 /** Cúpula de cielo con degradado y sol (reutilizable en los mundos temáticos). */
 export function makeSkyDome(top, horizon, sunDir = new THREE.Vector3(0.35, 0.55, -0.75)) {

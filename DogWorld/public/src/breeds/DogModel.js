@@ -1,47 +1,132 @@
-// Constructor paramétrico de perros estilizados a partir de BreedData.model.
-// Jerarquía (permite ponerse a dos patas pivotando sobre la cadera trasera):
-//   root ─ rig ─ pelvis ─┬─ torso / manchas / pelaje
-//                        ├─ chest ─┬─ head ─ (jaw, ears, eyes…)
-//                        │         └─ legs.fl / legs.fr
-//                        ├─ legs.bl / legs.br  (contrarrotan para quedarse en el suelo)
-//                        └─ tail
+// Perros con formas orgánicas y pelaje real (shell fur).
+//  · El cuerpo se modela con elipsoides que se funden (pecho, lomo, cadera) en vez
+//    de cajas, así la silueta es suave como en la ilustración de referencia.
+//  · Las manchas de cada raza se pintan como colores de vértice: el pelo las hereda.
+//  · Atributo `furAmt` por vértice: sin pelo sobre ojos/nariz, pelo largo en orejas.
+// Jerarquía (para poder ponerse a dos patas pivotando en la cadera):
+//   root ─ rig ─ pelvis ─┬─ cuerpo / cola / patas traseras
+//                        └─ chest ─┬─ cuello / cabeza (jaw, ears, ojos…)
+//                                  └─ patas delanteras
 import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { mulberry32 } from '../world/Textures.js';
+import { addFur } from '../world/Fur.js';
 
-const geoCache = new Map();
-function rbox(w, h, d, r = 0.08, seg = 2) {
-  const key = `rb${w.toFixed(3)}_${h.toFixed(3)}_${d.toFixed(3)}_${r.toFixed(3)}_${seg}`;
-  if (!geoCache.has(key)) geoCache.set(key, new RoundedBoxGeometry(w, h, d, seg, Math.min(r, w / 2 - 0.001, h / 2 - 0.001, d / 2 - 0.001)));
-  return geoCache.get(key);
+const smooth = (a, b, x) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+/** Elipsoide liso (normales correctas tras escalar). */
+function ellipsoid(rx, ry, rz, ws = 30, hs = 22) {
+  const g = new THREE.SphereGeometry(1, ws, hs);
+  g.scale(rx, ry, rz);
+  return g.toNonIndexed();
 }
-function sphere(r, ws = 14, hs = 10) {
-  const key = `sp${r.toFixed(3)}_${ws}_${hs}`;
-  if (!geoCache.has(key)) geoCache.set(key, new THREE.SphereGeometry(r, ws, hs));
-  return geoCache.get(key);
+
+/** Pinta colores de vértice y cantidad de pelo con una función (x, y, z) -> [color, fur]. */
+function paint(geo, fn) {
+  const pos = geo.attributes.position;
+  const col = new Float32Array(pos.count * 3);
+  const fur = new Float32Array(pos.count);
+  const c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const r = fn(pos.getX(i), pos.getY(i), pos.getZ(i), c);
+    c.toArray(col, i * 3);
+    fur[i] = r ?? 1;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('furAmt', new THREE.BufferAttribute(fur, 1));
+  return geo;
+}
+
+/** Tubo cónico a lo largo de una curva (colas). */
+function taperedTube(points, r0, r1, radial = 12, tubular = 24) {
+  const curve = new THREE.CatmullRomCurve3(points);
+  const geo = new THREE.TubeGeometry(curve, tubular, 1, radial, false);
+  const pos = geo.attributes.position;
+  const center = new THREE.Vector3();
+  const p = new THREE.Vector3();
+  for (let i = 0; i <= tubular; i++) {
+    const t = i / tubular;
+    curve.getPointAt(t, center);
+    const r = r0 + (r1 - r0) * Math.pow(t, 0.8);
+    for (let j = 0; j <= radial; j++) {
+      const k = i * (radial + 1) + j;
+      p.fromBufferAttribute(pos, k).sub(center).multiplyScalar(r).add(center);
+      pos.setXYZ(k, p.x, p.y, p.z);
+    }
+  }
+  geo.computeVertexNormals();
+  // Cerrar la punta con una esfera pequeña.
+  const tip = new THREE.SphereGeometry(Math.max(r1, 0.01), 10, 8);
+  tip.translate(...points[points.length - 1].toArray());
+  return mergeGeometries([geo.toNonIndexed(), tip.toNonIndexed()]);
+}
+
+/** Oreja: elipsoide aplanado, puntiagudo opcional, con pivote en la base. */
+function earGeometry(w, h, t, pointy, hanging) {
+  const g = new THREE.SphereGeometry(1, 18, 14);
+  g.scale(w / 2, h / 2, t / 2);
+  const pos = g.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const yn = pos.getY(i) / (h / 2); // -1..1
+    if (pointy) {
+      const k = 1 - smooth(-0.3, 1, yn) * 0.85;
+      pos.setX(i, pos.getX(i) * k);
+    } else {
+      // Más ancha abajo (oreja caída redondeada).
+      const k = 0.75 + 0.35 * smooth(1, -0.6, yn);
+      pos.setX(i, pos.getX(i) * k);
+    }
+  }
+  g.computeVertexNormals();
+  g.translate(0, hanging ? -h / 2 : h / 2, 0);
+  return g.toNonIndexed();
+}
+
+/** Pata completa (muslo/brazo, caña, pata con dedos) en una sola geometría. */
+function legGeometry(len, w, rear) {
+  const parts = [];
+  const upper = new THREE.CapsuleGeometry(w * (rear ? 0.62 : 0.52), len * 0.42, 6, 14);
+  upper.translate(0, -len * 0.25, rear ? -0.02 : 0);
+  parts.push(upper);
+  const lower = new THREE.CapsuleGeometry(w * 0.4, len * 0.42, 6, 12);
+  lower.translate(0, -len * 0.66, rear ? -0.03 : 0.01);
+  parts.push(lower);
+  const paw = new THREE.SphereGeometry(1, 16, 12);
+  paw.scale(w * 0.62, w * 0.36, w * 0.8);
+  paw.translate(0, -len + w * 0.3, w * 0.22);
+  parts.push(paw);
+  // Deditos.
+  for (let i = -1; i <= 1; i++) {
+    const toe = new THREE.SphereGeometry(w * 0.2, 8, 6);
+    toe.translate(i * w * 0.26, -len + w * 0.24, w * 0.78);
+    parts.push(toe);
+  }
+  return mergeGeometries(parts.map((g) => g.toNonIndexed()));
 }
 
 export function buildDogModel(breed) {
   const m = breed.model;
   const C = m.colors;
   const mk = m.markings || {};
-  const rnd = mulberry32(breed.id.length * 977 + breed.id.charCodeAt(0));
+  const fur = m.fur || null;
+  const base = new THREE.Color(C.base);
+  const white = new THREE.Color(C.white);
+  const shade = new THREE.Color(C.shade);
+  const dirt = new THREE.Color(C.dirt || '#6b4a2e');
 
+  const skin = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 });
   const mats = {
-    base: new THREE.MeshStandardMaterial({ color: C.base, roughness: 0.78 }),
-    white: new THREE.MeshStandardMaterial({ color: C.white, roughness: 0.82 }),
-    shade: new THREE.MeshStandardMaterial({ color: C.shade, roughness: 0.8 }),
-    nose: new THREE.MeshStandardMaterial({ color: C.nose, roughness: 0.3, metalness: 0.1 }),
-    eye: new THREE.MeshStandardMaterial({ color: C.eyes, roughness: 0.2, emissive: C.eyes, emissiveIntensity: breed.id === 'blizzard' ? 0.6 : 0.05 }),
-    pupil: new THREE.MeshBasicMaterial({ color: '#0b0b0d' }),
+    skin,
+    nose: new THREE.MeshPhysicalMaterial({ color: C.nose, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.15 }),
+    eye: new THREE.MeshPhysicalMaterial({ color: C.eyes, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05, emissive: C.eyes, emissiveIntensity: breed.id === 'blizzard' ? 0.5 : 0.08 }),
+    pupil: new THREE.MeshPhysicalMaterial({ color: '#08060a', roughness: 0.05, clearcoat: 1 }),
     shine: new THREE.MeshBasicMaterial({ color: '#ffffff' }),
-    tongue: new THREE.MeshStandardMaterial({ color: C.tongue, roughness: 0.5 }),
-    mouth: new THREE.MeshStandardMaterial({ color: '#3a1218', roughness: 0.6 }),
-    dirt: new THREE.MeshStandardMaterial({ color: C.dirt || '#6b4a2e', roughness: 1 }),
+    tongue: new THREE.MeshStandardMaterial({ color: C.tongue, roughness: 0.45 }),
+    mouth: new THREE.MeshStandardMaterial({ color: '#3a1218', roughness: 0.7 }),
+    pads: new THREE.MeshStandardMaterial({ color: '#2a1a1a', roughness: 0.8 }),
   };
-  // Pelaje rizado (Rufus): color base un poco más cálido en las sombras.
-  const furMat = m.fluffy ? new THREE.MeshStandardMaterial({ color: C.base, roughness: 0.95 }) : mats.base;
 
   const root = new THREE.Group();
   root.name = `Dog-${breed.id}`;
@@ -49,239 +134,389 @@ export function buildDogModel(breed) {
   root.add(rig);
 
   const B = m.body;
+  const H = m.head;
+  const S = m.snout;
   const legLen = m.legLen;
   const hipY = legLen + B.h * 0.35;
   const halfL = B.l / 2;
+  const torsoZ = halfL - 0.12;
 
-  // Pelvis en la cadera trasera.
   const pelvis = new THREE.Group();
   pelvis.position.set(0, hipY, -halfL + 0.12);
   rig.add(pelvis);
 
-  const add = (parent, geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => {
-    const mesh = new THREE.Mesh(geo, mat);
+  const furred = [];
+  const part = (parent, geo, x = 0, y = 0, z = 0, furScale = 1) => {
+    const mesh = new THREE.Mesh(geo, skin);
     mesh.position.set(x, y, z);
-    mesh.scale.set(sx, sy, sz);
     mesh.castShadow = true;
+    mesh.receiveShadow = true;
     parent.add(mesh);
+    if (fur && furScale > 0) furred.push([mesh, furScale]);
     return mesh;
   };
 
-  // --- Torso ---
-  const torsoZ = halfL - 0.12;
-  const torso = add(pelvis, rbox(B.w, B.h, B.l, Math.min(B.w, B.h) * 0.42, 3), mats.base, 0, 0, torsoZ);
-  if (m.waist) {
-    // Galgo: pecho profundo y cintura estrecha.
-    torso.scale.set(0.82, 0.9, 1);
-    add(pelvis, sphere(B.w * 0.62), mats.base, 0, -0.02, torsoZ + B.l * 0.28, 1, 1.15, 1.1);
-  }
-  if (mk.chest) add(pelvis, sphere(B.w * 0.42), mats.white, 0, -B.h * 0.12, torsoZ + B.l * 0.42, 1, 1.15, 0.7);
-  if (mk.belly) add(pelvis, rbox(B.w * 0.78, B.h * 0.3, B.l * 0.75, 0.1), mats.white, 0, -B.h * 0.36, torsoZ + 0.02);
-  if (m.ruff) add(pelvis, sphere(B.w * 0.58), mk.chest ? mats.white : mats.base, 0, B.h * 0.08, torsoZ + B.l * 0.38, 1.1, 1.1, 0.8);
-  if (breed.id === 'goliath') {
-    // Manto marrón oscuro sobre el lomo.
-    add(pelvis, rbox(B.w * 1.02, B.h * 0.45, B.l * 0.62, 0.15), mats.base, 0, B.h * 0.32, torsoZ - 0.05);
+  // ------------------------------------------------------------ cuerpo
+  {
+    const waist = m.waist ? 0.86 : 1;
+    const torso = ellipsoid(B.w * 0.5 * waist, B.h * 0.48 * (m.waist ? 0.86 : 1), halfL * 1.0);
+    const chestE = ellipsoid(B.w * 0.54, B.h * (m.waist ? 0.62 : 0.55), B.l * 0.3);
+    chestE.translate(0, m.waist ? -0.04 : -0.02, B.l * 0.24);
+    const haunch = ellipsoid(B.w * 0.5, B.h * 0.5, B.l * 0.3);
+    haunch.translate(0, 0.02, -B.l * 0.24);
+    const parts = [torso, chestE, haunch];
+    if (m.ruff) {
+      const ruff = ellipsoid(B.w * 0.62, B.h * 0.6, B.l * 0.22);
+      ruff.translate(0, B.h * 0.1, B.l * 0.38);
+      parts.push(ruff);
+    }
+    const body = mergeGeometries(parts);
+    paint(body, (x, y, z, c) => {
+      const xn = x / (B.w * 0.5);
+      const yn = y / (B.h * 0.5);
+      const zn = z / halfL;
+      c.copy(base);
+      if (breed.id === 'goliath') {
+        // San Bernardo: manto oscuro en el lomo, blanco abajo y delante.
+        c.lerp(shade, smooth(0.25, 0.75, yn) * 0.35);
+      }
+      if (breed.id === 'rufus') c.lerp(shade, smooth(0.2, 1, yn) * 0.35); // tono crema en el lomo
+      if (mk.belly) c.lerp(white, smooth(-0.15, -0.5, yn));
+      if (mk.chest) c.lerp(white, smooth(0.25, 0.7, zn) * smooth(0.35, -0.2, yn));
+      if (mk.collarRing && zn > 0.55) c.lerp(white, smooth(0.55, 0.8, zn));
+      void xn;
+      return 1;
+    });
+    part(pelvis, body, 0, 0, torsoZ, 1);
   }
 
-  // --- Pecho (ancla de cabeza y patas delanteras) ---
+  // ------------------------------------------------------------ pecho, cuello, cabeza
   const chest = new THREE.Group();
   chest.position.set(0, 0.02, torsoZ + B.l * 0.38);
   pelvis.add(chest);
 
-  // --- Cabeza ---
-  const H = m.head;
   const head = new THREE.Group();
   head.position.set(0, B.h * 0.5 + H.h * 0.38, 0.12 + H.d * 0.1);
   chest.add(head);
-  const skull = add(head, rbox(H.w, H.h, H.d, Math.min(H.w, H.h) * 0.4, 3), mats.base, 0, 0, 0);
-  if (mk.mask) {
-    // Husky: cara blanca con "antifaz" oscuro sobre los ojos.
-    add(head, rbox(H.w * 0.9, H.h * 0.6, 0.08, 0.04), mats.white, 0, -H.h * 0.12, H.d / 2 - 0.01);
-    add(head, rbox(H.w * 0.16, H.h * 0.35, 0.06, 0.03), mats.base, 0, H.h * 0.2, H.d / 2 + 0.005);
-  }
-  if (mk.blaze) add(head, rbox(H.w * 0.2, H.h * 0.62, 0.06, 0.028), mats.white, 0, H.h * 0.1, H.d / 2 - 0.022);
-  if (mk.eyeMask) {
-    for (const sx of [-1, 1]) add(head, sphere(H.w * 0.17), mats.shade, sx * H.w * 0.24, H.h * 0.1, H.d / 2 - 0.04, 1, 0.85, 0.5);
+
+  {
+    // Cuello: cápsula del pecho a la cabeza.
+    const from = new THREE.Vector3(0, B.h * 0.1, -0.05);
+    const to = head.position.clone().add(new THREE.Vector3(0, -H.h * 0.25, -H.d * 0.15));
+    const len = from.distanceTo(to);
+    const neck = new THREE.CapsuleGeometry(H.w * (m.ruff ? 0.42 : 0.32), len, 6, 16);
+    neck.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize()));
+    neck.translate((from.x + to.x) / 2, (from.y + to.y) / 2, (from.z + to.z) / 2);
+    const neckG = neck.toNonIndexed();
+    paint(neckG, (x, y, z, c) => {
+      c.copy(base);
+      if (mk.collarRing) c.copy(white);
+      if (mk.chest) c.lerp(white, smooth(0.0, 0.12, z) * smooth(0.25, 0.0, y));
+      if (breed.id === 'rufus') c.lerp(shade, 0.15);
+      return 1;
+    });
+    part(chest, neckG, 0, 0, 0, 1);
   }
 
-  // Hocico + mandíbula articulada.
-  const S = m.snout;
-  const snoutMat = mk.muzzle ? mats.white : mats.base;
-  const snoutZ = H.d / 2 + S.l / 2 - 0.04;
-  const snout = add(head, rbox(S.w, S.h, S.l, Math.min(S.w, S.h) * 0.42), snoutMat, 0, -H.h * 0.16, snoutZ);
-  add(head, sphere(Math.max(0.045, S.w * 0.22)), mats.nose, 0, -H.h * 0.16 + S.h * 0.32, snoutZ + S.l / 2, 1.2, 0.85, 0.8);
-  if (m.jowls) {
-    for (const sx of [-1, 1]) add(head, sphere(S.w * 0.32), snoutMat, sx * S.w * 0.32, -H.h * 0.27, snoutZ + S.l * 0.1, 1, 1.05, 1.1);
+  // Ojos (posición sobre la superficie del cráneo).
+  const rx = H.w / 2;
+  const ry = H.h / 2;
+  const rz = H.d / 2;
+  const eyeR = H.w * (breed.id === 'rufus' ? 0.1 : 0.088);
+  const eyeX = H.w * 0.2;
+  const eyeY = H.h * 0.07;
+  const surfZ = (x, y) => rz * Math.sqrt(Math.max(0, 1 - (x / rx) ** 2 - (y / ry) ** 2));
+  const eyeZ = surfZ(eyeX, eyeY) - eyeR * 0.5;
+
+  {
+    const cranium = ellipsoid(rx, ry, rz);
+    const parts = [cranium];
+    // Mejillas y frente suaves.
+    for (const sx of [-1, 1]) {
+      const cheek = ellipsoid(rx * 0.5, ry * 0.45, rz * 0.5);
+      cheek.translate(sx * rx * 0.48, -ry * 0.35, rz * 0.3);
+      parts.push(cheek);
+    }
+    if (m.jowls) {
+      for (const sx of [-1, 1]) {
+        const jowl = ellipsoid(S.w * 0.32, S.h * 0.55, S.l * 0.5);
+        jowl.translate(sx * S.w * 0.32, -ry * 0.42, rz + S.l * 0.15);
+        parts.push(jowl);
+      }
+    }
+    const headG = mergeGeometries(parts);
+    paint(headG, (x, y, z, c) => {
+      const xn = x / rx;
+      const yn = y / ry;
+      const zn = z / rz;
+      c.copy(base);
+      if (breed.id === 'rufus') c.lerp(shade, smooth(0.3, 1, yn) * 0.2);
+      if (mk.mask) {
+        // Husky: cara blanca bajo los ojos y "cejas" blancas; capucha oscura.
+        const face = smooth(0.1, -0.1, yn) * smooth(-0.1, 0.4, zn);
+        const brows = smooth(0.32, 0.12, Math.hypot(Math.abs(xn) - 0.38, yn - 0.38)) * smooth(0.2, 0.5, zn);
+        c.lerp(white, Math.max(face, brows));
+      }
+      if (mk.blaze) c.lerp(white, smooth(0.22, 0.08, Math.abs(xn)) * smooth(0.2, 0.6, zn));
+      if (mk.muzzle) c.lerp(white, smooth(-0.05, -0.35, yn) * smooth(0.2, 0.7, zn));
+      if (mk.eyeMask) c.lerp(shade, smooth(0.42, 0.2, Math.hypot(Math.abs(xn) - 0.45, yn - 0.12)) * smooth(0.2, 0.6, zn));
+      // Sin pelo sobre los ojos; menos pelo en la cara.
+      let amt = 1;
+      const dEye = Math.hypot(Math.abs(x) - eyeX, y - eyeY);
+      if (z > 0) amt = smooth(eyeR * 0.9, eyeR * 2.2, dEye);
+      if (zn > 0.55) amt *= 0.4; // cara despejada: se ven los ojos y el hocico
+      return amt;
+    });
+    part(head, headG, 0, 0, 0, 1);
+  }
+
+  // Hocico + nariz + mandíbula.
+  const snoutZ = rz * 0.72 + S.l * 0.3;
+  const snoutY = -ry * 0.28;
+  {
+    // Hocico fundido con la cabeza: elipsoide principal + "puente" hacia la frente.
+    const front = ellipsoid(S.w * 0.55, S.h * 0.62, S.l * 0.66);
+    const bridge = ellipsoid(S.w * 0.5, S.h * 0.58, S.l * 0.5);
+    bridge.translate(0, S.h * 0.18, -S.l * 0.35);
+    const sn = mergeGeometries([front, bridge]);
+    paint(sn, (x, y, z, c) => {
+      c.copy(mk.muzzle || mk.mask ? white : base);
+      if (breed.id === 'rufus') c.copy(white);
+      return smooth(S.l * 0.55, S.l * 0.1, z) * 0.9 + 0.1; // menos pelo en la punta
+    });
+    part(head, sn, 0, snoutY, snoutZ, 0.5);
+  }
+  const nose = new THREE.Mesh(ellipsoid(S.w * 0.21, S.h * 0.17, S.w * 0.15), mats.nose);
+  nose.position.set(0, snoutY + S.h * 0.32, snoutZ + S.l * 0.62);
+  head.add(nose);
+  for (const sx of [-1, 1]) {
+    const nostril = new THREE.Mesh(new THREE.SphereGeometry(S.w * 0.05, 8, 6), mats.pupil);
+    nostril.position.set(sx * S.w * 0.07, snoutY + S.h * 0.29, snoutZ + S.l * 0.62 + S.w * 0.125);
+    head.add(nostril);
   }
   const jaw = new THREE.Group();
-  jaw.position.set(0, -H.h * 0.16 - S.h * 0.42, H.d / 2 - 0.06);
+  jaw.position.set(0, snoutY - S.h * 0.42, rz * 0.6);
   head.add(jaw);
-  add(jaw, rbox(S.w * 0.86, S.h * 0.38, S.l * 0.9, 0.04), snoutMat, 0, -0.01, S.l * 0.42);
-  add(jaw, rbox(S.w * 0.62, 0.025, S.l * 0.7), mats.mouth, 0, 0.04, S.l * 0.4);
-  const tongue = add(jaw, rbox(S.w * 0.42, 0.04, S.l * 0.7, 0.02), mats.tongue, 0, 0.05, S.l * 0.55);
-  if (m.jowls && breed.id === 'tyson') {
-    // Colmillos inferiores del bulldog.
-    for (const sx of [-1, 1]) add(jaw, new THREE.ConeGeometry(0.025, 0.07, 6), mats.shine, sx * S.w * 0.3, 0.07, S.l * 0.8);
+  {
+    const lower = ellipsoid(S.w * 0.42, S.h * 0.25, S.l * 0.55);
+    paint(lower, (x, y, z, c) => { c.copy(mk.muzzle || mk.mask || breed.id === 'rufus' ? white : base); return 0.4; });
+    const lm = new THREE.Mesh(lower, skin);
+    lm.position.set(0, 0, S.l * 0.5);
+    jaw.add(lm);
+    const inside = new THREE.Mesh(ellipsoid(S.w * 0.3, S.h * 0.06, S.l * 0.4), mats.mouth);
+    inside.position.set(0, S.h * 0.12, S.l * 0.5);
+    jaw.add(inside);
   }
+  const tongue = new THREE.Mesh(ellipsoid(S.w * 0.2, S.h * 0.06, S.l * 0.45), mats.tongue);
+  tongue.position.set(0, S.h * 0.16, S.l * 0.62);
+  jaw.add(tongue);
 
-  // Ojos (iris de color + pupila + brillo).
+  // Ojos grandes y brillantes con doble reflejo.
   for (const sx of [-1, 1]) {
-    const ex = sx * H.w * 0.24;
-    const ey = H.h * 0.1;
-    const ez = H.d / 2 - 0.015;
-    add(head, sphere(H.w * 0.1), mats.white, ex, ey, ez - 0.01, 1, 1, 0.6);
-    add(head, sphere(H.w * 0.08), mats.eye, ex, ey, ez + 0.012, 1, 1, 0.55);
-    add(head, sphere(H.w * 0.045), mats.pupil, ex, ey, ez + 0.03, 1, 1, 0.5);
-    add(head, sphere(H.w * 0.022), mats.shine, ex + 0.02, ey + 0.022, ez + 0.045);
+    const eye = new THREE.Group();
+    eye.position.set(sx * eyeX, eyeY, eyeZ);
+    eye.lookAt(sx * eyeX * 1.25, eyeY, eyeZ + 1);
+    head.add(eye);
+    const iris = new THREE.Mesh(new THREE.SphereGeometry(eyeR, 24, 18), mats.eye);
+    iris.scale.set(1, 1.08, 0.62);
+    eye.add(iris);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.68, 20, 14), mats.pupil);
+    pupil.position.z = eyeR * 0.3;
+    pupil.scale.set(1, 1.05, 0.5);
+    eye.add(pupil);
+    const s1 = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.24, 10, 8), mats.shine);
+    s1.position.set(eyeR * 0.3, eyeR * 0.35, eyeR * 0.72);
+    const s2 = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.11, 8, 6), mats.shine);
+    s2.position.set(-eyeR * 0.28, -eyeR * 0.3, eyeR * 0.74);
+    eye.add(s1, s2);
     if (breed.id === 'tyson') {
-      // Ceño fruncido.
-      const brow = add(head, rbox(H.w * 0.26, 0.05, 0.06, 0.02), mats.shade, ex, ey + H.h * 0.13, ez + 0.01);
-      brow.rotation.z = -sx * 0.35;
+      // Ceño fruncido del bulldog.
+      const brow = new THREE.Mesh(ellipsoid(eyeR * 1.3, eyeR * 0.35, eyeR * 0.6), skin);
+      paint(brow.geometry, (x, y, z, c) => { c.copy(shade); return 0; });
+      brow.position.set(sx * eyeX, eyeY + eyeR * 1.0, eyeZ + eyeR * 0.1);
+      brow.rotation.z = -sx * 0.4;
+      head.add(brow);
     }
   }
 
-  // Orejas.
+  // ------------------------------------------------------------ orejas
   const ears = [];
-  const earPivotY = H.h * 0.42;
   for (const sx of [-1, 1]) {
     const ear = new THREE.Group();
-    ear.position.set(sx * H.w * 0.36, earPivotY, -H.d * 0.05);
-    head.add(ear);
     ear.userData.side = sx;
+    head.add(ear);
+    let geo;
     let restZ = 0;
     let restX = 0;
+    let furScale = 1;
     switch (m.ears) {
       case 'upright': case 'bigUpright': case 'semi': {
         const big = m.ears === 'bigUpright';
-        const h = big ? H.h * 0.85 : H.h * 0.62;
-        const g = new THREE.ConeGeometry(big ? H.w * 0.24 : H.w * 0.18, h, 4, 1);
-        g.rotateY(Math.PI / 4);
-        g.scale(1, 1, 0.45);
-        g.translate(0, h / 2, 0);
-        add(ear, g, mats.base, 0, 0, 0);
-        const inner = g.clone();
-        inner.scale(0.6, 0.75, 0.5);
-        add(ear, inner, mk.mask || big ? mats.white : mats.shade, 0, 0.01, 0.03);
-        restZ = -sx * (big ? 0.32 : 0.18);
-        if (m.ears === 'semi') {
-          // Border collie: punta doblada hacia delante.
-          const tip = add(ear, sphere(H.w * 0.07), mats.base, 0, h * 0.82, 0.05, 1, 0.6, 0.6);
-          tip.userData.tip = true;
-          restX = 0.25;
-        }
+        geo = earGeometry(H.w * (big ? 0.44 : 0.34), H.h * (big ? 0.95 : 0.7), H.w * 0.1, true, false);
+        ear.position.set(sx * rx * 0.58, ry * 0.62, -rz * 0.1);
+        restZ = -sx * (big ? 0.3 : 0.18);
+        if (m.ears === 'semi') restX = 0.35;
+        furScale = 0.6;
+        paint(geo, (x, y, z, c) => {
+          c.copy(base);
+          // Interior claro.
+          if (z > 0) c.lerp(mk.mask || big ? white : new THREE.Color('#f2c4b8'), smooth(0.2, 0.6, 1 - y / (H.h * 0.9)) * 0.85);
+          if (m.ears === 'semi') c.lerp(white, smooth(0.6, 0.9, y / (H.h * 0.7)) * 0.3);
+          return z > 0 ? 0.3 : 1;
+        });
         break;
       }
       case 'rose': case 'fold': {
-        const g = rbox(H.w * 0.24, 0.05, H.d * 0.32, 0.02);
-        add(ear, g, mats.shade, sx * 0.04, 0.02, -0.04);
-        restZ = sx * (m.ears === 'rose' ? -0.6 : 0.45);
-        restX = m.ears === 'rose' ? -0.5 : 0.2;
+        geo = earGeometry(H.w * 0.3, H.h * 0.36, H.w * 0.07, false, true);
+        ear.position.set(sx * rx * 0.62, ry * 0.55, -rz * 0.15);
+        restZ = sx * (m.ears === 'rose' ? -1.2 : 0.9);
+        restX = m.ears === 'rose' ? -0.6 : 0.25;
+        furScale = 0.6;
+        paint(geo, (x, y, z, c) => { c.copy(shade).lerp(base, 0.4); return 1; });
         break;
       }
       case 'fluffy': {
-        // Bichón: orejas de algodón.
-        for (let i = 0; i < 4; i++) add(ear, sphere(H.w * 0.15, 10, 8), furMat, sx * 0.04, -0.06 - i * 0.07, (rnd() - 0.5) * 0.04);
-        restZ = sx * 0.15;
+        // Bichón: orejas largas caídas cubiertas de pelo (como la referencia).
+        geo = earGeometry(H.w * 0.36, H.h * 0.82, H.w * 0.16, false, true);
+        ear.position.set(sx * rx * 0.86, ry * 0.42, -rz * 0.05);
+        restZ = sx * 0.18;
+        furScale = 1.55;
+        paint(geo, (x, y, z, c) => { c.copy(white).lerp(shade, 0.35 + 0.2 * smooth(0, -H.h * 0.8, y)); return 1; });
         break;
       }
       default: { // floppy (San Bernardo)
-        const g = rbox(H.w * 0.24, H.h * 0.62, 0.08, 0.05);
-        const mesh = add(ear, g, mats.shade, sx * 0.04, -H.h * 0.28, 0);
-        mesh.rotation.z = sx * 0.15;
-        restZ = sx * 0.2;
+        geo = earGeometry(H.w * 0.38, H.h * 0.68, H.w * 0.1, false, true);
+        ear.position.set(sx * rx * 0.82, ry * 0.45, -rz * 0.1);
+        restZ = sx * 0.22;
+        furScale = 0.9;
+        paint(geo, (x, y, z, c) => { c.copy(shade).lerp(base, 0.25); return 1; });
       }
     }
-    ear.rotation.z = restZ;
-    ear.rotation.x = restX;
+    const earMesh = part(ear, geo, 0, 0, 0, furScale);
+    earMesh.scale.z = 1;
+    ear.rotation.set(restX, 0, restZ);
     ear.userData.restZ = restZ;
     ear.userData.restX = restX;
     ears.push(ear);
   }
 
-  // Pompón de pelo rizado (Rufus) sobre la cabeza y el hocico.
-  if (m.fluffy) {
-    const puffs = [];
-    for (let i = 0; i < 26; i++) {
-      const a = rnd() * Math.PI * 2;
-      const e = rnd() * Math.PI * 0.55;
-      const r = H.w * 0.5;
-      const g = new THREE.IcosahedronGeometry(H.w * (0.13 + rnd() * 0.06), 1);
-      g.translate(Math.cos(a) * Math.sin(e) * r, Math.cos(e) * r * 0.85 + 0.02, Math.sin(a) * Math.sin(e) * r * 0.8 - 0.04);
-      puffs.push(g);
-    }
-    for (let i = 0; i < 8; i++) {
-      const g = new THREE.IcosahedronGeometry(S.w * 0.24, 1);
-      g.translate((rnd() - 0.5) * S.w, -H.h * 0.2 + (rnd() - 0.5) * S.h * 0.5, snoutZ - S.l * 0.1 + rnd() * S.l * 0.3);
-      puffs.push(g);
-    }
-    add(head, mergeGeometries(puffs), furMat, 0, 0, 0);
-    // Rizos por el cuerpo.
-    const body = [];
-    for (let i = 0; i < 46; i++) {
-      const g = new THREE.IcosahedronGeometry(0.1 + rnd() * 0.06, 1);
-      const a = rnd() * Math.PI * 2;
-      g.translate(Math.cos(a) * B.w * 0.48, Math.sin(a) * B.h * 0.48, torsoZ + (rnd() - 0.5) * B.l * 0.95);
-      body.push(g);
-    }
-    add(pelvis, mergeGeometries(body), furMat, 0, 0, 0);
-  }
-
-  // Collar.
-  if (m.collar || mk.collarRing) {
-    const collarColor = m.collar ? m.collar.color : C.white;
-    const collarMat = new THREE.MeshStandardMaterial({ color: collarColor, roughness: 0.5 });
+  // ------------------------------------------------------------ collar
+  if (m.collar) {
+    const collarMat = new THREE.MeshStandardMaterial({ color: m.collar.color, roughness: 0.45 });
     mats.collar = collarMat;
-    const ring = add(chest, new THREE.TorusGeometry(H.w * 0.42, mk.collarRing ? 0.09 : 0.045, 8, 20), collarMat, 0, B.h * 0.45, 0.1);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(H.w * (m.ruff ? 0.5 : 0.42), 0.045, 10, 28), collarMat);
+    ring.position.set(0, B.h * 0.45, 0.1);
     ring.rotation.x = Math.PI / 2 - 0.45;
-    if (m.collar?.spikes) {
-      const spikeMat = new THREE.MeshStandardMaterial({ color: m.collar.spikes, metalness: 0.9, roughness: 0.25 });
+    chest.add(ring);
+    if (m.collar.spikes) {
+      const spikeMat = new THREE.MeshStandardMaterial({ color: m.collar.spikes, metalness: 0.9, roughness: 0.2 });
       mats.spikes = spikeMat;
-      for (let i = 0; i < 10; i++) {
-        const a = (i / 10) * Math.PI * 2;
-        const sp = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.11, 6), spikeMat);
-        sp.position.set(Math.cos(a) * H.w * 0.46, 0, Math.sin(a) * H.w * 0.46);
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        const sp = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 8), spikeMat);
+        const r = H.w * 0.46;
+        sp.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
         sp.rotation.z = -Math.PI / 2;
         sp.rotation.y = -a;
         ring.add(sp);
       }
     }
-    if (m.collar?.tag) {
-      const tag = add(chest, new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12), new THREE.MeshStandardMaterial({ color: m.collar.tag, metalness: 0.9, roughness: 0.25 }), 0, B.h * 0.18, 0.3);
+    if (m.collar.tag) {
+      const tagMat = new THREE.MeshStandardMaterial({ color: m.collar.tag, metalness: 0.9, roughness: 0.2 });
+      mats.tag = tagMat;
+      const tag = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.02, 16), tagMat);
+      tag.position.set(0, B.h * 0.17, 0.32);
       tag.rotation.x = Math.PI / 2;
+      chest.add(tag);
     }
   }
 
-  // --- Patas ---
+  // ------------------------------------------------------------ patas
   const legs = {};
-  const legGeo = rbox(m.legW, legLen + 0.06, m.legW * 1.05, m.legW * 0.4);
-  const pawGeo = sphere(m.legW * 0.62, 10, 8);
-  const makeLeg = (parent, x, y, z) => {
+  const legX = B.w * 0.3;
+  const makeLeg = (parent, x, y, z, rear) => {
     const leg = new THREE.Group();
     leg.position.set(x, y, z);
     parent.add(leg);
-    const mesh = add(leg, legGeo, m.fluffy ? furMat : mats.base, 0, -legLen / 2 + 0.02, 0);
-    if (m.fluffy) add(leg, sphere(m.legW * 0.75, 10, 8), furMat, 0, -legLen * 0.45, 0, 1, 1.4, 1);
-    const pawMat = mk.dirtyPaws ? mats.dirt : mk.paws ? mats.white : m.fluffy ? furMat : mats.base;
-    add(leg, pawGeo, pawMat, 0, -legLen + 0.03, 0.03, 1, 0.7, 1.25);
-    if (mk.paws && !mk.dirtyPaws) mesh.material = mats.base;
+    const geo = legGeometry(legLen + 0.06, m.legW, rear);
+    paint(geo, (px, py, pz, c) => {
+      const t = -py / (legLen + 0.06); // 0 arriba, 1 en el suelo
+      c.copy(base);
+      if (breed.id === 'rufus') c.lerp(shade, 0.15);
+      if (mk.paws) c.lerp(white, smooth(0.45, 0.7, t));
+      if (mk.dirtyPaws) c.lerp(dirt, smooth(0.82, 0.95, t));
+      if (mk.belly && !rear) c.lerp(white, smooth(0.2, 0.0, t) * 0.5);
+      return t > 0.85 ? 0.45 : 1;
+    });
+    part(leg, geo, 0, 0.02, 0, 0.85);
+    // Almohadillas bajo la pata.
+    const pad = new THREE.Mesh(new THREE.CircleGeometry(m.legW * 0.42, 14).rotateX(Math.PI / 2), mats.pads);
+    pad.position.set(0, -legLen + 0.035, m.legW * 0.22);
+    leg.add(pad);
     return leg;
   };
-  const legX = B.w * 0.32;
-  const frontY = -(hipY - legLen) + 0.02; // relativo al pecho
-  legs.fl = makeLeg(chest, -legX, frontY + 0.02, -0.05);
-  legs.fr = makeLeg(chest, legX, frontY + 0.02, -0.05);
-  legs.bl = makeLeg(pelvis, -legX, -(hipY - legLen), 0.02);
-  legs.br = makeLeg(pelvis, legX, -(hipY - legLen), 0.02);
+  const frontY = -(hipY - legLen) + 0.02;
+  legs.fl = makeLeg(chest, -legX, frontY + 0.02, -0.05, false);
+  legs.fr = makeLeg(chest, legX, frontY + 0.02, -0.05, false);
+  legs.bl = makeLeg(pelvis, -legX, -(hipY - legLen), 0.04, true);
+  legs.br = makeLeg(pelvis, legX, -(hipY - legLen), 0.04, true);
 
-  // --- Cola ---
+  // ------------------------------------------------------------ cola
   const tail = new THREE.Group();
-  tail.position.set(0, B.h * 0.28, -0.14);
+  tail.position.set(0, B.h * 0.28, -0.12);
   pelvis.add(tail);
-  buildTail(tail, m, mats, furMat, rnd);
+  {
+    const V = (x, y, z) => new THREE.Vector3(x, y, z);
+    let geo;
+    let furScale = 1;
+    switch (m.tail) {
+      case 'plume': // bichón: penacho que se curva hacia el lomo
+        geo = taperedTube([V(0, 0, 0), V(0, 0.2, -0.08), V(0, 0.38, 0.0), V(0, 0.42, 0.16)], 0.07, 0.045);
+        furScale = 2.1;
+        break;
+      case 'curlBushy': // husky: enroscada y poblada
+        geo = taperedTube([V(0, 0, 0), V(0, 0.22, -0.12), V(0, 0.36, 0.02), V(0.04, 0.3, 0.18)], 0.09, 0.06);
+        furScale = 1.8;
+        break;
+      case 'feather': // border collie: larga y con flecos
+        geo = taperedTube([V(0, 0, 0), V(0, -0.2, -0.18), V(0, -0.42, -0.26), V(0, -0.55, -0.2)], 0.06, 0.04);
+        furScale = 1.6;
+        break;
+      case 'long': // san bernardo
+        geo = taperedTube([V(0, 0, 0), V(0, -0.22, -0.16), V(0, -0.48, -0.22), V(0, -0.62, -0.14)], 0.075, 0.045);
+        furScale = 1.2;
+        break;
+      case 'thin': // galgo: fina y caída
+        geo = taperedTube([V(0, 0, 0), V(0, -0.2, -0.16), V(0, -0.45, -0.18), V(0, -0.6, -0.08)], 0.035, 0.015);
+        furScale = 0.6;
+        break;
+      case 'fluffStub': { // corgi: culete esponjoso
+        geo = ellipsoid(0.17, 0.14, 0.12);
+        geo.translate(0, -0.04, -0.03);
+        furScale = 1.8;
+        break;
+      }
+      default: // bulldog: cola corta
+        geo = ellipsoid(0.07, 0.09, 0.07);
+        furScale = 0.6;
+    }
+    paint(geo, (x, y, z, c) => {
+      c.copy(base);
+      if (breed.id === 'rufus') c.lerp(shade, 0.2);
+      if (m.tail === 'curlBushy' || m.tail === 'feather' || m.tail === 'long') c.lerp(white, smooth(0.3, 0.55, Math.hypot(y, z)));
+      if (m.tail === 'fluffStub') c.copy(white);
+      return 1;
+    });
+    part(tail, geo, 0, 0, 0, furScale);
+    tail.userData.restX = 0;
+  }
 
-  // Sombra de contacto barata (siempre visible, incluso sin shadow maps).
+  // Pelaje en todas las partes peludas.
+  if (fur) for (const [mesh, k] of furred) addFur(mesh, fur, k);
+
+  // Sombra de contacto (siempre visible, incluso sin shadow maps).
   const blob = new THREE.Mesh(
-    new THREE.CircleGeometry(Math.max(B.w, B.l) * 0.62, 20).rotateX(-Math.PI / 2),
+    new THREE.CircleGeometry(Math.max(B.w, B.l) * 0.62, 24).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.28, depthWrite: false }),
   );
   blob.position.y = 0.03;
@@ -291,94 +526,17 @@ export function buildDogModel(breed) {
   root.scale.setScalar(breed.stats.scale);
 
   return {
-    root, rig, pelvis, chest, head, jaw, tongue, ears, legs, tail, blob, skull, snout,
-    hipY, legLen, mats, furMat,
-    // Punto de la boca (para efectos de aliento/ladrido).
-    mouthOffset: new THREE.Vector3(0, -H.h * 0.18, H.d / 2 + S.l),
+    root, rig, pelvis, chest, head, jaw, tongue, ears, legs, tail, blob,
+    hipY, legLen, mats, furMat: skin,
+    mouthOffset: new THREE.Vector3(0, snoutY, snoutZ + S.l * 0.62),
     height: (hipY + B.h * 0.5 + H.h) * breed.stats.scale,
   };
 }
 
-function buildTail(tail, m, mats, furMat, rnd) {
-  const C = m.colors;
-  switch (m.tail) {
-    case 'plume': { // Bichón: penacho rizado sobre el lomo
-      const parts = [];
-      for (let i = 0; i < 9; i++) {
-        const t = i / 8;
-        const g = new THREE.IcosahedronGeometry(0.09 + t * 0.05, 1);
-        g.translate(0, 0.08 + Math.sin(t * 2.4) * 0.28, -0.05 + Math.cos(t * 2.4) * 0.1 + t * 0.18);
-        parts.push(g);
-      }
-      tail.add(new THREE.Mesh(mergeGeometries(parts), furMat));
-      tail.userData.restX = 0;
-      break;
-    }
-    case 'thin': case 'long': case 'feather': {
-      const len = m.tail === 'thin' ? 0.62 : m.tail === 'long' ? 0.7 : 0.6;
-      const segs = 5;
-      let parent = tail;
-      for (let i = 0; i < segs; i++) {
-        const seg = new THREE.Group();
-        seg.position.set(0, i === 0 ? 0 : len / segs, 0);
-        const w = m.tail === 'thin' ? 0.035 - i * 0.004 : m.tail === 'feather' ? 0.06 + i * 0.01 : 0.075 - i * 0.006;
-        const g = new THREE.CylinderGeometry(w * 0.8, w, len / segs + 0.02, 8);
-        g.translate(0, len / segs / 2, 0);
-        const isTip = i === segs - 1 && (m.tail === 'feather' || m.tail === 'long');
-        const mesh = new THREE.Mesh(g, isTip ? mats.white : mats.base);
-        mesh.castShadow = true;
-        seg.add(mesh);
-        if (m.tail === 'feather') {
-          const plume = new THREE.Mesh(new THREE.SphereGeometry(w * 1.6, 8, 6), isTip ? mats.white : mats.base);
-          plume.scale.set(0.7, 1.4, 1);
-          plume.position.set(0, len / segs / 2, -w * 0.5);
-          seg.add(plume);
-        }
-        seg.rotation.x = i === 0 ? -2.3 : 0.18;
-        parent.add(seg);
-        parent = seg;
-      }
-      tail.userData.restX = 0;
-      break;
-    }
-    case 'curlBushy': { // Husky: cola poblada enroscada sobre el lomo
-      const parts = [];
-      for (let i = 0; i < 8; i++) {
-        const t = i / 7;
-        const g = new THREE.SphereGeometry(0.1 + Math.sin(t * Math.PI) * 0.05, 10, 8);
-        g.translate(0, 0.05 + Math.sin(t * 2.6) * 0.32, -0.04 + Math.cos(t * 2.6) * 0.14 + t * 0.12);
-        parts.push(g);
-      }
-      tail.add(new THREE.Mesh(mergeGeometries(parts), mats.base));
-      const tip = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), mats.white);
-      tip.position.set(0, 0.2, 0.16);
-      tail.add(tip);
-      break;
-    }
-    case 'fluffStub': { // Corgi: culete esponjoso
-      const fluff = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), mats.white);
-      fluff.scale.set(1.2, 0.9, 0.7);
-      fluff.position.set(0, -0.05, -0.02);
-      tail.add(fluff);
-      const stub = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), mats.base);
-      stub.position.set(0, 0.06, -0.06);
-      tail.add(stub);
-      break;
-    }
-    default: { // stub (Bulldog)
-      const stub = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), mats.base);
-      stub.scale.set(1, 1.2, 1);
-      stub.position.set(0, 0.02, -0.04);
-      tail.add(stub);
-    }
-  }
-  tail.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-  void C; void rnd;
-}
-
 export function disposeDogModel(model) {
   for (const k of Object.keys(model.mats)) model.mats[k].dispose();
-  if (model.furMat !== model.mats.base) model.furMat.dispose();
+  model.root.traverse((o) => {
+    if (o.isMesh && o.geometry && !o.userData.isFur) o.geometry.dispose();
+  });
   model.blob.material.dispose();
-  model.blob.geometry.dispose();
 }

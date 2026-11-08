@@ -28,6 +28,9 @@ import { GoldenBoneField } from '../worlds/GoldenBoneField.js';
 import { GOLDEN_BONES, GOLDEN_BONE_REWARD } from '../worlds/GoldenBones.js';
 import { terrainHeight } from '../world/Terrain.js';
 import { TvHost, PAD } from './TvMode.js';
+import { setFurQuality } from '../world/Fur.js';
+import { PostFX } from './PostFX.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const PROGRESS_KEY = 'dogworld.progress';
 const ISABEL_KEY = 'dogworld.isabel';
@@ -37,13 +40,14 @@ export class Game {
     this.canvas = canvas;
     this.input = new InputManager(canvas);
     this.quality = getQualityProfile(this.input.isTouchDevice);
+    setFurQuality(this.quality.name);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas, antialias: this.quality.antialias, powerPreference: 'high-performance', stencil: false,
     });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 0.98;
     this.renderer.shadowMap.enabled = this.quality.shadows;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.pixelRatio = this.quality.pixelRatio;
@@ -51,6 +55,12 @@ export class Game {
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1200);
+    // Iluminación ambiental PBR (reflejos en oro, cristales, ojos…) compartida por todos los mundos.
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    this.scene.environment = this.envMap;
+    this.scene.environmentIntensity = 0.35;
+    this.postfx = new PostFX(this.renderer, this.scene, this.camera, this.quality);
 
     this.effects = new Effects(this.scene, this.quality.particles ? 700 : 350);
     this.world = new HubWorld(this.scene, this.quality);
@@ -455,6 +465,7 @@ export class Game {
     this.camera.fov = w < h ? 75 : 60;
     this.camera.updateProjectionMatrix();
     this.effects.setViewportHeight(h * this.renderer.getPixelRatio());
+    this.postfx?.setSize(w, h, this.renderer.getPixelRatio());
   }
 
   // ---------------------------------------------------------------------------
@@ -506,7 +517,7 @@ export class Game {
     } else {
       this.themed.sky.position.copy(this.camera.position);
     }
-    this.renderer.render(this.activeScene, this.camera);
+    this.postfx.render(this.activeScene, this.camera);
     this.input.endFrame();
     if (this.tv.active) this.tv.sendState();
 
@@ -595,6 +606,8 @@ export class Game {
       // Cada expedición empieza con un mundo recién construido (estado limpio).
       ctx = new ThemedWorld(WORLD_BY_ID[zone], this.quality, this.effects);
       ctx.bridge = this.makeBridge();
+      ctx.scene.environment = this.envMap;
+      ctx.scene.environmentIntensity = 0.35;
       ctx.goldField = new GoldenBoneField(zone, ctx.scene, ctx.collision, (x, z) => ctx.padTop(x, z), this.wallet);
       if (state) ctx.applyState(state);
       this.themed = ctx;
@@ -771,7 +784,7 @@ export class Game {
     navigator.vibrate?.([40, 60, 40]);
     this.tv?.haptic([40, 60, 80]);
     const n = this.wallet.golden.size;
-    this.hud.setBanner(`🦴 ¡Hueso Dorado! (${n}/${GOLDEN_BONES.length})<small>+${GOLDEN_BONE_REWARD} 🍪 · llévaselos a Josh Pablosky para conseguir recompensas</small>`, true);
+    this.hud.setBanner(`🦴 ¡Hueso Dorado! (${n}/${GOLDEN_BONES.length})<small>+${GOLDEN_BONE_REWARD} 🍪 · llévaselos a Josh para conseguir recompensas</small>`, true);
     setTimeout(() => this.hud.setBanner(null), 3200);
   }
 

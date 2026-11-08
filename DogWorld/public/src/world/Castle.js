@@ -210,6 +210,54 @@ export function buildCastle(collision, quality) {
   keepGlow.position.set(0, BASE_Y + 12, -116.95);
   group.add(keepGlow);
 
+  // ---------------- Hiedra en muros y torres (castillo "vivo") ----------------
+  {
+    const leafGeo = new THREE.IcosahedronGeometry(0.42, 0);
+    const ivy = new THREE.InstancedMesh(leafGeo, new THREE.MeshStandardMaterial({ roughness: 0.85, flatShading: true }), 520);
+    const mtx = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const e = new THREE.Euler();
+    const pos = new THREE.Vector3();
+    const sc = new THREE.Vector3();
+    const col = new THREE.Color();
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    let n = 0;
+    const put = (x, y, z) => {
+      if (n >= 520) return;
+      e.set(rnd() * 3, rnd() * 3, rnd() * 3);
+      q.setFromEuler(e);
+      const k = 0.6 + rnd() * 0.9;
+      sc.set(k, k * 0.8, k);
+      ivy.setMatrixAt(n, mtx.compose(pos.set(x, y, z), q, sc));
+      ivy.setColorAt(n, col.setHSL(0.26 + rnd() * 0.08, 0.55 + rnd() * 0.2, 0.26 + rnd() * 0.14));
+      n++;
+    };
+    // Cascadas de hiedra que cuelgan de la muralla frontal.
+    for (let k = 0; k < 9; k++) {
+      const x0 = (k < 5 ? -23 : 8) + (k % 5) * 3.4 + rnd() * 1.5;
+      const len = 3 + rnd() * 5;
+      for (let y = 9; y > 9 - len; y -= 0.45) put(x0 + Math.sin(y * 1.3) * 0.4, BASE_Y + y, frontZ + 1.55);
+    }
+    // Arbustos de hiedra al pie de muros y torres.
+    for (let i = 0; i < 160; i++) {
+      const x = -28 + rnd() * 56;
+      put(x, BASE_Y + rnd() * 1.2, frontZ + 1.6 + rnd() * 0.4);
+    }
+    // Hiedra trepando por las torres del portón.
+    for (const tx of [-7.5, 7.5, -26, 26]) {
+      for (let y = 0; y < 7; y += 0.5) {
+        const a = Math.PI / 2 + Math.sin(y * 0.9 + tx) * 0.8;
+        const r = tx === -7.5 || tx === 7.5 ? 3.0 : 4.0;
+        put(tx + Math.cos(a) * r, BASE_Y + y, frontZ + 0.5 + Math.sin(a) * r);
+      }
+    }
+    ivy.count = n;
+    ivy.castShadow = true;
+    ivy.receiveShadow = true;
+    group.add(ivy);
+  }
+
   // ---------------- Puente de piedra ----------------
   buildBridge(group, collision, M);
 

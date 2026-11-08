@@ -51,14 +51,15 @@ export function buildProps(collision, quality) {
     const s = new THREE.Vector3();
     const p = new THREE.Vector3();
     const e = new THREE.Euler();
-    const stoneColor = new THREE.Color('#d9b48a');
+    // Adoquines cálidos (rosados, anaranjados y arena) como en la ilustración.
+    const stonePalette = ['#e0a982', '#d39270', '#e8c09a', '#c98a6a', '#dcb08c'].map((c) => new THREE.Color(c));
     stones.forEach((st, i) => {
       p.set(st.x, h(st.x, st.z) + 0.04, st.z);
       e.set(0, st.ry, 0);
       q.setFromEuler(e);
       s.set(st.r, 0.14, st.r * 0.9);
       inst.setMatrixAt(i, mtx.compose(p, q, s));
-      tmpColor.copy(stoneColor).multiplyScalar(st.shade);
+      tmpColor.copy(stonePalette[Math.floor(st.shade * 997) % stonePalette.length]).multiplyScalar(0.85 + (st.shade - 0.75) * 0.6);
       inst.setColorAt(i, tmpColor);
     });
     inst.receiveShadow = true;

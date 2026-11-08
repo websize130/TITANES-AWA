@@ -22,7 +22,7 @@ export const GOLDEN_BONES = Object.freeze([
 ]);
 
 export const GOLDEN_BONE_REWARD = 10; // galletas por hueso
-/** Recompensas de Josh Pablosky por número de Huesos Dorados. */
+/** Recompensas de Josh por número de Huesos Dorados. */
 export const GUARDIAN_REWARDS = Object.freeze([
   { count: 5, item: 'lion_cape' },
   { count: 10, item: 'crown' },

@@ -1,6 +1,6 @@
 // Catálogo de accesorios de la Tienda de Cheila (datos puros: cliente y servidor).
 // Ranuras: head (cabeza), eyes (gafas), neck (cuello), back (espalda).
-// `reward` = no se vende: lo regala un NPC (Josh por Huesos Dorados, PixelHugo…).
+// `reward` = no se vende: lo regala un NPC (Josh por Huesos Dorados, Pablosky…).
 
 export const SLOTS = Object.freeze([
   { id: 'head', name: 'Sombreros', icon: '🎩' },
@@ -20,7 +20,7 @@ export const COSMETICS = Object.freeze([
   { id: 'sunglasses', slot: 'eyes', name: 'Gafas de sol', icon: '🕶️', price: 15, color: '#2a1a10' },
   { id: 'round_glasses', slot: 'eyes', name: 'Gafas de sabio', icon: '👓', price: 12, color: '#3a3a3a' },
   { id: 'heart_glasses', slot: 'eyes', name: 'Gafas de corazón', icon: '💖', price: 20, color: '#ff4f9a' },
-  { id: 'pixel_glasses', slot: 'eyes', name: 'Gafas pixeladas', icon: '🟫', price: 0, color: '#1a1a1a', reward: 'Regalo de PixelHugo' },
+  { id: 'pixel_glasses', slot: 'eyes', name: 'Gafas pixeladas', icon: '🟫', price: 0, color: '#1a1a1a', reward: 'Regalo de Pablosky' },
 
   { id: 'bandana', slot: 'neck', name: 'Pañuelo aventurero', icon: '🧣', price: 8, color: '#e2563b' },
   { id: 'bowtie', slot: 'neck', name: 'Pajarita elegante', icon: '🤵', price: 12, color: '#3a5ae0' },

@@ -84,8 +84,8 @@ Acércate y pulsa **R** (o 💬 en móvil / B en mando) para hablar con ellos.
 | Cheila | Su puesto rosa junto a la explanada | **Tienda de Ropa**: accesorios para los perros |
 | Chalai, la pastelera | Puesto de galletas | Regala una bandeja de 15 🍪 al día |
 | Chukymary, el maestro | Dojo (tatami rojo) | Lecciones sobre controles y habilidades |
-| Josh Pablosky, el caballero | Junto al puente | Guardián de los Huesos Dorados: recompensas con 5, 10 y 15 |
-| PixelHugo, el monje pixelado | Con su perro de bloques | Explica el Modo TV y regala gafas pixeladas |
+| Josh, el caballero | Junto al puente | Guardián de los Huesos Dorados: recompensas con 5, 10 y 15 |
+| Pablosky, el monje pixelado | Con su perro de bloques | Explica el Modo TV y regala gafas pixeladas |
 | MagaLuna, la maga | Círculo de cristales rojos | Bendición de súper salto (20 s, cada minuto) |
 
 Los aspectos siguen las ilustraciones de referencia (modelos procedurales, sustituibles por GLB).
@@ -112,6 +112,20 @@ Los datos están en `public/src/npcs/NpcData.js`.
    táctiles ni paneles. En menús, selección de perro, tienda y diálogos el stick funciona como cruceta.
 
 El móvil no carga el mundo 3D (ahorra batería). Requiere el servidor (el emparejamiento va por WebSocket).
+
+## Gráficos
+
+- **Pelaje real (shell fur)**: los perros y el pelo/barbas de los personajes se dibujan con capas de
+  pelo en GPU (una draw call por parte gracias a instancing): mechones con raíz oscura y puntas claras,
+  gravedad, rizo y movimiento. Capas según calidad: bajo 6, medio 10, alto 16.
+- **Modelos orgánicos**: perros con elipsoides fundidos, manchas de cada raza pintadas por vértice,
+  ojos brillantes con doble reflejo; personajes articulados (hombro, codo, mano, rodilla) con cara
+  expresiva, faldas con pliegues, capas, armaduras y sombreros detallados.
+- **Escena viva**: macizos de flores con pétalos, mariposas, hiedra en el castillo, césped con
+  variación de color, luz dorada de tarde, iluminación ambiental PBR y posprocesado (bloom suave,
+  gradación de color y viñeta; desactivado en calidad baja).
+- **Galería de personajes**: `/galeria.html?dog=rufus` o `?npc=isabel` (añade `&q=low|medium|high`,
+  `&anim=run|gesture`, `&yaw=0.5`) para ver cada modelo aislado.
 
 ## Estructura
 

@@ -6,8 +6,8 @@
 //   shop     — Cheila: Tienda de Ropa (accesorios para los perros)
 //   bakery   — Chalai: pastelera, regalo diario de galletas
 //   master   — Chukymary: maestro de artes marciales, consejos de habilidades
-//   guardian — Josh Pablosky: guardián de los Huesos Dorados y sus recompensas
-//   pixel    — PixelHugo: monje pixelado, explica el Modo TV y regala gafas pixeladas
+//   guardian — Josh: guardián de los Huesos Dorados y sus recompensas
+//   pixel    — Pablosky: monje pixelado, explica el Modo TV y regala gafas pixeladas
 //   magic    — MagaLuna: bendición mágica temporal (súper salto)
 
 export const NPCS = [
@@ -99,7 +99,7 @@ export const NPCS = [
   },
   {
     id: 'josh',
-    name: 'Josh Pablosky',
+    name: 'Josh',
     title: 'el caballero guardián',
     portrait: '🛡️',
     color: '#e2563b',
@@ -121,7 +121,7 @@ export const NPCS = [
   },
   {
     id: 'pixelhugo',
-    name: 'PixelHugo',
+    name: 'Pablosky',
     title: 'el monje pixelado',
     portrait: '🧱',
     color: '#c98a4a',
@@ -130,7 +130,7 @@ export const NPCS = [
     decor: 'pixel',
     greeting: '¡Buenas! Todo lo que toco se vuelve de bloques. ¿Sabías que puedes jugar en la tele y usar tu móvil como mando? Te lo explico.',
     look: {
-      voxel: true,
+      pixelRobe: true, hoodDown: '#7a4a2a', // túnica pixelada con capucha caída, como en su ilustración
       skin: '#d9a07a', eyes: '#2a1a10', brows: '#3a2414',
       hair: { style: 'short', color: '#4a2a18' },
       beard: { style: 'full', color: '#3a2414' },

@@ -244,7 +244,7 @@ const DECOR = {
     g.add(bone);
   },
   pixel(g) {
-    // Farol de bloques y perro de bloques (compañero de PixelHugo).
+    // Farol de bloques y perro de bloques (compañero de Pablosky).
     const wood = new THREE.MeshStandardMaterial({ color: '#9a6a3a', flatShading: true });
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.6, 0.3), wood);
     post.position.set(-1.4, 1.3, -0.6);
