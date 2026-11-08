@@ -53,6 +53,7 @@ export class NetworkClient {
   static defaultUrl() {
     const custom = new URLSearchParams(location.search).get('server');
     if (custom) return custom;
+    if (location.protocol === 'file:') return ''; // HTML abierto desde el disco: modo local
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${proto}//${location.host}/ws`;
   }
@@ -127,6 +128,10 @@ export class NetworkClient {
   open() {
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
       if (this.ws.readyState === WebSocket.OPEN && this.joinInfo) this.sendJoin();
+      return;
+    }
+    if (!this.url) {
+      this.failPending(new Error('Sin servidor: modo local'));
       return;
     }
     let ws;

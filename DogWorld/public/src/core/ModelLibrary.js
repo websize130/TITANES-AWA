@@ -26,6 +26,7 @@ export const ModelLibrary = {
   async load(renderer = null) {
     if (this.loaded) return;
     this.loaded = true;
+    if (location.protocol === 'file:') return; // HTML autónomo: sin carpeta de modelos
     let manifest;
     try {
       const res = await fetch(`${BASE}manifest.json`, { cache: 'no-cache' });
