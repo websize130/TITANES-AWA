@@ -6,6 +6,7 @@ import { getBreed } from '../breeds/BreedData.js';
 import { buildDogModel, disposeDogModel } from '../breeds/DogModel.js';
 import { GESTURES, resetPose, poseIdle, poseRun, poseAir } from '../breeds/DogPoses.js';
 import { attachCosmetics, animateCosmetics } from '../cosmetics/CosmeticModels.js';
+import { ModelLibrary } from '../core/ModelLibrary.js';
 
 const _v = new THREE.Vector3();
 const _d = new THREE.Vector3();
@@ -16,7 +17,9 @@ export class DogAvatar {
   constructor(breedId, fx = null) {
     this.breed = getBreed(breedId);
     this.fx = fx;
-    this.model = buildDogModel(this.breed);
+    // Modelo profesional (GLB) si existe en /assets/models; si no, el procedural.
+    this.glb = ModelLibrary.instantiate('dog', this.breed.id);
+    this.model = this.glb ? glbDogAdapter(this.glb, this.breed) : buildDogModel(this.breed);
     this.root = this.model.root;
     this.height = this.model.height;
     this.anim = ANIM.IDLE;
@@ -108,6 +111,10 @@ export class DogAvatar {
    * anim: estado de red; speed01: velocidad normalizada; groundGap: altura sobre el suelo.
    */
   update(dt, anim, speed01, groundGap = 0) {
+    if (this.glb) {
+      this.updateGlb(dt, anim, speed01, groundGap);
+      return;
+    }
     const md = this.model;
     this.time += dt;
     this.speed01 += (speed01 - this.speed01) * Math.min(1, dt * 10);
@@ -160,12 +167,37 @@ export class DogAvatar {
     this.root.add(this.label);
   }
 
+  /** Animación por clips para modelos GLB (idle/run/jump/fall/emote/action). */
+  updateGlb(dt, anim, speed01, groundGap) {
+    const g = this.glb;
+    this.time += dt;
+    this.speed01 += (speed01 - this.speed01) * Math.min(1, dt * 10);
+    const want = anim === ANIM.RUN ? 'run'
+      : anim === ANIM.JUMP ? 'jump'
+        : anim === ANIM.FALL ? (g.actions.fall ? 'fall' : 'jump')
+          : anim === ANIM.EMOTE ? 'emote'
+            : anim === ANIM.ACTION ? (g.actions.action ? 'action' : 'emote')
+              : anim === -1 ? 'emote' : 'idle';
+    if (!g.play(want)) g.play('idle');
+    if (g.actions.run) g.actions.run.timeScale = 0.6 + this.speed01 * 0.8;
+    g.mixer.update(dt);
+    this.anim = anim;
+    if (this.cosmetics.length) animateCosmetics(this.cosmetics, this.time, this.speed01);
+    const md = this.model;
+    const k = THREE.MathUtils.clamp(1 - groundGap / 6, 0.2, 1);
+    md.blob.position.y = -groundGap + 0.03;
+    md.blob.scale.setScalar(k);
+    md.blob.material.opacity = 0.28 * k;
+    md.blob.visible = Number.isFinite(groundGap) && groundGap < 12;
+  }
+
   dispose() {
     if (this.label) {
       this.label.material.map.dispose();
       this.label.material.dispose();
     }
-    disposeDogModel(this.model);
+    if (this.glb) this.glb.mixer.stopAllAction();
+    else disposeDogModel(this.model);
   }
 }
 
@@ -194,4 +226,27 @@ function makeNameLabel(name, accent) {
   sprite.scale.set(2, 0.5, 1);
   sprite.renderOrder = 2;
   return sprite;
+}
+
+/**
+ * Adapta un modelo GLB a la interfaz del modelo procedural (cabeza, pecho, pelvis…)
+ * para que efectos y accesorios sigan funcionando.
+ */
+function glbDogAdapter(glb, breed) {
+  const root = glb.root;
+  const head = glb.bone('head') ?? root;
+  const chest = glb.bone('chest') ?? glb.bone('spine') ?? root;
+  const pelvis = glb.bone('pelvis') ?? glb.bone('hips') ?? root;
+  const blob = new THREE.Mesh(new THREE.CircleGeometry(0.5 * breed.stats.scale, 24).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.28, depthWrite: false }));
+  blob.position.y = 0.03;
+  blob.renderOrder = 1;
+  root.add(blob);
+  const dummy = new THREE.Object3D();
+  return {
+    root, rig: root, pelvis, chest, head, jaw: dummy, tongue: dummy, ears: [], blob,
+    legs: { fl: chest, fr: chest, bl: pelvis, br: pelvis },
+    legLen: 0.3, hipY: 0.5, mats: {}, mouthOffset: new THREE.Vector3(0, 0, 0.3),
+    height: glb.height || 1,
+  };
 }

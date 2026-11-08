@@ -127,6 +127,12 @@ El móvil no carga el mundo 3D (ahorra batería). Requiere el servidor (el empar
 - **Galería de personajes**: `/galeria.html?dog=rufus` o `?npc=isabel` (añade `&q=low|medium|high`,
   `&anim=run|gesture`, `&yaw=0.5`) para ver cada modelo aislado.
 
+## Modelos profesionales (GLB)
+
+Coloca modelos GLB en `public/assets/models/` y lístalos en `manifest.json`: el juego los usa en lugar
+de los modelos procedurales (con esqueleto y animaciones), en el juego, la selección, la tienda y la galería.
+Admite Draco, Meshopt y KTX2. Guía completa en `public/assets/models/README.md`.
+
 ## Estructura
 
 ```

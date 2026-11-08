@@ -9,8 +9,10 @@ import { NpcCharacter } from '../npcs/NpcModel.js';
 import { setFurQuality } from '../world/Fur.js';
 import { windUniforms } from '../world/Wind.js';
 import { ANIM } from '../net/protocol.js';
+import { ModelLibrary } from '../core/ModelLibrary.js';
 
 const params = new URLSearchParams(location.search);
+await ModelLibrary.load();
 setFurQuality(params.get('q') || 'high');
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });

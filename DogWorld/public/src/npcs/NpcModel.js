@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { glowTexture, drawPaw } from '../world/Textures.js';
 import { addFur } from '../world/Fur.js';
+import { ModelLibrary } from '../core/ModelLibrary.js';
 
 const _v = new THREE.Vector3();
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -44,6 +45,13 @@ export class NpcCharacter {
     this.time = Math.random() * 10;
     this.waveT = 0;
     this.mats = [];
+    // Modelo profesional (GLB) si existe; si no, el procedural.
+    this.glb = ModelLibrary.instantiate('npc', def.id);
+    if (this.glb) {
+      this.root.add(this.glb.root);
+      this.head = this.glb.bone('head') ?? this.root;
+      return;
+    }
     this.build(def.look);
     this.root.traverse((o) => { if (o.isMesh && !o.userData.isFur) o.castShadow = true; });
     const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.6, 24).rotateX(-Math.PI / 2),
@@ -649,11 +657,26 @@ export class NpcCharacter {
     }
   }
 
-  wave() { this.waveT = 1.6; }
+  wave() {
+    this.waveT = 1.6;
+    if (this.glb?.actions.wave) this.glb.play('wave', 0.2, true);
+  }
 
   update(dt, lookAt, fx) {
     this.time += dt;
     const t = this.time;
+    if (this.glb) {
+      if (this.waveT > 0) this.waveT -= dt;
+      else this.glb.play('idle');
+      this.glb.mixer.update(dt);
+      if (lookAt) {
+        let d = Math.atan2(lookAt.x - this.root.position.x, lookAt.z - this.root.position.z) - this.root.rotation.y;
+        while (d > Math.PI) d -= Math.PI * 2;
+        while (d < -Math.PI) d += Math.PI * 2;
+        this.root.rotation.y += d * Math.min(1, dt * 2.5);
+      }
+      return;
+    }
     this.applyPose(this.def.look.pose, t);
     this.body.scale.y = 1 + Math.sin(t * 1.8) * 0.006; // respiración
     if (this.waveT > 0) {

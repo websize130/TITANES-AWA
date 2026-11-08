@@ -1,6 +1,7 @@
 // Punto de entrada de DogWorld: El Despertar del Castillo.
 import { Game } from './core/Game.js';
 import { RemotePad } from './ui/RemotePad.js';
+import { ModelLibrary } from './core/ModelLibrary.js';
 
 const canvas = document.getElementById('game-canvas');
 const params = new URLSearchParams(location.search);
@@ -10,6 +11,8 @@ if (params.has('mando')) {
   const pad = new RemotePad(params.get('mando'));
   if (params.has('debug')) window.dogpad = pad;
 } else {
+  // Modelos GLB profesionales (si existen) antes de construir el mundo.
+  await ModelLibrary.load();
   try {
     const game = new Game(canvas);
     // Acceso para depuración desde la consola.
