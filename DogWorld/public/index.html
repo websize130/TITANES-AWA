@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#5a2d91" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <title>DogWorld: El Despertar del Castillo</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/build/three.module.js",
+        "three/addons/": "/vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <canvas id="game-canvas" aria-label="Mundo 3D de DogWorld"></canvas>
+
+    <!-- HUD de partida: ultra limpio, sin marcas ni logos -->
+    <div id="hud" class="hidden" aria-live="polite">
+      <div class="hud-top-left">
+        <div class="hud-pill" id="hud-bones" title="Galletas">
+          <span class="hud-emoji">🍪</span>
+          <span id="hud-bones-count">0</span>
+        </div>
+        <div class="hud-pill hud-small hud-golden" id="hud-golden" title="Huesos Dorados">
+          <span class="hud-emoji">🦴</span><span id="hud-golden-count">0/15</span>
+        </div>
+      </div>
+      <div class="hud-top-right">
+        <div class="hud-pill hud-small" id="hud-players" title="Jugadores en la sala">
+          <span class="dot" id="hud-net-dot"></span><span id="hud-players-count">1</span>
+        </div>
+        <button class="hud-btn" id="hud-pause" aria-label="Pausa">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>
+        </button>
+      </div>
+      <div id="hud-toast" class="hud-toast"></div>
+      <!-- Habilidad (PC): icono, tecla y cooldown -->
+      <div class="hud-ability ability-btn hidden" id="hud-ability">
+        <span class="ab-icon">🎉</span><span class="cd-fill"></span>
+        <span class="ab-key">E</span>
+        <span class="ab-emote">Q gesto</span>
+      </div>
+      <div class="hud-buff" id="hud-buff"></div>
+      <!-- Misión del mundo actual -->
+      <div class="hud-mission hidden" id="hud-mission">
+        <div class="hm-title" id="hm-title"></div>
+        <ul id="hm-list"></ul>
+      </div>
+      <!-- Acción contextual (hablar con Isabel, pulsar interruptor…) -->
+      <div class="hud-prompt hidden" id="hud-prompt"><span class="key" id="hud-prompt-key">R</span><span id="hud-prompt-text"></span></div>
+      <div class="hud-banner hidden" id="hud-banner"></div>
+    </div>
+
+    <!-- Controles táctiles (solo dispositivos táctiles) -->
+    <div id="touch-layer" class="hidden">
+      <div id="touch-move-zone"></div>
+      <div id="touch-look-zone"></div>
+      <div id="joystick" class="joystick hidden"><div class="joystick-knob"></div></div>
+      <button class="touch-btn touch-jump" id="btn-jump" aria-label="Saltar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l7 8h-4v6H9v-6H5z"/></svg>
+      </button>
+      <button class="touch-btn touch-action ability-btn" id="btn-action" aria-label="Habilidad">
+        <span class="ab-icon">🎉</span><span class="cd-fill"></span>
+      </button>
+      <button class="touch-btn touch-interact hidden" id="btn-interact" aria-label="Interactuar">💬</button>
+      <button class="touch-btn touch-emote" id="btn-emote" aria-label="Gesto de personalidad">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-1.7 0-3 1.6-3 3.5S10.3 10 12 10s3-1.6 3-3.5S13.7 3 12 3zM5.5 8C4.1 8 3 9.3 3 11s1.1 3 2.5 3S8 12.7 8 11 6.9 8 5.5 8zm13 0C17.1 8 16 9.3 16 11s1.1 3 2.5 3S21 12.7 21 11s-1.1-3-2.5-3zM12 12c-3 0-6 3.3-6 6 0 1.7 1.3 3 3 3 1.2 0 2-.6 3-.6s1.8.6 3 .6c1.7 0 3-1.3 3-3 0-2.7-3-6-6-6z"/></svg>
+      </button>
+    </div>
+
+    <!-- Tienda de Ropa de Cheila -->
+    <div id="shop" class="shop hidden" tabindex="-1" role="dialog" aria-label="Tienda de Ropa de Cheila">
+      <div class="shop-card">
+        <header class="shop-head">
+          <div class="shop-avatar" aria-hidden="true">👗</div>
+          <div class="shop-title">
+            <h2>Tienda de Ropa de Cheila</h2>
+            <p id="shop-say"></p>
+          </div>
+          <div class="shop-wallet">🍪 <span id="shop-cookies">0</span></div>
+          <button class="shop-close" id="shop-close" aria-label="Salir de la tienda">✕</button>
+        </header>
+        <div class="shop-body">
+          <section class="shop-preview">
+            <canvas id="shop-canvas" aria-label="Probador 3D"></canvas>
+            <div class="shop-equipped" id="shop-equipped" aria-label="Accesorios puestos"></div>
+          </section>
+          <section class="shop-catalog">
+            <nav class="shop-tabs" id="shop-tabs"></nav>
+            <div class="shop-grid" id="shop-grid"></div>
+          </section>
+        </div>
+        <div class="shop-confetti" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <!-- Diálogo con los personajes -->
+    <div id="dialog" class="dialog hidden" role="dialog" aria-live="polite">
+      <div class="dialog-portrait" id="dialog-portrait" aria-hidden="true">🧙‍♀️</div>
+      <div class="dialog-body">
+        <strong id="dialog-name">Isabel, la bruja guía</strong>
+        <p id="dialog-text"></p>
+        <div class="dialog-actions">
+          <span class="dialog-page" id="dialog-page"></span>
+          <button class="btn-primary btn-small" id="dialog-next">Siguiente</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modo TV: código de emparejamiento (esquina, no tapa el juego) -->
+    <div id="tv-pair" class="tv-pair hidden" aria-live="polite">
+      <div class="tv-pair-title">🎮 Conecta tu móvil como mando</div>
+      <div class="tv-code" id="tv-code">····</div>
+      <div class="tv-url" id="tv-url"></div>
+      <div class="tv-status" id="tv-status"></div>
+    </div>
+
+    <!-- Mando remoto (móvil/tablet) -->
+    <div id="pad" class="pad hidden">
+      <div class="pad-pair" id="pad-pair">
+        <h2>🎮 Mando de DogWorld</h2>
+        <p>Escribe el código que aparece en la tele</p>
+        <div class="pad-code"><span class="pad-digit"></span><span class="pad-digit"></span><span class="pad-digit"></span><span class="pad-digit"></span></div>
+        <div class="pad-keys" id="pad-keys"></div>
+        <p class="pad-status" id="pad-status"></p>
+        <a class="pad-back" href="/">← Volver al juego</a>
+      </div>
+      <div class="pad-play hidden" id="pad-play">
+        <div class="pad-top">
+          <span class="pad-dot"></span><span id="pad-tv">📺 TV</span>
+          <span class="pad-cookies" id="pad-cookies">🍪 0</span>
+          <span class="pad-hint" id="pad-hint"></span>
+          <button class="pad-small" data-bit="BACK" aria-label="Atrás">↩</button>
+          <button class="pad-small" data-bit="START" aria-label="Menú">☰</button>
+        </div>
+        <div class="pad-stick-zone" id="pad-stick-zone">
+          <div class="pad-stick" id="pad-stick"><div class="pad-knob"></div></div>
+          <span class="pad-label">Mover</span>
+        </div>
+        <div class="pad-look" id="pad-look"><span>🎥 Desliza para mirar</span></div>
+        <button class="pad-btn pad-sprint" data-bit="SPRINT" aria-label="Correr">🏃</button>
+        <div class="pad-face">
+          <button class="pad-btn pad-y" data-bit="Y" aria-label="Gesto">🐾<small>Gesto</small></button>
+          <button class="pad-btn pad-x" data-bit="X" aria-label="Interactuar">💬<small>Hablar</small></button>
+          <button class="pad-btn pad-b" data-bit="B" aria-label="Habilidad"><span id="pad-ab-icon">✨</span><small id="pad-ab-name">Habilidad</small></button>
+          <button class="pad-btn pad-a" data-bit="A" aria-label="Saltar">⬆<small>Saltar</small></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transición entre mundos -->
+    <div id="fade" class="fade">
+      <div class="fade-title" id="fade-title"></div>
+      <div class="fade-sub" id="fade-sub"></div>
+    </div>
+
+    <!-- Selección de raza: tarjetas interactivas + vista 3D animada -->
+    <div id="breed-select" class="select hidden">
+      <header class="select-head">
+        <button class="btn-ghost btn-small" id="sel-back">← Volver</button>
+        <h2>Elige tu perro</h2>
+        <span class="sel-room" id="sel-room"></span>
+      </header>
+      <div class="select-body">
+        <div class="select-cards" id="sel-cards" role="listbox" aria-label="Razas"></div>
+        <section class="select-preview" aria-live="polite">
+          <div class="preview-stage">
+            <canvas id="preview-canvas" aria-label="Vista 3D del perro"></canvas>
+            <div class="preview-tag" id="pv-tag"></div>
+          </div>
+          <div class="preview-info">
+            <h3 id="pv-name"></h3>
+            <p class="pv-breed" id="pv-breed"></p>
+            <p class="pv-personality" id="pv-personality"></p>
+            <div class="pv-ability">
+              <span class="pv-ab-icon" id="pv-ab-icon"></span>
+              <div><strong id="pv-ab-name"></strong><p id="pv-ab-desc"></p></div>
+            </div>
+            <div class="pv-stats" id="pv-stats"></div>
+            <button class="btn-primary" id="sel-confirm">¡Jugar!</button>
+            <p class="menu-status" id="sel-status"></p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Menú principal: único lugar donde aparece la marca -->
+    <div id="menu" class="menu">
+      <div class="menu-card">
+        <div class="brand">
+          <svg class="brand-paw" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-1.7 0-3 1.6-3 3.5S10.3 10 12 10s3-1.6 3-3.5S13.7 3 12 3zM5.5 8C4.1 8 3 9.3 3 11s1.1 3 2.5 3S8 12.7 8 11 6.9 8 5.5 8zm13 0C17.1 8 16 9.3 16 11s1.1 3 2.5 3S21 12.7 21 11s-1.1-3-2.5-3zM12 12c-3 0-6 3.3-6 6 0 1.7 1.3 3 3 3 1.2 0 2-.6 3-.6s1.8.6 3 .6c1.7 0 3-1.3 3-3 0-2.7-3-6-6-6z"/></svg>
+          <h1>DogWorld</h1>
+          <p class="subtitle">El Despertar del Castillo</p>
+        </div>
+
+        <form id="menu-form" autocomplete="off">
+          <label>Nombre
+            <input id="input-name" maxlength="16" placeholder="Perrito" />
+          </label>
+          <label>Sala
+            <input id="input-room" maxlength="8" placeholder="HUB" />
+          </label>
+          <button type="submit" class="btn-primary" id="btn-play">Elegir perro</button>
+          <button type="button" class="btn-ghost hidden" id="btn-change-dog">Cambiar de perro</button>
+        </form>
+
+        <div class="menu-row">
+          <button class="btn-ghost" id="btn-fullscreen">Pantalla completa</button>
+          <button class="btn-ghost" id="btn-share">Invitar</button>
+        </div>
+        <div class="menu-row">
+          <button class="btn-ghost btn-tv" id="btn-tv">📺 Modo TV</button>
+          <button class="btn-ghost btn-tv" id="btn-pad">🎮 Usar como mando</button>
+        </div>
+        <p class="menu-status" id="menu-status"></p>
+        <p class="menu-help" id="menu-help"></p>
+        <p class="credits">© DogWorld · Three.js</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

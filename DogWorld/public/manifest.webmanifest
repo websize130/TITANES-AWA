@@ -1,0 +1,9 @@
+{
+  "name": "DogWorld: El Despertar del Castillo",
+  "short_name": "DogWorld",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#2a1647",
+  "theme_color": "#5a2d91"
+}
