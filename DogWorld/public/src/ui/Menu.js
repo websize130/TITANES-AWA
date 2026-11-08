@@ -1,5 +1,5 @@
-// Menú principal: marca, nombre, sala, color, pantalla completa e invitación.
-import { PLAYER_COLORS, sanitizeName, sanitizeRoom } from '../net/protocol.js';
+// Menú principal: marca, nombre, sala, pantalla completa e invitación.
+import { sanitizeName, sanitizeRoom } from '../net/protocol.js';
 import { Fullscreen } from '../core/Fullscreen.js';
 
 const STORAGE_KEY = 'dogworld.profile';
@@ -10,24 +10,24 @@ export class Menu {
     this.form = document.getElementById('menu-form');
     this.nameInput = document.getElementById('input-name');
     this.roomInput = document.getElementById('input-room');
-    this.picker = document.getElementById('color-picker');
     this.playBtn = document.getElementById('btn-play');
+    this.changeDogBtn = document.getElementById('btn-change-dog');
     this.fsBtn = document.getElementById('btn-fullscreen');
     this.shareBtn = document.getElementById('btn-share');
     this.status = document.getElementById('menu-status');
     this.help = document.getElementById('menu-help');
-    this.onPlay = null; // ({ name, room, color }) => Promise<void>
+    this.onPlay = null;      // ({ name, room }) => Promise<void>
+    this.onChangeDog = null; // () => void
 
     const saved = loadProfile();
     const urlRoom = new URLSearchParams(location.search).get('room');
     this.nameInput.value = saved.name || '';
     this.roomInput.value = urlRoom ? sanitizeRoom(urlRoom) : saved.room || '';
-    this.color = PLAYER_COLORS.includes(saved.color) ? saved.color : PLAYER_COLORS[Math.floor(Math.random() * PLAYER_COLORS.length)];
-    this.buildPicker();
+    this.breed = saved.breed || null;
 
     this.help.innerHTML = isTouch
-      ? 'Joystick: toca y arrastra a la izquierda · Cámara: arrastra a la derecha<br>Botones: saltar (doble salto) y ladrar'
-      : 'WASD / flechas: moverse · Ratón: cámara (clic para capturar)<br>Espacio: saltar (doble salto) · Shift: correr · E: ladrar · Esc: menú';
+      ? 'Joystick: toca y arrastra a la izquierda · Cámara: arrastra a la derecha<br>Botones: saltar (doble salto), habilidad y gesto 🐾'
+      : 'WASD / flechas: moverse · Ratón: cámara (clic para capturar)<br>Espacio: saltar · Shift: correr · E / clic dcho.: habilidad · Q: gesto · Esc: menú';
 
     this.form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -42,31 +42,14 @@ export class Menu {
       if (Fullscreen.supported) this.fsBtn.textContent = Fullscreen.active ? 'Salir de pantalla completa' : 'Pantalla completa';
     });
     this.shareBtn.addEventListener('click', () => this.share());
-  }
-
-  buildPicker() {
-    this.picker.innerHTML = '';
-    for (const c of PLAYER_COLORS) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'color-swatch';
-      b.style.background = c;
-      b.setAttribute('role', 'radio');
-      b.setAttribute('aria-label', `Pelaje ${c}`);
-      b.setAttribute('aria-checked', String(c === this.color));
-      b.addEventListener('click', () => {
-        this.color = c;
-        for (const el of this.picker.children) el.setAttribute('aria-checked', String(el === b));
-      });
-      this.picker.appendChild(b);
-    }
+    this.changeDogBtn.addEventListener('click', () => this.onChangeDog?.());
   }
 
   async submit() {
     const profile = {
       name: sanitizeName(this.nameInput.value),
       room: sanitizeRoom(this.roomInput.value),
-      color: this.color,
+      breed: this.breed,
     };
     saveProfile(profile);
     this.playBtn.disabled = true;
@@ -101,14 +84,15 @@ export class Menu {
 
   show(visible) {
     this.root.classList.toggle('hidden', !visible);
-    if (visible) this.playBtn.textContent = this.inGame ? 'Continuar' : 'Jugar';
+    if (visible) this.playBtn.textContent = this.inGame ? 'Continuar' : 'Elegir perro';
+    this.changeDogBtn.classList.toggle('hidden', !this.inGame);
   }
 }
 
-function loadProfile() {
+export function loadProfile() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
 }
 
-function saveProfile(p) {
+export function saveProfile(p) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch { /* modo privado */ }
 }

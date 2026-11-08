@@ -1,4 +1,4 @@
-// Teclado (WASD / flechas, Espacio, Shift, E) + ratón (pointer lock para mirar).
+// Teclado (WASD / flechas, Espacio, Shift, E habilidad, Q gesto) + ratón (pointer lock para mirar).
 const MOUSE_SENSITIVITY = 0.0025;
 
 export class KeyboardMouseInput {
@@ -21,6 +21,8 @@ export class KeyboardMouseInput {
       if (!this.input.enabled || this.input.isTouchDevice) return;
       if (e.button === 0 && document.pointerLockElement !== canvas) {
         canvas.requestPointerLock?.()?.catch?.(() => {});
+      } else if (e.button === 2) {
+        this.input.pressAbility(); // clic derecho = habilidad
       }
       this.dragging = true;
     });
@@ -41,7 +43,8 @@ export class KeyboardMouseInput {
       if (this.keys.has(code)) return; // autorepetición
       this.keys.add(code);
       if (code === 'Space') { this.input.pressJump(); e.preventDefault(); }
-      if (code === 'KeyE' || code === 'KeyF') this.input.pressAction();
+      if (code === 'KeyE' || code === 'KeyF') this.input.pressAbility();
+      if (code === 'KeyQ' || code === 'KeyG') this.input.pressEmote();
     } else {
       this.keys.delete(code);
     }

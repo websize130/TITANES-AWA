@@ -6,8 +6,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import {
-  MSG, NET, PROTOCOL_VERSION, ANIM, PLAYER_COLORS, sanitizeName, sanitizeRoom,
+  MSG, NET, PROTOCOL_VERSION, ANIM, ANIM_MAX, sanitizeName, sanitizeRoom,
 } from '../public/src/net/protocol.js';
+import { BREED_BY_ID, BREED_IDS, ABILITY } from '../public/src/breeds/BreedData.js';
+import { ROCKS, DIG_SPOTS, BOULDERS, INTERACT } from '../public/src/world/InteractableLayout.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -19,7 +21,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 const MAX_MESSAGE_BYTES = 1024;
 const MAX_MESSAGES_PER_SECOND = 40;
 const WORLD_BOUNDS = 400; // |x|,|z| máximos aceptados
-const MAX_SPEED_PER_MSG = 25; // metros por mensaje (anti-teleport básico)
+const MAX_SPEED = 30; // m/s máximos aceptados (esprint + placaje + margen)
 
 // ---------------------------------------------------------------------------
 // HTTP estático
@@ -101,6 +103,10 @@ class Room {
     this.players = new Map();
     /** @type {Map<number, number>} id coleccionable -> timestamp de reaparición */
     this.collected = new Map();
+    // Objetos de habilidades: estado autoritativo.
+    this.rocks = ROCKS.map(() => 0);        // 0 = intacta, si no timestamp de reaparición
+    this.digs = DIG_SPOTS.map(() => 0);     // 0 = con tesoro, si no timestamp de reaparición
+    this.boulders = BOULDERS.map((b) => ({ p: [b.x, null, b.z], h: 0 })); // h = id del portador
   }
 
   broadcast(obj, exceptId = -1) {
@@ -115,6 +121,30 @@ class Room {
     for (const c of this.players.values()) list.push(c.info());
     return list;
   }
+
+  takenBreeds(exceptId = -1) {
+    const taken = [];
+    for (const c of this.players.values()) if (c.id !== exceptId) taken.push(c.breed);
+    return taken;
+  }
+
+  objectsState() {
+    return {
+      rocks: this.rocks.map((v) => (v ? 1 : 0)),
+      digs: this.digs.map((v) => (v ? 1 : 0)),
+      boulders: this.boulders.map((b) => [b.p[0], b.p[1], b.p[2], b.h]),
+    };
+  }
+
+  /** Suelta el pedrusco que lleve un jugador (desconexión o cambio de raza). */
+  releaseBoulders(client) {
+    this.boulders.forEach((b, i) => {
+      if (b.h !== client.id) return;
+      b.h = 0;
+      b.p = [client.p[0], client.p[1], client.p[2]];
+      this.broadcast({ t: MSG.OBJECT, k: 'boulder', i, s: [b.p[0], b.p[1], b.p[2], 0] });
+    });
+  }
 }
 
 class Client {
@@ -123,7 +153,7 @@ class Client {
     this.id = nextPlayerId++;
     this.room = null;
     this.name = 'Perrito';
-    this.color = PLAYER_COLORS[0];
+    this.breed = BREED_IDS[0];
     this.p = [0, 0, 0];
     this.r = 0;
     this.a = ANIM.IDLE;
@@ -132,14 +162,21 @@ class Client {
     this.msgCount = 0;
     this.msgWindow = Date.now();
     this.alive = true;
+    this.lastAbility = 0;
+    this.lastStateAt = 0;
   }
 
   info() {
-    return { id: this.id, name: this.name, color: this.color, p: this.p, r: this.r, a: this.a, score: this.score };
+    return { id: this.id, name: this.name, b: this.breed, p: this.p, r: this.r, a: this.a, score: this.score };
   }
 
   send(obj) {
     if (this.ws.readyState === this.ws.OPEN) this.ws.send(JSON.stringify(obj));
+  }
+
+  addScore(gain) {
+    this.score += gain;
+    this.room?.broadcast({ t: MSG.SCORE, id: this.id, score: this.score, gain });
   }
 }
 
@@ -155,6 +192,7 @@ function getOrCreateRoom(code) {
 function leaveRoom(client) {
   const room = client.room;
   if (!room) return;
+  room.releaseBoulders(client);
   room.players.delete(client.id);
   client.room = null;
   room.broadcast({ t: MSG.PLAYER_LEAVE, id: client.id });
@@ -162,24 +200,51 @@ function leaveRoom(client) {
 }
 
 const isFiniteNum = (n) => typeof n === 'number' && Number.isFinite(n);
+const dist2D = (p, o) => Math.hypot(p[0] - o.x, p[2] - o.z);
+
+function roomInfo(code) {
+  const room = rooms.get(code);
+  return {
+    t: MSG.ROOM_INFO,
+    room: code,
+    max: NET.MAX_PLAYERS_PER_ROOM,
+    players: room ? [...room.players.values()].map((c) => ({ name: c.name, b: c.breed })) : [],
+  };
+}
 
 function handleMessage(client, msg) {
   switch (msg.t) {
+    case MSG.ROOM_QUERY:
+      client.send(roomInfo(sanitizeRoom(msg.room)));
+      break;
+
     case MSG.JOIN: {
       if (msg.v !== PROTOCOL_VERSION) {
         client.send({ t: MSG.ERROR, code: 'version', msg: 'Versión del cliente desactualizada. Recarga la página.' });
         return;
       }
       const code = sanitizeRoom(msg.room);
-      const room = getOrCreateRoom(code);
-      if (room.players.size >= NET.MAX_PLAYERS_PER_ROOM) {
-        client.send({ t: MSG.ERROR, code: 'full', msg: 'La sala está llena.' });
-        if (room.players.size === 0) rooms.delete(code);
+      const breed = BREED_BY_ID[msg.b] ? msg.b : null;
+      if (!breed) {
+        client.send({ t: MSG.ERROR, code: 'breed', msg: 'Raza desconocida.' });
+        return;
+      }
+      const existing = rooms.get(code);
+      if (existing && existing.players.size >= NET.MAX_PLAYERS_PER_ROOM && client.room !== existing) {
+        client.send({ t: MSG.ERROR, code: 'full', msg: 'La sala está llena (7 perros).' });
+        return;
+      }
+      if (existing && existing.takenBreeds(client.id).includes(breed)) {
+        client.send({
+          t: MSG.ERROR, code: 'breed', msg: `${BREED_BY_ID[breed].name} ya está en esta sala. ¡Elige otro perro!`,
+          taken: existing.takenBreeds(client.id),
+        });
         return;
       }
       leaveRoom(client);
+      const room = getOrCreateRoom(code);
       client.name = sanitizeName(msg.name);
-      client.color = PLAYER_COLORS.includes(msg.color) ? msg.color : PLAYER_COLORS[client.id % PLAYER_COLORS.length];
+      client.breed = breed;
       client.score = 0;
       client.room = room;
       room.players.set(client.id, client);
@@ -190,8 +255,23 @@ function handleMessage(client, msg) {
         room: code,
         players: room.infoList().filter((p) => p.id !== client.id),
         collected: [...room.collected.keys()],
+        objects: room.objectsState(),
       });
       room.broadcast({ t: MSG.PLAYER_JOIN, player: client.info() }, client.id);
+      break;
+    }
+
+    case MSG.BREED: {
+      const room = client.room;
+      if (!room || !BREED_BY_ID[msg.b] || msg.b === client.breed) return;
+      if (room.takenBreeds(client.id).includes(msg.b)) {
+        client.send({ t: MSG.ERROR, code: 'breed', msg: `${BREED_BY_ID[msg.b].name} ya está en esta sala.`, taken: room.takenBreeds(client.id) });
+        return;
+      }
+      room.releaseBoulders(client);
+      client.breed = msg.b;
+      client.lastAbility = 0;
+      room.broadcast({ t: MSG.PLAYER_BREED, id: client.id, b: client.breed });
       break;
     }
 
@@ -200,17 +280,24 @@ function handleMessage(client, msg) {
       const [x, y, z] = msg.p;
       if (!isFiniteNum(x) || !isFiniteNum(y) || !isFiniteNum(z) || !isFiniteNum(msg.r)) return;
       if (Math.abs(x) > WORLD_BOUNDS || Math.abs(z) > WORLD_BOUNDS || y < -200 || y > 300) return;
-      const dx = x - client.p[0];
-      const dz = z - client.p[2];
-      // Respawn tras caída: permitimos saltos grandes solo hacia el punto de aparición.
+      // Anti-teletransporte por velocidad: distancia permitida según el tiempo transcurrido
+      // (tolera tirones de red). Reaparecer en el punto de inicio siempre está permitido.
+      const now = Date.now();
+      const elapsed = Math.min(5, (now - client.lastStateAt) / 1000);
+      const allowed = MAX_SPEED * elapsed + 3;
       const nearSpawn = Math.abs(x) < 6 && Math.abs(z - 20) < 6;
-      if (dx * dx + dz * dz > MAX_SPEED_PER_MSG * MAX_SPEED_PER_MSG && !nearSpawn) return;
+      if (Math.hypot(x - client.p[0], z - client.p[2]) > allowed && !nearSpawn) return;
+      client.lastStateAt = now;
       client.p = [round2(x), round2(y), round2(z)];
       client.r = round2(msg.r);
-      client.a = Number.isInteger(msg.a) && msg.a >= 0 && msg.a <= 3 ? msg.a : ANIM.IDLE;
+      client.a = Number.isInteger(msg.a) && msg.a >= 0 && msg.a <= ANIM_MAX ? msg.a : ANIM.IDLE;
       client.dirty = true;
       break;
     }
+
+    case MSG.ABILITY:
+      handleAbility(client, msg);
+      break;
 
     case MSG.COLLECT: {
       const room = client.room;
@@ -230,6 +317,72 @@ function handleMessage(client, msg) {
     default:
       break;
   }
+}
+
+/**
+ * Habilidades: el servidor comprueba raza y cooldown, aplica los efectos sobre
+ * objetos compartidos y reenvía el evento a la sala para que todos lo vean.
+ */
+function handleAbility(client, msg) {
+  const room = client.room;
+  if (!room || typeof msg.a !== 'string') return;
+  const breed = BREED_BY_ID[client.breed];
+  if (breed.ability.id !== msg.a) return; // habilidad de otra raza
+  const now = Date.now();
+  if (now - client.lastAbility < breed.ability.cooldown * 1000 * 0.85) return; // margen por latencia
+  if (!Array.isArray(msg.p) || msg.p.length !== 3 || !msg.p.every(isFiniteNum) || !isFiniteNum(msg.r)) return;
+  // La posición declarada debe estar cerca de la última posición conocida.
+  if (Math.hypot(msg.p[0] - client.p[0], msg.p[2] - client.p[2]) > 6) return;
+  client.lastAbility = now;
+
+  const x = msg.x && typeof msg.x === 'object' ? msg.x : {};
+  const out = { t: MSG.ABILITY, id: client.id, a: msg.a, p: msg.p.map(round2), r: round2(msg.r) };
+
+  switch (msg.a) {
+    case ABILITY.TACKLE: {
+      if (Number.isInteger(x.rock) && x.rock >= 0 && x.rock < ROCKS.length && !room.rocks[x.rock]
+        && dist2D(msg.p, ROCKS[x.rock]) < INTERACT.TACKLE_RANGE + 1) {
+        room.rocks[x.rock] = now + INTERACT.ROCK_RESPAWN_MS;
+        room.broadcast({ t: MSG.OBJECT, k: 'rock', i: x.rock, s: 1 });
+        client.addScore(INTERACT.ROCK_REWARD);
+      }
+      if (Number.isInteger(x.hit) && room.players.has(x.hit) && x.hit !== client.id) {
+        const target = room.players.get(x.hit);
+        if (Math.hypot(target.p[0] - msg.p[0], target.p[2] - msg.p[2]) < INTERACT.TACKLE_RANGE + 1.5) out.x = { hit: x.hit };
+      }
+      break;
+    }
+    case ABILITY.DIG: {
+      if (Number.isInteger(x.dig) && x.dig >= 0 && x.dig < DIG_SPOTS.length && !room.digs[x.dig]
+        && dist2D(msg.p, DIG_SPOTS[x.dig]) < INTERACT.DIG_RANGE + 1) {
+        room.digs[x.dig] = now + INTERACT.DIG_RESPAWN_MS;
+        room.broadcast({ t: MSG.OBJECT, k: 'dig', i: x.dig, s: 1 });
+        client.addScore(INTERACT.DIG_REWARD);
+      }
+      break;
+    }
+    case ABILITY.LIFT: {
+      const i = Number.isInteger(x.lift) ? x.lift : Number.isInteger(x.drop) ? x.drop : -1;
+      if (i < 0 || i >= BOULDERS.length) return;
+      const b = room.boulders[i];
+      if (Number.isInteger(x.lift)) {
+        const bx = { x: b.p[0], z: b.p[2] };
+        if (b.h || room.boulders.some((o) => o.h === client.id) || dist2D(msg.p, bx) > INTERACT.LIFT_RANGE + 1) return;
+        b.h = client.id;
+      } else {
+        const p = x.p;
+        if (b.h !== client.id || !Array.isArray(p) || p.length !== 3 || !p.every(isFiniteNum)) return;
+        if (Math.hypot(p[0] - msg.p[0], p[2] - msg.p[2]) > INTERACT.DROP_RANGE) return;
+        b.h = 0;
+        b.p = p.map(round2);
+      }
+      room.broadcast({ t: MSG.OBJECT, k: 'boulder', i, s: [b.p[0], b.p[1], b.p[2], b.h] });
+      return; // el estado del objeto ya informa a todos
+    }
+    default:
+      break; // party, sprint, ice, sniff: solo efecto visual/buff en los clientes
+  }
+  room.broadcast(out, client.id);
 }
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -287,6 +440,18 @@ setInterval(() => {
       if (now >= respawnAt) {
         room.collected.delete(id);
         room.broadcast({ t: MSG.RESPAWN, id });
+      }
+    }
+    for (let i = 0; i < room.rocks.length; i++) {
+      if (room.rocks[i] && now >= room.rocks[i]) {
+        room.rocks[i] = 0;
+        room.broadcast({ t: MSG.OBJECT, k: 'rock', i, s: 0 });
+      }
+    }
+    for (let i = 0; i < room.digs.length; i++) {
+      if (room.digs[i] && now >= room.digs[i]) {
+        room.digs[i] = 0;
+        room.broadcast({ t: MSG.OBJECT, k: 'dig', i, s: 0 });
       }
     }
   }

@@ -13,6 +13,7 @@ export class TouchControls {
     this.knob = this.joystick.querySelector('.joystick-knob');
     this.btnJump = document.getElementById('btn-jump');
     this.btnAction = document.getElementById('btn-action');
+    this.btnEmote = document.getElementById('btn-emote');
 
     this.moveX = 0;
     this.moveY = 0;
@@ -28,7 +29,8 @@ export class TouchControls {
     this.bindJoystick();
     this.bindLook();
     this.bindButton(this.btnJump, () => { this.jumpHeld = true; this.input.pressJump(); }, () => { this.jumpHeld = false; });
-    this.bindButton(this.btnAction, () => this.input.pressAction(), null);
+    this.bindButton(this.btnAction, () => this.input.pressAbility(), null);
+    this.bindButton(this.btnEmote, () => this.input.pressEmote(), null);
   }
 
   setVisible(visible) {

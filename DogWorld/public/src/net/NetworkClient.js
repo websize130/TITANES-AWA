@@ -28,6 +28,11 @@ export class NetworkClient {
     this.onCollected = null;    // (msg) => void
     this.onRespawn = null;      // (id) => void
     this.onError = null;        // (msg) => void
+    this.onRoomInfo = null;     // (msg) => void
+    this.onPlayerBreed = null;  // (id, breedId) => void
+    this.onAbility = null;      // (msg) => void
+    this.onObject = null;       // (msg) => void
+    this.onScore = null;        // (msg) => void
 
     this.pingTimer = null;
   }
@@ -40,8 +45,8 @@ export class NetworkClient {
   }
 
   /** Conecta y entra en la sala. Resuelve con el mensaje WELCOME o rechaza si no hay servidor. */
-  join(room, name, color) {
-    this.joinInfo = { room, name, color };
+  join(room, name, breed) {
+    this.joinInfo = { room, name, breed };
     this.closedByUser = false;
     return new Promise((resolve, reject) => {
       this._pendingJoin = { resolve, reject };
@@ -49,9 +54,38 @@ export class NetworkClient {
     });
   }
 
+  /** Abre la conexión sin entrar en ninguna sala (para consultar razas ocupadas). */
+  connect() {
+    this.closedByUser = false;
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      this._pendingConnect = { resolve, reject };
+      this.open();
+    });
+  }
+
+  /** Pregunta qué razas están ocupadas en una sala. */
+  async queryRoom(room) {
+    await this.connect();
+    return new Promise((resolve) => {
+      this._pendingQuery = resolve;
+      this.send({ t: MSG.ROOM_QUERY, room });
+    });
+  }
+
+  changeBreed(breed) {
+    if (this.joinInfo) this.joinInfo.breed = breed;
+    this.send({ t: MSG.BREED, b: breed });
+  }
+
+  ability(msg) {
+    msg.t = MSG.ABILITY;
+    this.send(msg);
+  }
+
   open() {
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
-      if (this.ws.readyState === WebSocket.OPEN) this.sendJoin();
+      if (this.ws.readyState === WebSocket.OPEN && this.joinInfo) this.sendJoin();
       return;
     }
     let ws;
@@ -67,7 +101,11 @@ export class NetworkClient {
       this.connected = true;
       this.retry = 0;
       this.onStatus?.(true);
-      this.sendJoin();
+      if (this._pendingConnect) {
+        this._pendingConnect.resolve();
+        this._pendingConnect = null;
+      }
+      if (this.joinInfo) this.sendJoin();
       clearInterval(this.pingTimer);
       this.pingTimer = setInterval(() => this.send({ t: MSG.PING, ts: performance.now() }), 2000);
     };
@@ -101,6 +139,10 @@ export class NetworkClient {
   }
 
   failPending(err) {
+    if (this._pendingConnect) {
+      this._pendingConnect.reject(err);
+      this._pendingConnect = null;
+    }
     if (this._pendingJoin) {
       this._pendingJoin.reject(err);
       this._pendingJoin = null;
@@ -108,8 +150,8 @@ export class NetworkClient {
   }
 
   sendJoin() {
-    const { room, name, color } = this.joinInfo;
-    this.send({ t: MSG.JOIN, v: PROTOCOL_VERSION, room, name, color });
+    const { room, name, breed } = this.joinInfo;
+    this.send({ t: MSG.JOIN, v: PROTOCOL_VERSION, room, name, b: breed });
   }
 
   handle(msg) {
@@ -131,10 +173,25 @@ export class NetworkClient {
       case MSG.COLLECTED: this.onCollected?.(msg); break;
       case MSG.RESPAWN: this.onRespawn?.(msg.id); break;
       case MSG.PONG: this.rtt = performance.now() - msg.ts; break;
+      case MSG.ROOM_INFO:
+        this.onRoomInfo?.(msg);
+        if (this._pendingQuery) {
+          this._pendingQuery(msg);
+          this._pendingQuery = null;
+        }
+        break;
+      case MSG.PLAYER_BREED: this.onPlayerBreed?.(msg.id, msg.b); break;
+      case MSG.ABILITY: this.onAbility?.(msg); break;
+      case MSG.OBJECT: this.onObject?.(msg); break;
+      case MSG.SCORE: this.onScore?.(msg); break;
       case MSG.ERROR:
         this.onError?.(msg);
         if (this._pendingJoin) {
-          this._pendingJoin.reject(new Error(msg.msg));
+          const err = new Error(msg.msg);
+          err.code = msg.code;
+          err.taken = msg.taken;
+          this.joinInfo = null; // no reintentar con datos rechazados
+          this._pendingJoin.reject(err);
           this._pendingJoin = null;
         }
         break;

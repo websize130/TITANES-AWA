@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { ANIM } from '../net/protocol.js';
 import { STEP_HEIGHT } from '../world/CollisionWorld.js';
 import { DogAvatar } from './DogAvatar.js';
+import { getBreed } from '../breeds/BreedData.js';
 
 const CFG = {
   radius: 0.45,
@@ -24,7 +25,7 @@ const CFG = {
 };
 
 export class PlayerController {
-  constructor(world, input, furColor) {
+  constructor(world, input, breedId, fx) {
     this.world = world;
     this.input = input;
     this.collision = world.collision;
@@ -41,17 +42,56 @@ export class PlayerController {
     this.anim = ANIM.IDLE;
     this.cameraYaw = 0;
 
-    this.avatar = new DogAvatar(furColor);
-    this.avatar.root.position.copy(this.position);
-    this.avatar.root.rotation.y = this.yaw;
+    this.fx = fx;
+    this.mods = { speed: 1, jump: 1, noDoubleJump: false };
+    this.dashT = 0;
+    this.dashSpeed = 0;
+    this.stunT = 0;
+    this.emoteT = 0;
+    this.actionActive = false;
+    this.carrying = false;
+    this.avatar = null;
+    this.setBreed(breedId);
 
     this.onRespawn = null;
     this._wish = new THREE.Vector3();
   }
 
-  setFurColor(color) {
-    this.avatar.materials[0].color.set(color);
-    this.avatar.materials[1].color.set(color).lerp(new THREE.Color('#fff8ec'), 0.6);
+  /** Cambia de raza: nuevo modelo y estadísticas (velocidad, salto, tamaño). */
+  setBreed(breedId) {
+    const parent = this.avatar?.root.parent;
+    const visible = this.avatar ? this.avatar.root.visible : false;
+    if (this.avatar) {
+      parent?.remove(this.avatar.root);
+      this.avatar.dispose();
+    }
+    this.breed = getBreed(breedId);
+    this.stats = this.breed.stats;
+    this.radius = CFG.radius * Math.max(0.8, Math.min(1.25, this.stats.scale));
+    this.avatar = new DogAvatar(this.breed.id, this.fx);
+    this.avatar.root.position.copy(this.position);
+    this.avatar.root.rotation.y = this.yaw;
+    this.avatar.root.visible = visible;
+    parent?.add(this.avatar.root);
+    this.carrying = false;
+  }
+
+  /** Embestida (Placaje): velocidad fija hacia delante durante `duration`. */
+  startDash(speed, duration) {
+    this.dashSpeed = speed;
+    this.dashT = duration;
+  }
+
+  /** Empujón externo (placaje de otro jugador). */
+  applyImpulse(vx, vy, vz) {
+    this.velocity.set(vx, vy, vz);
+    this.grounded = false;
+    this.stunT = 0.45;
+  }
+
+  /** Gesto de personalidad (tecla Q / botón 🐾). Se cancela al moverse. */
+  playEmote() {
+    if (this.grounded) this.emoteT = 3.2;
   }
 
   respawn() {
@@ -73,15 +113,24 @@ export class PlayerController {
     const mx = input.move.x, my = input.move.y;
     const wish = this._wish.set(rx * mx + fx * my, 0, rz * mx + fz * my);
     const wishLen = Math.min(1, wish.length());
-    const maxSpeed = input.sprint ? CFG.sprintSpeed : CFG.walkSpeed;
+    const maxSpeed = (input.sprint ? CFG.sprintSpeed : CFG.walkSpeed) * this.stats.speed * this.mods.speed;
 
-    const targetVX = wish.x * maxSpeed;
-    const targetVZ = wish.z * maxSpeed;
-    const accel = (this.grounded ? CFG.groundAccel : CFG.airAccel) * dt;
-    vel.x = approach(vel.x, targetVX, accel);
-    vel.z = approach(vel.z, targetVZ, accel);
+    this.stunT = Math.max(0, this.stunT - dt);
+    if (this.dashT > 0) {
+      // Placaje: avanza recto en la dirección en la que mira.
+      this.dashT -= dt;
+      vel.x = Math.sin(this.yaw) * this.dashSpeed;
+      vel.z = Math.cos(this.yaw) * this.dashSpeed;
+    } else {
+      const targetVX = wish.x * maxSpeed;
+      const targetVZ = wish.z * maxSpeed;
+      const control = this.stunT > 0 ? 0.15 : 1;
+      const accel = (this.grounded ? CFG.groundAccel : CFG.airAccel) * dt * control;
+      vel.x = approach(vel.x, targetVX, accel);
+      vel.z = approach(vel.z, targetVZ, accel);
+    }
 
-    if (wishLen > 0.05) {
+    if (wishLen > 0.05 && this.dashT <= 0) {
       const targetYaw = Math.atan2(wish.x, wish.z);
       this.yaw = lerpAngle(this.yaw, targetYaw, Math.min(1, CFG.turnSpeed * dt));
     }
@@ -93,14 +142,15 @@ export class PlayerController {
 
     if (this.jumpBufferT > 0) {
       if (this.coyote > 0) {
-        vel.y = CFG.jumpVelocity;
+        vel.y = CFG.jumpVelocity * this.stats.jump * this.mods.jump;
         this.grounded = false;
         this.coyote = 0;
         this.jumpBufferT = 0;
         this.canDoubleJump = true;
         this.jumpCutDone = false;
-      } else if (this.canDoubleJump && input.jumpPressed) {
-        vel.y = CFG.doubleJumpVelocity;
+      } else if (this.canDoubleJump && input.jumpPressed && !this.mods.noDoubleJump) {
+        vel.y = CFG.doubleJumpVelocity * this.stats.jump * this.mods.jump;
+        this.fx?.emit('dust', pos.x, pos.y, pos.z);
         this.canDoubleJump = false;
         this.jumpBufferT = 0;
         this.jumpCutDone = false;
@@ -133,19 +183,20 @@ export class PlayerController {
     } else {
       vel.x = 0; vel.z = 0;
     }
-    this.collision.resolveHorizontal(pos, CFG.radius, CFG.height);
+    this.collision.resolveHorizontal(pos, this.radius, CFG.height * this.stats.scale);
 
     // --- Movimiento vertical ---
     pos.y += vel.y * dt;
     if (vel.y > 0) {
-      const ceil = this.collision.ceilingHeight(pos.x, pos.z, prevY + CFG.height);
-      if (pos.y + CFG.height > ceil) {
-        pos.y = ceil - CFG.height;
+      const h = CFG.height * this.stats.scale;
+      const ceil = this.collision.ceilingHeight(pos.x, pos.z, prevY + h);
+      if (pos.y + h > ceil) {
+        pos.y = ceil - h;
         vel.y = 0;
       }
     }
 
-    const ground = this.collision.groundHeight(pos.x, pos.z, Math.max(prevY, pos.y), CFG.radius);
+    const ground = this.collision.groundHeight(pos.x, pos.z, Math.max(prevY, pos.y), this.radius);
     this.groundY = ground;
     const wasGrounded = this.grounded;
     if (vel.y <= 0 && pos.y <= ground) {
@@ -165,14 +216,18 @@ export class PlayerController {
 
     // --- Animación ---
     const hSpeed = Math.hypot(vel.x, vel.z);
-    if (this.grounded) this.anim = hSpeed > 0.6 ? ANIM.RUN : ANIM.IDLE;
-    else this.anim = vel.y > 0 ? ANIM.JUMP : ANIM.FALL;
+    if (input.emotePressed) this.playEmote();
+    if (wishLen > 0.2 || !this.grounded || this.actionActive) this.emoteT = 0;
+    this.emoteT = Math.max(0, this.emoteT - dt);
 
-    if (input.actionPressed) this.avatar.bark();
+    if (this.actionActive) this.anim = ANIM.ACTION;
+    else if (this.grounded) this.anim = this.emoteT > 0 ? ANIM.EMOTE : hSpeed > 0.6 ? ANIM.RUN : ANIM.IDLE;
+    else this.anim = vel.y > 0 ? ANIM.JUMP : ANIM.FALL;
+    this.avatar.carrying = this.carrying;
 
     this.avatar.root.position.copy(pos);
     this.avatar.root.rotation.y = this.yaw;
-    this.avatar.update(dt, this.anim, Math.min(1, hSpeed / CFG.walkSpeed), Number.isFinite(ground) ? pos.y - ground : Infinity);
+    this.avatar.update(dt, this.anim, Math.min(1, hSpeed / (CFG.walkSpeed * this.stats.speed)), Number.isFinite(ground) ? pos.y - ground : Infinity);
   }
 }
 

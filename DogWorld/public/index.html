@@ -40,6 +40,13 @@
         </button>
       </div>
       <div id="hud-toast" class="hud-toast"></div>
+      <!-- Habilidad (PC): icono, tecla y cooldown -->
+      <div class="hud-ability ability-btn hidden" id="hud-ability">
+        <span class="ab-icon">🎉</span><span class="cd-fill"></span>
+        <span class="ab-key">E</span>
+        <span class="ab-emote">Q gesto</span>
+      </div>
+      <div class="hud-buff" id="hud-buff"></div>
     </div>
 
     <!-- Controles táctiles (solo dispositivos táctiles) -->
@@ -50,9 +57,42 @@
       <button class="touch-btn touch-jump" id="btn-jump" aria-label="Saltar">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l7 8h-4v6H9v-6H5z"/></svg>
       </button>
-      <button class="touch-btn touch-action" id="btn-action" aria-label="Ladrar">
+      <button class="touch-btn touch-action ability-btn" id="btn-action" aria-label="Habilidad">
+        <span class="ab-icon">🎉</span><span class="cd-fill"></span>
+      </button>
+      <button class="touch-btn touch-emote" id="btn-emote" aria-label="Gesto de personalidad">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-1.7 0-3 1.6-3 3.5S10.3 10 12 10s3-1.6 3-3.5S13.7 3 12 3zM5.5 8C4.1 8 3 9.3 3 11s1.1 3 2.5 3S8 12.7 8 11 6.9 8 5.5 8zm13 0C17.1 8 16 9.3 16 11s1.1 3 2.5 3S21 12.7 21 11s-1.1-3-2.5-3zM12 12c-3 0-6 3.3-6 6 0 1.7 1.3 3 3 3 1.2 0 2-.6 3-.6s1.8.6 3 .6c1.7 0 3-1.3 3-3 0-2.7-3-6-6-6z"/></svg>
       </button>
+    </div>
+
+    <!-- Selección de raza: tarjetas interactivas + vista 3D animada -->
+    <div id="breed-select" class="select hidden">
+      <header class="select-head">
+        <button class="btn-ghost btn-small" id="sel-back">← Volver</button>
+        <h2>Elige tu perro</h2>
+        <span class="sel-room" id="sel-room"></span>
+      </header>
+      <div class="select-body">
+        <div class="select-cards" id="sel-cards" role="listbox" aria-label="Razas"></div>
+        <section class="select-preview" aria-live="polite">
+          <div class="preview-stage">
+            <canvas id="preview-canvas" aria-label="Vista 3D del perro"></canvas>
+            <div class="preview-tag" id="pv-tag"></div>
+          </div>
+          <div class="preview-info">
+            <h3 id="pv-name"></h3>
+            <p class="pv-breed" id="pv-breed"></p>
+            <p class="pv-personality" id="pv-personality"></p>
+            <div class="pv-ability">
+              <span class="pv-ab-icon" id="pv-ab-icon"></span>
+              <div><strong id="pv-ab-name"></strong><p id="pv-ab-desc"></p></div>
+            </div>
+            <div class="pv-stats" id="pv-stats"></div>
+            <button class="btn-primary" id="sel-confirm">¡Jugar!</button>
+            <p class="menu-status" id="sel-status"></p>
+          </div>
+        </section>
+      </div>
     </div>
 
     <!-- Menú principal: único lugar donde aparece la marca -->
@@ -71,8 +111,8 @@
           <label>Sala
             <input id="input-room" maxlength="8" placeholder="HUB" />
           </label>
-          <div class="color-picker" id="color-picker" role="radiogroup" aria-label="Color del pelaje"></div>
-          <button type="submit" class="btn-primary" id="btn-play">Jugar</button>
+          <button type="submit" class="btn-primary" id="btn-play">Elegir perro</button>
+          <button type="button" class="btn-ghost hidden" id="btn-change-dog">Cambiar de perro</button>
         </form>
 
         <div class="menu-row">

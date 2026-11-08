@@ -7,12 +7,15 @@ import { terrainHeight } from '../world/Terrain.js';
 const BUFFER_SIZE = 32;
 
 class RemotePlayer {
-  constructor(info) {
+  constructor(info, fx) {
     this.id = info.id;
     this.name = info.name;
     this.score = info.score ?? 0;
-    this.avatar = new DogAvatar(info.color);
+    this.breedId = info.b;
+    this.fx = fx;
+    this.avatar = new DogAvatar(info.b, fx);
     this.avatar.setName(info.name);
+    this.carrying = false;
     // Búfer circular de [tiempo, x, y, z, yaw, anim] (sin asignaciones por mensaje).
     this.buf = new Float64Array(BUFFER_SIZE * 6);
     this.head = 0;
@@ -88,7 +91,13 @@ class RemotePlayer {
     this.lastZ = root.position.z;
     const ground = terrainHeight(root.position.x, root.position.z);
     const gap = Number.isFinite(ground) ? Math.max(0, root.position.y - ground) : Infinity;
-    this.avatar.update(dt, anim, Math.min(1, Math.hypot(vx, vz) / 7), anim === ANIM.IDLE || anim === ANIM.RUN ? 0 : gap);
+    this.avatar.carrying = this.carrying;
+    this.avatar.update(dt, anim, Math.min(1, Math.hypot(vx, vz) / 7), anim === ANIM.IDLE || anim === ANIM.RUN || anim >= ANIM.EMOTE ? 0 : gap);
+  }
+
+  /** Efecto inmediato de una habilidad recibida (la animación llega por el estado). */
+  playAction() {
+    this.avatar.bark();
   }
 }
 
@@ -101,9 +110,11 @@ export class RemotePlayers {
 
   get count() { return this.players.size; }
 
+  setEffects(fx) { this.fx = fx; }
+
   add(info) {
     if (this.players.has(info.id)) return this.players.get(info.id);
-    const p = new RemotePlayer(info);
+    const p = new RemotePlayer(info, this.fx);
     this.players.set(info.id, p);
     this.scene.add(p.avatar.root);
     return p;
@@ -116,6 +127,42 @@ export class RemotePlayers {
     p.avatar.dispose();
     this.players.delete(id);
     return p;
+  }
+
+  /** Cambio de raza de un jugador: se reconstruye su avatar conservando la posición. */
+  setBreed(id, breedId) {
+    const p = this.players.get(id);
+    if (!p || p.breedId === breedId) return p;
+    const old = p.avatar;
+    this.scene.remove(old.root);
+    p.avatar = new DogAvatar(breedId, this.fx);
+    p.avatar.setName(p.name);
+    p.avatar.root.position.copy(old.root.position);
+    p.avatar.root.rotation.y = old.root.rotation.y;
+    p.breedId = breedId;
+    old.dispose();
+    this.scene.add(p.avatar.root);
+    this.fx?.emit('sparkle', p.avatar.root.position.x, p.avatar.root.position.y + 1, p.avatar.root.position.z);
+    return p;
+  }
+
+  /** Jugador remoto más cercano delante (para el placaje). */
+  nearestInFront(pos, yaw, range) {
+    const fx = Math.sin(yaw);
+    const fz = Math.cos(yaw);
+    let best = null;
+    let bd = range;
+    for (const p of this.players.values()) {
+      const rp = p.avatar.root.position;
+      const dx = rp.x - pos.x;
+      const dz = rp.z - pos.z;
+      const d = Math.hypot(dx, dz);
+      if (d < bd && (dx * fx + dz * fz) > -0.3 && Math.abs(rp.y - pos.y) < 2) {
+        bd = d;
+        best = p;
+      }
+    }
+    return best;
   }
 
   clear() {

@@ -14,7 +14,8 @@ export class InputManager {
     this.look = { x: 0, y: 0 };      // delta de cámara acumulado en el frame (radianes)
     this.jumpHeld = false;
     this.jumpPressed = false;        // flanco de subida en este frame
-    this.actionPressed = false;
+    this.abilityPressed = false;      // habilidad de la raza
+    this.emotePressed = false;        // gesto de personalidad
     this.sprint = false;
 
     this.isTouchDevice = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
@@ -37,14 +38,15 @@ export class InputManager {
     this.move.x = 0; this.move.y = 0;
     this.look.x = 0; this.look.y = 0;
     this.jumpHeld = false; this.jumpPressed = false;
-    this.actionPressed = false; this.sprint = false;
+    this.abilityPressed = false; this.emotePressed = false; this.sprint = false;
     this.keyboard.reset();
     this.touch?.reset();
   }
 
   // Llamado por las fuentes cuando se pulsa el salto.
   pressJump() { if (this.enabled) this.jumpPressed = true; }
-  pressAction() { if (this.enabled) this.actionPressed = true; }
+  pressAbility() { if (this.enabled) this.abilityPressed = true; }
+  pressEmote() { if (this.enabled) this.emotePressed = true; }
   addLook(dx, dy) {
     if (!this.enabled) return;
     this.look.x += dx;
@@ -72,6 +74,7 @@ export class InputManager {
     this.look.x = 0;
     this.look.y = 0;
     this.jumpPressed = false;
-    this.actionPressed = false;
+    this.abilityPressed = false;
+    this.emotePressed = false;
   }
 }

@@ -29,11 +29,14 @@ export class GamepadInput {
       if (lx || ly) this.input.addLook(lx * LOOK_SPEED, ly * LOOK_SPEED);
 
       const jump = gp.buttons[0]?.pressed ?? false;      // A / Cruz
-      const action = gp.buttons[2]?.pressed ?? false;    // X / Cuadrado
+      const action = gp.buttons[2]?.pressed ?? false;    // X / Cuadrado: habilidad
+      const emote = gp.buttons[3]?.pressed ?? false;     // Y / Triángulo: gesto
       if (jump && !this.prevJump) this.input.pressJump();
-      if (action && !this.prevAction) this.input.pressAction();
+      if (action && !this.prevAction) this.input.pressAbility();
+      if (emote && !this.prevEmote) this.input.pressEmote();
       this.prevJump = jump;
       this.prevAction = action;
+      this.prevEmote = emote;
       this.jumpHeld = jump;
       this.sprint = gp.buttons[7]?.pressed || gp.buttons[10]?.pressed || false; // RT / L3
       return; // solo el primer mando
