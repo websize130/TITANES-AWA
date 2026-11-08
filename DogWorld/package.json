@@ -1,0 +1,20 @@
+{
+  "name": "dogworld",
+  "version": "0.1.0",
+  "description": "DogWorld: El Despertar del Castillo — juego web 3D multijugador de plataformas colectatón (Three.js + WebSockets)",
+  "private": true,
+  "type": "module",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "three": "^0.170.0",
+    "ws": "^8.18.0"
+  }
+}
