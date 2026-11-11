@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { PROFILES, saveProfile } from './GraphicsProfiles.js';
+import { PROFILES } from './GraphicsProfiles.js';
 
 /**
  * Envoltorio del WebGLRenderer (WebGL 2): perfiles, resolución dinámica,
@@ -18,6 +18,7 @@ export class Renderer {
 
     // Antialias MSAA solo si el perfil lo pide y el hardware lo soporta.
     const antialias = this.profile.antialias && caps.maxSamples > 0;
+    this.antialiasActive = antialias;
 
     this.renderer = new THREE.WebGLRenderer({
       antialias,
@@ -40,7 +41,7 @@ export class Renderer {
     canvas.addEventListener('webglcontextrestored', () => this.onContextRestored?.());
 
     this.#pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.applyProfile(profileName, false); // el perfil autodetectado no se guarda
+    this.applyProfile(profileName);
     this.resize();
   }
 
@@ -49,12 +50,15 @@ export class Renderer {
 
   get domElement() { return this.renderer.domElement; }
 
-  /** Cambia de perfil en caliente. Devuelve true si hace falta recargar (antialias). */
-  applyProfile(name, persist = true) {
-    const needsReload = PROFILES[name].antialias !== this.profile.antialias;
+  /**
+   * Cambia de perfil en caliente. Devuelve true si el antialias cambia:
+   * eso solo se aplica al recrear el contexto (próximo arranque).
+   */
+  applyProfile(name) {
+    const wantsAA = PROFILES[name].antialias && this.caps.maxSamples > 0;
+    const needsReload = wantsAA !== this.antialiasActive;
     this.profileName = name;
     this.profile = PROFILES[name];
-    if (persist) saveProfile(name);
 
     this.renderer.shadowMap.enabled = this.profile.shadows;
     this.renderer.shadowMap.needsUpdate = true;

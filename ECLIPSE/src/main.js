@@ -1,76 +1,92 @@
-import * as THREE from 'three';
+import '@fontsource-variable/cinzel';
+import '@fontsource-variable/manrope';
+import './ui/styles/base.css';
+import './ui/styles/menus.css';
+import './ui/styles/hud.css';
+
 import { detectCapabilities } from './core/Capabilities.js';
-import { resolveInitialProfile, PROFILES } from './core/GraphicsProfiles.js';
+import { resolveProfile } from './core/GraphicsProfiles.js';
 import { Renderer } from './core/Renderer.js';
 import { Loop } from './core/Loop.js';
 import { AssetLoader } from './core/AssetLoader.js';
-import { createTestScene } from './world/TestScene.js';
-import { createCamera } from './camera/createCamera.js';
-import { Hud } from './ui/Hud.js';
+import { EventBus } from './core/EventBus.js';
+import { Settings } from './core/Settings.js';
+import { SaveSystem } from './core/SaveSystem.js';
+import { App } from './core/App.js';
+import { InputManager } from './controls/InputManager.js';
+import { TouchControls } from './controls/TouchControls.js';
+import { AudioManager } from './audio/AudioManager.js';
+import { UIRouter } from './ui/UIRouter.js';
+import { PromptRenderer } from './ui/ButtonPrompts.js';
+import { Toast } from './ui/Toast.js';
+import { StatsOverlay } from './ui/StatsOverlay.js';
+import { LoadingScreen } from './ui/screens/LoadingScreen.js';
+import { GameHUD } from './ui/screens/GameHUD.js';
+import { registerMenus } from './ui/screens/menus.js';
+import { registerSettings } from './ui/screens/SettingsScreen.js';
+import { registerServiceWorker } from './pwa/registerSW.js';
 
-const fatal = (msg) => {
-  const el = document.getElementById('fatal');
-  el.textContent = msg;
-  el.hidden = false;
-};
+const $ = (sel) => document.querySelector(sel);
+const fatal = $('#fatal');
+
+function fail(message) {
+  $('#boot').classList.add('is-out');
+  fatal.textContent = message;
+  fatal.hidden = false;
+}
 
 const caps = detectCapabilities();
 if (!caps.webgl2) {
-  fatal('Este navegador no soporta WebGL 2. Usa Chrome o Firefox actualizados para Android y activa la aceleración por hardware.');
+  fail('Este navegador no soporta WebGL 2. Usa Chrome, Edge, Firefox o Samsung Internet actualizados y activa la aceleración por hardware.');
   throw new Error('WebGL 2 no disponible');
 }
 
-const profileName = resolveInitialProfile(caps);
-const renderer = new Renderer(document.getElementById('app'), profileName, caps);
-const assets = new AssetLoader(renderer); // listo para cargar GLB en las siguientes fases
-const world = createTestScene(renderer);
-const { camera, controls } = createCamera(renderer.domElement);
-const hud = new Hud(document.getElementById('hud'));
+const debug = new URLSearchParams(location.search).has('debug');
+const bus = new EventBus();
+const settings = new Settings(bus);
+const renderer = new Renderer($('#app'), resolveProfile(caps, settings.get('graphics')), caps);
 const loop = new Loop(renderer.renderer);
 loop.maxFps = renderer.profile.maxFps;
 
-function onResize() {
-  const { width, height } = renderer.resize();
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-}
-window.addEventListener('resize', onResize);
-onResize();
+const input = new InputManager(bus, settings);
+const audio = new AudioManager(settings, bus);
+const router = new UIRouter({ bus, input, audio });
+const prompts = new PromptRenderer(bus, input, settings);
+const stats = new StatsOverlay($('#stats'));
+stats.setVisible(settings.get('showStats') || debug);
 
-function setProfile(name) {
-  if (renderer.applyProfile(name)) { location.reload(); return; } // cambio de antialias
-  loop.maxFps = renderer.profile.maxFps;
-  world.applyShadowProfile(renderer.profile);
-  renderer.createEnvironment(world.scene);
-  onResize();
-}
-
-renderer.onContextLost = () => { loop.stop(); fatal('Se perdió el contexto gráfico. Recuperando…'); };
-renderer.onContextRestored = () => { document.getElementById('fatal').hidden = true; loop.start(); };
-
-loop.add((dt) => {
-  controls.update();
-  world.update(dt);
-  renderer.render(world.scene, camera);
+const app = new App({
+  caps, bus, settings, renderer, loop, input, audio, router, prompts, debug,
+  save: new SaveSystem(),
+  assets: new AssetLoader(renderer), // para cargar GLB/HDRI en las próximas fases
+  toast: new Toast($('#toasts')),
+  hud: new GameHUD($('#hud'), bus),
+  loading: new LoadingScreen($('#loading')),
+  touch: new TouchControls($('.touch-controls'), input),
+  stats,
+  veil: $('#veil'),
+  fatal,
+  rotateEl: $('#rotate'),
+  hudPause: $('.hud-pause'),
 });
 
-loop.onFpsSample = (fps) => {
-  renderer.adaptResolution(fps);
-  const s = renderer.stats();
-  hud.update([
-    `ECLIPSE · entorno de prueba`,
-    `FPS ${fps.toFixed(0)} / ${renderer.profile.maxFps}  ·  perfil ${PROFILES[renderer.profileName].label}`,
-    `pixelRatio ${renderer.pixelRatio.toFixed(2)}  ·  draw ${s.drawCalls}  ·  tris ${s.triangles}`,
-    `geo ${s.geometries}  ·  tex ${s.textures}  ·  WebGL2 ✔  ·  three r${THREE.REVISION}`,
-  ]);
-};
+registerMenus(router, app);
+registerSettings(router, settings);
+prompts.refresh();
 
-if (new URLSearchParams(location.search).has('debug')) {
-  import('./ui/DebugPanel.js').then(({ createDebugPanel }) =>
-    createDebugPanel({ renderer, world, hud, onProfileChange: setProfile }));
+// El primer gesto (toque, clic o tecla) habilita el audio
+const unlock = () => audio.unlock();
+window.addEventListener('pointerdown', unlock, { once: true });
+window.addEventListener('keydown', unlock, { once: true });
+
+app.start();
+requestAnimationFrame(() => $('#boot').classList.add('is-out'));
+
+registerServiceWorker((apply) => app.onUpdateReady(apply));
+
+if (debug) {
+  import('./ui/DebugPanel.js').then(({ createDebugPanel }) => createDebugPanel(app));
 }
 
-loop.start();
-
-// Exposición para pruebas automáticas y consola de depuración
-window.__ECLIPSE__ = { THREE, caps, renderer, world, camera, assets, setProfile };
+// Acceso para pruebas automáticas y consola
+window.__ECLIPSE__ = { app, caps, renderer, settings, input };

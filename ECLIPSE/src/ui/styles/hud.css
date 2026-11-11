@@ -1,0 +1,145 @@
+/* ---------- HUD de juego ---------- */
+.screen-hud { pointer-events: none; }
+.screen-hud.is-active { pointer-events: none; }
+.screen-hud > * { pointer-events: auto; }
+.screen-hud.is-paused > * { opacity: 0; transition: opacity 0.3s ease; }
+
+.hud-vitals {
+  position: absolute;
+  top: calc(var(--pad) * 0.7 + var(--st));
+  left: calc(var(--pad) * 0.9 + var(--sl));
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  pointer-events: none;
+}
+.hud-emblem { width: 2.8rem; height: 2.8rem; }
+.hud-bars { display: flex; flex-direction: column; gap: 0.4rem; }
+.bar { position: relative; width: clamp(9rem, 22vw, 18rem); height: 0.5rem; background: rgba(7, 6, 12, 0.55); border: 1px solid rgba(241, 235, 248, 0.12); transform: skewX(-18deg); overflow: hidden; }
+.bar i { position: absolute; inset: 0; transform-origin: left; transition: transform 0.25s ease-out; }
+.bar-health i { background: linear-gradient(90deg, #8e1e34, var(--crimson)); box-shadow: 0 0 10px rgba(226, 71, 93, 0.5); }
+.bar-aether { width: clamp(7rem, 17vw, 14rem); height: 0.35rem; }
+.bar-aether i { background: linear-gradient(90deg, #5640c8, var(--violet)); }
+
+.hud-zone {
+  position: absolute;
+  top: 18vh;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0;
+  pointer-events: none;
+}
+.hud-zone small { font-size: 0.72rem; letter-spacing: 0.45em; text-transform: uppercase; color: var(--gold); }
+.hud-zone strong { font-family: var(--font-display); font-weight: 500; font-size: 2.3rem; letter-spacing: 0.2em; text-shadow: 0 2px 30px rgba(0, 0, 0, 0.8); }
+.hud-zone.is-in { animation: zone 4.2s var(--ease) forwards; }
+@keyframes zone { 0% { opacity: 0; letter-spacing: 0.6em; } 18%, 72% { opacity: 1; letter-spacing: 0.2em; } 100% { opacity: 0; } }
+
+.hud-message {
+  position: absolute;
+  bottom: 24vh;
+  left: 50%;
+  transform: translate(-50%, 6px);
+  padding: 0.5em 1.2em;
+  border-radius: 2em;
+  background: rgba(7, 6, 12, 0.6);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s var(--ease);
+  pointer-events: none;
+}
+.hud-message.is-in { opacity: 1; transform: translate(-50%, 0); }
+
+.hud-actions {
+  position: absolute;
+  right: calc(var(--pad) + var(--sr));
+  bottom: calc(var(--pad) * 0.8 + var(--sb));
+  gap: 1.3em;
+  font-size: 0.78rem;
+  color: rgba(241, 235, 248, 0.75);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+.hud-pause {
+  position: absolute;
+  top: calc(var(--pad) * 0.6 + var(--st));
+  right: calc(var(--pad) * 0.8 + var(--sr));
+  width: 2.8rem;
+  height: 2.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 50%;
+  background: rgba(7, 6, 12, 0.4);
+  border: 1px solid rgba(241, 235, 248, 0.2);
+  z-index: 3;
+}
+.hud-pause span { width: 3px; height: 13px; border-radius: 2px; background: var(--ink); }
+
+/* Elementos solo táctiles / solo mando-teclado */
+[data-touch-only] { display: none; }
+body[data-input='touch'] [data-touch-only] { display: flex; }
+body[data-input='touch'] .hud-actions { display: none; }
+
+/* ---------- Controles táctiles ---------- */
+.touch-controls { position: absolute; inset: 0; z-index: 1; }
+.tc-look-zone { position: absolute; top: 0; right: 0; bottom: 0; width: 55%; touch-action: none; }
+.tc-stick-zone { position: absolute; left: 0; bottom: 0; width: 45%; height: 75%; touch-action: none; }
+.tc-stick {
+  position: absolute;
+  left: calc(var(--pad) * 1.2 + var(--sl) + 4.5rem);
+  top: calc(100% - var(--pad) - var(--sb) - 4.5rem);
+  width: 9rem;
+  height: 9rem;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(14, 10, 24, 0.45) 55%, rgba(14, 10, 24, 0.15));
+  border: 1px solid rgba(241, 235, 248, 0.16);
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.tc-stick.is-active { opacity: 1; }
+.tc-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 40% 35%, rgba(255, 220, 180, 0.4), rgba(230, 200, 143, 0.12));
+  border: 1px solid rgba(230, 200, 143, 0.6);
+  box-shadow: 0 0 18px rgba(255, 138, 61, 0.25);
+}
+.tc-buttons {
+  position: absolute;
+  right: calc(var(--pad) * 0.9 + var(--sr));
+  bottom: calc(var(--pad) * 0.9 + var(--sb));
+  width: 13rem;
+  height: 13rem;
+}
+.tc-btn {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 10, 24, 0.55), rgba(14, 10, 24, 0.3));
+  border: 1px solid rgba(241, 235, 248, 0.22);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: transform 0.12s ease, border-color 0.12s, background 0.12s;
+  touch-action: none;
+}
+.tc-btn svg { width: 46%; height: 46%; fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.tc-btn.is-pressed { transform: scale(0.9); border-color: var(--gold); background: rgba(230, 200, 143, 0.2); }
+.tc-attack { right: 0; bottom: 0; width: 5.6rem; height: 5.6rem; border-color: rgba(230, 200, 143, 0.5); }
+.tc-dodge { right: 6.6rem; bottom: 0.2rem; width: 3.8rem; height: 3.8rem; }
+.tc-skill { right: 5.2rem; bottom: 5.2rem; width: 3.8rem; height: 3.8rem; }
+.tc-interact { right: 0.4rem; bottom: 6.8rem; width: 3.6rem; height: 3.6rem; }

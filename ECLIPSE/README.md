@@ -1,8 +1,9 @@
 # ECLIPSE: The Fallen Kingdom
 
 Action RPG 3D en tercera persona para navegador (Android incluido), hecho con
-**Three.js + Vite + ES Modules**. Este directorio contiene, de momento, solo el
-**entorno de desarrollo** y una escena de prueba; el juego aún no está empezado.
+**Three.js + Vite + ES Modules**. Incluye la experiencia de consola (título,
+menús navegables con mando, carga, HUD, pausa, ajustes) y un mundo de prueba
+con un avatar provisional; el contenido del juego aún no está empezado.
 
 ## Versiones instaladas y verificadas
 
@@ -13,6 +14,7 @@ Action RPG 3D en tercera persona para navegador (Android incluido), hecho con
 | GLTFLoader, DRACOLoader, SkeletonUtils, OrbitControls, HDRLoader | incluidos en three | Modelos, compresión, personajes animados |
 | vite | 8.3.7 | Servidor de desarrollo y build |
 | lil-gui | 0.21.0 | Panel de depuración (`?debug`) |
+| @fontsource-variable/cinzel, manrope | 5.3.0 | Tipografías OFL empaquetadas (funcionan sin conexión) |
 | @gltf-transform/cli | 4.5.1 | Inspeccionar, validar y optimizar GLB |
 
 ## Comandos
@@ -31,7 +33,7 @@ npm run model:optimize -- entrada.glb public/models/x.glb  # DRACO + texturas We
 
 ## Parámetros de URL
 
-- `?debug` — panel lil-gui (perfil gráfico, exposición, luces, HUD).
+- `?debug` — panel lil-gui (perfil, exposición, luces, cámara libre Orbit) y datos de rendimiento.
 - `?gfx=low|medium|high` — fuerza un perfil gráfico.
 
 ## Perfiles gráficos (`src/core/GraphicsProfiles.js`)
@@ -52,15 +54,93 @@ Protecciones para Android: resolución dinámica según FPS, límite de FPS, pau
 del bucle al ocultar la pestaña, recuperación de pérdida de contexto WebGL,
 `touch-action: none` y lil-gui cargado solo con `?debug`.
 
+## Flujo de pantallas
+
+`Título (pulsa cualquier botón) → Menú principal → Carga → Partida ⇄ Pausa → Menú`
+
+- Un único renderer WebGL 2: el fondo del menú es una escena 3D (eclipse con
+  corona por shader, reino caído flotante, estrellas y brasas por GPU).
+- **JUGAR** (Continuar / Nueva partida) pide pantalla completa y orientación
+  horizontal dentro del gesto del usuario, muestra la carga (con compilación
+  real de shaders) y entra al juego sin recargar. Al volver al menú se sale de
+  la pantalla completa y se guarda la partida.
+- Si el jugador sale de la pantalla completa (Esc, gesto atrás), pierde el
+  puntero del ratón, cambia de pestaña, desconecta el mando o gira a vertical,
+  el juego se pausa.
+
+## Controles
+
+| Acción | Teclado y ratón | Mando (mapeo estándar) | Táctil |
+|---|---|---|---|
+| Mover | WASD / flechas | Stick izquierdo | Stick virtual (mitad izquierda) |
+| Cámara | Ratón (clic para capturar) | Stick derecho | Arrastrar (mitad derecha) |
+| Atacar | Clic izquierdo / J | □ · X · izquierda | Botón espada |
+| Esquivar | Espacio / Shift | ○ · B · derecha | Botón » |
+| Habilidad | Q / clic derecho | △ · Y · arriba | Botón estrella |
+| Interactuar | E | ✕ · A · abajo | Botón círculo |
+| Pausa | Esc / P | Options · Menú · Start | Botón ❚❚ |
+| Menús | Flechas, Enter, Esc | Cruceta/stick, ✕/A, ○/B | Tocar |
+
+El último dispositivo usado manda: las indicaciones cambian al instante
+(glifos PlayStation, Xbox o genéricos según `Gamepad.id`, teclas o nada en
+táctil). Se puede forzar en Ajustes → Iconos de botones. Los glifos son formas
+propias; no se usan logotipos ni recursos de marcas.
+
+## Compatibilidad real (no garantizada en todos los navegadores)
+
+| Función | Android Chrome / Samsung | Escritorio Chrome/Edge/Firefox | iPhone Safari | iPad Safari |
+|---|---|---|---|---|
+| Pantalla completa | Sí | Sí | **No** (solo vídeo) | Parcial (webkit) |
+| Bloqueo horizontal | Sí (en pantalla completa o PWA) | No aplica | No | No |
+| Mando | Sí (Bluetooth/USB) | Sí | Sí | Sí |
+| Vibración | Mando: Chrome · Dispositivo: `navigator.vibrate` | Mando: Chrome/Edge | No | No |
+| Mantener pantalla encendida | Sí | Sí | Sí (recientes) | Sí |
+| Instalar como app (PWA) | Sí | Chrome/Edge | "Añadir a inicio" | "Añadir a inicio" |
+
+Los botones del mando **no** cuentan como gesto del usuario para la pantalla
+completa: si se entra a jugar con el mando y el navegador la rechaza, el juego
+sigue en ventana y se puede activar desde Pausa → Pantalla completa con un toque
+o clic. Instalada como PWA, la app ya arranca a pantalla completa y en horizontal.
+
+## PWA
+
+- `public/manifest.webmanifest`: nombre, colores, `display: fullscreen`
+  (con `standalone` de respaldo), `orientation: landscape`, iconos normales y
+  *maskable* (`public/icons/`, regenerables con `npm run icons`).
+- Service worker generado en cada build (`scripts/vite-plugin-sw.js` +
+  `src/pwa/sw.js`), solo en producción y HTTPS/localhost:
+  - HTML con red primero (las actualizaciones llegan siempre).
+  - Assets con hash en caché; modelos/texturas se cachean al usarse.
+  - Versión = hash de todos los archivos; las cachés antiguas se borran.
+  - La versión nueva espera y se aplica en la pantalla de título; si ya estás
+    jugando, se aplica la próxima vez que abras el juego.
+
+## Marca del hosting
+
+`src/config.js → HOSTING_CREDIT` (desactivado por defecto). Si se rellena, se
+muestra solo en el pie del menú principal, nunca en partida. GitHub Pages y
+Netlify no inyectan marcas de agua, así que no hace falta ocultar nada.
+
 ## Estructura
 
 ```
-src/core/      Renderer (WebGL 2 + perfiles), Loop, AssetLoader, capacidades, dispose()
-src/world/     TestScene.js (escena de verificación, se sustituirá)
-src/camera/    Cámara + OrbitControls (temporal hasta la cámara en 3ª persona)
-src/ui/        HUD, panel de depuración, estilos
-src/player, combat, enemies, bosses, effects, audio, controls, systems   (vacíos)
-public/models, textures, audio, environments                             (vacíos)
+src/config.js        Título, versión y crédito del hosting
+src/core/            App (máquina de estados), Renderer WebGL 2 + perfiles, Loop,
+                     EventBus, Settings, SaveSystem, Platform (pantalla completa,
+                     orientación, wake lock), AssetLoader, dispose()
+src/controls/        InputManager (teclado/ratón/mando/táctil), GamepadProfiles, TouchControls
+src/ui/              UIRouter (navegación), ButtonPrompts, Toast, StatsOverlay, DebugPanel
+src/ui/screens/      Menús, Ajustes, Carga, HUD
+src/ui/styles/       base.css, menus.css, hud.css
+src/world/           Sky (cielo, eclipse, estrellas), MenuScene, TestScene
+src/camera/          ThirdPersonCamera, DebugOrbit
+src/player/          WispAvatar (provisional)
+src/effects/         PulseRing
+src/systems/         GameSession (una partida: mundo + jugador + cámara)
+src/audio/           AudioManager (Web Audio sintetizado, sin archivos aún)
+src/pwa/             sw.js (plantilla), registerSW.js
+src/combat, enemies, bosses                         (vacíos)
+public/models, textures, audio, environments, icons
 ```
 
 Los archivos de `public/` se sirven tal cual: `public/models/heroe.glb` se carga

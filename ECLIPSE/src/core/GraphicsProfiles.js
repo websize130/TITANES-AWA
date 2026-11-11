@@ -37,24 +37,22 @@ export const PROFILES = {
   },
 };
 
-const STORAGE_KEY = 'eclipse.graphicsProfile';
-
-/** Perfil inicial: ?gfx=low|medium|high > guardado > detección automática. */
-export function resolveInitialProfile(caps) {
+/**
+ * Perfil efectivo: ?gfx=low|medium|high > preferencia guardada > detección.
+ * @param {string} preference 'auto' o el nombre de un perfil (Settings.graphics)
+ */
+export function resolveProfile(caps, preference = 'auto') {
   const fromUrl = new URLSearchParams(location.search).get('gfx');
   if (fromUrl && PROFILES[fromUrl]) return fromUrl;
+  if (preference !== 'auto' && PROFILES[preference]) return preference;
+  return detectProfile(caps);
+}
 
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved && PROFILES[saved]) return saved;
-
+export function detectProfile(caps) {
   if (caps.isMobile) {
     // En móviles/tablets nunca se elige "alto" automáticamente.
     const lowMem = caps.deviceMemoryGB !== null && caps.deviceMemoryGB <= 4;
     return lowMem ? 'low' : 'medium';
   }
   return 'high';
-}
-
-export function saveProfile(name) {
-  localStorage.setItem(STORAGE_KEY, name);
 }

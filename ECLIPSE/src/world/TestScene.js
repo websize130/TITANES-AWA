@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { createSkyDome, createEclipse, createStars } from './Sky.js';
+import { disposeObject } from '../core/dispose.js';
 
 /**
  * Escena 3D básica de verificación del entorno (NO es contenido del juego):
@@ -7,8 +9,15 @@ import * as THREE from 'three';
  */
 export function createTestScene(renderer) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x1a1626);
-  scene.fog = new THREE.Fog(0x1a1626, 30, 80);
+  scene.fog = new THREE.Fog(0x1c1224, 30, 90);
+
+  // Cielo del eclipse, alineado con la luz direccional
+  const eclipseDir = new THREE.Vector3(8, 14, 6).normalize();
+  scene.add(createSkyDome({ radius: 180, horizon: 0x2b1626, glowDir: eclipseDir }));
+  scene.add(createStars(renderer.profileName === 'low' ? 500 : 1000, 170));
+  const eclipse = createEclipse({ radius: 9 });
+  eclipse.position.copy(eclipseDir).multiplyScalar(150);
+  scene.add(eclipse);
 
   // Iluminación ambiental (cielo violáceo / suelo cálido) + direccional
   const hemi = new THREE.HemisphereLight(0x8f86c8, 0x3a2a1a, 0.6);
@@ -53,17 +62,17 @@ export function createTestScene(renderer) {
   }
   scene.add(spheres);
 
-  // Objeto central con emisivo (preview del estilo "eclipse")
-  const eclipse = new THREE.Mesh(
+  // Objeto central con emisivo
+  const knot = new THREE.Mesh(
     new THREE.TorusKnotGeometry(0.9, 0.28, 128, 16),
     new THREE.MeshStandardMaterial({
       color: 0x18121f, metalness: 0.8, roughness: 0.25,
       emissive: 0xff5a1f, emissiveIntensity: 0.35,
     }),
   );
-  eclipse.position.set(0, 2, -1);
-  eclipse.castShadow = true;
-  scene.add(eclipse);
+  knot.position.set(0, 2, -1);
+  knot.castShadow = true;
+  scene.add(knot);
 
   const applyShadowProfile = (profile) => {
     sun.castShadow = profile.shadows;
@@ -74,10 +83,16 @@ export function createTestScene(renderer) {
   applyShadowProfile(renderer.profile);
   renderer.createEnvironment(scene);
 
-  const update = (dt) => {
-    eclipse.rotation.y += dt * 0.5;
-    eclipse.rotation.x += dt * 0.2;
+  let t = 0;
+  const update = (dt, camera) => {
+    t += dt;
+    knot.rotation.y += dt * 0.5;
+    knot.rotation.x += dt * 0.2;
+    eclipse.userData.update(t);
+    if (camera) eclipse.lookAt(camera.position);
   };
 
-  return { scene, sun, hemi, update, applyShadowProfile };
+  const dispose = () => disposeObject(scene);
+
+  return { scene, sun, hemi, update, applyShadowProfile, dispose };
 }

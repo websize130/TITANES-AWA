@@ -2,15 +2,239 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#0b0a12" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#07060c" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="ECLIPSE: The Fallen Kingdom — Action RPG en tercera persona." />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ECLIPSE" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <title>ECLIPSE: The Fallen Kingdom</title>
-    <link rel="stylesheet" href="/src/ui/style.css" />
+    <style>
+      /* Pantalla de arranque inline: visible antes de cargar JS/CSS */
+      html, body { margin: 0; height: 100%; background: #07060c; overflow: hidden; }
+      #boot { position: fixed; inset: 0; display: grid; place-items: center; background: #07060c; z-index: 100; transition: opacity .6s ease; }
+      #boot.is-out { opacity: 0; pointer-events: none; }
+      #boot svg { width: 72px; height: 72px; animation: boot-pulse 1.6s ease-in-out infinite; }
+      @keyframes boot-pulse { 50% { opacity: .45; transform: scale(.96); } }
+    </style>
   </head>
-  <body>
+  <body data-input="kbm">
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <radialGradient id="mk-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="58%" stop-color="#ff8a3d" stop-opacity="0" />
+          <stop offset="68%" stop-color="#ffb36b" stop-opacity=".75" />
+          <stop offset="100%" stop-color="#ff8a3d" stop-opacity="0" />
+        </radialGradient>
+        <linearGradient id="mk-ring" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fff1d6" />
+          <stop offset=".45" stop-color="#ff9a4d" />
+          <stop offset="1" stop-color="#e6c88f" stop-opacity=".25" />
+        </linearGradient>
+      </defs>
+      <!-- Emblema original de ECLIPSE: eclipse + corona rota del Reino Caído -->
+      <symbol id="eclipse-mark" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="57" fill="url(#mk-glow)" />
+        <circle cx="60" cy="60" r="38" fill="none" stroke="url(#mk-ring)" stroke-width="2.6" />
+        <circle cx="63" cy="58" r="35.5" fill="#07060c" />
+        <path d="M43 76h35M43 76l2-15 7 8 5.5-16 2.6 8.5M63.5 57.5l3 11.5 7-8 1.5 15" fill="none" stroke="#e6c88f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M86.9 25l1.6 7.9 7.9 1.6-7.9 1.6-1.6 7.9-1.6-7.9-7.9-1.6 7.9-1.6z" fill="#fff4e0" />
+      </symbol>
+    </svg>
+
+    <div id="boot"><svg><use href="#eclipse-mark" /></svg></div>
     <div id="app"></div>
-    <div id="hud" class="hud"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <main id="ui" class="ui">
+      <!-- ===================== TÍTULO ===================== -->
+      <section class="screen screen-title" data-screen="title">
+        <div class="letterbox top"></div><div class="letterbox bottom"></div>
+        <div class="title-logo">
+          <svg class="title-mark"><use href="#eclipse-mark" /></svg>
+          <h1 class="logo-word">ECLIPSE</h1>
+          <p class="logo-sub"><span>The Fallen Kingdom</span></p>
+        </div>
+        <p class="press-start" data-text-kbm="Pulsa cualquier tecla" data-text-gamepad="Pulsa cualquier botón" data-text-touch="Toca la pantalla para empezar">Pulsa cualquier tecla</p>
+      </section>
+
+      <!-- ===================== MENÚ PRINCIPAL ===================== -->
+      <section class="screen screen-main" data-screen="main">
+        <header class="menu-brand">
+          <svg class="brand-mark"><use href="#eclipse-mark" /></svg>
+          <div>
+            <div class="brand-word">ECLIPSE</div>
+            <div class="brand-sub">The Fallen Kingdom</div>
+          </div>
+        </header>
+        <nav class="menu-list" aria-label="Menú principal">
+          <button class="menu-item" data-nav data-action="continue" style="--i:0">
+            <span class="menu-label">Continuar</span><span class="menu-meta" id="continue-meta"></span>
+          </button>
+          <button class="menu-item" data-nav data-action="new" style="--i:1"><span class="menu-label">Nueva partida</span></button>
+          <button class="menu-item" data-nav data-action="settings" style="--i:2"><span class="menu-label">Ajustes</span></button>
+          <button class="menu-item" data-nav data-action="credits" style="--i:3"><span class="menu-label">Créditos</span></button>
+        </nav>
+        <footer class="screen-footer">
+          <div class="prompt-bar">
+            <span data-prompt="confirm">Seleccionar</span>
+            <span data-prompt="back">Título</span>
+          </div>
+          <div class="footer-meta">
+            <a id="hosting-credit" class="hosting-credit" target="_blank" rel="noopener" hidden></a>
+            <span id="menu-version"></span>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ===================== AJUSTES ===================== -->
+      <section class="screen screen-panel" data-screen="settings">
+        <header class="panel-header"><h2>Ajustes</h2></header>
+        <div class="panel-body">
+          <div id="settings-list" class="settings-list"></div>
+          <aside class="panel-aside"><p id="settings-hint" class="settings-hint"></p></aside>
+        </div>
+        <footer class="screen-footer">
+          <div class="prompt-bar">
+            <span data-prompt="confirm">Cambiar</span>
+            <span data-prompt="back">Volver</span>
+          </div>
+          <button class="touch-back" data-action="settings-back">‹ Volver</button>
+        </footer>
+      </section>
+
+      <!-- ===================== CRÉDITOS ===================== -->
+      <section class="screen screen-panel" data-screen="credits">
+        <header class="panel-header"><h2>Créditos</h2></header>
+        <div class="credits-scroll" id="credits-scroll">
+          <div class="credits">
+            <svg class="credits-mark"><use href="#eclipse-mark" /></svg>
+            <h3>ECLIPSE: The Fallen Kingdom</h3>
+            <p>Un proyecto independiente en desarrollo.</p>
+            <h4>Tecnología</h4>
+            <p>Three.js — MIT<br />Vite — MIT<br />lil-gui — MIT<br />glTF-Transform — MIT</p>
+            <h4>Tipografías</h4>
+            <p>Cinzel — SIL Open Font License 1.1<br />Manrope — SIL Open Font License 1.1</p>
+            <h4>Avisos</h4>
+            <p>PlayStation y Xbox son marcas de sus respectivos propietarios. Sus nombres solo se usan para identificar el tipo de mando conectado; este juego no está afiliado a ellas.</p>
+          </div>
+        </div>
+        <footer class="screen-footer">
+          <div class="prompt-bar"><span data-prompt="back">Volver</span></div>
+          <button class="touch-back" data-nav data-action="credits-back">‹ Volver</button>
+        </footer>
+      </section>
+
+      <!-- ===================== CONFIRMACIÓN ===================== -->
+      <section class="screen screen-dialog" data-screen="confirm" role="dialog" aria-modal="true">
+        <div class="dialog">
+          <h2 id="confirm-title"></h2>
+          <p id="confirm-message"></p>
+          <div class="dialog-actions">
+            <button class="menu-item" data-nav id="confirm-yes"><span class="menu-label">Aceptar</span></button>
+            <button class="menu-item" data-nav id="confirm-no"><span class="menu-label">Cancelar</span></button>
+          </div>
+          <div class="prompt-bar"><span data-prompt="confirm">Seleccionar</span><span data-prompt="back">Cancelar</span></div>
+        </div>
+      </section>
+
+      <!-- ===================== PAUSA ===================== -->
+      <section class="screen screen-pause" data-screen="pause">
+        <div class="pause-panel">
+          <h2 class="pause-title">Pausa</h2>
+          <nav class="menu-list" aria-label="Menú de pausa">
+            <button class="menu-item" data-nav data-action="resume" style="--i:0"><span class="menu-label">Reanudar</span></button>
+            <button class="menu-item" data-nav data-action="pause-settings" style="--i:1"><span class="menu-label">Ajustes</span></button>
+            <button class="menu-item" data-nav data-action="fullscreen" style="--i:2"><span class="menu-label">Pantalla completa</span><span class="menu-meta"></span></button>
+            <button class="menu-item" data-nav data-action="quit" style="--i:3"><span class="menu-label">Volver al menú principal</span></button>
+          </nav>
+        </div>
+        <aside class="pause-info">
+          <span id="pause-zone"></span>
+          <span id="pause-time"></span>
+        </aside>
+        <footer class="screen-footer">
+          <div class="prompt-bar">
+            <span data-prompt="confirm">Seleccionar</span>
+            <span data-prompt="back">Reanudar</span>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ===================== CARGA ===================== -->
+      <section class="screen screen-loading" id="loading">
+        <div class="loading-emblem">
+          <div class="loading-ring"></div>
+          <svg><use href="#eclipse-mark" /></svg>
+        </div>
+        <div class="loading-footer">
+          <p class="loading-tip"></p>
+          <div class="loading-progress">
+            <span class="loading-stage"></span>
+            <div class="loading-bar"><i></i></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== HUD DE JUEGO ===================== -->
+      <section class="screen screen-hud" id="hud">
+        <div class="hud-vitals">
+          <svg class="hud-emblem"><use href="#eclipse-mark" /></svg>
+          <div class="hud-bars">
+            <div class="bar bar-health"><i></i></div>
+            <div class="bar bar-aether"><i></i></div>
+          </div>
+        </div>
+        <div class="hud-zone"><small></small><strong></strong></div>
+        <div class="hud-message"></div>
+        <button class="hud-pause" data-touch-only aria-label="Pausa"><span></span><span></span></button>
+        <div class="hud-actions prompt-bar">
+          <span data-prompt="attack">Atacar</span>
+          <span data-prompt="dodge">Esquivar</span>
+          <span data-prompt="skill">Habilidad</span>
+          <span data-prompt="pause">Pausa</span>
+        </div>
+        <div class="touch-controls" data-touch-only>
+          <div class="tc-look-zone"></div>
+          <div class="tc-stick-zone"><div class="tc-stick"><div class="tc-knob"></div></div></div>
+          <div class="tc-buttons">
+            <button class="tc-btn tc-attack" data-touch-action="attack" aria-label="Atacar">
+              <svg viewBox="0 0 24 24"><path d="M5 19L17.5 6.5M14 5h5v5M7.5 13.5l3 3M4 20l2-2" /></svg>
+            </button>
+            <button class="tc-btn tc-dodge" data-touch-action="dodge" aria-label="Esquivar">
+              <svg viewBox="0 0 24 24"><path d="M6 7l5 5-5 5M13 7l5 5-5 5" /></svg>
+            </button>
+            <button class="tc-btn tc-skill" data-touch-action="skill" aria-label="Habilidad">
+              <svg viewBox="0 0 24 24"><path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z" /></svg>
+            </button>
+            <button class="tc-btn tc-interact" data-touch-action="interact" aria-label="Interactuar">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2" /></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Aviso de orientación (móvil/tablet en vertical) -->
+    <div id="rotate" class="rotate" hidden>
+      <div class="rotate-device"></div>
+      <p>Gira el dispositivo para jugar en horizontal</p>
+      <div class="rotate-actions">
+        <button id="rotate-fullscreen" class="pill-btn">Pantalla completa horizontal</button>
+        <button id="rotate-dismiss" class="pill-btn ghost">Continuar en vertical</button>
+      </div>
+    </div>
+
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+    <pre id="stats" class="stats"></pre>
+    <div id="veil" class="veil"></div>
     <div id="fatal" class="fatal" hidden></div>
     <script type="module" src="/src/main.js"></script>
   </body>

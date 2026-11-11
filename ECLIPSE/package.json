@@ -1,6 +1,6 @@
 {
   "name": "eclipse-the-fallen-kingdom",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "description": "ECLIPSE: The Fallen Kingdom — Action RPG 3D en tercera persona (Three.js + Vite)",
   "private": true,
   "type": "module",
@@ -11,13 +11,16 @@
     "check": "node scripts/check-env.mjs",
     "model:inspect": "gltf-transform inspect",
     "model:validate": "gltf-transform validate",
-    "model:optimize": "gltf-transform optimize --compress draco --texture-compress webp"
+    "model:optimize": "gltf-transform optimize --compress draco --texture-compress webp",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "engines": {
     "node": ">=20.19"
   },
   "license": "UNLICENSED",
   "dependencies": {
+    "@fontsource-variable/cinzel": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
     "lil-gui": "^0.21.0",
     "three": "^0.187.0"
   },
