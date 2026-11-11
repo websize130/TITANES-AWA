@@ -76,7 +76,8 @@ del bucle al ocultar la pestaña, recuperación de pérdida de contexto WebGL,
 | Cámara | Ratón (clic para capturar) | Stick derecho | Arrastrar (mitad derecha) |
 | Atacar | Clic izquierdo / J | □ · X · izquierda | Botón espada |
 | Esquivar | Espacio / Shift | ○ · B · derecha | Botón » |
-| Habilidad | Q / clic derecho | △ · Y · arriba | Botón estrella |
+| Habilidad | Q | △ · Y · arriba | Botón estrella |
+| Bloquear (mantener) | Clic derecho | L1 · LB | Botón escudo |
 | Interactuar | E | ✕ · A · abajo | Botón círculo |
 | Pausa | Esc / P | Options · Menú · Start | Botón ❚❚ |
 | Menús | Flechas, Enter, Esc | Cruceta/stick, ✕/A, ○/B | Tocar |
@@ -85,6 +86,12 @@ El último dispositivo usado manda: las indicaciones cambian al instante
 (glifos PlayStation, Xbox o genéricos según `Gamepad.id`, teclas o nada en
 táctil). Se puede forzar en Ajustes → Iconos de botones. Los glifos son formas
 propias; no se usan logotipos ni recursos de marcas.
+
+## Protagonista
+
+Diseño definitivo y plan de producción del modelo 3D en
+`art-source/protagonista/GUIA.md` (referencia, reglas de consistencia,
+especificación del GLB, pasos de TRELLIS y Mixamo).
 
 ## Compatibilidad real (no garantizada en todos los navegadores)
 

@@ -17,9 +17,10 @@ export const FAMILY_LABEL = Object.freeze({
 
 export function detectFamily(gamepad) {
   const id = (gamepad?.id || '').toLowerCase();
-  // 054c = Sony; "wireless controller" es el nombre del DualShock 4 en varios sistemas
-  if (/054c|playstation|dualsense|dualshock|wireless controller|ps[345]/.test(id)) return 'playstation';
+  // Xbox primero: su nombre también contiene "Wireless Controller"
   // 045e = Microsoft
   if (/045e|xbox|xinput|x-box/.test(id)) return 'xbox';
+  // 054c = Sony (el id de Chrome incluye "Vendor: 054c" en DualShock 4 y DualSense)
+  if (/054c|playstation|dualsense|dualshock|ps[345] /.test(id)) return 'playstation';
   return 'generic';
 }

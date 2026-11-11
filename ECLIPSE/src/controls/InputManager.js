@@ -4,7 +4,7 @@ import { PAD, detectFamily } from './GamepadProfiles.js';
  * Entrada unificada: teclado + ratón, mando (Gamepad API) y controles táctiles.
  * - Detecta el dispositivo activo y emite 'input:device' al cambiar.
  * - Contexto 'menu': emite 'ui:input' { type: nav|confirm|back|start|other, dir }.
- * - Contexto 'game': expone move, lookDelta y wasPressed(acción).
+ * - Contexto 'game': expone move, lookDelta, wasPressed(acción) e isHeld('block').
  * Teclado/ratón y mando pueden usarse a la vez; manda el último que se tocó.
  */
 
@@ -62,6 +62,10 @@ export class InputManager {
   }
 
   #held = new Set();
+  #mouseBlock = false;
+  #padBlock = false;
+  #touchBlock = false;
+  #blocking = false;
   #pending = new Set();
   #pressed = new Set();
   #prevButtons = [];
@@ -77,14 +81,22 @@ export class InputManager {
     this.#pressed.clear();
     this.#navDir = null;
     this.virtualMove.x = this.virtualMove.y = 0;
+    this.#mouseBlock = this.#padBlock = this.#touchBlock = this.#blocking = false;
   }
 
   wasPressed(action) { return this.#pressed.has(action); }
+
+  /** Acciones mantenidas. De momento solo 'block' (L1/LB, botón derecho, botón táctil). */
+  isHeld(action) { return action === 'block' && this.#blocking; }
 
   // ---- API para controles táctiles ----
   setVirtualMove(x, y) { this.virtualMove.x = x; this.virtualMove.y = y; this.#setDevice('touch'); }
   addTouchLook(dx, dy) { this.#touchDX += dx; this.#touchDY += dy; }
   pressVirtual(action) { this.#pending.add(action); this.#setDevice('touch'); }
+  setVirtualHeld(action, held) {
+    if (action === 'block') this.#touchBlock = held;
+    if (held) this.#setDevice('touch');
+  }
 
   /** Llamar una vez por frame, antes de la lógica del juego. */
   update(dt) {
@@ -143,14 +155,17 @@ export class InputManager {
       }
     });
     window.addEventListener('keyup', (e) => this.#held.delete(e.code));
-    window.addEventListener('blur', () => this.#held.clear());
+    window.addEventListener('blur', () => { this.#held.clear(); this.#mouseBlock = false; });
 
     window.addEventListener('pointerdown', (e) => {
       this.#setDevice(e.pointerType === 'mouse' ? 'kbm' : 'touch');
-      if (this.context === 'game' && e.pointerType === 'mouse' && document.pointerLockElement) {
-        if (e.button === 0) this.#pending.add('attack');
-        else if (e.button === 2) this.#pending.add('skill');
+      if (this.context === 'game' && e.pointerType === 'mouse') {
+        if (e.button === 0 && document.pointerLockElement) this.#pending.add('attack');
+        else if (e.button === 2) this.#mouseBlock = true;
       }
+    });
+    window.addEventListener('pointerup', (e) => {
+      if (e.pointerType === 'mouse' && e.button === 2) this.#mouseBlock = false;
     });
     window.addEventListener('pointermove', (e) => {
       if (e.pointerType === 'mouse' && (e.movementX || e.movementY)) this.#setDevice('kbm');
@@ -183,6 +198,7 @@ export class InputManager {
     const pads = navigator.getGamepads ? navigator.getGamepads() : null;
     this.#padMove.x = this.#padMove.y = 0;
     this.#padLook.x = this.#padLook.y = 0;
+    this.#padBlock = false;
     if (!pads) return;
 
     // El mando activo es el último que ha recibido entrada
@@ -243,6 +259,7 @@ export class InputManager {
       for (let i = 0; i < GAME_PAD.length; i++) {
         if (edge(GAME_PAD[i][1])) this.#pressed.add(GAME_PAD[i][0]);
       }
+      this.#padBlock = down(PAD.L1);
     }
 
     for (let i = 0; i < active.buttons.length; i++) prev[i] = down(i);
@@ -256,6 +273,7 @@ export class InputManager {
 
   #computeAxes(dt) {
     const look = this.lookDelta;
+    this.#blocking = this.context === 'game' && (this.#mouseBlock || this.#padBlock || this.#touchBlock);
     if (this.context !== 'game') {
       this.move.x = this.move.y = look.x = look.y = 0;
       this.#mouseDX = this.#mouseDY = this.#touchDX = this.#touchDY = 0;

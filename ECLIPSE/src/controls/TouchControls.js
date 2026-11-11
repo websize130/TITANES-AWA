@@ -86,6 +86,23 @@ export class TouchControls {
   }
 
   #bindButtons() {
+    // Botones que se mantienen pulsados (bloquear)
+    for (const btn of this.root.querySelectorAll('[data-touch-hold]')) {
+      const action = btn.dataset.touchHold;
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.setPointerCapture(e.pointerId);
+        btn.classList.add('is-pressed');
+        this.input.setVirtualHeld(action, true);
+      });
+      const release = () => {
+        btn.classList.remove('is-pressed');
+        this.input.setVirtualHeld(action, false);
+      };
+      btn.addEventListener('pointerup', release);
+      btn.addEventListener('pointercancel', release);
+    }
     for (const btn of this.root.querySelectorAll('[data-touch-action]')) {
       btn.addEventListener('pointerdown', (e) => {
         e.preventDefault();
@@ -107,5 +124,6 @@ export class TouchControls {
     this.#moveKnob(0, 0);
     // Sin pasar por setVirtualMove: no debe cambiar el dispositivo activo
     this.input.virtualMove.x = this.input.virtualMove.y = 0;
+    for (const btn of this.root.querySelectorAll('.is-pressed')) btn.classList.remove('is-pressed');
   }
 }

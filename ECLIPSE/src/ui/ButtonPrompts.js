@@ -8,12 +8,13 @@
  * Uso en HTML: <span data-prompt="confirm">Seleccionar</span>
  */
 
-const PAD_BUTTON = { confirm: 0, back: 1, interact: 0, dodge: 1, attack: 2, skill: 3, pause: 9, any: 0 };
+const PAD_BUTTON = { confirm: 0, back: 1, interact: 0, dodge: 1, attack: 2, skill: 3, block: 4, pause: 9, any: 0 };
 const KEYS = {
   confirm: 'Enter', back: 'Esc', pause: 'Esc', dodge: 'Espacio', interact: 'E', skill: 'Q',
-  attack: 'mouse', move: 'WASD', any: 'Enter',
+  attack: 'mouse-left', block: 'mouse-right', move: 'WASD', any: 'Enter',
 };
 const START_LABEL = { playstation: 'Options', xbox: 'Menú', generic: 'Start' };
+const L1_LABEL = { playstation: 'L1', xbox: 'LB', generic: 'L' };
 
 const circle = '<circle cx="12" cy="12" r="10.5" class="g-ring"/>';
 const SHAPES = [
@@ -30,6 +31,7 @@ function svg(inner) { return `<svg viewBox="0 0 24 24" aria-hidden="true">${inne
 
 function padGlyph(button, family) {
   if (button === 9) return `<span class="g-pill">${START_LABEL[family] ?? 'Start'}</span>`;
+  if (button === 4) return `<span class="g-pill g-bumper">${L1_LABEL[family] ?? 'L'}</span>`;
   if (family === 'playstation') return svg(circle + SHAPES[button]);
   if (family === 'xbox') return svg(`${circle}<text x="12" y="16.2" class="g-text">${LETTERS[button]}</text>`);
   return svg(DOTS.map(([x, y], i) =>
@@ -38,9 +40,12 @@ function padGlyph(button, family) {
 
 function keyGlyph(action) {
   const k = KEYS[action];
-  if (k === 'mouse') {
+  if (k === 'mouse-left' || k === 'mouse-right') {
+    const half = k === 'mouse-left'
+      ? 'M6.5 10.5h5.5V3.6A5.5 5.5 0 0 0 6.5 9z'
+      : 'M17.5 10.5H12V3.6A5.5 5.5 0 0 1 17.5 9z';
     return svg('<rect x="6.5" y="3" width="11" height="18" rx="5.5" class="g-stroke"/>'
-      + '<path d="M12 3v7.5M6.5 10.5h5.5V3.6A5.5 5.5 0 0 0 6.5 9z" class="g-fill"/>');
+      + `<path d="M12 3v7.5" class="g-stroke"/><path d="${half}" class="g-fill"/>`);
   }
   return `<kbd class="g-key">${k}</kbd>`;
 }

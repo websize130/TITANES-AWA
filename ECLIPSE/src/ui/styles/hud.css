@@ -143,3 +143,5 @@ body[data-input='touch'] .hud-actions { display: none; }
 .tc-dodge { right: 6.6rem; bottom: 0.2rem; width: 3.8rem; height: 3.8rem; }
 .tc-skill { right: 5.2rem; bottom: 5.2rem; width: 3.8rem; height: 3.8rem; }
 .tc-interact { right: 0.4rem; bottom: 6.8rem; width: 3.6rem; height: 3.6rem; }
+.tc-block { right: 10.6rem; bottom: 2.6rem; width: 3.8rem; height: 3.8rem; }
+.tc-buttons { width: 15rem; }
