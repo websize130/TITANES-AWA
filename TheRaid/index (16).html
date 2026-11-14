@@ -886,10 +886,63 @@ async function startGame() {
     }
   }
 
+  /* ------------------------- Animación: utilidades compartidas -------------------------
+     Suavizado exponencial independiente de los FPS: x += (objetivo − x)·(1 − e^(−velocidad·dt)).
+     Todo se define una vez aquí: el bucle de animación no crea objetos ni closures. */
+  const damp = (a, b, rate, dt) => a + (b - a) * (1 - Math.exp(-rate * dt));
+  const sstep = x => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+  const bell = (x, a, b) => { const u = (x - a) / (b - a); return u <= 0 || u >= 1 ? 0 : Math.sin(u * Math.PI); };
+  // Canales de pose: tronco (lean/twist/roll), cadera, cabeza, piernas (muslo/rodilla), brazos (hombro xyz/codo) y arma.
+  const POSE_KEYS = ['lean', 'twist', 'roll', 'hipX', 'hX', 'hY', 'hZ', 'thR', 'knR', 'thL', 'knL', 'sRx', 'sRy', 'sRz', 'eR', 'sLx', 'sLy', 'sLz', 'eL', 'wX', 'wY'];
+  const POSE_RATE = [14, 14, 14, 10, 10, 10, 10, 26, 26, 26, 26, 20, 20, 20, 20, 20, 20, 20, 20, 18, 30];
+  const newPose = () => { const o = {}; for (const k of POSE_KEYS) o[k] = 0; return o; };
+  const newCue = () => ({ st: '', combat: 0, combo: 0, ads: 0, shoot: 0, aim: 0, reload: -1, air: -1, rifle: 0, down: 0, revive: 0, dead: 0, stun: 0, hunch: 0, charge: 0, atk: -1, rec: 0 });
+  function armRTo(q, w, sx, sy, sz, e) { if (w <= 0) return; q.sRx += (sx - q.sRx) * w; q.sRy += (sy - q.sRy) * w; q.sRz += (sz - q.sRz) * w; q.eR += (e - q.eR) * w; }
+  function armLTo(q, w, sx, sy, sz, e) { if (w <= 0) return; q.sLx += (sx - q.sLx) * w; q.sLy += (sy - q.sLy) * w; q.sLz += (sz - q.sLz) * w; q.eL += (e - q.eL) * w; }
+  function armsTo(q, w, rx, ry, rz, re, lx, ly, lz, le) { armRTo(q, w, rx, ry, rz, re); armLTo(q, w, lx, ly, lz, le); }
+  function legsTo(q, w, thR, knR, thL, knL) { if (w <= 0) return; q.thR += (thR - q.thR) * w; q.knR += (knR - q.knR) * w; q.thL += (thL - q.thL) * w; q.knL += (knL - q.knL) * w; }
+
+  /* ---------------- Clips GLB: detección por alias y reproducción con crossfade ----------------
+     No se asume ningún nombre fijo ni esqueleto: cada clip del GLB se asigna a un estado por alias
+     (del más específico al más genérico; un clip asignado no se reutiliza). Lo que falte se cubre
+     con la animación procedural. */
+  const CLIP_ORDER = ['Idle', 'Walk', 'Run', 'Sprint', 'Crouch', 'Aim', 'Fire', 'Reload', 'Jump', 'Melee', 'Hit'];
+  const CLIP_ALIASES = [['Sprint', /sprint/], ['Crouch', /crouch|sneak|kneel/], ['Reload', /reload/], ['Fire', /fire|shoot|recoil/], ['Aim', /aim|ads|sight/],
+    ['Melee', /melee|punch|strike|attack|slash|stab|kick/], ['Hit', /hit|hurt|damage|impact|flinch/], ['Jump', /jump/], ['Run', /run|jog/], ['Walk', /walk|strafe/], ['Idle', /idle|breath|stand|rest/]];
+  const CLIP_ONCE = { Reload: 4, Jump: 3, Hit: 5, Melee: 6 };   // clips puntuales (LoopOnce) y su prioridad
+  function detectClips(anims) {
+    const map = {}, used = new Set(), list = anims || [];
+    for (const [name, re] of CLIP_ALIASES) {
+      let best = null, score = 0;
+      for (const c of list) { if (used.has(c)) continue; const n = (c.name || '').toLowerCase(), s = n.split(/[^a-z0-9]+/).includes(name.toLowerCase()) ? 3 : re.test(n) ? (n.length < 24 ? 2 : 1) : 0; if (s > score) { score = s; best = c; } }
+      if (best) { map[name] = best; used.add(best); }
+    }
+    return { map, found: CLIP_ORDER.filter(n => map[n]), missing: CLIP_ORDER.filter(n => !map[n]) };
+  }
+  /** Un AnimationMixer por modelo; las acciones se crean una sola vez y se reutilizan. */
+  class ClipPlayer {
+    constructor(model, anims) {
+      this.mixer = new THREE.AnimationMixer(model); this.clips = detectClips(anims); this.act = {}; this.cur = null; this.name = ''; this.tok = 0;
+      for (const n of CLIP_ORDER) { const clip = this.clips.map[n]; if (!clip) continue; const a = this.mixer.clipAction(clip);
+        if (CLIP_ONCE[n]) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; } this.act[n] = a; }
+    }
+    has(n) { return this.act[n] !== undefined; }
+    /** Clip puntual aún en curso (no se interrumpe por otro de menor prioridad). */
+    busy() { const a = this.cur; return !!a && a.loop === THREE.LoopOnce && a.isRunning() ? CLIP_ONCE[this.name] : 0; }
+    /** Cambia de clip con crossfade. Si ya suena el mismo clip con el mismo token, no se reinicia. */
+    play(n, fade = 0.22, dur = 0, tok = 0) {
+      const next = this.act[n]; if (!next) return false;
+      if (n === this.name && tok === this.tok) return true;
+      next.reset(); next.setEffectiveTimeScale(dur > 0 ? next.getClip().duration / dur : 1); next.setEffectiveWeight(1); next.play();
+      if (this.cur && this.cur !== next) { if (fade > 0) this.cur.crossFadeTo(next, fade, false); else this.cur.stop(); }
+      this.cur = next; this.name = n; this.tok = tok; return true;
+    }
+  }
+
   /* --------------------------------- Squad --------------------------------- */
   class Squad {
     constructor(rm) {
-      this.rm = rm; this.ops = [];
+      this.rm = rm; this.ops = []; this.assets = {};
       const std = o => new THREE.MeshStandardMaterial(o);
       this.M = {
         cloth: std({ map: T.cloth, bumpMap: T.cloth, bumpScale: 1.4, roughness: 0.86, envMapIntensity: 0.35 }),
@@ -950,17 +1003,30 @@ async function startGame() {
       const url = CONFIG.assets.operators[def.id]; if (url) this.loadModel(op, url);
     }
     setPose(op, p) { op.pose = p; op.R.sh.rotation.set(...p.Rs); op.R.el.rotation.set(...p.Re); op.L.sh.rotation.set(...p.Ls); op.L.el.rotation.set(...p.Le); }
-    /** Sustituye el operador procedural por un modelo GLB de producción con su clip "Idle". */
+    /** Sustituye el operador procedural del menú por un modelo GLB y guarda el recurso para la partida.
+        Detecta los clips disponibles (Idle, Walk, Run, Sprint, Crouch, Aim, Fire, Reload, Jump, Melee, Hit). */
     loadModel(op, url) {
-      new GLTFLoader().load(url, gltf => {
+      const skel = import('three/addons/utils/SkeletonUtils.js').catch(() => null);   // clonado de mallas con esqueleto (solo si hay GLB)
+      Promise.all([new GLTFLoader().loadAsync(url), skel]).then(([gltf, SU]) => {
+        const clips = detectClips(gltf.animations), usable = !!(SU && clips.map.Idle && (clips.map.Walk || clips.map.Run));
+        this.assets[op.def.id] = { gltf, clone: SU ? SU.clone : null, usable };
+        console.info(`[Animación] ${op.def.name}: clips detectados → ${clips.found.join(', ') || 'ninguno'} · faltan → ${clips.missing.join(', ') || 'ninguno'} (se cubren con animación procedural)` +
+          (usable ? '' : ' · en partida se mantiene el operador procedural (requiere Idle y Walk o Run)'));
         op.root.remove(op.hips); const model = gltf.scene; model.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; if (o.material) o.material.envMapIntensity = 0.6; } });
-        op.root.add(model); op.mixer = new THREE.AnimationMixer(model);
-        const clip = THREE.AnimationClip.findByName(gltf.animations, 'Idle') || gltf.animations[0]; if (clip) op.mixer.clipAction(clip).play();
-      }, undefined, e => console.warn('Modelo no disponible, se mantiene el operador procedural:', url, e));
+        op.root.add(model); op.model = model; op.mScale = model.scale.y; op.clips = new ClipPlayer(model, gltf.animations); op.mixer = op.clips.mixer;
+        if (!op.clips.play('Idle', 0) && gltf.animations[0]) op.mixer.clipAction(gltf.animations[0]).play();   // sin "Idle": primer clip (comportamiento anterior)
+      }).catch(e => console.warn('Modelo no disponible, se mantiene el operador procedural:', url, e));
+    }
+    /** En partida: si el GLB del operador es apto, lo clona dentro de la figura y oculta las piezas procedurales. */
+    attachTo(fig, id) {
+      const a = this.assets[id]; if (!a || !a.usable) return false;
+      const model = a.clone(a.gltf.scene), wrap = new THREE.Group(); model.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+      wrap.add(model); fig.root.add(wrap); fig.upper.visible = false; for (const l of fig.legs) l.visible = false;
+      fig.glb = { root: wrap, clips: new ClipPlayer(model, a.gltf.animations) }; fig.glb.clips.play('Idle', 0); return true;
     }
     update(dt, t) {
       for (const op of this.ops) {
-        if (op.mixer) { op.mixer.update(dt); continue; }
+        if (op.mixer) { op.mixer.update(dt); if (!op.clips || !op.clips.has('Idle')) { op.t += dt; op.model.scale.y = op.mScale * (1 + Math.sin(op.t * 1.35) * 0.006); } continue; }   // sin Idle: respiración procedural
         op.t += dt; const u = op.t, p = op.pose, br = Math.sin(u * 1.35);
         // Respiración y tensión corporal
         op.spine.scale.set(1 + br * 0.012, 1 + br * 0.006, 1 + br * 0.022); op.spine.position.y = 1.05 + br * 0.004;
@@ -1041,6 +1107,10 @@ async function startGame() {
     armored: { hp: 170, speed: 2.7, dmg: 9,  rate: 0.12, burst: 6, weapon: 'rifle', bulk: 1.18 },
     boss:    { hp: 620, speed: 3.3, dmg: 30, weapon: 'machete', melee: true, bulk: 1.45 },
   };
+  // Solo para animación: duraciones que ya fija la lógica existente (no la modifican).
+  const RELOAD_ANIM = 1.5;   // = pl.reload al iniciar la recarga en updPlayer
+  const MACHETE_ATK = 0.42;  // = e.atk al iniciar el tajo en updEnemy
+  const JUMP_T = 0.55;       // = duración del estado JUMP en PlayerStateMachine
 
   class TowerLevel {
     constructor(game, floor) {
@@ -1196,8 +1266,8 @@ async function startGame() {
       this.EM = { thug: std({ color: 0x3a2326, roughness: 0.85 }), dark: std({ color: 0x18181b, roughness: 0.6 }), olive: std({ color: 0x4a4a32, roughness: 0.9 }), skin: std({ color: 0x9a7560, roughness: 0.7 }),
         armor: std({ color: 0xd9d4c6, roughness: 0.35, metalness: 0.3 }), gold: std({ color: 0xb89a4a, roughness: 0.3, metalness: 0.9 }), apron: std({ color: 0x8a8478, roughness: 0.8 }), blood: std({ color: 0x5a0d12, roughness: 0.6 }) };
       this.accents = [basic(P.cyan), basic(P.magenta), basic(0xffb84a), basic(0x5dff9a)];
-      this.G = { leg: new THREE.CapsuleGeometry(0.095, 0.6, 4, 10), boot: new THREE.BoxGeometry(0.13, 0.12, 0.3), torso: new THREE.CapsuleGeometry(0.19, 0.34, 4, 12), vest: new THREE.BoxGeometry(0.44, 0.42, 0.3), head: new THREE.SphereGeometry(0.12, 14, 10),
-        helmet: new THREE.SphereGeometry(0.14, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.56), arm: new THREE.CapsuleGeometry(0.06, 0.46, 4, 8), rifle: new THREE.BoxGeometry(0.05, 0.72, 0.09), pistol: new THREE.BoxGeometry(0.04, 0.22, 0.1), machete: new THREE.BoxGeometry(0.015, 0.62, 0.07), accent: new THREE.BoxGeometry(0.2, 0.05, 0.03) };
+      this.G = { thigh: new THREE.CapsuleGeometry(0.095, 0.3, 4, 10), shin: new THREE.CapsuleGeometry(0.088, 0.26, 4, 10), boot: new THREE.BoxGeometry(0.13, 0.12, 0.3), torso: new THREE.CapsuleGeometry(0.19, 0.34, 4, 12), vest: new THREE.BoxGeometry(0.44, 0.42, 0.3), head: new THREE.SphereGeometry(0.12, 14, 10),
+        helmet: new THREE.SphereGeometry(0.14, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.56), upArm: new THREE.CapsuleGeometry(0.06, 0.2, 4, 8), foreArm: new THREE.CapsuleGeometry(0.056, 0.2, 4, 8), rifle: new THREE.BoxGeometry(0.05, 0.72, 0.09), pistol: new THREE.BoxGeometry(0.04, 0.22, 0.1), machete: new THREE.BoxGeometry(0.015, 0.62, 0.07), accent: new THREE.BoxGeometry(0.2, 0.05, 0.03) };
       // Mundo de juego, luces y efectos (ocultos mientras se muestra el menú)
       this.world = new THREE.Group(); this.lights = new THREE.Group(); this.world.visible = this.lights.visible = false;
       this.hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 0.5); this.pts = Array.from({ length: 7 }, () => new THREE.PointLight(0xffffff, 0, 17, 1.7));
@@ -1290,24 +1360,170 @@ async function startGame() {
     }
     pickType() { const r = Math.random(), f = this.floor; if (f === 10) return r < 0.3 ? 'machete' : 'armored'; return r < 0.38 ? 'machete' : r < 0.58 + f * 0.03 ? 'smg' : 'gun'; }
     /* ------------------------------ Personajes ------------------------------ */
+    /** Figura procedural con pivotes: cadera→tronco (upper) · cuello (head) · cadera→muslo (legs) → rodilla (knees)
+        · hombro (arms) → codo (elbows). Índice 0 = lado derecho (lleva el arma), 1 = izquierdo. */
     makeFigure(o) {
-      const G = this.G, root = new THREE.Group(), upper = new THREE.Group(), b = o.bulk || 1, legs = [], arms = [];
+      const G = this.G, root = new THREE.Group(), upper = new THREE.Group(), head = new THREE.Group(), b = o.bulk || 1, legs = [], knees = [], arms = [], elbows = [];
       const add = (p, geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); p.add(m); return m; };
       root.rotation.order = 'YXZ';
-      for (const sd of [-1, 1]) { const l = new THREE.Group(); l.position.set(sd * 0.12 * b, 0.92, 0); add(l, G.leg, o.cloth, 0, -0.44, 0, b, 1, b); add(l, G.boot, o.boot || o.cloth, 0, -0.86, 0.05); root.add(l); legs.push(l); }
-      root.add(upper); add(upper, G.torso, o.cloth, 0, 1.27, 0, 1.2 * b, 1, 0.9 * b); add(upper, G.vest, o.vest || o.cloth, 0, 1.28, 0.01, b, 1, b); add(upper, G.head, o.head, 0, 1.73, 0);
-      if (o.helmet) add(upper, G.helmet, o.helmet, 0, 1.75, -0.005);
-      if (o.accent) { add(upper, G.accent, o.accent, 0, 1.44, -0.17 * b); add(upper, G.accent, o.accent, 0, 1.8, -0.14, 0.5, 0.6, 1); }
-      for (const sd of [-1, 1]) { const a = new THREE.Group(); a.position.set(sd * 0.27 * b, 1.5, 0); a.rotation.set(-1.1, 0, -sd * 0.22); add(a, G.arm, o.cloth, 0, -0.28, 0, b, 1, b); upper.add(a); arms.push(a); }
-      const w = o.weapon, wpn = w ? add(arms[0], G[w], w === 'machete' ? this.M.steel : this.M.dark, 0.02, w === 'machete' ? -0.86 : w === 'pistol' ? -0.62 : -0.66, 0.04) : null;
-      return { root, upper, legs, arms, wpn, ph: 0, ck: 0 };
+      for (const sd of [-1, 1]) { const l = new THREE.Group(), kn = new THREE.Group(); l.position.set(sd * 0.12 * b, 0.92, 0); add(l, G.thigh, o.cloth, 0, -0.22, 0, b, 1, b);
+        kn.position.y = -0.44; l.add(kn); add(kn, G.shin, o.cloth, 0, -0.2, 0, b, 1, b); add(kn, G.boot, o.boot || o.cloth, 0, -0.42, 0.05); root.add(l); legs.push(l); knees.push(kn); }
+      // El tronco pivota en la cadera (y = 0.92); las mallas conservan su altura original.
+      upper.position.y = 0.92; root.add(upper); add(upper, G.torso, o.cloth, 0, 0.35, 0, 1.2 * b, 1, 0.9 * b); add(upper, G.vest, o.vest || o.cloth, 0, 0.36, 0.01, b, 1, b);
+      head.position.y = 0.68; upper.add(head); add(head, G.head, o.head, 0, 0.13, 0);
+      if (o.helmet) add(head, G.helmet, o.helmet, 0, 0.15, -0.005);
+      if (o.accent) { add(upper, G.accent, o.accent, 0, 0.52, -0.17 * b); add(head, G.accent, o.accent, 0, 0.2, -0.14, 0.5, 0.6, 1); }
+      for (const sd of [-1, 1]) { const a = new THREE.Group(), el = new THREE.Group(); a.position.set(sd * 0.27 * b, 0.58, 0); a.rotation.set(-1.1, 0, -sd * 0.22); add(a, G.upArm, o.cloth, 0, -0.13, 0, b, 1, b);
+        el.position.y = -0.29; a.add(el); add(el, G.foreArm, o.cloth, 0, -0.14, 0, b, 1, b); upper.add(a); arms.push(a); elbows.push(el); }
+      const w = o.weapon, wpn = w ? add(elbows[0], G[w], w === 'machete' ? this.M.steel : this.M.dark, 0.02, w === 'machete' ? -0.57 : w === 'pistol' ? -0.33 : -0.37, 0.04) : null;
+      return { root, upper, head, legs, knees, arms, elbows, wpn, wpnY: wpn ? wpn.position.y : 0, ph: 0, ck: 0, t: rnd(10), p: newPose(), q: newPose(), ready: false, cue: newCue(), glb: null,
+        w: { spd: 0, ck: 0, aim: 0, rel: 0, cb: 0, slide: 0, fly: 0, down: 0, dead: 0, stun: 0, hunch: 0, chg: 0, kick: 0, hit: 0, hitSide: 1, hitN: 0, land: 0 }, airPrev: -1, act: '', actT: 0, actN: 0, actId: 0, grace: 0 };
     }
+    /** Animación procedural por capas. Los llamadores describen el estado en f.cue (objeto reutilizado);
+        los pesos de cada capa se suavizan con dt y la pose final se filtra por canal: transiciones sin saltos a cualquier FPS.
+        armL / armR: ángulo base de los hombros (compatibilidad con las llamadas existentes). */
     animFig(f, x, z, yaw, speed, crouched, dt, armL = -1.1, armR = armL) {
       f.root.position.x = x; f.root.position.z = z; f.root.rotation.y = yaw + Math.PI;
-      f.ck = lerp(f.ck, crouched ? 1 : 0, 1 - Math.exp(-dt * 12)); f.ph += speed * dt * 2.6; const k = f.ck, sw = Math.sin(f.ph) * Math.min(0.7, speed * 0.16), hip = 0.92 - 0.32 * k;
-      f.legs[0].position.y = f.legs[1].position.y = hip; f.legs[0].rotation.x = lerp(sw, -0.85, k); f.legs[1].rotation.x = lerp(-sw, 0.85, k);
-      f.upper.position.y = hip - 0.92 + Math.abs(Math.cos(f.ph)) * 0.02 * Math.min(1, speed); f.upper.rotation.x = 0.06 + k * 0.16 + Math.min(0.12, speed * 0.02);
-      f.arms[0].rotation.x = armR; f.arms[1].rotation.x = armL;
+      const c = f.cue, w = f.w, q = f.q, p = f.p; f.t += dt; const u = f.t;
+      // 1) Pesos de estado suavizados
+      w.spd = damp(w.spd, speed, 10, dt);
+      const sp = w.spd, mv = clamp(sp / 1.1, 0, 1), idle = 1 - mv, run = clamp((sp - 3.6) / 2, 0, 1);
+      w.ck = damp(w.ck, crouched ? 1 : 0, 10, dt); f.ck = w.ck;
+      w.aim = damp(w.aim, Math.max(c.ads, c.aim, c.shoot * 0.85), 12, dt);
+      w.rel = damp(w.rel, c.reload >= 0 ? 1 : 0, 10, dt);
+      w.cb = damp(w.cb, c.combat, 9, dt);
+      w.slide = damp(w.slide, c.st === 'SLIDE' ? 1 : 0, 12, dt);
+      w.fly = damp(w.fly, c.air > 0.12 && c.air < 0.9 ? 1 : 0, 16, dt);
+      w.down = damp(w.down, c.down, 5, dt); w.dead = damp(w.dead, c.dead, 7, dt); w.stun = damp(w.stun, c.stun, 10, dt);
+      w.hunch = damp(w.hunch, c.hunch, 6, dt); w.chg = damp(w.chg, c.charge, 8, dt);
+      w.kick *= Math.exp(-dt * 13); w.hit *= Math.exp(-dt * 6); w.land *= Math.exp(-dt * 7);
+      if (f.airPrev >= 0 && c.air < 0) w.land = 1; f.airPrev = c.air;
+      // Reloj propio de la acción de combate: un golpe nuevo (combo distinto) reinicia; el parpadeo de la FSM con el botón mantenido no.
+      const act = c.combat && c.st !== 'STANCE' ? c.st : '';
+      if (act) { if (act !== f.act || (act === 'STRIKE' && c.combo !== f.actN)) { f.act = act; f.actT = 0; f.actN = c.combo; f.actId++; } f.grace = 0.15; }
+      else if ((f.grace -= dt) <= 0) f.act = '';
+      if (f.act) f.actT += dt;
+      if (f.glb) return this.animGlb(f, dt, sp, run);
+
+      // 2) Locomoción: ciclo de marcha con rodillas, contrarrotación del tronco, respiración y cambios de peso
+      const A = (0.2 + Math.min(sp, 6.5) * 0.075) * mv * (1 - 0.3 * w.ck) * (1 - w.slide) * (1 - w.down) * (1 - w.dead);
+      f.ph += 6.2832 * (0.55 + sp * 0.24) * dt * mv;
+      const s0 = Math.sin(f.ph), c0 = Math.cos(f.ph), kA = (0.5 + run * 0.9 + w.ck * 0.2) * mv, br = Math.sin(u * 1.6), sh = Math.sin(u * 0.55), two = c.rifle;
+      q.thR = -A * s0; q.thL = A * s0;
+      q.knR = 0.05 + kA * Math.max(0, c0) + 0.09 * Math.max(0, sh) * idle; q.knL = 0.05 + kA * Math.max(0, -c0) + 0.09 * Math.max(0, -sh) * idle;
+      q.hipX = sh * 0.02 * idle; q.lean = 0.05 + 0.04 * mv + 0.22 * run + br * 0.012 * idle; q.twist = 0.09 * s0 * mv * (1 - 0.7 * w.aim); q.roll = -sh * 0.02 * idle + 0.025 * c0 * mv;
+      q.hX = Math.sin(u * 0.5) * 0.03 * idle - 0.1 * run; q.hY = Math.sin(u * 0.23) * 0.16 * idle * (1 - w.aim); q.hZ = 0; q.wX = 0; q.wY = 0;
+      const asw = A * 0.9 * (1 - two * 0.85);   // con fusil los brazos apenas oscilan
+      q.sRx = armR + asw * s0 + br * 0.015 * idle; q.sRy = 0; q.sRz = 0.22; q.eR = two ? -0.12 : -0.25 - 0.15 * mv;
+      q.sLx = armL - asw * s0 + br * 0.015 * idle; q.sLy = 0; q.sLz = two ? -0.52 : -0.22; q.eL = two ? -0.65 : -0.3 - 0.15 * mv;
+      if (run > 0 && two) { armsTo(q, run, -0.72 + 0.12 * s0, 0, 0.35, -1.0, -0.86 - 0.12 * s0, 0, -0.65, -1.25); q.wX += 0.75 * run; }   // sprint: fusil cruzado y bombeo
+      // Agachado (con zancada reducida) y carrera encorvada hacia cobertura
+      const kc = w.ck * (1 - w.slide);
+      q.thR += kc * (-1.0 - 0.15 * idle); q.knR += kc * (1.75 + 0.25 * idle); q.thL += kc * (-0.95 + 0.2 * idle); q.knL += kc * (1.7 - 0.2 * idle); q.lean += kc * 0.22;
+      q.lean += 0.25 * w.hunch; q.thR -= 0.15 * w.hunch; q.thL -= 0.15 * w.hunch; q.knR += 0.25 * w.hunch; q.knL += 0.25 * w.hunch;
+      // Deslizamiento
+      if (w.slide > 0.001) { legsTo(q, w.slide, -1.35, 0.12, -0.25, 1.95); q.lean += (-0.38 - q.lean) * w.slide; q.roll += 0.12 * w.slide; q.hX += 0.3 * w.slide; armLTo(q, w.slide, -0.5, 0, 0.95, -0.4); }
+      // Apuntado (ADS, disparo desde la cadera y enemigos apuntando): ambas manos en el arma
+      if (w.aim > 0.001) {
+        if (two) armsTo(q, w.aim, -1.22, 0, 0.1, -0.36, -1.36, 0, -0.78, -0.42); else armsTo(q, w.aim, -1.5, 0, 0.18, -0.05, -1.42, 0, -0.62, -0.12);
+        q.lean += 0.06 * w.aim; q.hX += 0.08 * w.aim; q.hZ += 0.1 * w.aim;
+      }
+      // Retroceso: impulso por disparo que decae con dt (no se reinicia mientras se mantiene el gatillo)
+      if (w.kick > 0.001) { const k = w.kick; q.sRx -= 0.09 * k; q.eR -= 0.08 * k; q.sLx -= 0.06 * k; q.lean -= 0.05 * k; q.twist += 0.03 * k; q.wY += 0.035 * k; q.hX -= 0.03 * k; }
+      // Recarga: inclinar el fusil, cargador fuera → bolsillo → cargador dentro → palanca de carga
+      if (w.rel > 0.001) {
+        const r = c.reload < 0 ? 1 : c.reload, wr = w.rel, out = bell(r, 0.12, 0.5), inn = bell(r, 0.42, 0.78), chg = bell(r, 0.74, 0.98), tilt = bell(r, 0, 0.94);
+        armRTo(q, wr, -1.0 - 0.15 * tilt, 0.45 * tilt, 0.3, -0.55 - 0.2 * tilt);
+        let lx = lerp(-1.3, -0.35, out), lz = lerp(-0.7, -0.15, out), le = lerp(-0.6, -1.35, out);
+        lx = lerp(lx, -1.1, inn); lz = lerp(lz, -0.65, inn); le = lerp(le, -0.95, inn); lx = lerp(lx, -1.55, chg); lz = lerp(lz, -1.0, chg); le = lerp(le, -1.45, chg);
+        armLTo(q, wr, lx, 0, lz, le); q.hX += wr * (0.28 + 0.1 * out); q.hY += -0.15 * wr; q.wY += 0.03 * chg * wr; q.lean += 0.05 * wr;
+      }
+      // Combate cuerpo a cuerpo: guardia + golpe / agarre / desarme / remate / evasión
+      const cb = w.cb * (1 - w.down);
+      if (cb > 0.001) {
+        const bob = Math.sin(u * 7);
+        armsTo(q, cb, -1.0, 0, 0.38, -1.75, -1.15, 0, -0.38, -1.85); q.wX += 2.3 * cb;   // arma colgada durante la melé
+        q.thL -= 0.32 * cb; q.thR += 0.12 * cb; q.knR += (0.32 + 0.06 * bob) * cb; q.knL += (0.36 + 0.06 * bob) * cb; q.lean += 0.12 * cb; q.twist -= 0.18 * cb;
+        const t = f.actT;
+        if (f.act === 'STRIKE') {
+          const left = f.actN % 2 === 1, heavy = f.actN % 3 === 2, k = cb * (t < 0.07 ? sstep(t / 0.07) : 1 - sstep((t - 0.07) / 0.24)), hv = heavy ? 1.4 : 1;
+          if (left) armLTo(q, k, -1.58, 0, -0.12, -0.05); else armRTo(q, k, -1.58, 0, 0.12, -0.05);
+          q.twist += (left ? -0.42 : 0.42) * k * hv; q.lean += (0.12 + (heavy ? 0.12 : 0)) * k; q.roll += (heavy ? (left ? 0.1 : -0.1) : 0) * k; q.thR += 0.2 * k; q.knR += 0.1 * k;
+        } else if (f.act === 'GRAPPLE') {
+          const g = cb * sstep(t / 0.25), pull = sstep((t - 0.25) / 0.4);
+          armsTo(q, g, -1.45 + 0.35 * pull, 0, 0.55, -0.55 - 0.9 * pull, -1.45 + 0.35 * pull, 0, -0.55, -0.55 - 0.9 * pull);
+          q.lean += 0.3 * g - 0.12 * g * pull; q.knR += 0.3 * g; q.knL += 0.3 * g; q.thR += 0.1 * g * pull; q.hX += 0.15 * g;
+        } else if (f.act === 'DISARM') {
+          const a1 = cb * sstep(t / 0.15), tw = cb * bell(t, 0.15, 0.6), pb = sstep((t - 0.5) / 0.3);
+          armLTo(q, a1, lerp(-1.5, -0.6, pb), 0, lerp(-0.6, -0.2, pb), lerp(-0.2, -1.6, pb)); armRTo(q, tw, -1.3, 0, 0.75, -1.1);
+          q.twist += -0.35 * a1 * (1 - pb) + 0.55 * tw; q.lean += 0.2 * a1 - 0.25 * a1 * pb; q.thR += 0.25 * a1 * pb;
+        } else if (f.act === 'ENV_FINISHER') {
+          const up = sstep(t / 0.3), slam = sstep((t - 0.32) / 0.14), k = cb * up * (1 - sstep((t - 0.65) / 0.25)), sx = lerp(-2.7, -0.9, slam), ee = lerp(-0.9, -0.2, slam);
+          armsTo(q, k, sx, 0, 0.3, ee, sx, 0, -0.3, ee); q.lean += k * lerp(-0.22, 0.5, slam); q.knR += 0.5 * k * slam; q.knL += 0.5 * k * slam; q.thL -= 0.3 * k * slam; q.hX += 0.25 * k * slam;
+        } else if (f.act === 'EVADE') {
+          const e = cb * bell(t, 0, 0.45);
+          armsTo(q, e, -1.5, 0, 0.6, -1.9, -1.6, 0, -0.6, -1.9); q.lean -= 0.32 * e; q.twist += 0.3 * e; q.roll += 0.12 * e; q.knR += 0.55 * e; q.knL += 0.4 * e; q.thR += 0.35 * e; q.thL -= 0.3 * e;
+        }
+      }
+      // Machete: carga con el arma alzada, tajo (anticipación → golpe) y recuperación
+      if (w.chg > 0.001) { armRTo(q, w.chg, -1.7, 0, 0.25, -1.3); q.lean += 0.18 * w.chg; }
+      if (c.atk >= 0) {
+        const up = sstep(c.atk / 0.55), sl = sstep((c.atk - 0.62) / 0.3), wu = up * (1 - sl);
+        armRTo(q, up, -2.85, 0, -0.25, -1.0); armRTo(q, sl, -0.5, 0, 0.45, -0.1); armLTo(q, wu, -0.4, 0, -0.5, -0.9);
+        q.twist += -0.35 * wu + 0.5 * sl; q.lean += -0.08 * wu + 0.32 * sl; q.knR += 0.3 * sl; q.knL += 0.2 * sl;
+      } else if (c.rec > 0) { armRTo(q, c.rec, -0.5, 0, 0.45, -0.1); q.twist += 0.5 * c.rec; q.lean += 0.25 * c.rec; q.knR += 0.2 * c.rec; }
+      // Salto: anticipación (flexión), recogida en el aire y amortiguación al aterrizar
+      if (c.air >= 0) { const a = c.air, pre = 1 - sstep(a / 0.14), tuck = bell(a, 0.08, 0.95);
+        q.knR += 0.75 * pre + 0.85 * tuck; q.knL += 0.75 * pre + 0.6 * tuck; q.thR -= 0.35 * pre + 0.5 * tuck; q.thL -= 0.35 * pre + 0.25 * tuck; q.lean += 0.18 * pre - 0.06 * tuck; q.sRx -= 0.1 * tuck; q.sLx -= 0.1 * tuck; }
+      if (w.land > 0.01) { const l = w.land; q.knR += 0.65 * l; q.knL += 0.6 * l; q.thR -= 0.35 * l; q.thL -= 0.3 * l; q.lean += 0.15 * l; }
+      // Impacto recibido (aditivo, alterna el lado)
+      if (w.hit > 0.01) { const h = w.hit * (1 - w.down) * (1 - w.dead), hs = w.hitSide; q.lean -= 0.22 * h; q.hX -= 0.32 * h; q.twist += 0.16 * h * hs; q.roll += 0.06 * h * hs; q.sRx += 0.22 * h; q.sLx += 0.28 * h; q.knR += 0.15 * h; q.knL += 0.1 * h; }
+      // Aturdido
+      if (w.stun > 0.01) { const s = w.stun; q.roll += s * Math.sin(u * 9) * 0.12; q.lean += s * (-0.12 + Math.sin(u * 5.3) * 0.06); q.hX += s * (0.28 + Math.sin(u * 7) * 0.12); q.hZ += s * Math.sin(u * 4.1) * 0.3;
+        armsTo(q, s * 0.8, -0.3, 0, 0.3, -0.25, -0.35, 0, -0.3, -0.3); q.knR += 0.35 * s; q.knL += (0.25 + Math.max(0, Math.sin(u * 3)) * 0.2) * s; }
+      // Abatido (jugador; la caída del cuerpo la hace updPlayer rotando la raíz) y muerto (enemigo)
+      if (w.down > 0.001) { const d = w.down, wr = Math.sin(u * 2.1), rv = c.revive > 0 ? 1 : 0;
+        legsTo(q, d, -0.55, 1.2 + 0.1 * wr, -0.05, 0.12); armRTo(q, d, lerp(-0.25, -2.3, rv), 0, -0.95 + 0.1 * wr, rv ? -0.2 : -0.35); armLTo(q, d, -0.95, 0, -0.55, -1.75);
+        q.lean += (-0.1 + 0.03 * wr - q.lean) * d; q.twist += (0.12 - q.twist) * d; q.roll *= 1 - d; q.hX += (0.25 - q.hX) * d; q.hY += (0.45 + 0.08 * wr - q.hY) * d; q.hZ *= 1 - d; q.wX += (0.6 - q.wX) * d; }
+      if (w.dead > 0.001) { const d = w.dead;
+        legsTo(q, d, -0.35, 0.9, -0.1, 0.35); armsTo(q, d, -0.5, 0, -1.0, -0.3, -0.7, 0, 1.0, -0.5); q.lean += (-0.25 - q.lean) * d; q.hX += (-0.45 - q.hX) * d; q.hY += (0.3 - q.hY) * d; }
+      // Los brazos compensan la inclinación del tronco para mantener la línea del arma
+      q.sRx -= q.lean * 0.7; q.sLx -= q.lean * 0.7;
+
+      // 3) Suavizado final por canal y aplicación a los pivotes
+      if (!f.ready) { for (let i = 0; i < POSE_KEYS.length; i++) p[POSE_KEYS[i]] = q[POSE_KEYS[i]]; f.ready = true; }
+      else for (let i = 0; i < POSE_KEYS.length; i++) { const k = POSE_KEYS[i]; p[k] += (q[k] - p[k]) * (1 - Math.exp(-POSE_RATE[i] * dt)); }
+      // Altura de cadera a partir de la pierna de apoyo: los pies quedan en el suelo al agacharse, caminar o aterrizar
+      const hip = lerp(Math.max(0.44 * Math.cos(p.thR) + 0.48 * Math.cos(p.thR + p.knR), 0.44 * Math.cos(p.thL) + 0.48 * Math.cos(p.thL + p.knL)), 0.9, w.fly);
+      f.legs[0].position.y = f.legs[1].position.y = hip; f.legs[0].rotation.x = p.thR; f.knees[0].rotation.x = p.knR; f.legs[1].rotation.x = p.thL; f.knees[1].rotation.x = p.knL;
+      f.upper.position.x = p.hipX; f.upper.position.y = hip + br * 0.004 * idle; f.upper.rotation.set(p.lean, p.twist, p.roll); f.head.rotation.set(p.hX, p.hY, p.hZ);
+      f.arms[0].rotation.set(p.sRx, p.sRy, p.sRz); f.elbows[0].rotation.x = p.eR; f.arms[1].rotation.set(p.sLx, p.sLy, p.sLz); f.elbows[1].rotation.x = p.eL;
+      if (f.wpn) { f.wpn.rotation.x = p.wX; f.wpn.position.y = f.wpnY + p.wY; }
+    }
+    /** Figura con modelo GLB: elige el clip por estado (con prioridades y crossfade). Si un clip falta, aplica una
+        alternativa procedural sobre la raíz del modelo (independiente del esqueleto: no usa nombres de huesos). */
+    animGlb(f, dt, sp, run) {
+      const g = f.glb, cp = g.clips, c = f.cue, w = f.w;
+      let want = 'Idle', tok = 0, dur = 0;
+      if (c.down || c.dead) want = 'Idle';
+      else if (f.act && cp.has('Melee')) { want = 'Melee'; tok = f.actId; }
+      else if (w.hit > 0.85 && cp.has('Hit')) { want = 'Hit'; tok = w.hitN; }
+      else if (c.reload >= 0 && cp.has('Reload')) { want = 'Reload'; dur = RELOAD_ANIM; }
+      else if (c.air >= 0 && cp.has('Jump')) want = 'Jump';
+      else if (w.ck > 0.5 && cp.has('Crouch')) want = 'Crouch';
+      else if (sp > 4.6) want = cp.has('Sprint') ? 'Sprint' : cp.has('Run') ? 'Run' : 'Walk';
+      else if (sp > 2.6) want = cp.has('Run') ? 'Run' : 'Walk';
+      else if (sp > 0.4) want = cp.has('Walk') ? 'Walk' : 'Run';
+      else if (c.shoot && cp.has('Fire')) want = 'Fire';
+      else if (w.aim > 0.5 && cp.has('Aim')) want = 'Aim';
+      if (!cp.has(want)) want = 'Idle';
+      const busy = cp.busy(); if (!(busy && busy >= (CLIP_ONCE[want] || 0) && want !== cp.name)) cp.play(want, 0.22, dur, tok);
+      // Alternativas procedurales sobre la raíz del modelo para los clips que faltan
+      const r = g.root, n = cp.name, sx = f.act === 'STRIKE' && n !== 'Melee' ? bell(f.actT, 0, 0.3) * (f.actN % 2 ? -0.35 : 0.35) : 0;
+      const pitch = (n === 'Crouch' ? 0 : 0.22 * w.ck) + (n === 'Sprint' ? 0 : 0.12 * run) - (n === 'Fire' ? 0 : 0.05 * w.kick) - (n === 'Hit' ? 0 : 0.2 * w.hit) + 0.1 * w.land;
+      r.rotation.x = damp(r.rotation.x, pitch, 14, dt); r.rotation.y = damp(r.rotation.y, sx, 18, dt);
+      r.position.y = damp(r.position.y, (n === 'Crouch' ? 0 : -0.26 * w.ck) - 0.08 * w.land, 14, dt);
+      cp.mixer.update(dt);
     }
     spawnEnemy(type, x, z, alerted, apt = -1) {
       const d = ENEMY[type], EM = this.EM, look = type === 'armored' ? { cloth: EM.armor, vest: EM.gold, head: EM.armor, helmet: EM.gold } : type === 'boss' ? { cloth: EM.apron, vest: EM.blood, head: EM.skin } : d.melee ? { cloth: EM.olive, head: EM.skin } : { cloth: EM.thug, vest: EM.dark, head: EM.skin };
@@ -1323,7 +1539,7 @@ async function startGame() {
     }
     addPlayer(i) {
       const sq = this.app.squad.M, lead = this.players.find(p => !p.downed) || this.players[0];
-      const fig = this.makeFigure({ cloth: sq.cloth, vest: i === 1 ? sq.tan : sq.cloth, head: sq.leather, helmet: sq.shell, boot: sq.leather, weapon: 'rifle', accent: this.accents[i], bulk: OPERATORS[i].bulk }); this.world.add(fig.root);
+      const fig = this.makeFigure({ cloth: sq.cloth, vest: i === 1 ? sq.tan : sq.cloth, head: sq.leather, helmet: sq.shell, boot: sq.leather, weapon: 'rifle', accent: this.accents[i], bulk: OPERATORS[i].bulk }); this.app.squad.attachTo(fig, OPERATORS[i].id); this.world.add(fig.root);
       const pl = { slot: i, ref: this.input.slots[i], x: lead ? lead.x + 0.8 : (i - 1.5) * 1.1, z: lead ? lead.z + 0.6 : 6.2, yaw: lead ? lead.yaw : 0, pitch: 0, r: 0.35, hp: 100, alive: true, downed: false, crouched: false, mag: 30, reserve: 120, reload: 0,
         fireCd: 0, spread: 0, fig, hop: 0, v: 0, lastHit: -9, revive: 0, bleed: 0, hitFx: 0, dmgFx: 0, iframes: 0, dash: 0, idle: 0, pMelee: 0, shots: 0, msg: '', msgT: 0, hint: '', near: null, wantReload: false, sl: null, cam: null };
       if (this.level) this.level.resolve(pl, pl.r); this.players.push(pl); this.players.sort((a, b) => a.slot - b.slot);
@@ -1354,7 +1570,7 @@ async function startGame() {
     alertApt(i) { for (const e of this.enemies) if (e.alive && e.apt === i) this.alert(e); }
     noise(x, z, r) { for (const e of this.enemies) if (e.alive && !e.alerted) { const d = Math.hypot(e.x - x, e.z - z); if (d < r * 0.6 || (d < r && this.level.los(x, z, e.x, e.z))) this.alert(e); } }
     hitEnemy(e, dmg, pl, knock, stun) {
-      if (!e.alive) return; e.hp -= dmg; this.alert(e);
+      if (!e.alive) return; e.hp -= dmg; this.alert(e); const hw = e.fig.w; hw.hit = 1; hw.hitSide = -hw.hitSide; hw.hitN++;
       if (pl) { pl.hitFx = 1; const d = Math.hypot(e.x - pl.x, e.z - pl.z) || 1; e.x += (e.x - pl.x) / d * knock; e.z += (e.z - pl.z) / d * knock; this.level.resolve(e, e.r); }
       if (stun && e.type !== 'boss') e.stun = Math.max(e.stun, stun); this.emit(e.x, 1.25, e.z, 5, [0.45, 0.03, 0.05], 2.5, 0.045, 0.45);
       if (e.hp <= 0) { e.alive = false; e.dead = 0; e.crouched = false; if (e.cover) e.cover.by = null; if (Math.random() < 0.4) this.drop(e.x, e.z); }
@@ -1366,15 +1582,15 @@ async function startGame() {
     }
     hurt(pl, dmg) {
       if (pl.downed || dmg <= 0) return; pl.hp -= dmg * (this.players.length === 1 ? 0.75 : 1);   // en solitario el daño recibido se reduce
-       pl.lastHit = this.time; pl.dmgFx = 1; this.input.rumble(pl.slot, 0.6, 90);
+       pl.lastHit = this.time; pl.dmgFx = 1; this.input.rumble(pl.slot, 0.6, 90); const hw = pl.fig.w; hw.hit = 1; hw.hitSide = -hw.hitSide; hw.hitN++;
       if (pl.hp <= 0) { pl.hp = 0; pl.downed = true; pl.bleed = 30; pl.revive = 0; pl.reload = 0; }
     }
     /* ------------------------------ Jugador ------------------------------ */
     updPlayer(pl, dt) {
       const slot = pl.ref, s = slot.state, f = slot.fsm, lv = this.level, look = slot.look || [0, 0];
       pl.hitFx = Math.max(0, pl.hitFx - dt * 5); pl.dmgFx = Math.max(0, pl.dmgFx - dt * 1.2); pl.msgT -= dt; pl.iframes -= dt;
-      if (pl.downed) { pl.bleed -= dt; slot.ctx = this.farCtx; pl.yaw -= look[0] * 0.0045; pl.crouched = false; pl.near = null; pl.hint = ''; this.animFig(pl.fig, pl.x, pl.z, pl.yaw, 0, false, dt); pl.fig.root.rotation.x = lerp(pl.fig.root.rotation.x, -1.45, 1 - Math.exp(-dt * 8)); pl.fig.root.position.y = 0.18; return; }
-      pl.fig.root.rotation.x = 0;
+      if (pl.downed) { pl.bleed -= dt; slot.ctx = this.farCtx; pl.yaw -= look[0] * 0.0045; pl.crouched = false; pl.near = null; pl.hint = ''; const dc = pl.fig.cue; dc.st = ''; dc.combat = 0; dc.ads = dc.shoot = 0; dc.reload = dc.air = -1; dc.down = 1; dc.revive = pl.revive; this.animFig(pl.fig, pl.x, pl.z, pl.yaw, 0, false, dt); pl.fig.root.rotation.x = lerp(pl.fig.root.rotation.x, -1.45, 1 - Math.exp(-dt * 8)); pl.fig.root.position.y = 0.18; return; }
+      pl.fig.root.rotation.x = damp(pl.fig.root.rotation.x, 0, 9, dt);
       const sens = (slot.source.startsWith('gp') ? 0.014 : 0.0045) * (s.ads ? 0.6 : 1);
       pl.yaw -= look[0] * sens; pl.pitch = clamp(pl.pitch - look[1] * sens * 0.6, -0.45, 0.4);
       if (slot.source === 'kb') { const k = this.input.keys; pl.yaw -= ((k.has('ArrowRight') ? 1 : 0) - (k.has('ArrowLeft') ? 1 : 0)) * 2.4 * dt; if (k.has('KeyR')) pl.wantReload = true; }
@@ -1420,6 +1636,9 @@ async function startGame() {
       pl.x += vx * dt; pl.z += vz * dt; lv.resolve(pl, pl.r); pl.v = Math.hypot(vx, vz);
       pl.crouched = !combat && (st === 'CROUCH' || st === 'COVER' || st === 'SLIDE');
       const punch = combat && st === 'STRIKE' ? Math.sin(Math.min(1, f.t / 0.26) * Math.PI) * 0.8 : 0, odd = f.combo % 2;
+      const c = pl.fig.cue; c.st = st; c.combat = combat ? 1 : 0; c.combo = f.combo; c.rifle = 1; c.down = 0; c.revive = 0;
+      c.ads = !combat && (st === 'ADS' || s.ads) ? 1 : 0; c.shoot = !combat && st !== 'SLIDE' && s.fire && pl.mag > 0 && pl.reload <= 0 ? 1 : 0;
+      c.reload = !combat && pl.reload > 0 ? clamp(1 - pl.reload / RELOAD_ANIM, 0, 1) : -1; c.air = !combat && st === 'JUMP' ? Math.min(1, f.t / JUMP_T) : -1;
       this.animFig(pl.fig, pl.x, pl.z, pl.yaw, pl.v, pl.crouched, dt, combat ? -0.9 - (odd ? punch : 0) : -1.25, combat ? -0.9 - (odd ? 0 : punch) : -1.25); pl.fig.root.position.y = pl.hop;
     }
     fire(pl, s) {
@@ -1433,7 +1652,7 @@ async function startGame() {
       this.tracer(ox, h, oz, hx, r.ent ? 1.25 : h - 0.08, hz, false); this.emit(ox + ddx * 0.3, h, oz + ddz * 0.3, 1, [3, 2.2, 1.2], 0.5, 0.09, 0.05);
       if (r.ent) this.hitEnemy(r.ent, 24 * (s.ads ? 1.15 : 1), pl, 0.08, 0.06);
       else if (r.c) { this.emit(hx - ddx * 0.05, h - 0.08, hz - ddz * 0.05, 4, [2.2, 1.6, 0.8], 3, 0.03, 0.25); lv.damage(r.c, 22); }
-      pl.mag--; pl.fireCd = 0.105; pl.spread = Math.min(1, pl.spread + 0.13); if (++pl.shots % 3 === 0) this.input.rumble(pl.slot, 0.25, 40); this.noise(pl.x, pl.z, 17);
+      pl.fig.w.kick = 1; pl.mag--; pl.fireCd = 0.105; pl.spread = Math.min(1, pl.spread + 0.13); if (++pl.shots % 3 === 0) this.input.rumble(pl.slot, 0.25, 40); this.noise(pl.x, pl.z, 17);
     }
     /* ------------------------------ IA enemiga ------------------------------ */
     coverOk(c, tp) { return (c.cx - c.x) * (tp.x - c.x) + (c.cz - c.z) * (tp.z - c.z) > 0; }
@@ -1456,18 +1675,18 @@ async function startGame() {
     }
     enemyShot(e, tp, d) {
       const dx = (tp.x - e.x) / d, dz = (tp.z - e.z) / d, a = (Math.random() + Math.random() - 1) * (0.07 + (tp.v > 4 ? 0.05 : 0) + (tp.crouched ? 0.03 : 0)), ca = Math.cos(a), sa = Math.sin(a), ddx = dx * ca - dz * sa, ddz = dx * sa + dz * ca;
-      const ox = e.x + dx * 0.4, oz = e.z + dz * 0.4, r = this.level.shoot(ox, oz, ddx, ddz, 40, this.players);
+      const ox = e.x + dx * 0.4, oz = e.z + dz * 0.4, r = this.level.shoot(ox, oz, ddx, ddz, 40, this.players); e.fig.w.kick = 1;
       this.tracer(ox, 1.35, oz, ox + ddx * r.t, 1.25, oz + ddz * r.t, true); this.emit(ox, 1.35, oz, 1, [3, 1.4, 0.5], 0.4, 0.08, 0.05);
       if (r.ent) { if (r.ent.iframes <= 0) this.hurt(r.ent, e.d.dmg); } else if (r.c) this.level.damage(r.c, 6);
     }
     updEnemy(e, dt) {
       const lv = this.level, f = e.fig;
-      if (!e.alive) { e.dead += dt; f.root.rotation.x = lerp(f.root.rotation.x, -1.5, 1 - Math.exp(-dt * 9)); f.root.position.y = 0.16 - Math.max(0, e.dead - 2.6) * 0.5; return e.dead < 3.6; }
+      if (!e.alive) { e.dead += dt; const dc = f.cue; dc.dead = 1; dc.stun = dc.hunch = dc.charge = dc.aim = dc.rec = 0; dc.atk = -1; this.animFig(f, e.x, e.z, e.yaw, 0, false, dt); f.root.rotation.x = lerp(f.root.rotation.x, -1.5, 1 - Math.exp(-dt * 9)); f.root.position.y = 0.16 - Math.max(0, e.dead - 2.6) * 0.5; return e.dead < 3.6; }
       let tp = null, d = 999; for (const p of this.players) { if (p.downed) continue; const q = Math.hypot(p.x - e.x, p.z - e.z); if (q < d) { d = q; tp = p; } }
-      let v = 0, armL = e.melee ? -0.5 : -0.7, armR = armL; e.crouched = false;
-      if (e.stun > 0) { e.stun -= dt; e.atk = 0; f.upper.rotation.z = Math.sin(this.time * 30) * 0.05; }
+      let v = 0, armL = e.melee ? -0.5 : -0.7, armR = armL, aim = 0; e.crouched = false;
+      if (e.stun > 0) { e.stun -= dt; e.atk = 0; }
       else if (tp) {
-        f.upper.rotation.z = 0; const los = d < 30 && lv.los(e.x, e.z, tp.x, tp.z), face = () => { e.yaw = lerpAng(e.yaw, angTo(e.x, e.z, tp.x, tp.z), 1 - Math.exp(-dt * 10)); };
+        const los = d < 30 && lv.los(e.x, e.z, tp.x, tp.z), face = () => { e.yaw = lerpAng(e.yaw, angTo(e.x, e.z, tp.x, tp.z), 1 - Math.exp(-dt * 10)); };
         if (!e.alerted && d < 12 && los) this.alert(e);
         if (e.alerted && e.melee) {
           // Sicario con machete (o desarmado): carga cuerpo a cuerpo
@@ -1483,9 +1702,11 @@ async function startGame() {
           else if (e.state === 'hide') { e.crouched = true; face(); if (!e.cover || !e.cover.c.alive || d < 3 || !this.coverOk(e.cover, tp)) e.state = 'pick'; else if (e.t <= 0) { e.state = 'peek'; e.t = rnd(1.3, 2.3); } }
           else if (e.state === 'peek') { face(); if (los) { shoot = true; e.noLos = 0; } if (e.t <= 0) { if (!los && ++e.noLos >= 2) { e.state = 'push'; e.t = rnd(3, 5); e.noLos = 0; } else { e.state = 'hide'; e.t = rnd(0.7, 1.6); } } }
           else { if (los && d < 11) { face(); shoot = true; } else v = this.navigate(e, tp.x, tp.z, e.speed, dt); if (e.t <= 0) e.state = 'pick'; }
-          if (shoot) { armL = armR = -1.4; e.shotCd -= dt; if (e.shotCd <= 0) { this.enemyShot(e, tp, d); if (--e.shots > 0) e.shotCd = e.d.rate; else { e.shots = e.d.burst; e.shotCd = rnd(0.7, 1.3); } } }
+          if (shoot) { armL = armR = -1.4; aim = 1; e.shotCd -= dt; if (e.shotCd <= 0) { this.enemyShot(e, tp, d); if (--e.shots > 0) e.shotCd = e.d.rate; else { e.shots = e.d.burst; e.shotCd = rnd(0.7, 1.3); } } }
         }
       }
+      const c = f.cue; c.rifle = e.armed && e.d.weapon === 'rifle' ? 1 : 0; c.aim = aim; c.stun = e.stun > 0 ? 1 : 0; c.hunch = !e.melee && e.state === 'go' && v > 0 ? 1 : 0;
+      c.charge = e.melee && e.alerted && v > 0 ? 1 : 0; c.atk = e.melee && e.atk > 0 ? 1 - e.atk / MACHETE_ATK : -1; c.rec = e.melee && e.atk <= 0 && e.cd > 0 ? clamp((e.cd - 0.4) / 0.4, 0, 1) : 0;
       this.animFig(f, e.x, e.z, e.yaw, v, e.crouched, dt, armL, armR); return true;
     }
     /* ------------------------------ Simulación ------------------------------ */
