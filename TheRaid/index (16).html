@@ -981,6 +981,23 @@ async function startGame() {
       this.mixer = new THREE.AnimationMixer(model); this.clips = detectClips(anims); this.act = {}; this.cur = null; this.name = ''; this.tok = 0;
       for (const n of CLIP_ORDER) { const clip = this.clips.map[n]; if (!clip) continue; const a = this.mixer.clipAction(clip);
         if (CLIP_ONCE[n]) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; } this.act[n] = a; }
+      // Capas (opcional): si el modelo tiene un nodo de columna reconocible, cada clip se divide en mitad inferior (piernas/cadera)
+      // y superior (columna y todo lo que cuelga de ella). Así se puede caminar y a la vez apuntar, disparar o recargar.
+      let spine = null; model.traverse(o => { if (!spine && o !== model && /spine|chest|torso/i.test(o.name)) spine = o; });
+      this.layers = null;
+      if (spine) { const up = new Set(); spine.traverse(o => up.add(o.name)); const L = { lo: {}, up: {} };
+        for (const n of CLIP_ORDER) { const clip = this.clips.map[n]; if (!clip) continue; const isUp = t => up.has(THREE.PropertyBinding.parseTrackName(t.name).nodeName);
+          const lo = clip.tracks.filter(t => !isUp(t)), hi = clip.tracks.filter(isUp); if (!lo.length || !hi.length) continue;
+          for (const [k, tr] of [['lo', lo], ['up', hi]]) { const a = this.mixer.clipAction(new THREE.AnimationClip(n + ':' + k, clip.duration, tr)); if (CLIP_ONCE[n]) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; } L[k][n] = a; } }
+        if (L.lo.Idle && L.up.Idle) this.layers = { act: L, lo: { cur: null, name: '', tok: 0 }, up: { cur: null, name: '', tok: 0 } }; }
+    }
+    /** Reproduce un clip en una capa ('lo' piernas, 'up' torso) con crossfade; syncTo alinea la fase con otra acción (p. ej. brazos con piernas). */
+    playLayer(k, n, fade = 0.22, dur = 0, tok = 0, syncTo = null) {
+      const Ly = this.layers, ch = Ly[k], next = Ly.act[k][n]; if (!next) return false;
+      if (n === ch.name && tok === ch.tok) return true;
+      next.reset(); next.setEffectiveTimeScale(dur > 0 ? next.getClip().duration / dur : 1); next.setEffectiveWeight(1); if (syncTo) next.time = syncTo.time % next.getClip().duration; next.play();
+      if (ch.cur && ch.cur !== next) { if (fade > 0) ch.cur.crossFadeTo(next, fade, false); else ch.cur.stop(); }
+      ch.cur = next; ch.name = n; ch.tok = tok; return true;
     }
     has(n) { return this.act[n] !== undefined; }
     /** Clip puntual aún en curso (no se interrumpe por otro de menor prioridad). */
@@ -1078,7 +1095,7 @@ async function startGame() {
       const a = this.assets[id]; if (!a || !a.usable) return false;
       const model = a.clone(a.gltf.scene), wrap = new THREE.Group(); model.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
       wrap.add(model); fig.root.add(wrap); fig.upper.visible = false; for (const l of fig.legs) l.visible = false;
-      fig.glb = { root: wrap, clips: new ClipPlayer(model, a.gltf.animations) }; fig.glb.clips.play('Idle', 0); return true;
+      fig.glb = { root: wrap, clips: new ClipPlayer(model, a.gltf.animations) }; if (!fig.glb.clips.layers) fig.glb.clips.play('Idle', 0); return true;
     }
     update(dt, t) {
       for (const op of this.ops) {
@@ -1753,12 +1770,20 @@ async function startGame() {
       else if (c.shoot && cp.has('Fire')) want = 'Fire';
       else if (w.aim > 0.5 && cp.has('Aim')) want = 'Aim';
       if (!cp.has(want)) want = 'Idle';
-      const busy = cp.busy(); if (!(busy && busy >= (CLIP_ONCE[want] || 0) && want !== cp.name)) cp.play(want, 0.22, dur, tok);
+      if (cp.layers) {   // piernas: locomoción · torso: apuntar/disparar/recargar encima (o el cuerpo entero para melé, impacto y salto)
+        const A = cp.layers.act, full = want === 'Melee' || want === 'Hit' || want === 'Jump' || c.down || c.dead || c.knock;
+        let base = w.ck > 0.5 && A.lo.Crouch ? 'Crouch' : sp > 4.6 ? (A.lo.Sprint ? 'Sprint' : A.lo.Run ? 'Run' : 'Walk') : sp > 2.6 ? (A.lo.Sprint && A.lo.Run ? 'Run' : A.lo.Walk ? 'Walk' : 'Run') : sp > 0.4 ? (A.lo.Walk ? 'Walk' : 'Run') : 'Idle';
+        if (!A.lo[base]) base = 'Idle';
+        const over = c.reload >= 0 && A.up.Reload ? 'Reload' : c.shoot && A.up.Fire ? 'Fire' : w.aim > 0.5 && A.up.Aim ? 'Aim' : null;
+        const lo = full && A.lo[want] ? want : base, hi = full && A.up[want] ? want : over || base;
+        const ch = cp.layers.lo, held = ch.cur && ch.cur.loop === THREE.LoopOnce && ch.cur.isRunning() && (CLIP_ONCE[ch.name] || 0) >= (CLIP_ONCE[want] || 0) && want !== ch.name;   // un clip puntual de cuerpo entero termina antes de ceder
+        if (!held) { cp.playLayer('lo', lo, 0.22, 0, full ? tok : 0); cp.playLayer('up', hi, 0.18, hi === 'Reload' ? dur || c.relT || RELOAD_ANIM : 0, full ? tok : 0, hi === lo ? cp.layers.lo.cur : null); cp.name = hi; }
+      } else { const busy = cp.busy(); if (!(busy && busy >= (CLIP_ONCE[want] || 0) && want !== cp.name)) cp.play(want, 0.22, dur, tok); }
       // Alternativas procedurales sobre la raíz del modelo para los clips que faltan
-      const r = g.root, n = cp.name, sx = f.act === 'STRIKE' && n !== 'Melee' ? bell(f.actT, 0, 0.3) * (f.actN % 2 ? -0.35 : 0.35) : 0;
-      const pitch = (n === 'Crouch' ? 0 : 0.22 * w.ck) + (n === 'Sprint' ? 0 : 0.12 * run) - (n === 'Fire' ? 0 : 0.05 * w.kick) - (n === 'Hit' ? 0 : 0.2 * w.hit) + 0.1 * w.land;
+      const r = g.root, n = cp.name, ln = cp.layers ? cp.layers.lo.name : n, sx = f.act === 'STRIKE' && n !== 'Melee' ? bell(f.actT, 0, 0.3) * (f.actN % 2 ? -0.35 : 0.35) : 0;
+      const pitch = (ln === 'Crouch' ? 0 : 0.22 * w.ck) + (ln === 'Sprint' ? 0 : 0.12 * run) - (n === 'Fire' ? 0 : 0.05 * w.kick) - (n === 'Hit' ? 0 : 0.2 * w.hit) + 0.1 * w.land;
       r.rotation.x = damp(r.rotation.x, pitch, 14, dt); r.rotation.y = damp(r.rotation.y, sx, 18, dt);
-      r.position.y = damp(r.position.y, (n === 'Crouch' ? 0 : -0.26 * w.ck) - 0.08 * w.land, 14, dt);
+      r.position.y = damp(r.position.y, (ln === 'Crouch' ? 0 : -0.26 * w.ck) - 0.08 * w.land, 14, dt);
       cp.mixer.update(dt);
     }
     spawnEnemy(type, x, z, alerted, apt = -1) {
