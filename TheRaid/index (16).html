@@ -891,11 +891,22 @@ async function startGame() {
      Todo se define una vez aquí: el bucle de animación no crea objetos ni closures. */
   const damp = (a, b, rate, dt) => a + (b - a) * (1 - Math.exp(-rate * dt));
   const sstep = x => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
-  const bell = (x, a, b) => { const u = (x - a) / (b - a); return u <= 0 || u >= 1 ? 0 : Math.sin(u * Math.PI); };
+  const bell = (x, a, b) => Math.sin(Math.PI * Math.min(1, Math.max(0, (x - a) / (b - a))));   // 0 → 1 → 0 entre a y b
   // Canales de pose: tronco (lean/twist/roll), cadera, cabeza, piernas (muslo/rodilla), brazos (hombro xyz/codo) y arma.
-  const POSE_KEYS = ['lean', 'twist', 'roll', 'hipX', 'hX', 'hY', 'hZ', 'thR', 'knR', 'thL', 'knL', 'sRx', 'sRy', 'sRz', 'eR', 'sLx', 'sLy', 'sLz', 'eL', 'wX', 'wY'];
-  const POSE_RATE = [14, 14, 14, 10, 10, 10, 10, 26, 26, 26, 26, 20, 20, 20, 20, 20, 20, 20, 20, 18, 30];
-  const newPose = () => { const o = {}; for (const k of POSE_KEYS) o[k] = 0; return o; };
+  // Clase con campos declarados (forma estable para V8: escribir dobles no crea objetos en el heap).
+  class Pose { constructor() { this.lean = 0; this.twist = 0; this.roll = 0; this.hipX = 0; this.hX = 0; this.hY = 0; this.hZ = 0; this.thR = 0; this.knR = 0; this.thL = 0; this.knL = 0;
+    this.sRx = 0; this.sRy = 0; this.sRz = 0; this.eR = 0; this.sLx = 0; this.sLy = 0; this.sLz = 0; this.eL = 0; this.wX = 0; this.wY = 0; } }
+  const newPose = () => new Pose();
+  /** Filtro final por grupos de canales (piernas rápidas, cabeza lenta). Con snap = true copia sin suavizar. */
+  function settlePose(p, q, dt, snap) {
+    const kT = snap ? 1 : 1 - Math.exp(-14 * dt), kH = snap ? 1 : 1 - Math.exp(-10 * dt), kL = snap ? 1 : 1 - Math.exp(-26 * dt), kA = snap ? 1 : 1 - Math.exp(-20 * dt), kW = snap ? 1 : 1 - Math.exp(-18 * dt), kY = snap ? 1 : 1 - Math.exp(-30 * dt);
+    p.lean += (q.lean - p.lean) * kT; p.twist += (q.twist - p.twist) * kT; p.roll += (q.roll - p.roll) * kT;
+    p.hipX += (q.hipX - p.hipX) * kH; p.hX += (q.hX - p.hX) * kH; p.hY += (q.hY - p.hY) * kH; p.hZ += (q.hZ - p.hZ) * kH;
+    p.thR += (q.thR - p.thR) * kL; p.knR += (q.knR - p.knR) * kL; p.thL += (q.thL - p.thL) * kL; p.knL += (q.knL - p.knL) * kL;
+    p.sRx += (q.sRx - p.sRx) * kA; p.sRy += (q.sRy - p.sRy) * kA; p.sRz += (q.sRz - p.sRz) * kA; p.eR += (q.eR - p.eR) * kA;
+    p.sLx += (q.sLx - p.sLx) * kA; p.sLy += (q.sLy - p.sLy) * kA; p.sLz += (q.sLz - p.sLz) * kA; p.eL += (q.eL - p.eL) * kA;
+    p.wX += (q.wX - p.wX) * kW; p.wY += (q.wY - p.wY) * kY;
+  }
   const newCue = () => ({ st: '', combat: 0, combo: 0, ads: 0, shoot: 0, aim: 0, reload: -1, air: -1, rifle: 0, down: 0, revive: 0, dead: 0, stun: 0, hunch: 0, charge: 0, atk: -1, rec: 0 });
   function armRTo(q, w, sx, sy, sz, e) { if (w <= 0) return; q.sRx += (sx - q.sRx) * w; q.sRy += (sy - q.sRy) * w; q.sRz += (sz - q.sRz) * w; q.eR += (e - q.eR) * w; }
   function armLTo(q, w, sx, sy, sz, e) { if (w <= 0) return; q.sLx += (sx - q.sLx) * w; q.sLy += (sy - q.sLy) * w; q.sLz += (sz - q.sLz) * w; q.eL += (e - q.eL) * w; }
@@ -1386,12 +1397,12 @@ async function startGame() {
       f.root.position.x = x; f.root.position.z = z; f.root.rotation.y = yaw + Math.PI;
       const c = f.cue, w = f.w, q = f.q, p = f.p; f.t += dt; const u = f.t;
       // 1) Pesos de estado suavizados
-      w.spd = damp(w.spd, speed, 10, dt);
-      const sp = w.spd, mv = clamp(sp / 1.1, 0, 1), idle = 1 - mv, run = clamp((sp - 3.6) / 2, 0, 1);
+      w.spd = damp(w.spd, speed, 10, dt); w.cb = damp(w.cb, c.combat, 9, dt);
+      // En melé la velocidad viene de fijaciones y esquivas (también hacia atrás): no se aplica la postura de carrera
+      const sp = w.spd, mv = clamp(sp / 1.1, 0, 1), idle = 1 - mv, run = clamp((sp - 3.6) / 2, 0, 1) * (1 - w.cb);
       w.ck = damp(w.ck, crouched ? 1 : 0, 10, dt); f.ck = w.ck;
       w.aim = damp(w.aim, Math.max(c.ads, c.aim, c.shoot * 0.85), 12, dt);
       w.rel = damp(w.rel, c.reload >= 0 ? 1 : 0, 10, dt);
-      w.cb = damp(w.cb, c.combat, 9, dt);
       w.slide = damp(w.slide, c.st === 'SLIDE' ? 1 : 0, 12, dt);
       w.fly = damp(w.fly, c.air > 0.12 && c.air < 0.9 ? 1 : 0, 16, dt);
       w.down = damp(w.down, c.down, 5, dt); w.dead = damp(w.dead, c.dead, 7, dt); w.stun = damp(w.stun, c.stun, 10, dt);
@@ -1419,7 +1430,7 @@ async function startGame() {
       if (run > 0 && two) { armsTo(q, run, -0.72 + 0.12 * s0, 0, 0.35, -1.0, -0.86 - 0.12 * s0, 0, -0.65, -1.25); q.wX += 0.75 * run; }   // sprint: fusil cruzado y bombeo
       // Agachado (con zancada reducida) y carrera encorvada hacia cobertura
       const kc = w.ck * (1 - w.slide);
-      q.thR += kc * (-1.0 - 0.15 * idle); q.knR += kc * (1.75 + 0.25 * idle); q.thL += kc * (-0.95 + 0.2 * idle); q.knL += kc * (1.7 - 0.2 * idle); q.lean += kc * 0.22;
+      q.thR += kc * (-1.0 - 0.15 * idle); q.knR += kc * (1.75 + 0.25 * idle); q.thL += kc * (-0.95 - 0.05 * idle); q.knL += kc * (1.7 + 0.15 * idle); q.lean += kc * 0.22;   // ambos pies apoyados
       q.lean += 0.25 * w.hunch; q.thR -= 0.15 * w.hunch; q.thL -= 0.15 * w.hunch; q.knR += 0.25 * w.hunch; q.knL += 0.25 * w.hunch;
       // Deslizamiento
       if (w.slide > 0.001) { legsTo(q, w.slide, -1.35, 0.12, -0.25, 1.95); q.lean += (-0.38 - q.lean) * w.slide; q.roll += 0.12 * w.slide; q.hX += 0.3 * w.slide; armLTo(q, w.slide, -0.5, 0, 0.95, -0.4); }
@@ -1442,13 +1453,13 @@ async function startGame() {
       const cb = w.cb * (1 - w.down);
       if (cb > 0.001) {
         const bob = Math.sin(u * 7);
-        armsTo(q, cb, -1.0, 0, 0.38, -1.75, -1.15, 0, -0.38, -1.85); q.wX += 2.3 * cb;   // arma colgada durante la melé
+        armsTo(q, cb, -1.0, 0, 0.38, -1.75, -1.15, 0, -0.38, -1.85); q.wX += 1.5 * cb;   // en melé el fusil queda en diagonal, cañón abajo
         q.thL -= 0.32 * cb; q.thR += 0.12 * cb; q.knR += (0.32 + 0.06 * bob) * cb; q.knL += (0.36 + 0.06 * bob) * cb; q.lean += 0.12 * cb; q.twist -= 0.18 * cb;
         const t = f.actT;
         if (f.act === 'STRIKE') {
           const left = f.actN % 2 === 1, heavy = f.actN % 3 === 2, k = cb * (t < 0.07 ? sstep(t / 0.07) : 1 - sstep((t - 0.07) / 0.24)), hv = heavy ? 1.4 : 1;
           if (left) armLTo(q, k, -1.58, 0, -0.12, -0.05); else armRTo(q, k, -1.58, 0, 0.12, -0.05);
-          q.twist += (left ? -0.42 : 0.42) * k * hv; q.lean += (0.12 + (heavy ? 0.12 : 0)) * k; q.roll += (heavy ? (left ? 0.1 : -0.1) : 0) * k; q.thR += 0.2 * k; q.knR += 0.1 * k;
+          q.twist += (left ? -0.55 : 0.55) * k * hv; q.lean += (0.12 + (heavy ? 0.12 : 0)) * k; q.roll += (heavy ? (left ? 0.1 : -0.1) : 0) * k; q.thR += 0.2 * k; q.knR += 0.1 * k;
         } else if (f.act === 'GRAPPLE') {
           const g = cb * sstep(t / 0.25), pull = sstep((t - 0.25) / 0.4);
           armsTo(q, g, -1.45 + 0.35 * pull, 0, 0.55, -0.55 - 0.9 * pull, -1.45 + 0.35 * pull, 0, -0.55, -0.55 - 0.9 * pull);
@@ -1462,7 +1473,7 @@ async function startGame() {
           armsTo(q, k, sx, 0, 0.3, ee, sx, 0, -0.3, ee); q.lean += k * lerp(-0.22, 0.5, slam); q.knR += 0.5 * k * slam; q.knL += 0.5 * k * slam; q.thL -= 0.3 * k * slam; q.hX += 0.25 * k * slam;
         } else if (f.act === 'EVADE') {
           const e = cb * bell(t, 0, 0.45);
-          armsTo(q, e, -1.5, 0, 0.6, -1.9, -1.6, 0, -0.6, -1.9); q.lean -= 0.32 * e; q.twist += 0.3 * e; q.roll += 0.12 * e; q.knR += 0.55 * e; q.knL += 0.4 * e; q.thR += 0.35 * e; q.thL -= 0.3 * e;
+          armsTo(q, e, -1.5, 0, 0.6, -1.9, -1.6, 0, -0.6, -1.9); q.lean -= 0.5 * e; q.twist += 0.3 * e; q.roll += 0.12 * e; q.knR += 0.55 * e; q.knL += 0.4 * e; q.thR += 0.35 * e; q.thL -= 0.3 * e;
         }
       }
       // Machete: carga con el arma alzada, tajo (anticipación → golpe) y recuperación
@@ -1491,8 +1502,7 @@ async function startGame() {
       q.sRx -= q.lean * 0.7; q.sLx -= q.lean * 0.7;
 
       // 3) Suavizado final por canal y aplicación a los pivotes
-      if (!f.ready) { for (let i = 0; i < POSE_KEYS.length; i++) p[POSE_KEYS[i]] = q[POSE_KEYS[i]]; f.ready = true; }
-      else for (let i = 0; i < POSE_KEYS.length; i++) { const k = POSE_KEYS[i]; p[k] += (q[k] - p[k]) * (1 - Math.exp(-POSE_RATE[i] * dt)); }
+      settlePose(p, q, dt, !f.ready); f.ready = true;
       // Altura de cadera a partir de la pierna de apoyo: los pies quedan en el suelo al agacharse, caminar o aterrizar
       const hip = lerp(Math.max(0.44 * Math.cos(p.thR) + 0.48 * Math.cos(p.thR + p.knR), 0.44 * Math.cos(p.thL) + 0.48 * Math.cos(p.thL + p.knL)), 0.9, w.fly);
       f.legs[0].position.y = f.legs[1].position.y = hip; f.legs[0].rotation.x = p.thR; f.knees[0].rotation.x = p.knR; f.legs[1].rotation.x = p.thL; f.knees[1].rotation.x = p.knL;
@@ -1512,7 +1522,7 @@ async function startGame() {
       else if (c.air >= 0 && cp.has('Jump')) want = 'Jump';
       else if (w.ck > 0.5 && cp.has('Crouch')) want = 'Crouch';
       else if (sp > 4.6) want = cp.has('Sprint') ? 'Sprint' : cp.has('Run') ? 'Run' : 'Walk';
-      else if (sp > 2.6) want = cp.has('Run') ? 'Run' : 'Walk';
+      else if (sp > 2.6) want = cp.has('Sprint') && cp.has('Run') ? 'Run' : cp.has('Walk') ? 'Walk' : 'Run';   // tres niveles si el GLB los tiene
       else if (sp > 0.4) want = cp.has('Walk') ? 'Walk' : 'Run';
       else if (c.shoot && cp.has('Fire')) want = 'Fire';
       else if (w.aim > 0.5 && cp.has('Aim')) want = 'Aim';
