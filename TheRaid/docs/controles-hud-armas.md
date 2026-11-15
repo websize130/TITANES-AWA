@@ -69,7 +69,7 @@ Prueba sin tocar el código: `?rifle=models/rifle.glb&pistol=models/pistol.glb`.
 - Recomendado: 3.000–8.000 triángulos, un material, textura de 1024.
 
 ### Comportamiento
-- Si el archivo no existe o falla, **se mantiene el arma geométrica** del juego.
+- Si el archivo no existe o falla, **se mantiene el arma integrada** del juego (desde la fase de mejora visual es un modelo construido en código con perfiles extruidos, no cajas; ver `mejora-visual.md` §2).
 - Sin nodos se usan agarres por defecto; se pueden fijar a mano con `grips`.
 - Un arma modelada en otra unidad (centímetros) se reescala a un tamaño plausible y se avisa en consola.
 - Las manos van a los puntos de agarre del arma equipada en reposo, apuntado, disparo, sprint, recarga y cambio de arma. En melé la sueltan.

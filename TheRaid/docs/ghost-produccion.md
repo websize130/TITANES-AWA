@@ -258,7 +258,7 @@ Debe aparecer una línea `[Modelo] Ghost: …` y otra `[Animación] Ghost: …`.
 | Propuesta | Por qué | Tamaño |
 |---|---|---|
 | ✅ **Hecho** — **Banco de pruebas en pantalla** (`?modeltest=1`): informe de validación visible, botones para forzar cada acción, cámara orbital y luz neutra. | Hoy hay que abrir la consola y jugar para revisar cada pose; en móvil es impracticable. Permitiría aprobar o rechazar el modelo en dos minutos. | Medio |
-| ✅ **Hecho** — **Carga de armas GLB** (`rifle.glb`, `pistol.glb`) con nodos de agarre. | Un personaje profesional con el fusil de cajas actual se verá incoherente. | Medio |
+| ✅ **Hecho** — **Carga de armas GLB** (`rifle.glb`, `pistol.glb`) con nodos de agarre. | Un personaje profesional con el fusil de cajas se vería incoherente (el fusil integrado ya no es de cajas, pero sigue sin ser un modelo profesional: ver `mejora-visual.md`). | Medio |
 | **Ajustes manuales** de palma y agarre en la configuración. | La orientación de las manos se deduce sola; con otro esqueleto puede salir invertida. | Pequeño |
 | **Color de jugador** sobre el GLB (parche o lentes emisivos). | En pantalla dividida, hoy el modelo GLB pierde la marca de color. | Pequeño |
 | **Contenedor ofuscado** para el modelo. | Solo si se compra un modelo cuya licencia exija que no sea extraíble. | Medio |
