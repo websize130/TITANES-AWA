@@ -253,17 +253,17 @@ Debe aparecer una línea `[Modelo] Ghost: …` y otra `[Animación] Ghost: …`.
 
 ---
 
-## 8. Cambios de código propuestos (no aplicados)
+## 8. Cambios de código propuestos
 
 | Propuesta | Por qué | Tamaño |
 |---|---|---|
-| **Banco de pruebas en pantalla** (`?modeltest=1`): informe de validación visible, botones para forzar cada acción, cámara orbital y luz neutra. | Hoy hay que abrir la consola y jugar para revisar cada pose; en móvil es impracticable. Permitiría aprobar o rechazar el modelo en dos minutos. | Medio |
-| **Carga de armas GLB** (`rifle.glb`, `pistol.glb`) con nodos de agarre. | Un personaje profesional con el fusil de cajas actual se verá incoherente. | Medio |
+| ✅ **Hecho** — **Banco de pruebas en pantalla** (`?modeltest=1`): informe de validación visible, botones para forzar cada acción, cámara orbital y luz neutra. | Hoy hay que abrir la consola y jugar para revisar cada pose; en móvil es impracticable. Permitiría aprobar o rechazar el modelo en dos minutos. | Medio |
+| ✅ **Hecho** — **Carga de armas GLB** (`rifle.glb`, `pistol.glb`) con nodos de agarre. | Un personaje profesional con el fusil de cajas actual se verá incoherente. | Medio |
 | **Ajustes manuales** de palma y agarre en la configuración. | La orientación de las manos se deduce sola; con otro esqueleto puede salir invertida. | Pequeño |
 | **Color de jugador** sobre el GLB (parche o lentes emisivos). | En pantalla dividida, hoy el modelo GLB pierde la marca de color. | Pequeño |
 | **Contenedor ofuscado** para el modelo. | Solo si se compra un modelo cuya licencia exija que no sea extraíble. | Medio |
 
-Recomiendo aprobar las dos primeras antes de recibir el modelo definitivo.
+Las dos primeras ya están implementadas: ver [`controles-hud-armas.md`](controles-hud-armas.md). Las otras tres siguen pendientes.
 
 ---
 

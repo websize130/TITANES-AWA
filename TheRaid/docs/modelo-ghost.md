@@ -105,11 +105,11 @@ Qué hace el juego automáticamente:
 
 ## 4. Arma
 
-Hoy el arma que sujeta el modelo es la **del juego** (fusil y pistola hechos con geometría simple). Para un resultado coherente con un personaje profesional hará falta también un modelo de fusil y otro de pistola.
+Mientras no haya modelos, el arma que sujeta el personaje es la **del juego** (geometría simple). La carga de armas GLB independientes **ya está implementada** (ver [`controles-hud-armas.md`](controles-hud-armas.md), sección 2); solo se ha probado con un arma sintética.
 
-Especificación para cuando se consigan (**carga todavía no implementada**):
+Especificación de los archivos:
 - `models/rifle.glb` y `models/pistol.glb`, 3.000–8.000 triángulos, 1 material, textura de 1024.
-- Cañón hacia **+Z**, parte superior hacia **+Y**, **origen en la empuñadura**, en metros.
+- Cañón hacia **+Z**, parte superior hacia **+Y**, **origen en el centro de la empuñadura**, en metros.
 - Nodos vacíos opcionales `grip_r` (mano derecha), `grip_l` (guardamanos) y `mag` (cargador) para colocar las manos con precisión.
 
 ---
