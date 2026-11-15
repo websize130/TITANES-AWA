@@ -104,51 +104,78 @@ button,input,select{font:inherit;color:inherit}
 
 /* ---------- Mando táctil (móvil) ---------- */
 body.pad-mode #stage,body.pad-mode #ui,body.pad-mode .scrim,body.pad-mode #boot{display:none}
-#pad{display:none;position:fixed;inset:0;z-index:40;touch-action:none;user-select:none;-webkit-user-select:none;background:radial-gradient(120% 90% at 50% 0%,#0d1526 0%,#05070d 70%)}
+#pad{display:none;position:fixed;inset:0;z-index:40;touch-action:none;user-select:none;-webkit-user-select:none;background:radial-gradient(120% 90% at 50% 0%,#0d1526 0%,#05070d 70%);
+  --u:1;--pa:.55;--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--sb:env(safe-area-inset-bottom,0px)}
 body.pad-mode #pad{display:block}
 #padTop{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:12px 18px;font-size:12px;color:var(--mute);pointer-events:none}
 #padTop b{font-family:var(--display);font-size:14px;color:#fff;letter-spacing:.08em}
 #padTop .dot{display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:#f5a524}
 #padTop .dot.on{background:#35ffb0;box-shadow:0 0 12px #35ffb0}
+#padGear{pointer-events:auto;width:40px;height:40px;margin-left:12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#d5e3f2;font-size:18px;cursor:pointer}
+/* Izquierda: zona de movimiento. Derecha: zona libre para mirar y apuntar. «mirror» las intercambia (zurdos). */
 #moveZone,#lookZone{position:absolute;top:0;bottom:0}
-#moveZone{left:0;width:44%}#lookZone{right:0;width:56%}
-#joyBase{position:absolute;left:14vw;bottom:16vh;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;border:1px solid rgba(160,210,240,.28);background:rgba(255,255,255,.03)}
-#joyKnob{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(140,220,255,.75),rgba(40,120,170,.55));border:1px solid rgba(190,235,255,.6);will-change:transform}
-.pb{position:absolute;display:grid;place-items:center;border-radius:50%;border:1px solid rgba(160,210,240,.34);background:rgba(255,255,255,.05);font-family:var(--display);font-weight:600;font-size:10px;letter-spacing:.08em;
-  text-transform:uppercase;color:#d5e3f2;transition:transform .08s linear,background .12s linear,border-color .12s linear}
-.pb.down,.pb.tog{transform:scale(.92);background:rgba(53,214,255,.26);border-color:rgba(160,235,255,.9)}
-.pb svg{width:38%;height:38%;margin-bottom:2px}
-.pb span{display:block}
-.pb .ico{display:flex;flex-direction:column;align-items:center;pointer-events:none}
-/* Grupo derecho en arco alrededor del gatillo (pulgar derecho). --u escala con la pantalla; huecos ≥ 14px entre botones. */
-#pad{--u:1;--sr:env(safe-area-inset-right,0px);--sb:env(safe-area-inset-bottom,0px)}
-@media (min-height:520px){#pad{--u:1.18}} @media (min-height:760px){#pad{--u:1.38}}
-.pb{width:calc(68px*var(--u));height:calc(68px*var(--u))}
-.pb::after{content:'';position:absolute;inset:-6px;border-radius:50%}   /* zona táctil algo mayor que el dibujo */
-#bFire{right:calc(var(--sr) + 118px*var(--u));bottom:calc(var(--sb) + 92px*var(--u));width:calc(104px*var(--u));height:calc(104px*var(--u));background:rgba(255,45,111,.14);border-color:rgba(255,120,160,.6);font-size:11px}
-#bFire.down{background:rgba(255,45,111,.42)}
-#bJump{right:calc(var(--sr) + 22px*var(--u));bottom:calc(var(--sb) + 18px*var(--u));width:calc(74px*var(--u));height:calc(74px*var(--u))}
-#bAds{right:calc(var(--sr) + 22px*var(--u));bottom:calc(var(--sb) + 112px*var(--u));width:calc(74px*var(--u));height:calc(74px*var(--u))}
-#bCrouch{right:calc(var(--sr) + 238px*var(--u));bottom:calc(var(--sb) + 18px*var(--u))}
-#bMelee{right:calc(var(--sr) + 238px*var(--u));bottom:calc(var(--sb) + 112px*var(--u));width:calc(74px*var(--u));height:calc(74px*var(--u))}
-#bReload{right:calc(var(--sr) + 140px*var(--u));bottom:calc(var(--sb) + 214px*var(--u));width:calc(58px*var(--u));height:calc(58px*var(--u))}
-#bSwap{right:calc(var(--sr) + 30px*var(--u));bottom:calc(var(--sb) + 204px*var(--u));width:calc(58px*var(--u));height:calc(58px*var(--u))}
-#bReload span,#bSwap span{font-size:9px}
+#moveZone{left:0;width:42%}#lookZone{right:0;width:58%}
+#pad.mirror #moveZone{left:auto;right:0}#pad.mirror #lookZone{right:auto;left:0}
+/* Joystick flotante: aparece donde se apoya el pulgar; en reposo solo queda una guía tenue. Empujado a fondo = sprint (el mando se ilumina). */
+#joyBase{position:absolute;left:calc(var(--sl) + 108px*var(--u));top:calc(100% - var(--sb) - 100px*var(--u));width:calc(116px*var(--u));height:calc(116px*var(--u));transform:translate3d(-50%,-50%,0);border-radius:50%;
+  border:1px solid rgba(190,225,245,.32);background:rgba(8,14,24,.14);opacity:calc(var(--pa)*.6);transition:opacity .15s linear,border-color .15s linear;pointer-events:none}
+#pad.mirror #joyBase{left:calc(100% - var(--sr) - 108px*var(--u))}
+#joyBase.live{opacity:var(--pa)}#joyBase.sprint{border-color:rgba(120,230,255,.95);opacity:1}
+#joyKnob{position:absolute;left:50%;top:50%;width:42%;height:42%;transform:translate3d(-50%,-50%,0);border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(200,235,255,.7),rgba(60,120,160,.45));border:1px solid rgba(210,240,255,.6);will-change:transform;transition:background .15s linear}
+#joyBase.sprint #joyKnob{background:radial-gradient(circle at 35% 30%,rgba(160,245,255,.95),rgba(53,214,255,.7));box-shadow:0 0 18px rgba(53,214,255,.7)}
+/* Botones: solo icono, semitransparentes. --s tamaño, --x/--y posición desde la esquina, --dx/--dy desplazamiento personalizado. */
+.pb{position:absolute;display:grid;place-items:center;border-radius:50%;width:calc(var(--s)*var(--u));height:calc(var(--s)*var(--u));
+  right:calc(var(--sr) + var(--x)*var(--u) - var(--dx,0px));bottom:calc(var(--sb) + var(--y)*var(--u) - var(--dy,0px));
+  border:1px solid rgba(200,230,248,.5);background:rgba(8,14,24,.3);color:#eef6fd;opacity:var(--pa);
+  transition:transform .08s linear,background .12s linear,border-color .12s linear,opacity .18s linear}
+#pad.mirror .pb{right:auto;left:calc(var(--sl) + var(--x)*var(--u) + var(--dx,0px))}
+.pb::after{content:'';position:absolute;inset:-7px;border-radius:50%}   /* zona táctil algo mayor que el dibujo */
+.pb.down,.pb.tog{transform:scale(.93);background:rgba(53,214,255,.32);border-color:rgba(170,238,255,.95);opacity:1}
+.pb .ico{display:grid;place-items:center;width:100%;height:100%;pointer-events:none}
+.pb svg{width:46%;height:46%;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
+.pb span{display:none;position:absolute;left:50%;top:100%;margin-top:4px;transform:translateX(-50%);font-family:var(--display);font-weight:600;font-size:9px;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 3px #000;pointer-events:none}
+#bFire{--s:86px;--x:92px;--y:56px;border-color:rgba(255,130,165,.75);background:rgba(255,45,111,.16)}#bFire.down{background:rgba(255,45,111,.48)}
+#bAds{--s:62px;--x:16px;--y:110px}
+#bJump{--s:50px;--x:20px;--y:30px}
+#bCrouch{--s:50px;--x:196px;--y:22px}
+#bReload{--s:48px;--x:190px;--y:96px}
+#bSwap{--s:44px;--x:30px;--y:190px}
+/* Botón contextual: solo aparece cuando hay algo que hacer (melé con enemigo cerca, reanimar, abrir brecha) */
+#bCtx{--s:66px;--x:120px;--y:160px;border-color:rgba(255,206,110,.9);background:rgba(245,196,81,.18);color:#ffeec4}
+#bCtx.show .cv{display:block}
+.pb.ctx{opacity:0;pointer-events:none;transform:scale(.78)}.pb.ctx.show{opacity:1;pointer-events:auto;transform:none}.pb.ctx.show.down{transform:scale(.93);background:rgba(245,196,81,.42)}
+/* En combate cuerpo a cuerpo, tres botones cambian de función y muestran su nombre */
+#pad.combat .pb .cc{display:block}#pad.combat #bFire{opacity:calc(var(--pa)*.5)}
+/* Editor de posiciones */
+#padEdit{display:none;position:absolute;left:50%;top:14px;transform:translateX(-50%);gap:8px;z-index:4;align-items:center;font-size:12px;color:var(--mute)}
+body.pad-editing #pad{display:block!important;z-index:70;background:rgba(5,7,13,.9)}
+body.pad-editing #padEdit{display:flex}
+body.pad-editing .pb{opacity:1!important;pointer-events:auto!important;transform:none!important;outline:1px dashed rgba(53,214,255,.65);outline-offset:5px}
+body.pad-editing .pb .cn{display:block}body.pad-editing #bCtx .cv{display:none}
+body.pad-editing #padTop,body.pad-editing #padMsg,body.pad-editing #rotate{display:none!important}
+/* Hoja de ajustes de los controles táctiles */
+#padCfg{display:none;position:fixed;inset:0;z-index:80;place-items:center;background:rgba(2,3,6,.86)}
+#padCfg.show{display:grid}
+#padCfg .sheet{width:min(500px,94vw);max-height:94vh;overflow:auto;padding:16px 20px 20px;border:1px solid var(--line);border-radius:14px;background:rgba(8,13,22,.97)}
+#padCfg header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}#padCfg h2{font-family:var(--display);font-size:20px}
+#padCfg .row{min-height:50px}#padCfg input[type=range]{flex:0 1 190px;min-width:110px;accent-color:#35d6ff}
+#padCfg output{min-width:44px;text-align:right;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+#padCfg .btn{min-height:42px}#padCfg p{font-size:12px;color:var(--mute);margin-top:10px}
 #padMsg{position:absolute;inset:0;display:none;place-items:center;padding:24px;text-align:center;background:rgba(5,7,13,.94);z-index:2}
 #padMsg.show{display:grid}
 #padMsg h2{font-family:var(--display);font-size:22px;letter-spacing:-.02em;margin-bottom:8px}
 #padMsg p{font-size:14px;color:var(--mute);margin-bottom:16px}
 #rotate{display:none;position:absolute;inset:0;z-index:3;place-items:center;background:#05070d;text-align:center;font-family:var(--display);padding:24px}
-@media (orientation:portrait){body.pad-mode #rotate{display:grid}}
+@media (orientation:portrait){body.pad-mode #rotate,body.touch-play #rotate{display:grid}}
 
 /* ---------- Partida: HUD ---------- */
 body.playing #ui,body.playing .scrim{display:none}
 #game{position:fixed;inset:0;z-index:26;display:none;pointer-events:none;font-family:var(--display)}
 body.playing #game{display:block}
-#gTop{position:absolute;left:50%;top:10px;transform:translate3d(-50%,0,0);display:flex;gap:14px;align-items:baseline;padding:8px 16px;border:1px solid var(--line);border-radius:999px;background:rgba(6,10,18,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-size:12px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
-#gTop b{font-weight:600;color:#fff}#gTop span{color:var(--mute)}#gTop i{font-style:normal;color:#ff8fb0}
-#gPause{position:absolute;right:12px;top:8px;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,18,.5);pointer-events:auto;cursor:pointer;font-family:var(--display);font-weight:700;font-size:13px;transition:transform .15s var(--ease),background .2s var(--ease)}
-#gPause:hover{background:rgba(53,214,255,.14)}#gPause:active{transform:scale(.95)}
+#gTop{position:absolute;left:50%;top:8px;transform:translate3d(-50%,0,0);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 6px rgba(0,0,0,.95);pointer-events:none}
+#gTop b{font-weight:600;color:#fff}#gTop span{color:var(--mute);margin-left:8px}#gTop i{font-style:normal;letter-spacing:.16em;color:#ff9dba}#gTop i.ok{color:#7dffc0}
+#gPause{position:absolute;right:calc(10px + env(safe-area-inset-right,0px));top:8px;width:36px;height:36px;border-radius:50%;border:1px solid rgba(200,230,248,.35);background:rgba(8,14,24,.3);color:#dbe8f5;pointer-events:auto;cursor:pointer;font-family:var(--display);font-weight:700;font-size:11px;transition:transform .15s var(--ease),background .2s var(--ease)}
+#gPause:hover{background:rgba(53,214,255,.18)}#gPause:active{transform:scale(.93)}
 .view{position:absolute;overflow:hidden;display:none;box-shadow:inset 0 0 0 1px rgba(140,190,230,.12)}
 .view .dmg{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(255,20,50,.55) 100%);opacity:0;transition:opacity .12s linear}
 .view.down .dmg{opacity:.92;background:radial-gradient(ellipse at center,rgba(60,0,10,.35) 0%,rgba(120,0,20,.78) 100%)}
@@ -160,17 +187,34 @@ body.playing #game{display:block}
 .xh i:nth-child(3){left:calc(-8px - var(--g))}.xh i:nth-child(4){left:var(--g)}
 .xh b{position:absolute;left:-1.5px;top:-1.5px;width:3px;height:3px;border-radius:50%;background:currentColor}
 .xh.hit{color:#ff4d85}.xh.combat i{opacity:0}
-.tag{position:absolute;left:12px;top:12px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:rgba(6,10,18,.5);border:1px solid var(--line);transition:border-color .2s var(--ease),color .2s var(--ease)}
-.tag.combat{border-color:rgba(255,45,111,.6);color:#ff9dba}
-.prompt{position:absolute;left:50%;top:62%;transform:translate3d(-50%,0,0);padding:8px 14px;border-radius:10px;background:rgba(6,10,18,.62);border:1px solid var(--line);font-size:13px;letter-spacing:.04em;white-space:nowrap;opacity:0;transition:opacity .15s var(--ease)}
-.prompt.on{opacity:1}
-.stat{position:absolute;left:50%;bottom:12px;transform:translate3d(-50%,0,0);display:flex;align-items:center;gap:12px;padding:8px 14px;border-radius:14px;background:rgba(6,10,18,.5);border:1px solid var(--line);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-.hp{width:110px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+/* Arriba a la izquierda: identidad, salud y compañeros. Sin cajas: texto con sombra para no tapar el escenario. */
+.hudTL{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));top:10px;display:flex;flex-direction:column;gap:5px;text-shadow:0 1px 5px rgba(0,0,0,.95)}
+.tag{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#dfe9f5;transition:color .2s var(--ease)}
+.tag::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--pc,#35d6ff);box-shadow:0 0 8px var(--pc,#35d6ff)}
+.tag.combat{color:#ff9dba}
+.hp{width:132px;height:5px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden}
 .hp u{display:block;height:100%;width:100%;background:linear-gradient(90deg,#35d6ff,#9be8ff);transform-origin:left;transition:transform .2s var(--ease);will-change:transform}
 .hp.low u{background:#ff4d6d}
-.ammo{pointer-events:auto;min-height:44px;margin:-8px -6px -8px 0;padding:0 8px;border:0;background:transparent;cursor:pointer;font-family:var(--display);white-space:nowrap}
-.ammo b{font-size:20px;font-weight:600}.ammo small{font-size:12px;color:var(--mute);margin-left:4px}
-.ammo.rel b{color:#f5c451}.ammo:active{transform:scale(.95)}
+.mates{display:flex;flex-direction:column;gap:3px;margin-top:2px}
+.mate{display:flex;align-items:center;gap:6px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#b9c6d6}
+.mate i{width:6px;height:6px;border-radius:50%;background:var(--pc)}
+.mate u{display:block;width:54px;height:3px;border-radius:2px;background:rgba(255,255,255,.16);overflow:hidden}
+.mate u::after{content:'';display:block;height:100%;width:var(--hp,100%);background:#9be8ff}
+.mate.dn{color:#ff7b9c}.mate.dn u::after{background:#ff4d6d}
+.prompt{position:absolute;left:50%;top:64%;transform:translate3d(-50%,0,0);max-width:92%;overflow:hidden;text-overflow:ellipsis;padding:5px 12px;border-radius:999px;background:rgba(6,10,18,.5);border:1px solid rgba(200,230,248,.18);font-size:11px;letter-spacing:.08em;white-space:nowrap;opacity:0;transition:opacity .15s var(--ease)}
+.prompt.on{opacity:1}
+/* Arma y munición: abajo a la derecha en PC y mando; abajo en el centro en táctil (las esquinas son de los pulgares) */
+.stat{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:12px;text-shadow:0 1px 6px rgba(0,0,0,.95)}
+body.touch-play .stat{right:auto;left:50%;transform:translate3d(-50%,0,0);bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+.ammo{pointer-events:auto;display:flex;align-items:baseline;gap:6px;min-height:40px;padding:0 6px;border:0;background:transparent;color:#fff;cursor:pointer;font-family:var(--display);white-space:nowrap}
+.ammo span{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+.ammo b{font-size:22px;font-weight:600;line-height:1}.ammo small{font-size:11px;color:var(--mute)}
+.ammo.rel b{color:#f5c451}.ammo.low b{color:#ff6b8a}.ammo:active{transform:scale(.95)}
+/* Marcadores de mundo: compañero abatido, salida y munición */
+.mk{position:absolute;left:0;top:0;display:none;align-items:center;gap:5px;margin:-10px 0 0 -20px;padding:2px 8px 2px 6px;border-radius:999px;background:rgba(6,10,18,.55);border:1px solid rgba(200,230,248,.3);font-size:9px;letter-spacing:.1em;white-space:nowrap;will-change:transform}
+.mk.on{display:flex}.mk::before{content:'';width:7px;height:7px;transform:rotate(45deg);background:var(--mc,#35d6ff)}
+.mk.rev{--mc:#ff4d6d;border-color:rgba(255,77,109,.6)}.mk.exit{--mc:#35ffb0}.mk.sup{--mc:#f5c451}
+#gBoxC{display:none}body.touch-play #gBoxC{display:inline-flex}
 #gCard{position:absolute;inset:0;display:grid;place-items:center;text-align:center;background:rgba(2,3,6,0);opacity:0;transition:opacity .45s var(--ease),background .45s var(--ease)}
 #gCard.show{opacity:1}#gCard.solid{background:#020306}
 #gCard b{display:block;font-size:clamp(38px,8vw,92px);font-weight:700;letter-spacing:-.03em;line-height:1.05;text-shadow:0 4px 40px rgba(0,0,0,.8)}
@@ -182,7 +226,7 @@ body.playing #game{display:block}
 #gBox p{margin:12px 0 24px;color:var(--mute);font-size:14px}
 #gBox .btn{width:100%;margin-top:10px}
 body.touch-play #pad{display:block;background:none;z-index:25}
-body.touch-play #padTop,body.touch-play #padMsg,body.touch-play #rotate{display:none!important}
+body.touch-play #padTop,body.touch-play #padMsg{display:none!important}
 
 @keyframes shimmer{from{transform:translate3d(-120%,0,0)}to{transform:translate3d(260%,0,0)}}
 @keyframes fadeUp{from{opacity:0;transform:translate3d(0,14px,0)}to{opacity:1;transform:none}}
@@ -191,6 +235,30 @@ body.touch-play #padTop,body.touch-play #padMsg,body.touch-play #rotate{display:
 @media (pointer:coarse){.hint{display:none}}
 @media (max-width:640px){.slots{grid-template-columns:1fr}.code strong{font-size:34px}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* ---------- Banco de pruebas de personajes (?modeltest=1) ---------- */
+#mt{display:none;position:fixed;inset:0;z-index:30;pointer-events:none;font-size:12px;line-height:1.45}
+body.modeltest #mt{display:block}
+body.modeltest #ui,body.modeltest .scrim,body.modeltest #game,body.modeltest #pad{display:none!important}
+#mt>*{pointer-events:auto}
+#mt button,#mt input[type=text]{font:inherit;color:inherit;border:1px solid var(--line);border-radius:8px;background:rgba(10,16,28,.72);padding:7px 10px;cursor:pointer;transition:background .12s linear,border-color .12s linear}
+#mt button:hover{background:rgba(53,214,255,.14)}#mt button.on{border-color:var(--cyan);background:rgba(53,214,255,.2)}
+#mtInfo{position:absolute;left:10px;top:10px;bottom:10px;width:min(340px,44vw);overflow:auto;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(6,10,18,.8);overscroll-behavior:contain}
+#mtInfo.min{bottom:auto;height:44px;overflow:hidden}
+#mtInfo h3{font-family:var(--display);font-size:14px;letter-spacing:.06em;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+#mtInfo h4{margin:12px 0 4px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+#mtInfo dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px}#mtInfo dt{color:var(--mute)}#mtInfo dd{text-align:right;word-break:break-word}
+#mtInfo ul{list-style:none}#mtInfo li{padding:2px 0;border-bottom:1px solid rgba(140,190,230,.07);word-break:break-word}
+#mtInfo .ok{color:#5dffb0}#mtInfo .wr{color:#f5c451}#mtInfo .ko{color:#ff6b8a}#mtInfo small{color:var(--mute)}
+#mtSrc{color:var(--mute);word-break:break-all}#mtMsg{color:#f5c451;margin-top:4px}
+#mtTop{position:absolute;right:10px;top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:54vw}
+#mtActs{position:absolute;right:10px;bottom:10px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;width:min(860px,calc(100vw - min(340px,44vw) - 34px))}
+#mtActs button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 8px;min-height:50px;text-align:left}
+#mtActs b{font-size:10px;color:var(--mute);font-weight:500}#mtActs i{font-style:normal;font-size:9px;letter-spacing:.08em;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,.08)}
+#mtActs i.CLIP{background:rgba(93,255,176,.18);color:#5dffb0}#mtActs i.IK{background:rgba(53,214,255,.18);color:#7fe3ff}#mtActs i.PROC{background:rgba(245,196,81,.18);color:#f5c451}
+#mtLive{position:absolute;right:10px;bottom:132px;max-width:min(860px,54vw);padding:6px 10px;border-radius:8px;background:rgba(6,10,18,.7);border:1px solid var(--line);text-align:right}
+#mtLoad{position:absolute;right:10px;top:92px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:54vw}
+#mtLoad input[type=text]{width:190px;cursor:text}#mtLoad input[type=file]{display:none}
+@media (max-width:820px){#mtActs{grid-template-columns:repeat(5,minmax(0,1fr))}#mtLive{bottom:190px}#mtActs button{min-height:44px}}
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
@@ -249,6 +317,7 @@ body.touch-play #padTop,body.touch-play #padMsg,body.touch-play #rotate{display:
     <div class="row"><label>Lluvia y partículas</label><div class="seg" data-set="weather"><button data-v="1">Sí</button><button data-v="0">No</button></div></div>
     <div class="row"><label>Resplandor de neón</label><div class="seg" data-set="bloom"><button data-v="1">Sí</button><button data-v="0">No</button></div></div>
     <div class="row"><label>Sonido ambiente</label><div class="seg" data-set="audio"><button data-v="1">Sí</button><button data-v="0">No</button></div></div>
+    <div class="row"><label>Controles táctiles<small>Sensibilidad, tamaño, opacidad y posición</small></label><button class="btn" id="openPadCfg">Configurar</button></div>
     <p id="perf" style="margin-top:18px;font-size:12px;color:var(--mute)"></p>
   </section>
 
@@ -284,27 +353,53 @@ body.touch-play #padTop,body.touch-play #padMsg,body.touch-play #rotate{display:
 <!-- PARTIDA: HUD -->
 <div id="game">
   <div id="views"></div>
-  <div id="gTop"><b id="gFloor"></b><span id="gBlock"></span><i id="gLeft"></i></div>
+  <div id="gTop"><div><b id="gFloor"></b><span id="gBlock"></span></div><i id="gLeft"></i></div>
   <button id="gPause" aria-label="Pausa">II</button>
   <div id="gCard"><div><b id="gCardT"></b><span id="gCardS"></span></div></div>
 </div>
-<div id="gBox"><div class="box"><h2 id="gBoxT"></h2><p id="gBoxP"></p><button class="btn pri" id="gBoxA"></button><button class="btn" id="gBoxB">Salir al menú</button></div></div>
+<div id="gBox"><div class="box"><h2 id="gBoxT"></h2><p id="gBoxP"></p><button class="btn pri" id="gBoxA"></button><button class="btn" id="gBoxC">Controles táctiles</button><button class="btn" id="gBoxB">Salir al menú</button></div></div>
+
+<!-- BANCO DE PRUEBAS DE PERSONAJES (?modeltest=1) -->
+<div id="mt">
+  <aside id="mtInfo"><h3><span>Banco de pruebas · Ghost</span><button id="mtMin" aria-label="Plegar informe">–</button></h3><div id="mtSrc"></div><div id="mtMsg"></div><div id="mtRep"></div></aside>
+  <div id="mtTop"></div>
+  <div id="mtLoad"><button id="mtSoldier">Soldier de prueba</button><label><button id="mtFileB">Personaje GLB…</button><input type="file" id="mtFile" accept=".glb,.gltf"></label><input type="text" id="mtUrl" placeholder="models/ghost.glb" aria-label="Ruta o URL del GLB"><button id="mtUrlB">Cargar</button>
+    <label><button id="mtRifleB">Fusil GLB…</button><input type="file" id="mtRifle" accept=".glb,.gltf"></label><label><button id="mtPistolB">Pistola GLB…</button><input type="file" id="mtPistol" accept=".glb,.gltf"></label><button id="mtClear">Quitar modelos</button></div>
+  <div id="mtLive"></div>
+  <div id="mtActs"></div>
+</div>
 
 <!-- MANDO TÁCTIL -->
 <div id="pad">
-  <div id="padTop"><span><i class="dot" id="padDot"></i><span id="padState">Conectando…</span></span><b id="padWho">THE RAID</b></div>
+  <div id="padTop"><span><i class="dot" id="padDot"></i><span id="padState">Conectando…</span></span><span><b id="padWho">THE RAID</b><button id="padGear" aria-label="Ajustes de controles">⚙</button></span></div>
   <div id="lookZone"></div>
   <div id="moveZone"><div id="joyBase"><div id="joyKnob"></div></div></div>
-  <div class="pb" id="bMelee" data-k="melee" data-look><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l5.5 5.5-9 9H5.5V13z"/><path d="M4 20l3-3"/></svg><span>Melé</span></div></div>
-  <div class="pb" id="bAds" data-k="ads" data-toggle data-look><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg><span>Mira</span></div></div>
-  <div class="pb" id="bFire" data-k="fire" data-look><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h14l4 2v2H11l-2 5H5l1-5H3z"/></svg><span>Disparar</span></div></div>
-  <div class="pb" id="bCrouch" data-k="crouch"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/><path d="M5 20h14"/></svg><span>Agachar</span></div></div>
-  <div class="pb" id="bJump" data-k="jump"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/><path d="M5 4h14"/></svg><span>Saltar</span></div></div>
-  <div class="pb" id="bReload" data-k="reload"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Recargar</span></div></div>
-  <div class="pb" id="bSwap" data-k="swap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg><span>Arma</span></div></div>
+  <div class="pb" id="bFire" data-k="fire" data-look><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg></div><span class="cn">Disparar</span></div>
+  <div class="pb" id="bAds" data-k="ads" data-look><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg></div><span class="cn">Mira</span><span class="cc">Guardia</span></div>
+  <div class="pb" id="bReload" data-k="reload"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="18" rx="1.5"/><path d="M8 8h8M8 13h8"/></svg></div><span class="cn">Recargar</span></div>
+  <div class="pb" id="bSwap" data-k="swap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg></div><span class="cn">Arma</span></div>
+  <div class="pb" id="bJump" data-k="jump"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14l6-6 6 6"/><path d="M6 19l6-6 6 6"/></svg></div><span class="cn">Saltar</span><span class="cc">Esquivar</span></div>
+  <div class="pb" id="bCrouch" data-k="crouch"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l6 6 6-6"/><path d="M5 18h14"/></svg></div><span class="cn">Agachar</span><span class="cc">Agarre</span></div>
+  <div class="pb ctx" id="bCtx" data-k="melee" data-look><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11V7a1.6 1.6 0 0 1 3.2 0v3M10.2 10V5.6a1.6 1.6 0 0 1 3.2 0V10M13.4 10V6.6a1.6 1.6 0 0 1 3.2 0V12M16.6 12V9.4a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.6A6 6 0 0 1 6 15v-2.2A1.6 1.6 0 0 1 9 12"/></svg></div><span class="cv">Melé</span><span class="cn">Acción</span></div>
+  <div id="padEdit"><span>Arrastra cada botón a tu gusto</span><button class="btn" id="peReset">Restablecer</button><button class="btn pri" id="peDone">Hecho</button></div>
   <div id="padMsg"><div><h2 id="padMsgT">Conectando con la pantalla…</h2><p id="padMsgP"></p><button class="btn" id="padRetry" style="display:none">Reintentar</button></div></div>
-  <div id="rotate"><div><h2 style="font-size:20px">Gira el móvil</h2><p style="color:var(--mute);font-size:14px;margin-top:8px">El mando funciona en horizontal.</p></div></div>
+  <div id="rotate"><div><h2 style="font-size:20px">Gira el móvil</h2><p style="color:var(--mute);font-size:14px;margin-top:8px">Se juega en horizontal.</p></div></div>
 </div>
+
+<!-- AJUSTES DE CONTROLES TÁCTILES (menú, pausa y mando remoto) -->
+<div id="padCfg" role="dialog" aria-label="Controles táctiles"><div class="sheet">
+  <header><h2>Controles táctiles</h2><button class="btn ghost" id="pcClose" aria-label="Cerrar">←</button></header>
+  <div class="row"><label>Sensibilidad de cámara</label><input type="range" data-pc="sens" min="0.4" max="2.5" step="0.05" aria-label="Sensibilidad de cámara"><output></output></div>
+  <div class="row"><label>Sensibilidad al apuntar</label><input type="range" data-pc="ads" min="0.4" max="1.6" step="0.05" aria-label="Sensibilidad al apuntar"><output></output></div>
+  <div class="row"><label>Tamaño de los botones</label><input type="range" data-pc="size" min="0.8" max="1.3" step="0.05" aria-label="Tamaño de los botones"><output></output></div>
+  <div class="row"><label>Opacidad de los botones</label><input type="range" data-pc="alpha" min="0.25" max="1" step="0.05" aria-label="Opacidad de los botones"><output></output></div>
+  <div class="row"><label>Invertir eje vertical</label><div class="seg" data-pc="invY"><button data-v="0">No</button><button data-v="1">Sí</button></div></div>
+  <div class="row"><label>Vibración<small id="pcVibNote"></small></label><div class="seg" data-pc="vib"><button data-v="1">Sí</button><button data-v="0">No</button></div></div>
+  <div class="row"><label>Mano dominante<small>Zurdo intercambia movimiento y botones</small></label><div class="seg" data-pc="mirror"><button data-v="0">Diestro</button><button data-v="1">Zurdo</button></div></div>
+  <div class="row"><label>Posición de los botones</label><button class="btn" id="pcEdit">Editar posición</button></div>
+  <div class="row" style="border:0"><label></label><button class="btn" id="pcReset">Restaurar valores predeterminados</button></div>
+  <p>Los ajustes se guardan en este dispositivo.</p>
+</div></div>
 
 <script type="module">
 /* =====================================================================================
@@ -332,7 +427,12 @@ const CONFIG = {
   //     ik: null,                           // true/false fuerza el arma por IK de manos; null = automático (IK si no hay clip Aim)
   //     grip: { pos: [0, 0, 0], rot: [0, 0, 0] } }   // solo sin IK: ajuste del arma en el hueso de la mano derecha
   // Para probar sin editar: index.html?ghost=models/ghost.glb   ·   Especificación: docs/modelo-ghost.md
-  assets: { operators: { ghost: null, vanguard: null, apex: null, breacher: null } },
+  // Armas 3D independientes (un GLB por arma). Cada entrada: null (arma geométrica del juego) · 'ruta.glb' · o un objeto:
+  //   { url: 'models/rifle.glb', pos: [0, 0, 0], rot: [0, 0, 0], scale: 1,          // ajuste fino respecto a las manos
+  //     grips: { r: [0, 0, 0], l: [0, 0.02, 0.3], mag: [0, -0.08, 0.1] } }          // puntos de agarre (m) si el GLB no trae nodos
+  // Convenio del archivo: cañón hacia +Z, arriba +Y, origen en el centro de la empuñadura, en metros.
+  // Nodos vacíos opcionales: grip_r (mano derecha), grip_l (guardamanos), mag (cargador). Prueba rápida: ?rifle=models/rifle.glb&pistol=…
+  assets: { operators: { ghost: null, vanguard: null, apex: null, breacher: null }, weapons: { rifle: null, pistol: null } },
 };
 
 const OPERATORS = [
@@ -447,6 +547,10 @@ class InputManager {
   claim(source, label) {
     let i = this.slots.findIndex(s => s && s.source === source);
     if (i >= 0) return i;
+    // Un mismo jugador que cambia de dispositivo: si el puesto táctil lleva unos segundos sin tocarse, el teclado o el mando lo heredan
+    // (se evita un segundo jugador duplicado y los botones táctiles desaparecen).
+    if (source === 'kb' || source.startsWith('gp')) { const t = this.slots.find(s => s && s.source === 'touch' && performance.now() - (s.act || 0) > 4000);
+      if (t) { t.source = source; t.label = label; Object.assign(t.state, blankState()); this.onChange(); return this.slots.indexOf(t); } }
     i = this.slots.findIndex(s => !s);
     if (i < 0) return -1;
     this.slots[i] = { source, label, state: blankState(), fsm: new PlayerStateMachine(), seen: performance.now() };
@@ -463,6 +567,7 @@ class InputManager {
   rumble(slot, strong = 0.6, ms = 120) {
     const p = this.slots[slot]; if (!p) return;
     if (p.source.startsWith('gp')) { const g = navigator.getGamepads?.()[+p.source.slice(2)]; g?.vibrationActuator?.playEffect?.('dual-rumble', { duration: ms, strongMagnitude: strong, weakMagnitude: strong * 0.5 }).catch?.(() => {}); }
+    else if (p.source === 'touch') padVibrate(ms);
     else if (p.send) p.send({ t: 'rumble', ms });
   }
   _edge(source, key, on) { const n = (this.nav[source] ||= {}); const fired = on && !n[key]; n[key] = on; if (fired) this.onNav(key, source); }
@@ -553,38 +658,83 @@ class LanSocket {
   send(m) { if (this.ok) this.ws.send(JSON.stringify(m)); }
 }
 
-/* --------------------------- Mando táctil --------------------------- */
-/** Enlaza joystick, zona de cámara y botones a un estado; lo usan el mando remoto y el juego táctil local. */
-function bindPad(st) {
-  // Joystick izquierdo
-  const zone = $('#moveZone'), base = $('#joyBase'), knob = $('#joyKnob'), R = 56; let jid = null, ox = 0, oy = 0;
-  const setKnob = (x, y) => { knob.style.transform = `translate3d(${x}px,${y}px,0)`; };
-  zone.addEventListener('pointerdown', e => { if (jid !== null) return; jid = e.pointerId; zone.setPointerCapture(jid); const r = zone.getBoundingClientRect(); ox = e.clientX; oy = e.clientY; base.style.left = (ox - r.left) + 'px'; base.style.top = (oy - r.top) + 'px'; base.style.bottom = 'auto'; base.style.margin = '-66px 0 0 -66px'; });
-  zone.addEventListener('pointermove', e => { if (e.pointerId !== jid) return; let dx = e.clientX - ox, dy = e.clientY - oy; const d = Math.hypot(dx, dy); if (d > R) { dx *= R / d; dy *= R / d; } setKnob(dx, dy); st.mx = +(dx / R).toFixed(2); st.my = +(-dy / R).toFixed(2); st.sprint = autoSprint(st.sprint, d / R * st.mx / (Math.hypot(st.mx, st.my) || 1), d / R * st.my / (Math.hypot(st.mx, st.my) || 1)); });
-  const jend = e => { if (e.pointerId !== jid) return; jid = null; st.mx = st.my = st.sprint = 0; setKnob(0, 0); };
+/* --------------------------- Mando táctil ---------------------------
+   Un único estado (PAD_ST) y una única configuración (padCfg, guardada en el dispositivo) para el juego táctil local
+   y para el móvil usado como mando remoto. */
+const PAD_DEF = { sens: 1, ads: 1, size: 1, alpha: 0.55, invY: 0, vib: 1, mirror: 0, pos: {} };
+const padCfg = Object.assign({}, PAD_DEF, Store.get('pad', {})); padCfg.pos = Object.assign({}, padCfg.pos);
+const PAD_ST = blankState();
+function applyPadCfg() {
+  const pad = $('#pad'); pad.style.setProperty('--u', (clamp(Math.min(innerWidth, innerHeight) / 400, 0.85, 1.4) * padCfg.size).toFixed(3)); pad.style.setProperty('--pa', padCfg.alpha); pad.classList.toggle('mirror', !!padCfg.mirror);
+  for (const b of $$('.pb')) { const q = padCfg.pos[b.id]; b.style.setProperty('--dx', (q ? q[0] : 0) + 'px'); b.style.setProperty('--dy', (q ? q[1] : 0) + 'px'); }
+}
+function savePadCfg() { Store.set('pad', padCfg); applyPadCfg(); }
+const padVibrate = ms => { if (padCfg.vib) try { navigator.vibrate?.(ms); } catch {} };
+/** Botón contextual y modo combate. act: '' | 'melee' | 'revive' | 'breach'. Lo fija la partida (táctil local) o la pantalla (mando remoto). */
+const PAD_CTX = { melee: ['Melé', '<path d="M7 11V7a1.6 1.6 0 0 1 3.2 0v3M10.2 10V5.6a1.6 1.6 0 0 1 3.2 0V10M13.4 10V6.6a1.6 1.6 0 0 1 3.2 0V12M16.6 12V9.4a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.6A6 6 0 0 1 6 15v-2.2A1.6 1.6 0 0 1 9 12"/>'],
+  revive: ['Reanimar', '<path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9.5"/>'], breach: ['Brecha', '<rect x="6" y="3" width="12" height="18" rx="1"/><path d="M10 9l5 3-5 3z" fill="currentColor"/>'] };
+function setPadCtx(act, combat) {
+  const pad = $('#pad'), b = $('#bCtx'), key = act + (combat ? '1' : '0'); if (pad.dataset.ctx === key) return; pad.dataset.ctx = key;
+  b.classList.toggle('show', !!act); if (act) { $('.cv', b).textContent = combat && act === 'melee' ? 'Golpe' : PAD_CTX[act][0]; $('svg', b).innerHTML = PAD_CTX[act][1]; }
+  if (!act && PAD_ST.melee) { PAD_ST.melee = 0; b.classList.remove('down'); }
+  if (pad.classList.contains('combat') !== !!combat) { for (const k of ['ads', 'crouch']) { PAD_ST[k] = 0; $(k === 'ads' ? '#bAds' : '#bCrouch').classList.remove('tog', 'down'); } pad.classList.toggle('combat', !!combat); }   // Mira y Agachar cambian de función: se sueltan
+}
+let padBound = false;
+/** Enlaza (una sola vez) el joystick flotante, la zona de cámara y los botones a PAD_ST. */
+function bindPad() {
+  if (padBound) return; padBound = true; const st = PAD_ST, pad = $('#pad'), editing = () => document.body.classList.contains('pad-editing'); applyPadCfg(); addEventListener('resize', applyPadCfg);
+  // Joystick flotante en la zona de movimiento. Empujarlo a fondo hacia delante activa el sprint.
+  const zone = $('#moveZone'), base = $('#joyBase'), knob = $('#joyKnob'); let jid = null, ox = 0, oy = 0, R = 50;
+  const setKnob = (x, y) => { knob.style.transform = `translate3d(calc(-50% + ${x}px),calc(-50% + ${y}px),0)`; };
+  zone.addEventListener('pointerdown', e => { if (jid !== null || editing()) return; jid = e.pointerId; zone.setPointerCapture(jid); const r = zone.getBoundingClientRect(); ox = e.clientX; oy = e.clientY; R = base.offsetWidth * 0.43 || 50; base.style.left = (ox - r.left) + 'px'; base.style.top = (oy - r.top) + 'px'; base.classList.add('live'); });
+  zone.addEventListener('pointermove', e => { if (e.pointerId !== jid) return; let dx = e.clientX - ox, dy = e.clientY - oy; const d = Math.hypot(dx, dy); if (d > R) { dx *= R / d; dy *= R / d; } setKnob(dx, dy); st.mx = +(dx / R).toFixed(2); st.my = +(-dy / R).toFixed(2);
+    const was = st.sprint; st.sprint = autoSprint(was, st.mx, st.my); base.classList.toggle('sprint', !!st.sprint);
+    if (st.sprint && !was && st.crouch && !pad.classList.contains('combat')) { st.crouch = 0; $('#bCrouch').classList.remove('tog'); } });   // echar a correr levanta al operador
+  const jend = e => { if (e.pointerId !== jid) return; jid = null; st.mx = st.my = st.sprint = 0; setKnob(0, 0); base.style.left = base.style.top = ''; base.classList.remove('live', 'sprint'); };
   zone.addEventListener('pointerup', jend); zone.addEventListener('pointercancel', jend);
 
-  // Zona de cámara (arrastre a la derecha)
+  // Cámara: arrastre en la zona libre (y sobre Disparar, Mira y el botón contextual). Sensibilidad e inversión del eje según la configuración.
+  const lookBy = (dx, dy) => { const k = padCfg.sens * (st.ads && !pad.classList.contains('combat') ? padCfg.ads : 1); st.lx += dx * k; st.ly += dy * k * (padCfg.invY ? -1 : 1); };
   const look = $('#lookZone'); const lp = new Map();
-  look.addEventListener('pointerdown', e => { lp.set(e.pointerId, [e.clientX, e.clientY]); look.setPointerCapture(e.pointerId); });
-  look.addEventListener('pointermove', e => { const p = lp.get(e.pointerId); if (!p) return; st.lx += e.clientX - p[0]; st.ly += e.clientY - p[1]; p[0] = e.clientX; p[1] = e.clientY; });
+  look.addEventListener('pointerdown', e => { if (editing()) return; lp.set(e.pointerId, [e.clientX, e.clientY]); look.setPointerCapture(e.pointerId); });
+  look.addEventListener('pointermove', e => { const q = lp.get(e.pointerId); if (!q) return; lookBy(e.clientX - q[0], e.clientY - q[1]); q[0] = e.clientX; q[1] = e.clientY; });
   const lend = e => lp.delete(e.pointerId); look.addEventListener('pointerup', lend); look.addEventListener('pointercancel', lend);
 
-  // Botones
+  // Botones. Mira y Agachar son interruptores (en combate pasan a ser Guardia y Agarre, mantenidos). En modo edición se arrastran.
   for (const b of $$('.pb')) {
-    const k = b.dataset.k, tog = 'toggle' in b.dataset, look = 'look' in b.dataset; let px = 0, py = 0;
-    // Disparar / apuntar / melé: arrastrar el dedo sobre el botón también gira la cámara (acciones simultáneas)
-    if (look) b.addEventListener('pointermove', e => { if (!b.hasPointerCapture(e.pointerId)) return; st.lx += e.clientX - px; st.ly += e.clientY - py; px = e.clientX; py = e.clientY; });
-    b.addEventListener('pointerdown', e => { e.preventDefault(); b.setPointerCapture(e.pointerId); px = e.clientX; py = e.clientY; navigator.vibrate?.(12);
-      if (tog) { st[k] = st[k] ? 0 : 1; b.classList.toggle('tog', !!st[k]); } else { st[k] = 1; b.classList.add('down'); } });
-    const up = () => { if (!tog) { st[k] = 0; b.classList.remove('down'); } };
+    const k = b.dataset.k, canLook = 'look' in b.dataset; let px = 0, py = 0, drag = null, held = false;
+    b.addEventListener('pointerdown', e => { e.preventDefault(); b.setPointerCapture(e.pointerId); px = e.clientX; py = e.clientY;
+      if (editing()) { const q = padCfg.pos[b.id] || [0, 0]; drag = [px, py, q[0], q[1]]; return; }
+      padVibrate(10); const tog = (k === 'ads' || k === 'crouch') && !pad.classList.contains('combat');
+      if (tog) { st[k] = st[k] ? 0 : 1; b.classList.toggle('tog', !!st[k]); held = false; } else { st[k] = 1; b.classList.add('down'); held = true; } });
+    b.addEventListener('pointermove', e => { if (!b.hasPointerCapture(e.pointerId)) return;
+      if (drag) { padCfg.pos[b.id] = [Math.round(drag[2] + e.clientX - drag[0]), Math.round(drag[3] + e.clientY - drag[1])]; applyPadCfg();
+        const r = b.getBoundingClientRect(), q = padCfg.pos[b.id]; q[0] = Math.round(q[0] - Math.min(0, r.left) - Math.max(0, r.right - innerWidth)); q[1] = Math.round(q[1] - Math.min(0, r.top) - Math.max(0, r.bottom - innerHeight)); applyPadCfg(); return; }   // nunca fuera de la pantalla
+      if (canLook && !editing()) { lookBy(e.clientX - px, e.clientY - py); px = e.clientX; py = e.clientY; } });
+    const up = () => { if (drag) { drag = null; Store.set('pad', padCfg); return; } if (held) { st[k] = 0; b.classList.remove('down'); held = false; } };
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
   }
   addEventListener('contextmenu', e => e.preventDefault());
 }
+/** Hoja de ajustes de los controles táctiles: se abre desde Ajustes, desde la pausa y desde el mando remoto. */
+let padCfgWired = false;
+function openPadCfg() {
+  const box = $('#padCfg'), paint = () => { for (const i of $$('input[data-pc]', box)) { i.value = padCfg[i.dataset.pc]; i.nextElementSibling.textContent = i.dataset.pc === 'alpha' ? Math.round(padCfg.alpha * 100) + ' %' : '×' + (+padCfg[i.dataset.pc]).toFixed(2); }
+    for (const sg of $$('.seg[data-pc]', box)) for (const b of $$('button', sg)) b.classList.toggle('on', String(padCfg[sg.dataset.pc]) === b.dataset.v); };
+  if (!padCfgWired) { padCfgWired = true; bindPad();
+    for (const i of $$('input[data-pc]', box)) i.addEventListener('input', () => { padCfg[i.dataset.pc] = +i.value; savePadCfg(); paint(); });
+    for (const sg of $$('.seg[data-pc]', box)) for (const b of $$('button', sg)) b.addEventListener('click', () => { padCfg[sg.dataset.pc] = +b.dataset.v; savePadCfg(); paint(); if (sg.dataset.pc === 'vib' && padCfg.vib) padVibrate(40); });
+    $('#pcVibNote').textContent = 'vibrate' in navigator ? '' : 'Este dispositivo o navegador no la admite';
+    $('#pcClose').addEventListener('click', () => box.classList.remove('show'));
+    $('#pcReset').addEventListener('click', () => { Object.assign(padCfg, PAD_DEF, { pos: {} }); savePadCfg(); paint(); });
+    $('#pcEdit').addEventListener('click', () => { box.classList.remove('show'); document.body.classList.add('pad-editing'); });
+    $('#peDone').addEventListener('click', () => { document.body.classList.remove('pad-editing'); Store.set('pad', padCfg); box.classList.add('show'); });
+    $('#peReset').addEventListener('click', () => { padCfg.pos = {}; savePadCfg(); }); }
+  paint(); box.classList.add('show');
+}
 function startPad(target) {
   document.body.classList.add('pad-mode');
-  const st = blankState(), msg = $('#padMsg'), msgT = $('#padMsgT'), msgP = $('#padMsgP'), retry = $('#padRetry');
+  const st = PAD_ST, msg = $('#padMsg'), msgT = $('#padMsgT'), msgP = $('#padMsgP'), retry = $('#padRetry');
   const show = (t, p = '', r = false) => { msgT.textContent = t; msgP.textContent = p; retry.style.display = r ? '' : 'none'; msg.classList.add('show'); };
   const setOnline = on => { $('#padDot').classList.toggle('on', on); $('#padState').textContent = on ? 'Conectado' : 'Sin conexión'; };
   let link = null;                                   // { send(msg), open }
@@ -592,7 +742,8 @@ function startPad(target) {
     if (!d) return;
     if (d.t === 'slot') { $('#padWho').textContent = `J${d.i + 1} · ${String(d.op).toUpperCase()}`; msg.classList.remove('show'); setOnline(true); }
     else if (d.t === 'full') show('Escuadrón completo', 'Ya hay 4 jugadores en esta pantalla.', true);
-    else if (d.t === 'rumble') navigator.vibrate?.(d.ms || 60);
+    else if (d.t === 'rumble') padVibrate(d.ms || 60);
+    else if (d.t === 'ctx') setPadCtx(d.a || '', !!d.c);   // la pantalla avisa de la acción disponible (melé, reanimar, brecha) y del modo combate
   };
   const connect = () => {
     show('Conectando con la pantalla…', `Sala ${target}`);
@@ -618,7 +769,7 @@ function startPad(target) {
   };
   retry.addEventListener('click', () => location.reload());
 
-  bindPad(st);
+  bindPad(); $('#padGear').addEventListener('click', openPadCfg);
 
   setInterval(() => {
     if (!link || !link.ok) return;
@@ -1126,7 +1277,7 @@ async function startGame() {
   /* --------------------------------- Squad --------------------------------- */
   class Squad {
     constructor(rm) {
-      this.rm = rm; this.ops = []; this.assets = {};
+      this.rm = rm; this.ops = []; this.assets = {}; this.weapons = {}; this.onWeapon = () => {};
       const std = o => new THREE.MeshStandardMaterial(o);
       this.M = {
         cloth: std({ map: T.cloth, bumpMap: T.cloth, bumpScale: 1.4, roughness: 0.86, envMapIntensity: 0.35 }),
@@ -1145,6 +1296,37 @@ async function startGame() {
         ear: B(.05, .09, .09), tube: new THREE.CylinderGeometry(.027, .03, .1, 14), lens: new THREE.CircleGeometry(.024, 14), mount: B(.05, .05, .06), knee: B(.12, .12, .05), pack: B(.4, .52, .22),
         poncho: new THREE.ConeGeometry(.5, 1.05, 18, 4, true), hood: new THREE.SphereGeometry(.155, 20, 14, 0, Math.PI * 2, 0, Math.PI * .72), launcher: new THREE.CylinderGeometry(.075, .075, .78, 16) };
       for (const def of OPERATORS) this.spawn(def);
+      for (const kind of Object.keys(CONFIG.assets.weapons)) { const spec = params.get(kind) || CONFIG.assets.weapons[kind]; if (spec) this.loadWeapon(kind, spec); }
+    }
+    /** Carga un arma GLB independiente. Si falla o no existe, se mantiene el arma geométrica. Devuelve una promesa con el recurso o null. */
+    loadWeapon(kind, spec) {
+      if (typeof spec === 'string') spec = { url: spec };
+      return this.gltfLoader().then(L => L.loadAsync(spec.url)).then(gltf => {
+        const a = this.weapons[kind] = this.prepWeapon(kind, gltf, spec), r = a.report;
+        console.info(`[Arma] ${kind}: ${r.triangles} triángulos · ${r.materials} materiales · texturas hasta ${r.texMax}px · ${r.length} m de largo · escala ×${r.scale} · nodos: ${r.nodes.join(', ') || 'ninguno (agarres por defecto)'}` + (r.warn.length ? '\n[Avisos] ' + r.warn.join(' | ') : ''));
+        for (const op of this.ops) if (op.wk === kind) { op.gun.clear(); op.gun.add(a.tpl.clone(true)); op.grips = a.grips; }   // menú
+        this.onWeapon(kind); return a;
+      }).catch(e => { console.warn('Arma no disponible, se mantiene el arma geométrica:', kind, spec.url, e); return null; });
+    }
+    /** Normaliza un arma: ajustes de configuración, escala plausible, y la coloca de modo que su empuñadura coincida con la del arma
+        geométrica (así todas las posturas y animaciones existentes sirven sin cambios). Espacio resultante: cañón +Z, arriba +Y. */
+    prepWeapon(kind, gltf, spec) {
+      const V = a => new THREE.Vector3().fromArray(a), adj = new THREE.Group(), tpl = new THREE.Group(), warn = [], base = GRIPS[kind] || GRIPS.rifle, nominal = { rifle: 0.85, long: 1.1, shotgun: 0.9, pistol: 0.2 }[kind] || 0.8;
+      adj.add(gltf.scene); if (spec.rot) adj.rotation.fromArray(spec.rot);
+      let tris = 0, texMax = 0; const mats = new Set();
+      gltf.scene.traverse(o => { if (!o.isMesh) return; o.castShadow = true; tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+        for (const m of Array.isArray(o.material) ? o.material : [o.material]) { if (!m || mats.has(m)) continue; mats.add(m); if ('envMapIntensity' in m) m.envMapIntensity = 0.9;
+          for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap']) { const t = m[k]; if (t) { t.anisotropy = 4; if (t.image) texMax = Math.max(texMax, t.image.width || 0, t.image.height || 0); } } } });
+      adj.updateMatrixWorld(true); const size = new THREE.Box3().setFromObject(adj).getSize(new THREE.Vector3()), L0 = Math.max(size.x, size.y, size.z); let sc = +spec.scale || 1;
+      if (!spec.scale && L0 > 0 && (L0 < nominal * 0.5 || L0 > nominal * 1.8)) { sc = nominal / L0; warn.push(`Tamaño atípico (${L0.toFixed(2)} unidades de largo): reescalada a ${nominal} m. Fija «scale» para ajustarlo.`); }
+      if (size.z < Math.max(size.x, size.y) * 0.99) warn.push('El eje más largo no es Z: el cañón debe ir hacia +Z (ajusta «rot»).');
+      adj.scale.setScalar(sc); adj.updateMatrixWorld(true);
+      const nodes = [], node = (re, cfg) => { let n = null; gltf.scene.traverse(o => { if (!n && re.test(o.name)) n = o; }); if (n) { nodes.push(n.name); return n.getWorldPosition(new THREE.Vector3()); } return cfg ? V(cfg) : null; };
+      const cg = spec.grips || {}, gR = node(/^grip[_.\- ]?r/i, cg.r) || new THREE.Vector3(), gL = node(/^grip[_.\- ]?l/i, cg.l), gM = node(/^mag/i, cg.mag), off = V(base[0]).sub(gR);
+      adj.position.copy(off); if (spec.pos) adj.position.add(V(spec.pos)); tpl.add(adj);
+      if (tris > 12000) warn.push(`Malla densa para un arma (${Math.round(tris / 1000)}k triángulos; recomendado ≤ 8k).`); if (texMax > 2048) warn.push(`Texturas de ${texMax}px: recomendado 1024.`);
+      return { tpl, spec, grips: [base[0], gL ? gL.add(off).toArray() : base[1], gM ? gM.add(off).toArray() : base[2]],
+        report: { triangles: Math.round(tris), materials: mats.size, texMax, length: +(L0 * sc).toFixed(3), scale: +sc.toFixed(4), nodes, warn } };
     }
     mesh(parent, geo, mat, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.scale.set(sx, sy, sz); m.castShadow = m.receiveShadow = true; parent.add(m); return m; }
     rifle(long = false) {
@@ -1182,7 +1364,7 @@ async function startGame() {
         gun = new THREE.Group(); m(gun, G.launcher, M.gun, 0, 0, 0, Math.PI / 2); m(gun, B2(.1, .12, .2), M.shell, 0, -.02, -.2); m(gun, B2(.05, .14, .05), M.gun, 0, -.11, .08);
         this.setPose(op, { Rs: [-.15, 0, .2], Re: [-.5, 0, -.1], Ls: [-.1, 0, -.18], Le: [-.25, 0, .1] }); gun.position.set(-.34, -.22, .16); gun.rotation.set(.25, .35, 0); }
       function B2(w, h, d) { return new THREE.BoxGeometry(w, h, d); }
-      spine.add(gun); op.gun = gun; op.gunY = gun.position.y;
+      spine.add(gun); op.gun = gun; op.gunY = gun.position.y; op.wk = def.id === 'ghost' || def.id === 'vanguard' ? 'rifle' : def.id === 'apex' ? 'long' : 'launcher'; op.grips = null;
       this.rm.scene.add(root); this.ops.push(op);
       const spec = params.get(def.id) || CONFIG.assets.operators[def.id]; if (spec) this.loadModel(op, spec);
     }
@@ -1198,11 +1380,12 @@ async function startGame() {
     /** Normaliza un GLB recién cargado: altura en metros, pies en y = 0, centrado en la cadera y mirando a +Z. Devuelve el recurso con su informe. */
     prepModel(gltf, spec, extra) {
       const norm = new THREE.Group(), src = gltf.scene, warn = [], json = gltf.parser && gltf.parser.json || {}; norm.add(src);
-      let tris = 0, skinned = 0, bones = 0, texMax = 0; const mats = new Set();
+      let tris = 0, skinned = 0, bones = 0, texMax = 0; const mats = new Set(), matInfo = [];
       src.traverse(o => { if (o.isBone) bones++; if (!o.isMesh) return; o.castShadow = o.receiveShadow = true; if (o.isSkinnedMesh) { skinned++; o.frustumCulled = false; }   // la caja de un SkinnedMesh no sigue a la animación
         tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
         for (const m of Array.isArray(o.material) ? o.material : [o.material]) { if (!m || mats.has(m)) continue; mats.add(m); if ('envMapIntensity' in m) m.envMapIntensity = 0.8;
-          for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap']) { const t = m[k]; if (t) { t.anisotropy = 4; if (t.image) texMax = Math.max(texMax, t.image.width || 0, t.image.height || 0); } } } });
+          const mi = { name: m.name || '(sin nombre)', type: m.type.replace('Mesh', '').replace('Material', ''), maps: [] }; matInfo.push(mi);
+          for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap']) { const t = m[k]; if (t) { t.anisotropy = 4; if (t.image) { texMax = Math.max(texMax, t.image.width || 0, t.image.height || 0); mi.maps.push(k.replace('Map', '').replace('map', 'color') + ' ' + (t.image.width || '?') + '×' + (t.image.height || '?')); } } } } });
       norm.updateMatrixWorld(true); src.traverse(o => { if (o.isSkinnedMesh) o.skeleton.update(); });   // updateMatrixWorld (no updateWorldMatrix) + skeleton.update: imprescindibles para medir una malla con esqueleto
       const box = new THREE.Box3().setFromObject(norm, true), h0 = box.max.y - box.min.y, H = +spec.height || 1.8, sc = h0 > 1e-4 ? H / h0 : 1;
       norm.scale.setScalar(sc); norm.updateMatrixWorld(true);
@@ -1229,7 +1412,10 @@ async function startGame() {
       if (tris > 70000) warn.push(`Malla muy densa para móvil (${Math.round(tris / 1000)}k triángulos; recomendado ≤ 40k).`); if (texMax > 2048) warn.push(`Texturas de ${texMax}px: en móvil se recomienda 2048 como máximo.`);
       if (h0 * sc && (h0 < 0.5 || h0 > 3)) warn.push(`Escala original atípica (${h0.toFixed(2)} unidades de alto): se ha reescalado a ${H} m.`);
       const usable = !!(det.map.Idle && (det.map.Walk || det.map.Run));
-      return { model: norm, clips, spec, usable, rig: rigT, rigOk: !!(rigT.arms && rigT.legs), report: { height0: +h0.toFixed(3), scale: +sc.toFixed(4), yawDeg: Math.round(yaw * 180 / Math.PI), triangles: Math.round(tris), bones, skinned, materials: mats.size, texMax, found: det.found, missing: det.missing, warn } };
+      const bn = b => (b ? String(b.userData.name || b.name) : '—'), ch = c => (c ? [bn(c.up), bn(c.mid), bn(c.end)] : null); let spine = null; src.traverse(o => { if (!spine && /spine|chest|torso/i.test(o.name)) spine = o; });
+      const clipMap = {}; for (const n of det.found) clipMap[n] = det.map[n].name;
+      return { model: norm, clips, spec, usable, rig: rigT, rigOk: !!(rigT.arms && rigT.legs), report: { height0: +h0.toFixed(3), height: H, scale: +sc.toFixed(4), yawDeg: Math.round(yaw * 180 / Math.PI), yawAuto: typeof spec.yaw !== 'number' && Math.hypot(fwd.x, fwd.z) > 0.2, triangles: Math.round(tris), bones, skinned, materials: mats.size, matInfo, texMax, found: det.found, missing: det.missing, clipMap, allClips: clips.map(c => c.name),
+        rigNames: { hips: bn(rigT.hips), armR: ch(rigT.arms && rigT.arms[0]), armL: ch(rigT.arms && rigT.arms[1]), legR: ch(rigT.legs && rigT.legs[0]), legL: ch(rigT.legs && rigT.legs[1]), spine: bn(spine), fingers: rigT.hands ? rigT.hands.map(h => h.curl.length) : null }, warn } };
     }
     /** Sustituye el operador procedural por un modelo GLB (menú y partida). spec: 'url' u objeto (ver CONFIG.assets). Devuelve una promesa. */
     loadModel(op, spec) {
@@ -1241,9 +1427,9 @@ async function startGame() {
           `[Animación] ${op.def.name}: clips detectados → ${r.found.join(', ') || 'ninguno'} · faltan → ${r.missing.join(', ') || 'ninguno'} (se cubren con IK y animación procedural)` +
           (a.usable ? '' : ' · NO APTO para partida: requiere clips Idle y Walk o Run') + (r.warn.length ? '\n[Avisos] ' + r.warn.join(' | ') : ''));
         // Menú: el modelo ocupa el lugar de la figura procedural y sujeta el fusil del operador con IK
-        op.root.remove(op.hips); const model = a.model; op.root.add(model); op.model = model; op.mScale = model.scale.y; op.clips = new ClipPlayer(model, a.clips, spec.clips); op.mixer = op.clips.mixer;
+        op.root.remove(op.hips); if (op.model) op.root.remove(op.model); const model = a.model; op.root.add(model); op.model = model; op.mScale = model.scale.y; op.clips = new ClipPlayer(model, a.clips, spec.clips); op.mixer = op.clips.mixer;
         if (op.clips.layers) { op.clips.playLayer('lo', 'Idle', 0); op.clips.playLayer('up', 'Idle', 0); } else if (!op.clips.play('Idle', 0) && a.clips[0]) op.mixer.clipAction(a.clips[0]).play();
-        op.rig = a.rig; if (op.rig.arms) { const P = op.gunPose = new THREE.Group(); P.rotation.order = 'YXZ'; P.position.set(-0.13, 1.14, 0.24); P.rotation.set(0.55, 0.6, 0.1); op.gun.position.set(0, 0, 0); op.gun.rotation.set(0, 0, 0); P.add(op.gun); op.root.add(P); }
+        op.rig = a.rig; if (op.rig.arms && !op.gunPose) { const P = op.gunPose = new THREE.Group(); P.rotation.order = 'YXZ'; P.position.set(-0.13, 1.14, 0.24); P.rotation.set(0.55, 0.6, 0.1); op.gun.position.set(0, 0, 0); op.gun.rotation.set(0, 0, 0); P.add(op.gun); op.root.add(P); }
         return a;
       }).catch(e => { console.warn('Modelo no disponible, se mantiene el operador procedural:', spec.url, e); return null; });
     }
@@ -1263,7 +1449,7 @@ async function startGame() {
     update(dt, t) {
       for (const op of this.ops) {
         if (op.mixer) { op.mixer.update(dt); if (!op.clips || !op.clips.has('Idle')) { op.t += dt; op.model.scale.y = op.mScale * (1 + Math.sin(op.t * 1.35) * 0.006); }   // sin Idle: respiración procedural
-          if (op.gunPose) { const P = op.gunPose, G = GRIPS.menu; op.t += dt; P.position.y = 1.14 + Math.sin(op.t * 1.35) * 0.004; P.updateWorldMatrix(true, false);
+          if (op.gunPose) { const P = op.gunPose, G = op.grips || GRIPS.menu; op.t += dt; P.position.y = 1.14 + Math.sin(op.t * 1.35) * 0.004; P.updateWorldMatrix(true, false);
             holdAt(op.rig, 0, _tR.fromArray(G[0]).applyMatrix4(P.matrixWorld), P, op.root, 0.15, 0.3, 0.94, 1, 0, -0.1, 0.95, 1); holdAt(op.rig, 1, _tL.fromArray(G[1]).applyMatrix4(P.matrixWorld), P, op.root, -0.75, 0.1, 0.65, 0.1, 1, 0, 0.75, 1); }
           continue; }
         op.t += dt; const u = op.t, p = op.pose, br = Math.sin(u * 1.35);
@@ -1515,10 +1701,11 @@ async function startGame() {
     dispose() { this.g.world.remove(this.group); for (const g of this.baked) g.dispose(); }
   }
 
+  const HUD_COL = ['#35d6ff', '#ff2d6f', '#ffb84a', '#5dff9a'], MK_ON = ['mo0', 'mo1', 'mo2'], MK_POS = ['mp0', 'mp1', 'mp2'], MK_TXT = ['mt0', 'mt1', 'mt2'];
   class Game {
     constructor(app) {
       this.app = app; this.rm = app.rm; this.input = app.input; this.active = false; this.paused = false; this.level = null; this.players = []; this.enemies = []; this.pickups = []; this.viewPl = []; this.rects = [];
-      this.time = 0; this.fdt = 0; this.hitStop = 0; this.floor = 1; this.waves = []; this.left = 0; this.state = 'play'; this.cardT = 0; this.transT = 0; this.tc = {}; this.gpPrev = {};
+      this.time = 0; this.fdt = 0; this.hitStop = 0; this.mv = new THREE.Vector3(); this.floor = 1; this.waves = []; this.left = 0; this.state = 'play'; this.cardT = 0; this.transT = 0; this.tc = {}; this.gpPrev = {};
       this.farCtx = { enemyDist: 999, armedEnemy: false, nearProp: false, nearCover: false };
       const sc = this.rm.scene, std = o => new THREE.MeshStandardMaterial(o), basic = (c, k = 1.6) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k), toneMapped: false });
       this.menuObjs = sc.children.slice();
@@ -1570,16 +1757,16 @@ async function startGame() {
             vec3 g=vec3(.1,1.,.3)*l+vec3(.0,.05,.012)*n+vec3(0.,.012,.004);g*=1.-smoothstep(.34,.74,length(d))*.96;g*=.92+.08*sin(vUv.y*900.);
             gl_FragColor=vec4(g,1.);}` });
       this.nvg.enabled = false; this.rm.composer.insertPass(this.nvg, this.rm.composer.passes.length - 1);
-      this.buildHud(); this.bindMouse();
+      this.buildHud(); this.bindMouse(); app.squad.onWeapon = k => this.refreshWeapons(k);
     }
     /* ------------------------------ HUD y menús en partida ------------------------------ */
     buildHud() {
       const host = $('#views'); this.views = [];
       for (let i = 0; i < 4; i++) { const el = document.createElement('div'); el.className = 'view';
-        el.innerHTML = '<div class="dmg"></div><div class="xh"><i></i><i></i><i></i><i></i><b></b></div><div class="tag"></div><div class="prompt"></div><div class="stat"><div class="hp"><u></u></div><button class="ammo" aria-label="Recargar"><b></b><small></small></button></div>';
-        host.appendChild(el); const v = { el, dmg: $('.dmg', el), xh: $('.xh', el), tag: $('.tag', el), prompt: $('.prompt', el), hp: $('.hp', el), hpU: $('.hp u', el), ammo: $('.ammo', el), ammoB: $('.ammo b', el), ammoS: $('.ammo small', el), c: {} };
+        el.innerHTML = '<div class="dmg"></div><div class="xh"><i></i><i></i><i></i><i></i><b></b></div><div class="hudTL"><div class="tag"></div><div class="hp"><u></u></div><div class="mates"></div></div><div class="mk"></div><div class="mk"></div><div class="mk"></div><div class="prompt"></div><div class="stat"><button class="ammo" aria-label="Recargar"><span></span><b></b><small></small></button></div>';
+        host.appendChild(el); const v = { el, dmg: $('.dmg', el), xh: $('.xh', el), tag: $('.tag', el), prompt: $('.prompt', el), hp: $('.hp', el), hpU: $('.hp u', el), mates: $('.mates', el), mk: $$('.mk', el), ammo: $('.ammo', el), ammoN: $('.ammo span', el), ammoB: $('.ammo b', el), ammoS: $('.ammo small', el), c: {} };
         v.ammo.addEventListener('click', () => { const pl = this.viewPl[i]; if (pl) pl.wantReload = true; }); this.views.push(v); }
-      $('#gPause').addEventListener('click', () => this.box('pause'));
+      $('#gPause').addEventListener('click', () => this.box('pause')); $('#gBoxC').addEventListener('click', openPadCfg); $('#openPadCfg').addEventListener('click', openPadCfg);
       $('#gBoxA').addEventListener('click', () => this.boxAction()); $('#gBoxB').addEventListener('click', () => this.exit());
     }
     put(o, k, val, fn) { if (o[k] !== val) { o[k] = val; fn(val); } }
@@ -1612,13 +1799,17 @@ async function startGame() {
       bl.strength = 0.32; bl.radius = 0.3; bl.threshold = 0.95; gu.uAb.value = 0.004; gu.uVig.value = 0.42;   // imagen nítida en partida: solo las fuentes de luz brillan
       this.menuObjs.forEach(o => o.visible = false); this.world.visible = this.lights.visible = true;
       if (!this.input.slots.some(Boolean)) this.input.claim(COARSE ? 'touch' : 'kb', COARSE ? 'Pantalla táctil' : 'Teclado y ratón');
-      this.touch = this.input.slots.some(s => s && s.source === 'touch'); document.body.classList.toggle('touch-play', this.touch);
-      if (this.touch && !this.padSt) { this.padSt = blankState(); bindPad(this.padSt); }
+      this.padSt = PAD_ST; this.setTouch(this.input.slots.some(s => s && s.source === 'touch'));
       this.load(clamp(floor | 0 || 1, 1, 10), true);
+    }
+    /** Muestra u oculta los controles táctiles según exista un puesto táctil (puede pasar a teclado o mando durante la partida). */
+    setTouch(on) {
+      this.touch = on; document.body.classList.toggle('touch-play', on);
+      if (on) { bindPad(); const sl = this.input.slots.find(s => s && s.source === 'touch'); if (sl) sl.act = performance.now(); } else { Object.assign(PAD_ST, blankState()); setPadCtx('', false); }
     }
     exit() {
       if (!this.active) return; this.active = false; this.paused = false; $('#gBox').classList.remove('show'); $('#gCard').classList.remove('show', 'solid'); try { document.exitPointerLock?.(); } catch {}
-      document.body.classList.remove('playing', 'touch-play'); this.clearWorld(); for (const p of this.players) this.world.remove(p.fig.root); this.players = [];
+      document.body.classList.remove('playing'); this.setTouch(false); this.clearWorld(); for (const p of this.players) this.world.remove(p.fig.root); this.players = [];
       if (this.level) { this.level.dispose(); this.level = null; } this.input.release('touch'); for (const s of this.input.slots) if (s) s.ctx = null;
       const sc = this.rm.scene; sc.fog.color.setHex(this.saved.fog); sc.fog.density = this.saved.dens; sc.background.setHex(this.saved.bg); this.nvg.enabled = false;
       sc.environment = this.saved.env; const bl = this.rm.bloom; [bl.strength, bl.radius, bl.threshold] = this.saved.bloom; this.rm.grade.uniforms.uAb.value = this.saved.ab; this.rm.grade.uniforms.uVig.value = this.saved.vig; this.key.intensity = 0;
@@ -1692,7 +1883,11 @@ async function startGame() {
     }
     /** Arma detallada (cuerpo, guardamanos, cañón, cargador, culata, óptica) fusionada en una malla por material y cacheada.
         Eje local: cañón hacia −Y (sale de la mano), +Z = arriba del arma cuando se apunta. */
-    weaponMesh(kind) {
+    weaponMesh(kind) { const slot = new THREE.Group(); slot.userData.kind = kind; this.fillWeapon(slot); return slot; }
+    /** Rellena una ranura de arma: el GLB configurado para ese tipo si está cargado; si no, el arma geométrica. Se puede llamar de nuevo. */
+    fillWeapon(slot) {
+      const kind = slot.userData.kind, asset = this.app.squad.weapons[kind]; slot.clear(); slot.userData.grips = asset ? asset.grips : null;
+      if (asset) { const conv = new THREE.Group(); conv.rotation.x = Math.PI / 2; conv.add(asset.tpl.clone(true)); slot.add(conv); return; }   // GLB (cañón +Z) → eje del juego (cañón −Y)
       this.wCache ||= {}; const M = this.M, SQ = this.app.squad.M, dark = M.dark, steel = M.steel, metal = SQ.gun;
       if (!this.wCache[kind]) {
         const parts = [], B = (w, h, d, x, y, z, m = metal, rx = 0) => parts.push([new THREE.BoxGeometry(w, h, d), m, x, y, z, rx]), C = (r, l, x, y, z, m = metal) => parts.push([new THREE.CylinderGeometry(r, r, l, 10), m, x, y, z, 0]);
@@ -1706,8 +1901,10 @@ async function startGame() {
         const by = new Map(); for (const [g, m, x, y, z, rx] of parts) { g.rotateX(rx); g.translate(x, y, z); let l = by.get(m); if (!l) by.set(m, l = []); l.push(g); }
         this.wCache[kind] = [...by].map(([m, gs]) => [BGU.mergeGeometries(gs, false), m]);
       }
-      const grp = new THREE.Group(); for (const [g, m] of this.wCache[kind]) { const mm = new THREE.Mesh(g, m); mm.castShadow = true; grp.add(mm); } return grp;
+      for (const [g, m] of this.wCache[kind]) { const mm = new THREE.Mesh(g, m); mm.castShadow = true; slot.add(mm); }
     }
+    /** Un arma GLB ha terminado de cargar: sustituye las ya creadas de ese tipo (jugadores y enemigos). */
+    refreshWeapons(kind) { for (const p of this.players) for (const sl of [p.fig.wpn, p.fig.wpn2]) if (sl && sl.userData.kind === kind) this.fillWeapon(sl); for (const e of this.enemies) { const sl = e.fig.wpn; if (sl && sl.userData.kind === kind) this.fillWeapon(sl); } }
     ponchoMat() { return this.mPoncho ||= new THREE.MeshStandardMaterial({ map: T.poncho, bumpMap: T.poncho, bumpScale: 2, color: 0x5a6476, roughness: 0.82, side: THREE.DoubleSide, envMapIntensity: 0.4 }); }   // azul pizarra (Apex)
     /** Estilos visuales: operadores según la hoja de referencia y enemigos con ropa, rostro y tocado distintos. */
     figStyle(o) {
@@ -1978,8 +2175,13 @@ async function startGame() {
       const e = 1 - Math.exp(-18 * dt); T[0] += (x - T[0]) * e; T[1] += (y - T[1]) * e; T[2] += (z - T[2]) * e; T[3] += (pit - T[3]) * e; T[4] += (yw - T[4]) * e; T[5] += (rl - T[5]) * e;
       P.position.set(T[0], T[1], T[2]); P.rotation.set(T[3], T[4], T[5]); P.updateWorldMatrix(true, false);
       // Manos: empuñadura y guardamanos; en recarga la izquierda va al cargador y a la cintura; en melé sueltan el arma (guardia y golpes)
-      const G = pistol ? GRIPS.pistol : GRIPS.rifle, mw = P.matrixWorld, ww = wrap.matrixWorld;
-      _tR.fromArray(G[0]).applyMatrix4(mw); _tL.fromArray(G[1]).applyMatrix4(mw);
+      const ws = pistol ? f.wpn2 : f.wpn, G = (ws && ws.userData.grips) || (pistol ? GRIPS.pistol : GRIPS.rifle), mw = P.matrixWorld, ww = wrap.matrixWorld;   // agarres del arma equipada
+      _tR.fromArray(G[0]).applyMatrix4(mw);
+      // Alcance: si la muñeca derecha no llega a su sitio en la empuñadura (brazos cortos, postura lejana), el arma se acerca al hombro lo justo
+      if (cb < 0.5) { const pal = rig.hands ? rig.hands[0].palm * 0.85 : 0.07; _vb.set(0.15, 0.3, 0.94).transformDirection(mw); _vc.set(1, 0, -0.1).transformDirection(mw); _vn.copy(_tR).addScaledVector(_vb, -pal).addScaledVector(_vc, -0.028);
+        rig.arms[0].up.getWorldPosition(_va); const reach = rig.armLen * wrap.scale.y * 0.97, d = _va.distanceTo(_vn);
+        if (d > reach) { _vb.subVectors(_va, _vn).multiplyScalar((d - reach) / d).add(_tR); wrap.worldToLocal(_vb); wrap.worldToLocal(_vc.copy(_tR)); P.position.add(_vb.sub(_vc)); P.updateWorldMatrix(true, false); _tR.fromArray(G[0]).applyMatrix4(mw); } }
+      _tL.fromArray(G[1]).applyMatrix4(mw);
       if (rel > 0.01) { const out = bell(r, 0.1, 0.55), mag = sstep(r / 0.12) * (1 - sstep((r - 0.8) / 0.12)); _tF.fromArray(G[2]).applyMatrix4(mw); _tL.lerp(_tF, mag * rel); _tF.set(0.17, 0.98, 0.1).applyMatrix4(ww); _tL.lerp(_tF, out * rel); }
       if (sw > 0.01) { _tF.set(0.2, 1.0, 0.16).applyMatrix4(ww); _tL.lerp(_tF, sw * 0.7); }
       let kr = cb, kl = cb;   // peso de «mano libre» de cada mano (el puño que golpea no espera a que termine la transición a melé)
@@ -2099,13 +2301,13 @@ async function startGame() {
         }
         if (st === 'GRAPPLE' && tg && nd < 1.9 && f.t > 0) tg.stun = Math.max(tg.stun, tg.type === 'boss' ? 0.2 : 0.35);   // el agarre retiene mientras se mantiene
         if (pl.dash > 0) { pl.dash -= dt; vx = -fx * 9; vz = -fz * 9; }
-        pl.near = null; pl.hint = '';
+        pl.near = null; pl.hint = ''; pl.breach = false;
       } else {
         // Modo Táctico
         const sp = st === 'SPRINT' ? 5.8 : st === 'CROUCH' || st === 'COVER' ? 1.9 : (st === 'ADS' || s.ads) ? 2.2 : 3.5;
         if (st === 'SLIDE') { if (!pl.sl) pl.sl = [fx, fz]; const k = 7.5 * Math.max(0.2, 1 - f.t / 0.9); vx = pl.sl[0] * k; vz = pl.sl[1] * k; } else { pl.sl = null; vx = (rx * mx + fx * my) * sp; vz = (rz * mx + fz * my) * sp; }
         if (st === 'JUMP') pl.hop = Math.sin(Math.min(1, f.t / 0.55) * Math.PI) * 0.45;
-        const br = nd > 2.4 ? lv.breakable(pl.x + fx * 0.9, pl.z + fz * 0.9, 1.0) : null;
+        const br = nd > 2.4 ? lv.breakable(pl.x + fx * 0.9, pl.z + fz * 0.9, 1.0) : null; pl.breach = !!br;
         if (s.melee && !pl.pMelee && br) { lv.damage(br, 100); this.say(pl, 'BRECHA'); this.noise(pl.x, pl.z, 12); this.input.rumble(pl.slot, 0.7, 100); }
         let rv = null; for (const o of this.players) if (o !== pl && o.downed && Math.hypot(o.x - pl.x, o.z - pl.z) < 1.8) rv = o;
         pl.near = rv;
@@ -2233,7 +2435,10 @@ async function startGame() {
       this.stepFx(dt); this.M.rain.uniforms.uTime.value = this.time; this.updKey(dt);
     }
     pollExtras() {
-      if (this.touch && this.padSt) { const s = this.padSt; this.input.feedRemote('touch', [s.mx, s.my, s.lx, s.ly, s.fire | s.ads << 1 | s.sprint << 2 | s.crouch << 3 | s.jump << 4 | s.melee << 5 | s.reload << 6 | s.swap << 7]); s.lx = s.ly = 0; }
+      const ts = this.input.slots.find(sl => sl && sl.source === 'touch'); if (!!ts !== this.touch) this.setTouch(!!ts);
+      if (ts) { const s = this.padSt, bits = s.fire | s.ads << 1 | s.sprint << 2 | s.crouch << 3 | s.jump << 4 | s.melee << 5 | s.reload << 6 | s.swap << 7; if (s.mx || s.my || s.lx || s.ly || bits) ts.act = performance.now();
+        this.input.feedRemote('touch', [s.mx, s.my, s.lx, s.ly, bits]); s.lx = s.ly = 0;
+        if (innerHeight > innerWidth && !this.paused && this.state === 'play') this.box('pause'); }   // en vertical se pausa: se juega en horizontal
       const pads = navigator.getGamepads ? navigator.getGamepads() : [];
       for (const g of pads) { if (!g || !g.connected) continue; const prev = this.gpPrev[g.index] || 0, now = (g.buttons[9]?.pressed ? 1 : 0) | (g.buttons[3]?.pressed ? 2 : 0); this.gpPrev[g.index] = now;
         if ((now & 1) && !(prev & 1)) this.paused ? (this.boxKind === 'pause' && this.boxAction()) : this.box('pause');
@@ -2243,7 +2448,7 @@ async function startGame() {
       this.pollExtras();
       if (!this.paused) { let sdt = dt; if (this.hitStop > 0) { this.hitStop -= dt; sdt = dt * 0.15; } this.time += sdt; this.step(sdt); if (!this.active) return; }   // hit-stop breve en golpes fuertes
       if (this.cardT > 0) { this.cardT -= dt; const c = $('#gCard'); if (this.cardSolid && this.cardT < 1.5 && this.state !== 'trans') { c.classList.remove('solid'); this.cardSolid = false; } if (this.cardT <= 0 && this.state !== 'trans') c.classList.remove('show'); }
-      this.render(this.paused ? 0 : dt, t); this.hud();
+      this.render(this.paused ? 0 : dt, t); this.hud(); this.padCtx();
     }
     /* ------------------------------ Cámara y render ------------------------------ */
     layout(n, W, H) {
@@ -2266,8 +2471,26 @@ async function startGame() {
     render(dt, t) {
       const r = this.rm.renderer, W = innerWidth, H = innerHeight, vp = this.viewPl = this.players.slice(0, 4), n = Math.max(1, vp.length), rects = this.rects = this.layout(n, W, H);
       this.fdt = dt; this.nvg.uniforms.uTime.value = t % 50; r.setScissorTest(n > 1);
-      for (let i = 0; i < n; i++) { const [x, y, w, h] = rects[i]; r.setViewport(x, H - y - h, w, h); r.setScissor(x, H - y - h, w, h); if (vp[i]) this.setCam(vp[i], w / h); if (i < n - 1) this.rm.composer.render(dt); else this.rm.render(dt, t); }
+      for (let i = 0; i < n; i++) { const [x, y, w, h] = rects[i]; r.setViewport(x, H - y - h, w, h); r.setScissor(x, H - y - h, w, h); if (vp[i]) this.setCam(vp[i], w / h); if (i < n - 1) this.rm.composer.render(dt); else this.rm.render(dt, t); if (vp[i]) this.mark(vp[i], w, h); }
       r.setScissorTest(false); r.setViewport(0, 0, W, H);
+    }
+    /** Acción contextual de cada jugador táctil (local o móvil usado como mando): reanimar, melé o brecha, y si está en modo combate.
+        Solo se envía cuando cambia. */
+    padCtx() {
+      for (const pl of this.players) { const sl = pl.ref, src = sl.source; if (src !== 'touch' && !src.startsWith('net:')) continue;
+        const cb = sl.fsm.mode === 'COMBAT', d = sl.ctx ? sl.ctx.enemyDist : 999, act = pl.downed ? '' : pl.near && d > 2.4 ? 'revive' : cb || d < 3.2 ? 'melee' : pl.breach ? 'breach' : '', key = (cb ? 8 : 0) + (act === 'revive' ? 1 : act === 'melee' ? 2 : act === 'breach' ? 3 : 0);
+        if (key === pl.ctxKey) continue; pl.ctxKey = key; if (src === 'touch') setPadCtx(act, cb); else if (sl.send) sl.send({ t: 'ctx', a: act, c: cb ? 1 : 0 }); }
+    }
+    /** Marcadores de mundo de una vista (compañero abatido, salida, munición): se proyectan a pantalla justo después de dibujarla. */
+    markAt(m, x, y, z, t, pl, w, h) {
+      const v = this.mv.set(x, y, z).project(this.rm.camera); let sx = v.x * 0.5 + 0.5, sy = 0.5 - v.y * 0.5; if (v.z > 1) { sx = 1 - sx; sy = 0.82; }   // detrás de la cámara: al borde inferior
+      m.x = clamp(sx, 0.07, 0.93) * w; m.y = clamp(sy, 0.14, 0.82) * h; m.t = t; m.d = Math.hypot(x - pl.x, z - pl.z); m.on = 1;
+    }
+    mark(pl, w, h) {
+      const M = pl.mk || (pl.mk = [{ on: 0 }, { on: 0 }, { on: 0 }]), lv = this.level; let n = 0;
+      if (!pl.downed) { for (const o of this.players) if (o !== pl && o.downed && n < 2) this.markAt(M[n++], o.x, 1.1, o.z, 'rev', pl, w, h);
+        if (lv.cleared) this.markAt(M[n++], 0, 1.7, -29.6, 'exit', pl, w, h); else if (!pl.wi && pl.reserve < 30) this.markAt(M[n++], lv.supply.x, 1.0, lv.supply.z, 'sup', pl, w, h); }
+      for (; n < 3; n++) M[n].on = 0;
     }
     hud() {
       for (let i = 0; i < 4; i++) {
@@ -2276,7 +2499,14 @@ async function startGame() {
         this.put(c, 'rect', r.join(), () => Object.assign(v.el.style, { left: r[0] + 'px', top: r[1] + 'px', width: r[2] + 'px', height: r[3] + 'px' }));
         this.put(c, 'hp', Math.round(pl.hp), x => { v.hpU.style.transform = `scaleX(${x / 100})`; v.hp.classList.toggle('low', x < 35); });
         this.put(c, 'mag', pl.swapT > 0 ? 'S' : pl.reload > 0 ? 'R' : pl.mag, x => { v.ammoB.textContent = x === 'R' ? '···' : x === 'S' ? '⇄' : x; v.ammo.classList.toggle('rel', x === 'R' || x === 'S'); });
-        this.put(c, 'res', pl.wi ? -1 : pl.reserve, x => v.ammoS.textContent = x < 0 ? '/ ∞ · Pistola' : '/ ' + x);
+        this.put(c, 'res', pl.wi ? -1 : pl.reserve, x => v.ammoS.textContent = x < 0 ? '/ ∞' : '/ ' + x);
+        this.put(c, 'wn', pl.wi, x => v.ammoN.textContent = WEAPONS[x].name); this.put(c, 'low', pl.reload <= 0 && pl.mag <= WEAPONS[pl.wi].mag * 0.25, x => v.ammo.classList.toggle('low', x));
+        this.put(c, 'pc', pl.slot, x => v.el.style.setProperty('--pc', HUD_COL[x]));
+        let mh = 0; for (const o of this.players) if (o !== pl) mh = mh * 97 + o.slot * 13 + (o.downed ? 12 : Math.round(o.hp / 10)) + 1;
+        this.put(c, 'mates', mh, () => { let h = ''; for (const o of this.players) if (o !== pl) h += `<div class="mate${o.downed ? ' dn' : ''}" style="--pc:${HUD_COL[o.slot]};--hp:${Math.round(o.hp)}%"><i></i>${OPERATORS[o.slot].name}${o.downed ? ' · abatido' : ''}<u></u></div>`; v.mates.innerHTML = h; });
+        for (let k = 0; k < 3; k++) { const m = pl.mk && pl.mk[k], el = v.mk[k], on = !!(m && m.on); this.put(c, MK_ON[k], on ? m.t : '', x => { el.className = x ? 'mk on ' + x : 'mk'; }); if (!on) continue;
+          this.put(c, MK_POS[k], Math.round(m.x) * 4096 + Math.round(m.y), () => { el.style.transform = `translate3d(${Math.round(m.x)}px,${Math.round(m.y)}px,0)`; });
+          this.put(c, MK_TXT[k], Math.round(m.d) + (m.t === 'rev' ? 1000 : m.t === 'exit' ? 2000 : 3000), () => { el.textContent = (m.t === 'rev' ? 'Reanimar' : m.t === 'exit' ? 'Salida' : 'Munición') + ' · ' + Math.round(m.d) + ' m'; }); }
         this.put(c, 'gap', Math.round(8 + pl.spread * 22 + (pl.v > 4 ? 10 : pl.v > 0.5 ? 4 : 0) - (slot.state.ads ? 5 : 0)), x => v.xh.style.setProperty('--g', x + 'px'));
         this.put(c, 'hit', pl.hitFx > 0.5, x => v.xh.classList.toggle('hit', x));
         this.put(c, 'cb', combat, x => { v.xh.classList.toggle('combat', x); v.tag.classList.toggle('combat', x); });
@@ -2285,9 +2515,148 @@ async function startGame() {
         let msg = '';
         if (pl.downed) msg = pl.revive > 0 ? `Te están reanimando… ${Math.round(pl.revive * 100)} %` : 'ABATIDO · espera a un compañero';
         else if (pl.msgT > 0) msg = pl.msg; else if (pl.near) msg = pl.near.revive > 0 ? `Reanimando… ${Math.round(pl.near.revive * 100)} %` : 'Mantén MELÉ para reanimar'; else if (pl.reload > 0) msg = 'Recargando'; else msg = pl.hint;
-        this.put(c, 'msg', msg, x => { if (x) v.prompt.textContent = x; v.prompt.classList.toggle('on', !!x); });
+        this.put(c, 'msg', msg, x => { if (x) { const src = slot.source; v.prompt.textContent = x.replace('MELÉ', src === 'kb' ? '[V]' : src.startsWith('gp') ? '□' : 'ACCIÓN'); } v.prompt.classList.toggle('on', !!x); });   // la tecla o botón según el dispositivo
       }
-      this.put(this.tc, 'left', this.left, x => $('#gLeft').textContent = x ? `Enemigos ${x}` : 'Despejado');
+      this.put(this.tc, 'left', this.left, x => { const el = $('#gLeft'); el.textContent = x ? `Hostiles · ${x}` : 'Planta despejada · sube por la escalera'; el.classList.toggle('ok', !x); });
+    }
+  }
+
+  /* ---------------- Banco de pruebas de personajes (?modeltest=1) ----------------
+     Escena independiente: no arranca la partida, la sala ni los mandos. Usa el mismo makeFigure / attachTo / animFig que el juego,
+     así que lo que se ve aquí es exactamente lo que hará el personaje en partida. */
+  const SOLDIER_URL = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/Soldier.glb';   // modelo de PRUEBA de los ejemplos de three.js: no es Ghost
+  const MT_ACTS = [['idle', 'Idle'], ['walk', 'Walk'], ['run', 'Run'], ['sprint', 'Sprint'], ['ads', 'ADS'], ['fire', 'Disparo'], ['reload', 'Recarga'], ['swap', 'Cambio de arma'], ['crouch', 'Crouch'], ['melee', 'Melee'], ['hit', 'Hit'], ['death', 'Death'], ['fall', 'Caída'], ['revive', 'Reanimación']];
+  class ModelTest {
+    constructor(app) {
+      this.app = app; const rm = app.rm, sq = app.squad; document.body.classList.add('modeltest');
+      const sc = this.scene = new THREE.Scene(); sc.background = new THREE.Color(0x10141c); sc.environment = rm.scene.environment;
+      sc.add(new THREE.HemisphereLight(0xcfd8ff, 0x2a2420, 1.1)); const key = new THREE.DirectionalLight(0xfff1e0, 2.6); key.position.set(-2.5, 5, 4); key.castShadow = true; key.shadow.mapSize.set(1024, 1024);
+      Object.assign(key.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5, near: 0.5, far: 14 }); key.shadow.bias = -0.0006; sc.add(key); const rim = new THREE.DirectionalLight(0x35d6ff, 1.2); rim.position.set(3, 2.5, -4); sc.add(rim);
+      const fl = new THREE.Mesh(new THREE.CircleGeometry(4, 48).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x1b2029, roughness: 0.85 })); fl.receiveShadow = true; sc.add(fl);
+      this.grid = new THREE.GridHelper(8, 16, 0x35d6ff, 0x2a3140); this.grid.position.y = 0.002; sc.add(this.grid);
+      // Regla de altura: marcas cada 0,5 m y una más larga a 1,80 m
+      const pts = [-0.9, 0, 0, -0.9, 2, 0]; for (const y of [0, 0.5, 1, 1.5, 2]) pts.push(-0.98, y, 0, -0.82, y, 0); pts.push(-1.1, 1.8, 0, -0.7, 1.8, 0);
+      this.ruler = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)), new THREE.LineBasicMaterial({ color: 0xff2d6f })); sc.add(this.ruler);
+      const mk = c => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 8), new THREE.MeshBasicMaterial({ color: c, depthTest: false })); m.renderOrder = 9; m.visible = false; sc.add(m); return m; };
+      this.marks = [mk(0xffe14a), ...[0, 1, 2].map(() => mk(0xff2d6f)), ...[0, 1, 2].map(() => mk(0x35d6ff)), ...[0, 1, 2].map(() => mk(0xff2d6f)), ...[0, 1, 2].map(() => mk(0x35d6ff))];
+      this.cam = new THREE.PerspectiveCamera(32, 1, 0.05, 60); this.orb = { az: 0.5, el: 0.1, d: 4.8, y: 0.95 };
+      this.clock = new THREE.Clock(); this.act = 'idle'; this.at = 0; this.fig = null; this.asset = undefined; this.skel = null; this.showSkel = false; this.kickT = 0; this.tick = 0; this.box = new THREE.Box3(); this.src = ''; this.msg = '';
+      this.buildUi(); this.bindOrbit(rm.renderer.domElement);
+      const prev = sq.onWeapon; sq.onWeapon = k => { prev(k); if (this.fig) for (const sl of [this.fig.wpn, this.fig.wpn2]) if (sl && sl.userData.kind === k) app.game.fillWeapon(sl); this.paint(); };
+      const spec = params.get('model') || params.get('ghost') || CONFIG.assets.operators.ghost; this.src = spec ? (typeof spec === 'string' ? spec : spec.url) : '';
+      if (params.get('model')) this.load(params.get('model'), params.get('model')); else if (!spec) this.msg = 'No hay modelo configurado: se muestra la figura procedural del juego. Carga un GLB o usa el Soldier de prueba.';
+      this.build(); rm.renderer.setAnimationLoop(() => this.frame());
+      requestAnimationFrame(() => requestAnimationFrame(() => $('#boot').classList.add('done')));
+    }
+    buildUi() {
+      $('#mtActs').innerHTML = MT_ACTS.map(([k, l], i) => `<button data-a="${k}"><b>${i + 1}</b>${l}<i></i></button>`).join('');
+      $$('#mtActs button').forEach(b => b.addEventListener('click', () => this.setAct(b.dataset.a)));
+      $('#mtTop').innerHTML = [['0', 'Frontal'], ['1.5708', 'Perfil'], ['3.1416', 'Espalda'], ['0.6', '3/4']].map(([a, l]) => `<button data-az="${a}">${l}</button>`).join('') + '<button id="mtSk">Esqueleto</button><button id="mtGr" class="on">Rejilla y regla</button>';
+      $$('#mtTop [data-az]').forEach(b => b.addEventListener('click', () => { this.orb.az = +b.dataset.az; this.orb.el = 0.06; this.orb.d = 4.8; }));
+      $('#mtSk').addEventListener('click', e => { this.showSkel = !this.showSkel; e.currentTarget.classList.toggle('on', this.showSkel); if (this.skel) this.skel.visible = this.showSkel; });
+      $('#mtGr').addEventListener('click', e => { const on = this.grid.visible = this.ruler.visible = !this.grid.visible; e.currentTarget.classList.toggle('on', on); });
+      $('#mtMin').addEventListener('click', () => $('#mtInfo').classList.toggle('min'));
+      $('#mtSoldier').addEventListener('click', () => this.load(SOLDIER_URL, 'Soldier.glb (modelo de prueba de three.js; no es Ghost)'));
+      const file = (btn, inp, fn) => { $(btn).addEventListener('click', () => $(inp).click()); $(inp).addEventListener('change', e => { const f = e.target.files[0]; if (f) fn(URL.createObjectURL(f), f.name); e.target.value = ''; }); };
+      file('#mtFileB', '#mtFile', (u, n) => this.load(u, n)); file('#mtRifleB', '#mtRifle', (u, n) => this.loadWeapon('rifle', u, n)); file('#mtPistolB', '#mtPistol', (u, n) => this.loadWeapon('pistol', u, n));
+      const go = () => { const v = $('#mtUrl').value.trim(); if (v) this.load(v, v); }; $('#mtUrlB').addEventListener('click', go); $('#mtUrl').addEventListener('keydown', e => { if (e.key === 'Enter') go(); e.stopPropagation(); });
+      $('#mtClear').addEventListener('click', () => { const sq = this.app.squad; delete sq.assets.ghost; for (const k of Object.keys(sq.weapons)) delete sq.weapons[k]; this.src = ''; this.msg = 'Modelos retirados: figura y armas procedurales del juego.'; this.asset = undefined; this.build(); });
+    }
+    load(url, name) {
+      this.msg = 'Cargando ' + name + '…'; this.paint();
+      return this.app.squad.loadModel(this.app.squad.ops[0], url).then(a => { if (a) { this.src = name; this.msg = a.usable ? '' : 'El modelo se ha cargado pero NO es apto para partida (faltan clips Idle y Walk o Run): se muestra la figura procedural.'; } else this.msg = 'No se pudo cargar «' + name + '». Se mantiene lo que había.'; this.build(); });
+    }
+    loadWeapon(kind, url, name) { this.msg = 'Cargando arma ' + name + '…'; this.paint(); return this.app.squad.loadWeapon(kind, url).then(a => { this.msg = a ? '' : 'No se pudo cargar el arma «' + name + '»: se mantiene el arma geométrica.'; this.paint(); }); }
+    /** Crea la figura igual que Game.addPlayer (operador 0 = Ghost) y le engancha el GLB si hay uno apto. */
+    build() {
+      const g = this.app.game, sq = this.app.squad, o = OPERATORS[0], M = sq.M; if (this.fig) this.scene.remove(this.fig.root); if (this.skel) { this.scene.remove(this.skel); this.skel = null; }
+      const f = this.fig = g.makeFigure({ style: o.id, cloth: M.cloth, vest: M.cloth, head: M.leather, helmet: M.shell, boot: M.leather, weapon: 'rifle', weapon2: 'pistol', accent: g.accents[0], bulk: o.bulk });
+      this.scene.add(f.root); sq.attachTo(f, o.id, o.h); f.root.traverse(x => { if (x.isMesh && x !== f.blob) x.castShadow = true; }); this.asset = sq.assets.ghost;
+      if (f.glb) { this.skel = new THREE.SkeletonHelper(f.glb.model); this.skel.visible = this.showSkel; this.scene.add(this.skel); }
+      this.setAct('idle'); this.paint();
+    }
+    setAct(a) { this.act = a; this.at = 0; this.fired = false; this.swapped = false; this.kickT = 0; $$('#mtActs button').forEach(b => b.classList.toggle('on', b.dataset.a === a)); }
+    /** Cómo se resuelve cada acción con el modelo actual: clip real, IK o procedimental. */
+    kindOf(a) {
+      const G = this.fig.glb; if (!G) return ['PROC', 'Figura procedural del juego (no hay modelo GLB apto)'];
+      const cm = this.asset.report.clipMap, has = n => G.clips.has(n), ik = G.ik, legs = !!G.rig.legs, C = n => ['CLIP', 'Animación real del modelo: clip «' + cm[n] + '»'], alt = (n, okIk, tIk, tP) => (has(n) ? C(n) : okIk ? ['IK', 'Sin clip ' + n + ': ' + tIk] : ['PROC', 'Sin clip ' + n + ': ' + tP]);
+      switch (a) {
+        case 'idle': return C('Idle');
+        case 'walk': return has('Walk') ? C('Walk') : C('Run');
+        case 'run': return has('Sprint') && has('Run') ? C('Run') : has('Walk') ? C('Walk') : C('Run');
+        case 'sprint': return has('Sprint') ? C('Sprint') : ['CLIP+IK', 'Sin clip Sprint: clip «' + (cm.Run || cm.Walk) + '»' + (ik ? ' con el arma cruzada por IK' : ' e inclinación procedimental')];
+        case 'ads': return alt('Aim', ik, 'arma al hombro por IK de manos', 'sin brazos reconocidos, no se puede apuntar');
+        case 'fire': return alt('Fire', ik, 'retroceso procedimental del arma con las manos por IK', 'cabeceo procedimental del cuerpo');
+        case 'reload': return alt('Reload', ik, 'la mano izquierda va al cargador por IK', 'sin movimiento de recarga');
+        case 'swap': return ik ? ['IK', 'El arma baja a la funda y sube la otra, con las manos por IK'] : ['PROC', 'Cambio de arma sin animación de manos'];
+        case 'crouch': return alt('Crouch', legs, 'rodillas flexionadas por IK de piernas', 'descenso procedimental de todo el cuerpo');
+        case 'melee': return alt('Melee', ik, 'puños por IK de brazos y giro de cadera', 'giro procedimental del cuerpo');
+        case 'hit': return alt('Hit', legs, 'sacudida de cadera con los pies fijados por IK', 'cabeceo procedimental del cuerpo');
+        case 'death': case 'fall': return has('Death') ? C('Death') : ['PROC', 'Sin clip Death: vuelco rígido del cuerpo (procedimental)'];
+        default: return ['PROC', 'Procedimental: el cuerpo se incorpora girando' + (has('Death') ? ' tras el clip «' + cm.Death + '»' : '')];
+      }
+    }
+    /** Informe estático: fuente, medidas, malla, materiales, texturas, esqueleto, clips y problemas detectados. */
+    paint() {
+      const a = this.asset, f = this.fig, G = f && f.glb, esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])), row = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`, chk = (ok, t) => `<li class="${ok === true ? 'ok' : ok === false ? 'ko' : 'wr'}">${ok === true ? '✓' : ok === false ? '✗' : '⚠'} ${esc(t)}</li>`;
+      $('#mtSrc').textContent = this.src ? 'Fuente: ' + this.src : 'Sin modelo GLB'; $('#mtMsg').textContent = this.msg;
+      $$('#mtActs button').forEach(b => { const [k, t] = this.kindOf(b.dataset.a), i = $('i', b); i.textContent = k; i.className = k.split('+')[0]; b.title = t; });
+      const W = this.app.squad.weapons, wl = k => (W[k] ? `GLB · ${W[k].report.triangles} tri · ${W[k].report.length} m` : 'geométrica del juego');
+      let h = `<h4>Armas</h4><dl>${row('Fusil', wl('rifle'))}${row('Pistola', wl('pistol'))}</dl>`;
+      if (!a) { $('#mtRep').innerHTML = '<h4>Personaje</h4><ul>' + chk(null, 'Figura procedural del juego: no hay modelo GLB cargado.') + '</ul>' + h; return; }
+      const r = a.report, n = r.rigNames, c3 = c => (c ? c.map(esc).join(' → ') : '<span class="ko">no detectado</span>');
+      h = `<h4>Medidas</h4><dl>${row('Altura original', r.height0 + ' u')}${row('Escala aplicada', '×' + r.scale)}${row('Altura final', r.height + ' m (reposo)')}${row('Giro aplicado', r.yawDeg + '°' + (r.yawAuto ? ' (automático)' : ''))}</dl>` +
+        `<h4>Malla</h4><dl>${row('Triángulos', r.triangles.toLocaleString('es'))}${row('Mallas con esqueleto', r.skinned)}${row('Materiales', r.materials)}${row('Textura mayor', r.texMax ? r.texMax + ' px' : '—')}</dl>` +
+        `<h4>Materiales y texturas</h4><ul>${r.matInfo.map(m => `<li><b>${esc(m.name)}</b> <small>${esc(m.type)}</small><br><small>${m.maps.length ? m.maps.map(esc).join(' · ') : 'sin texturas'}</small></li>`).join('')}</ul>` +
+        `<h4>Esqueleto · ${r.bones} huesos</h4><dl>${row('Cadera', esc(n.hips))}${row('Columna (capas)', esc(n.spine))}${row('Brazo dcho.', c3(n.armR))}${row('Brazo izdo.', c3(n.armL))}${row('Pierna dcha.', c3(n.legR))}${row('Pierna izda.', c3(n.legL))}${row('Falanges (D / I)', n.fingers ? n.fingers.join(' / ') : '<span class="wr">sin dedos</span>')}</dl>` +
+        `<h4>Clips</h4><dl>${r.found.map(k => row(k, '«' + esc(r.clipMap[k]) + '»')).join('')}${r.missing.length ? row('Faltan', '<small>' + r.missing.join(', ') + '</small>') : ''}</dl><small>En el archivo: ${r.allClips.map(esc).join(', ') || 'ninguno'}</small>` +
+        '<h4>Comprobaciones</h4><ul>' + chk(a.usable ? true : false, a.usable ? 'Apto para partida (Idle y Walk o Run)' : 'NO apto para partida: faltan clips Idle y Walk o Run') +
+        chk(r.height0 >= 1.4 && r.height0 <= 2.2 ? true : null, r.height0 >= 1.4 && r.height0 <= 2.2 ? 'Escala: venía en metros' : `Escala: no venía en metros (${r.height0} u de alto); corregida a ${r.height} m`) +
+        chk(!r.yawAuto ? null : Math.abs(r.yawDeg) < 5 ? true : null, !r.yawAuto ? 'Orientación: sin huesos de puntera o fijada a mano; compruébala en la vista Frontal' : Math.abs(r.yawDeg) < 5 ? 'Orientación: ya miraba a +Z' : `Orientación: venía girado ${r.yawDeg}°; corregido automáticamente`) +
+        chk(!!n.armR && !!n.armL, n.armR && n.armL ? 'Rig: brazos reconocidos' + (G && G.ik ? ' (arma por IK)' : '') : 'Rig: brazos NO reconocidos; el arma no se sujetará') + chk(!!n.legR && !!n.legL, n.legR && n.legL ? 'Rig: piernas y cadera reconocidas' : 'Rig: piernas NO reconocidas') +
+        chk(n.fingers ? true : null, n.fingers ? 'Rig: dedos reconocidos (se cierran sobre el arma)' : 'Rig: sin dedos; las manos quedan abiertas') + '<li id="mtFloor"></li>' + r.warn.map(w => chk(null, w)).join('') + '</ul>' + h;
+      $('#mtRep').innerHTML = h;
+    }
+    /** Estado en vivo: qué clip suena, cómo van brazos y arma, y medida real de altura y suelo en la pose actual. */
+    live() {
+      const f = this.fig, G = f.glb, [k, t] = this.kindOf(this.act); let s = `<b>${MT_ACTS.find(a => a[0] === this.act)[1]}</b> · ${k} — ${t}`;
+      if (G) { const cp = G.clips, sl = f.cue.wi ? f.wpn2 : f.wpn; s += `<br><small>${cp.layers ? 'piernas «' + cp.layers.lo.name + '» · torso «' + cp.layers.up.name + '»' : 'clip «' + cp.name + '»'} · brazos: ${G.ik ? 'IK' : 'clip'} · arma: ${f.cue.wi ? 'pistola' : 'fusil'} ${sl.userData.grips ? 'GLB' : 'geométrica'}</small>`;
+        this.box.setFromObject(G.model, true); const hh = this.box.max.y - this.box.min.y, lo = this.box.min.y, el = $('#mtFloor'), up = Math.abs(f.root.rotation.x) < 0.05; s += `<br><small>altura ahora ${hh.toFixed(2)} m · punto más bajo ${(lo * 100).toFixed(1)} cm</small>`;
+        if (el && up) { const ok = lo > -0.03 && lo < 0.03; el.className = ok ? 'ok' : 'wr'; el.textContent = (ok ? '✓ Suelo: los pies apoyan en y = 0' : `⚠ Suelo: el punto más bajo está a ${(lo * 100).toFixed(1)} cm`) + ` (acción ${this.act})`; } }
+      $('#mtLive').innerHTML = s;
+    }
+    bindOrbit(cv) {
+      const P = new Map(); let pinch = 0; const o = this.orb;
+      cv.addEventListener('pointerdown', e => { P.set(e.pointerId, [e.clientX, e.clientY]); try { cv.setPointerCapture(e.pointerId); } catch {} });
+      cv.addEventListener('pointermove', e => { const p = P.get(e.pointerId); if (!p) return; const dx = e.clientX - p[0], dy = e.clientY - p[1]; p[0] = e.clientX; p[1] = e.clientY;
+        if (P.size === 1) { o.az -= dx * 0.008; o.el = clamp(o.el + dy * 0.006, -0.25, 1.35); } else if (P.size === 2) { const [a, b] = [...P.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) o.d = clamp(o.d * pinch / d, 1.1, 9); pinch = d; } });
+      const end = e => { P.delete(e.pointerId); pinch = 0; }; cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+      cv.addEventListener('wheel', e => { e.preventDefault(); o.d = clamp(o.d * (1 + Math.sign(e.deltaY) * 0.1), 1.1, 9); }, { passive: false });
+    }
+    frame() {
+      if (document.hidden) return; const dt = Math.min(this.clock.getDelta(), 0.05), g = this.app.game, sq = this.app.squad, R = this.app.rm.renderer;
+      if (sq.assets.ghost !== this.asset) this.build();   // ha llegado (o cambiado) el modelo
+      const f = this.fig, c = f.cue, w = f.w, A = this.act; this.at += dt; const t = this.at;
+      let speed = 0, crouched = false, tip = 0, lift = 0, punch = 0; c.st = ''; c.combat = 0; c.ads = 0; c.shoot = 0; c.reload = -1; c.swap = -1; c.air = -1; c.down = 0; c.dead = 0; c.revive = 0; c.rifle = c.wi ? 0 : 1; c.relT = WEAPONS[c.wi].reload;
+      if (A === 'walk') speed = 2.2; else if (A === 'run') speed = 3.5; else if (A === 'sprint') { speed = 5.8; c.st = 'SPRINT'; }
+      else if (A === 'ads') c.ads = 1;
+      else if (A === 'fire') { c.ads = 1; c.shoot = 1; if ((this.kickT -= dt) <= 0) { w.kick = 1; this.kickT = WEAPONS[c.wi].rate; } }
+      else if (A === 'reload') { c.reload = t / c.relT; if (c.reload >= 1) this.setAct('idle'); }
+      else if (A === 'swap') { c.swap = t / SWAP_T; if (!this.swapped && c.swap >= 0.5) { c.wi ^= 1; this.swapped = true; } if (c.swap >= 1) this.setAct('idle'); }
+      else if (A === 'crouch') { crouched = true; c.st = 'CROUCH'; }
+      else if (A === 'melee') { const lt = t % 0.55; c.combat = 1; c.combo = Math.floor(t / 0.55); c.st = lt < 0.32 ? 'STRIKE' : 'STANCE'; punch = Math.sin(Math.min(1, lt / 0.26) * Math.PI) * 0.8; }
+      else if (A === 'hit') { if (!this.fired) { w.hit = 1; w.hitAmp = 1.3; w.hitSide = -w.hitSide; w.hitN++; this.fired = true; } if (t > 0.9) this.setAct('idle'); }
+      else if (A === 'death') { c.dead = 1; tip = -1.5; lift = 0.16; }
+      else if (A === 'fall') { c.down = 1; tip = -1.45; lift = 0.18; }
+      else if (A === 'revive') { if (t < 3.6) { c.down = 1; c.revive = t < 1.1 ? 0 : (t - 1.1) / 2.5; tip = -1.45; lift = 0.18; } else if (t > 4.8) this.setAct('idle'); }
+      const odd = c.combo % 2; g.animFig(f, 0, 0, Math.PI, speed, crouched, dt, c.combat ? -0.9 - (odd ? punch : 0) : -1.25, c.combat ? -0.9 - (odd ? 0 : punch) : -1.25);
+      // caída y reanimación: mismo vuelco de la raíz que usa la partida (updPlayer / updEnemy)
+      if (tip) { f.root.rotation.x = lerp(f.root.rotation.x, tip, 1 - Math.exp(-dt * 8)); f.root.position.y = lift; } else { f.root.rotation.x = damp(f.root.rotation.x, 0, 9, dt); f.root.position.y = damp(f.root.position.y, 0, 9, dt); }
+      const rig = f.glb && f.glb.rig, M = this.marks, on = this.showSkel && !!rig; if (on) { const set = (i, b) => { M[i].visible = !!b; if (b) b.getWorldPosition(M[i].position); }; set(0, rig.hips);
+        for (let s = 0; s < 2; s++) { const ar = rig.arms && rig.arms[s], lg = rig.legs && rig.legs[s]; set(1 + s * 3, ar && ar.up); set(2 + s * 3, ar && ar.mid); set(3 + s * 3, ar && ar.end); set(7 + s * 3, lg && lg.up); set(8 + s * 3, lg && lg.mid); set(9 + s * 3, lg && lg.end); } } else if (M[0].visible || M[1].visible || M[7].visible) for (const m of M) m.visible = false;
+      const o = this.orb, cam = this.cam; cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); cam.position.set(Math.sin(o.az) * Math.cos(o.el) * o.d, o.y + Math.sin(o.el) * o.d, Math.cos(o.az) * Math.cos(o.el) * o.d); cam.lookAt(0, o.y, 0);
+      R.setRenderTarget(null); R.setScissorTest(false); R.setViewport(0, 0, innerWidth, innerHeight); R.render(this.scene, cam);
+      if ((this.tick -= dt) <= 0) { this.tick = 0.3; this.live(); }
     }
   }
 
@@ -2299,6 +2668,7 @@ async function startGame() {
       this.game = new Game(this);
       this.input.onNav = (dir, src) => this.game.active ? this.game.nav(dir, src) : this.menu.nav(dir); this.input.onChange = () => this.paintSlots();
       this.net.onStatus = () => this.paintRoom(); this.paintSlots(); this.wireLobby();
+      if (params.get('modeltest')) { this.test = new ModelTest(this); return; }   // banco de pruebas de personajes: sin sala, sin mandos y sin bucle de menú
       // La señalización se carga con defer: se espera a que esté lista.
       const boot = () => this.net.start(); if (window.Peer) boot(); else addEventListener('load', () => setTimeout(boot, 50), { once: true });
       this.ptr = { x: 0, y: 0 }; addEventListener('pointermove', e => { this.ptr.x = e.clientX / innerWidth - .5; this.ptr.y = e.clientY / innerHeight - .5; });
