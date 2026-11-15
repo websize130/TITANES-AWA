@@ -323,7 +323,15 @@ const CONFIG = {
     high:   { pr: 1.75, shadow: 2048, rain: 6500, city: 280, dust: 600, smoke: 14, msaa: 4 },
   },
   palette: { fog: 0x0a1122, cyan: 0x35d6ff, magenta: 0xff2d6f, violet: 0x8b5cf6, warm: 0xffa25c, moon: 0x7f9cff },
-  // Sustituye null por la URL de un .glb (con clip "Idle") para cargar modelos de producción.
+  // Modelos de producción por operador. Cada entrada: null (figura procedural) · 'ruta.glb' · o un objeto:
+  //   { url: 'models/ghost.glb',            // personaje riggeado (esqueleto humano). Requiere clips Idle y Walk o Run
+  //     anims: ['models/rifle-pack.glb'],   // opcional: más archivos con clips para el MISMO esqueleto (p. ej. Mixamo «sin skin»)
+  //     clips: { Aim: 'Rifle Aiming Idle' },// opcional: nombre exacto del clip para cada estado (si no, se detecta por alias)
+  //     height: 1.8,                        // altura final en metros (la escala se calcula sola)
+  //     yaw: null,                          // giro extra en radianes; null = orientación automática por los pies
+  //     ik: null,                           // true/false fuerza el arma por IK de manos; null = automático (IK si no hay clip Aim)
+  //     grip: { pos: [0, 0, 0], rot: [0, 0, 0] } }   // solo sin IK: ajuste del arma en el hueso de la mano derecha
+  // Para probar sin editar: index.html?ghost=models/ghost.glb   ·   Especificación: docs/modelo-ghost.md
   assets: { operators: { ghost: null, vanguard: null, apex: null, breacher: null } },
 };
 
@@ -962,13 +970,15 @@ async function startGame() {
      No se asume ningún nombre fijo ni esqueleto: cada clip del GLB se asigna a un estado por alias
      (del más específico al más genérico; un clip asignado no se reutiliza). Lo que falte se cubre
      con la animación procedural. */
-  const CLIP_ORDER = ['Idle', 'Walk', 'Run', 'Sprint', 'Crouch', 'Aim', 'Fire', 'Reload', 'Jump', 'Melee', 'Hit'];
-  const CLIP_ALIASES = [['Sprint', /sprint/], ['Crouch', /crouch|sneak|kneel/], ['Reload', /reload/], ['Fire', /fire|shoot|recoil/], ['Aim', /aim|ads|sight/],
+  const CLIP_ORDER = ['Idle', 'Walk', 'Run', 'Sprint', 'Crouch', 'Aim', 'Fire', 'Reload', 'Jump', 'Melee', 'Hit', 'Death'];
+  const CLIP_ALIASES = [['Death', /death|dying|dead|\bdie\b|knock.?out/], ['Sprint', /sprint/], ['Crouch', /crouch|sneak|kneel/], ['Reload', /reload/], ['Fire', /fire|shoot|recoil/], ['Aim', /aim|ads|sight/],
     ['Melee', /melee|punch|strike|attack|slash|stab|kick/], ['Hit', /hit|hurt|damage|impact|flinch/], ['Jump', /jump/], ['Run', /run|jog/], ['Walk', /walk|strafe/], ['Idle', /idle|breath|stand|rest/]];
-  const CLIP_ONCE = { Reload: 4, Jump: 3, Hit: 5, Melee: 6 };   // clips puntuales (LoopOnce) y su prioridad
-  function detectClips(anims) {
+  const CLIP_ONCE = { Reload: 4, Jump: 3, Hit: 5, Melee: 6, Death: 9 };   // clips puntuales (LoopOnce) y su prioridad
+  function detectClips(anims, explicit) {
     const map = {}, used = new Set(), list = anims || [];
+    if (explicit) for (const name of CLIP_ORDER) { const c = explicit[name] && list.find(x => x.name === explicit[name]); if (c) { map[name] = c; used.add(c); } }   // mapeo manual: tiene prioridad
     for (const [name, re] of CLIP_ALIASES) {
+      if (map[name]) continue;
       let best = null, score = 0;
       for (const c of list) { if (used.has(c)) continue; const n = (c.name || '').toLowerCase(), s = n.split(/[^a-z0-9]+/).includes(name.toLowerCase()) ? 3 : re.test(n) ? (n.length < 24 ? 2 : 1) : 0; if (s > score) { score = s; best = c; } }
       if (best) { map[name] = best; used.add(best); }
@@ -977,8 +987,8 @@ async function startGame() {
   }
   /** Un AnimationMixer por modelo; las acciones se crean una sola vez y se reutilizan. */
   class ClipPlayer {
-    constructor(model, anims) {
-      this.mixer = new THREE.AnimationMixer(model); this.clips = detectClips(anims); this.act = {}; this.cur = null; this.name = ''; this.tok = 0;
+    constructor(model, anims, explicit) {
+      this.mixer = new THREE.AnimationMixer(model); this.clips = detectClips(anims, explicit); this.act = {}; this.cur = null; this.name = ''; this.tok = 0;
       for (const n of CLIP_ORDER) { const clip = this.clips.map[n]; if (!clip) continue; const a = this.mixer.clipAction(clip);
         if (CLIP_ONCE[n]) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; } this.act[n] = a; }
       // Capas (opcional): si el modelo tiene un nodo de columna reconocible, cada clip se divide en mitad inferior (piernas/cadera)
@@ -1010,6 +1020,107 @@ async function startGame() {
       if (this.cur && this.cur !== next) { if (fade > 0) this.cur.crossFadeTo(next, fade, false); else this.cur.stop(); }
       this.cur = next; this.name = n; this.tok = tok; return true;
     }
+  }
+
+  /* ---------------- Esqueleto humano genérico: huesos por topología + IK analítico de dos huesos ----------------
+     No depende de nombres concretos (Mixamo, Unreal, Rigify, VRM…): localiza manos y pies por nombre genérico
+     («hand» / «foot»), decide el lado por su posición y sube por la jerarquía (mano → antebrazo → brazo; pie → tibia → muslo). */
+  const _va = new THREE.Vector3(), _vb = new THREE.Vector3(), _vc = new THREE.Vector3(), _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _vn = new THREE.Vector3();
+  const _tR = new THREE.Vector3(), _tL = new THREE.Vector3(), _tF = new THREE.Vector3(), _pole = new THREE.Vector3(), _fL = new THREE.Vector3(), _fR = new THREE.Vector3();
+  const _q1 = new THREE.Quaternion(), _qp = new THREE.Quaternion(), _qw = new THREE.Quaternion(), _qs0 = new THREE.Quaternion(), _qs1 = new THREE.Quaternion(), _qfL = new THREE.Quaternion(), _qfR = new THREE.Quaternion();
+  const _hN = new THREE.Vector3(), _m1 = new THREE.Matrix4(), _vF = new THREE.Vector3(), _vN = new THREE.Vector3(), _vS = new THREE.Vector3();
+  const vAngle = (a, b) => Math.acos(clamp(a.dot(b) / (Math.sqrt(a.lengthSq() * b.lengthSq()) || 1), -1, 1));
+  /** Aplica al hueso una rotación expresada en espacio de mundo. */
+  function rotWorld(bone, q) { bone.parent.getWorldQuaternion(_qp); bone.getWorldQuaternion(_qw); bone.quaternion.copy(_qp.invert()).multiply(_qw.premultiply(q)); }
+  /** IK de dos huesos: lleva `end` a `target` (mundo) doblando `mid`; `pole` (dirección de mundo) orienta el codo o la rodilla. */
+  function ik2(up, mid, end, target, pole, weight = 1) {
+    if (weight <= 0.001) return;
+    _qs0.copy(up.quaternion); _qs1.copy(mid.quaternion);
+    up.getWorldPosition(_va); mid.getWorldPosition(_vb); end.getWorldPosition(_vc);
+    const lab = _va.distanceTo(_vb), lcb = _vb.distanceTo(_vc), lat = clamp(_va.distanceTo(target), (lab + lcb) * 0.12, (lab + lcb) * 0.999);
+    // 1) Flexión: ángulo interior de la articulación media según la distancia al objetivo
+    _v2.subVectors(_vb, _va); _v3.subVectors(_vc, _vb); _vn.crossVectors(_v2, _v3); if (_vn.lengthSq() < 1e-10) _vn.crossVectors(_v2, pole); _vn.normalize();
+    const inner = Math.acos(clamp((lab * lab + lcb * lcb - lat * lat) / (2 * lab * lcb), -1, 1));
+    rotWorld(mid, _q1.setFromAxisAngle(_vn, (Math.PI - inner) - vAngle(_v2, _v3)));
+    // 2) Giro: alinea la dirección origen→extremo con origen→objetivo
+    end.getWorldPosition(_vc); _v1.subVectors(_vc, _va).normalize(); _v2.subVectors(target, _va).normalize(); rotWorld(up, _q1.setFromUnitVectors(_v1, _v2));
+    // 3) Polo: rueda alrededor del eje origen→objetivo hasta que la articulación media apunte hacia `pole`
+    mid.getWorldPosition(_vb); _v1.subVectors(_vb, _va); _v1.addScaledVector(_v2, -_v1.dot(_v2)); _v3.copy(pole).addScaledVector(_v2, -pole.dot(_v2));
+    if (_v1.lengthSq() > 1e-8 && _v3.lengthSq() > 1e-8) { _vn.crossVectors(_v1, _v3); rotWorld(up, _q1.setFromAxisAngle(_v2, Math.atan2(_v2.dot(_vn), _v1.dot(_v3)))); }
+    if (weight < 0.999) { _q1.copy(up.quaternion); up.quaternion.copy(_qs0).slerp(_q1, weight); _q1.copy(mid.quaternion); mid.quaternion.copy(_qs1).slerp(_q1, weight); }
+  }
+  class HumanRig {
+    /** model: raíz normalizada y SIN padre (mira a +Z, izquierda = +X). arms/legs: [derecha, izquierda] = { up, mid, end }.
+        Para copias del modelo dentro de la escena se usa HumanRig.from(). */
+    constructor(model) {
+      const bones = []; model.updateWorldMatrix(true, true); model.traverse(o => { if (o.isBone) bones.push(o); });
+      const nm = o => String((o.userData && o.userData.name) || o.name || '').toLowerCase(), x0 = o => o.getWorldPosition(_va).x;   // el modelo normalizado aún no tiene padre: mundo = su espacio ya girado (izquierda = +X)
+      let cx = 0; for (const b of bones) cx += x0(b); cx /= bones.length || 1; const lx = o => x0(o) - cx;   // lado respecto al eje del esqueleto (en reposo es simétrico)
+      const pick = (re, ex, side) => { let best = null; for (const b of bones) { const n = nm(b); if (!re.test(n) || ex.test(n) || lx(b) * side <= 0) continue; if (!best || n.length < nm(best).length) best = b; } return best; };
+      const chain = end => end && end.parent && end.parent.isBone && end.parent.parent && end.parent.parent.isBone ? { up: end.parent.parent, mid: end.parent, end } : null;
+      const FING = /thumb|index|middle|ring|pinky|finger|twist|roll|prop|weapon|ik/, hand = s => chain(pick(/hand|wrist/, FING, s)), foot = s => chain(pick(/foot|ankle/, /toe|ball|twist|roll|ik/, s));
+      const aR = hand(-1), aL = hand(1), lR = foot(-1), lL = foot(1);
+      this.arms = aR && aL ? [aR, aL] : null; this.legs = lR && lL ? [lR, lL] : null;
+      this.hips = this.legs && lR.up.parent === lL.up.parent && lR.up.parent.isBone ? lR.up.parent : null; if (!this.hips) this.legs = null;
+      this.hipSave = new THREE.Vector3(); this.hipQ = new THREE.Quaternion(); this.dropped = false;
+      this.armLen = this.arms ? aR.up.getWorldPosition(_va).distanceTo(aR.mid.getWorldPosition(_vb)) + aR.mid.getWorldPosition(_vb).distanceTo(aR.end.getWorldPosition(_vc)) : 0;
+      this.hands = this.arms ? [this.handInfo(aR.end, nm), this.handInfo(aL.end, nm)] : null; if (this.hands && !(this.hands[0] && this.hands[1])) this.hands = null;
+    }
+    /** Mismo esqueleto en otra copia del modelo: reutiliza la detección hecha en la pose de reposo, buscando cada hueso por su nombre. */
+    static from(ref, model) {
+      const r = Object.create(HumanRig.prototype), B = b => (b ? model.getObjectByName(b.name) : null), ch = c => ({ up: B(c.up), mid: B(c.mid), end: B(c.end) });
+      r.arms = ref.arms && ref.arms.map(ch); r.legs = ref.legs && ref.legs.map(ch); r.hips = B(ref.hips); r.hipSave = new THREE.Vector3(); r.hipQ = new THREE.Quaternion(); r.dropped = false; r.armLen = ref.armLen;
+      r.hands = ref.hands && ref.hands.map(h => ({ hand: B(h.hand), fix: h.fix, palm: h.palm, curl: h.curl.map(c => ({ b: B(c.b), ax: c.ax, amt: c.amt })) }));
+      const ok = c => c && c.up && c.mid && c.end; if (r.arms && !r.arms.every(ok)) r.arms = r.hands = null; if (r.legs && (!r.legs.every(ok) || !r.hips)) r.legs = null; return r;
+    }
+    /** Analiza una mano: eje de los dedos, normal de la palma y eje de flexión de cada falange (todo en espacio local, una sola vez). */
+    handInfo(hand, nm) {
+      const P = o => o.getWorldPosition(new THREE.Vector3()), kids = hand.children.filter(c => c.isBone && c.children.some(k => k.isBone)), thumb = kids.find(c => /thumb/.test(nm(c))), fingers = kids.filter(c => c !== thumb);
+      if (fingers.length < 2) return null;
+      const w = P(hand), dirs = fingers.map(f => P(f).sub(w)), F = dirs.reduce((a, d) => a.add(d.clone().normalize()), new THREE.Vector3()).normalize();
+      // Normal de la palma: perpendicular al abanico de dedos; el signo lo deciden la curvatura natural de los dedos y el pulgar (ambos caen hacia la palma)
+      let a = dirs[0], b = dirs[0], best = 1; for (const d of dirs) for (const e of dirs) { const c = d.clone().normalize().dot(e.clone().normalize()); if (c < best) { best = c; a = d; b = e; } }
+      const N = new THREE.Vector3().crossVectors(a, b); N.addScaledVector(F, -N.dot(F)).normalize(); let vote = 0;
+      for (const f of fingers) { let j = f, k = j.children.find(c => c.isBone); while (k && k.children.find(c => c.isBone)) { const d1 = P(k).sub(P(j)).normalize(), k2 = k.children.find(c => c.isBone), d2 = P(k2).sub(P(k)).normalize(); vote += N.dot(d2.sub(d1)); j = k; k = k2; } }
+      if (thumb) { const t = thumb.children.find(c => c.isBone); vote += 0.5 * N.dot(P(t || thumb).sub(w).normalize()); } if (vote < 0) N.negate();
+      const iq = hand.getWorldQuaternion(new THREE.Quaternion()).invert(), lF = F.clone().applyQuaternion(iq), lN = N.clone().applyQuaternion(iq), lS = new THREE.Vector3().crossVectors(lF, lN).normalize();
+      const fix = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(lF, lN, lS)).invert(), curl = [];
+      const addChain = (root, amt) => { let j = root; while (j && j.children.find(c => c.isBone)) { const k = j.children.find(c => c.isBone), d = P(k).sub(P(j)).normalize(), ax = new THREE.Vector3().crossVectors(d, N); if (ax.lengthSq() > 1e-6) curl.push({ b: j, ax: ax.normalize().applyQuaternion(j.getWorldQuaternion(new THREE.Quaternion()).invert()), amt }); j = k; } };
+      for (const f of fingers) addChain(f, 1); if (thumb) addChain(thumb, 0.35);
+      return { hand, fix, curl, palm: w.distanceTo(P(fingers[Math.floor(fingers.length / 2)])) };
+    }
+    /** Orienta la mano (dedos hacia F, palma hacia N; direcciones de mundo) y cierra los dedos `curl` radianes por falange. Tras arm(). */
+    grip(i, F, N, curl, weight) {
+      const h = this.hands[i]; if (weight <= 0.001) return;
+      _vF.copy(F).normalize(); _vN.copy(N).addScaledVector(_vF, -N.dot(_vF)).normalize(); _vS.crossVectors(_vF, _vN);
+      _qw.setFromRotationMatrix(_m1.makeBasis(_vF, _vN, _vS)).multiply(h.fix); h.hand.parent.getWorldQuaternion(_qp); _q1.copy(_qp.invert()).multiply(_qw);
+      if (weight < 0.999) h.hand.quaternion.slerp(_q1, weight); else h.hand.quaternion.copy(_q1);
+      for (let k = 0; k < h.curl.length; k++) { const c = h.curl[k]; c.b.quaternion.multiply(_q1.setFromAxisAngle(c.ax, curl * c.amt * weight)); }
+    }
+    /** Llamar ANTES de mixer.update: deshace el descenso de cadera del fotograma anterior (por si el clip no anima su posición). */
+    restore() { if (this.dropped) { this.hips.position.copy(this.hipSave); this.hips.quaternion.copy(this.hipQ); this.dropped = false; } }
+    /** Mano (0 derecha, 1 izquierda) a un punto del mundo; el codo cae hacia abajo y hacia fuera respecto a `space`. */
+    arm(i, target, space, weight) { const a = this.arms[i]; _pole.set(i ? 0.55 : -0.55, -0.8, -0.25).transformDirection(space.matrixWorld); ik2(a.up, a.mid, a.end, target, _pole, weight); }
+    /** Agacha e inclina el cuerpo: baja la cadera `drop` metros, la inclina `lean` radianes (adelante +) y recoloca las piernas
+        para que los pies sigan exactamente donde los dejó el clip (no se hunden ni patinan). */
+    crouch(drop, lean, twist, space) {
+      const [R, L] = this.legs, h = this.hips; R.end.getWorldPosition(_fR); L.end.getWorldPosition(_fL); R.end.getWorldQuaternion(_qfR); L.end.getWorldQuaternion(_qfL);
+      this.hipSave.copy(h.position); this.hipQ.copy(h.quaternion); this.dropped = true; h.getWorldPosition(_va); _va.y -= drop; h.position.copy(h.parent.worldToLocal(_va));
+      if (lean) { _tF.set(1, 0, 0).transformDirection(space.matrixWorld); rotWorld(h, _q1.setFromAxisAngle(_tF, lean)); }
+      if (twist) { _tF.set(0, 1, 0).transformDirection(space.matrixWorld); rotWorld(h, _q1.setFromAxisAngle(_tF, twist)); }   // giro de tronco (golpes) con los pies plantados
+      _tF.set(0, 0.15, 1).transformDirection(space.matrixWorld);   // rodillas hacia delante
+      ik2(R.up, R.mid, R.end, _fR, _tF); R.mid.getWorldQuaternion(_qp); R.end.quaternion.copy(_qp.invert()).multiply(_qfR);   // el pie conserva su orientación (plano en el suelo)
+      ik2(L.up, L.mid, L.end, _fL, _tF); L.mid.getWorldQuaternion(_qp); L.end.quaternion.copy(_qp.invert()).multiply(_qfL);
+    }
+  }
+  /** Puntos de agarre del arma en el espacio del grupo de pose (cañón hacia +Z, arriba +Y): [mano derecha, mano izquierda, cargador]. */
+  const GRIPS = { rifle: [[0, -0.085, -0.09], [0, -0.035, 0.2], [0, -0.17, 0.07]], pistol: [[0, -0.06, -0.05], [0.012, -0.075, -0.04], [0, -0.13, -0.05]], menu: [[0, -0.1, -0.09], [0, -0.03, 0.24], [0, 0, 0]] };
+  /** Coloca una mano en un punto de agarre del arma: la muñeca queda detrás de la palma y los dedos envuelven el punto.
+      frame: objeto cuyo matrixWorld orienta las direcciones (el arma o el cuerpo). fx..nz: dedos y palma en ese espacio. */
+  function holdAt(rig, i, point, frame, space, fx, fy, fz, nx, ny, nz, curl, weight) {
+    const F = _tF.set(fx, fy, fz).transformDirection(frame.matrixWorld), h = rig.hands ? rig.hands[i] : null, pl = h ? h.palm : 0.08;
+    _hN.set(nx, ny, nz).transformDirection(frame.matrixWorld); point.addScaledVector(F, -pl * 0.85).addScaledVector(_hN, -0.028);
+    rig.arm(i, point, space, weight); if (h) rig.grip(i, F, _hN, curl, weight);
   }
 
   /* --------------------------------- Squad --------------------------------- */
@@ -1073,33 +1184,88 @@ async function startGame() {
       function B2(w, h, d) { return new THREE.BoxGeometry(w, h, d); }
       spine.add(gun); op.gun = gun; op.gunY = gun.position.y;
       this.rm.scene.add(root); this.ops.push(op);
-      const url = CONFIG.assets.operators[def.id]; if (url) this.loadModel(op, url);
+      const spec = params.get(def.id) || CONFIG.assets.operators[def.id]; if (spec) this.loadModel(op, spec);
     }
     setPose(op, p) { op.pose = p; op.R.sh.rotation.set(...p.Rs); op.R.el.rotation.set(...p.Re); op.L.sh.rotation.set(...p.Ls); op.L.el.rotation.set(...p.Le); }
-    /** Sustituye el operador procedural del menú por un modelo GLB y guarda el recurso para la partida.
-        Detecta los clips disponibles (Idle, Walk, Run, Sprint, Crouch, Aim, Fire, Reload, Jump, Melee, Hit). */
-    loadModel(op, url) {
-      const skel = import('three/addons/utils/SkeletonUtils.js').catch(() => null);   // clonado de mallas con esqueleto (solo si hay GLB)
-      Promise.all([new GLTFLoader().loadAsync(url), skel]).then(([gltf, SU]) => {
-        const clips = detectClips(gltf.animations), usable = !!(SU && clips.map.Idle && (clips.map.Walk || clips.map.Run));
-        this.assets[op.def.id] = { gltf, clone: SU ? SU.clone : null, usable };
-        console.info(`[Animación] ${op.def.name}: clips detectados → ${clips.found.join(', ') || 'ninguno'} · faltan → ${clips.missing.join(', ') || 'ninguno'} (se cubren con animación procedural)` +
-          (usable ? '' : ' · en partida se mantiene el operador procedural (requiere Idle y Walk o Run)'));
-        op.root.remove(op.hips); const model = gltf.scene; model.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; if (o.material) o.material.envMapIntensity = 0.6; } });
-        op.root.add(model); op.model = model; op.mScale = model.scale.y; op.clips = new ClipPlayer(model, gltf.animations); op.mixer = op.clips.mixer;
-        if (!op.clips.play('Idle', 0) && gltf.animations[0]) op.mixer.clipAction(gltf.animations[0]).play();   // sin "Idle": primer clip (comportamiento anterior)
-      }).catch(e => console.warn('Modelo no disponible, se mantiene el operador procedural:', url, e));
+    /** Cargador GLB con soporte de compresión (Draco, Meshopt, KTX2). Los decodificadores solo se descargan si el archivo los usa. */
+    async gltfLoader() {
+      if (this._ld) return this._ld; const L = new GLTFLoader(), base = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/';
+      try { const [{ DRACOLoader }, { KTX2Loader }, { MeshoptDecoder }] = await Promise.all([import('three/addons/loaders/DRACOLoader.js'), import('three/addons/loaders/KTX2Loader.js'), import('three/addons/libs/meshopt_decoder.module.js')]);
+        L.setDRACOLoader(new DRACOLoader().setDecoderPath(base + 'draco/gltf/')); L.setKTX2Loader(new KTX2Loader().setTranscoderPath(base + 'basis/').detectSupport(this.rm.renderer)); L.setMeshoptDecoder(MeshoptDecoder);
+      } catch (e) { console.warn('Decodificadores de compresión no disponibles; solo se admiten GLB sin comprimir.', e); }
+      return this._ld = L;
     }
-    /** En partida: si el GLB del operador es apto, lo clona dentro de la figura y oculta las piezas procedurales. */
-    attachTo(fig, id) {
-      const a = this.assets[id]; if (!a || !a.usable) return false;
-      const model = a.clone(a.gltf.scene), wrap = new THREE.Group(); model.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+    /** Normaliza un GLB recién cargado: altura en metros, pies en y = 0, centrado en la cadera y mirando a +Z. Devuelve el recurso con su informe. */
+    prepModel(gltf, spec, extra) {
+      const norm = new THREE.Group(), src = gltf.scene, warn = [], json = gltf.parser && gltf.parser.json || {}; norm.add(src);
+      let tris = 0, skinned = 0, bones = 0, texMax = 0; const mats = new Set();
+      src.traverse(o => { if (o.isBone) bones++; if (!o.isMesh) return; o.castShadow = o.receiveShadow = true; if (o.isSkinnedMesh) { skinned++; o.frustumCulled = false; }   // la caja de un SkinnedMesh no sigue a la animación
+        tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+        for (const m of Array.isArray(o.material) ? o.material : [o.material]) { if (!m || mats.has(m)) continue; mats.add(m); if ('envMapIntensity' in m) m.envMapIntensity = 0.8;
+          for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap']) { const t = m[k]; if (t) { t.anisotropy = 4; if (t.image) texMax = Math.max(texMax, t.image.width || 0, t.image.height || 0); } } } });
+      norm.updateMatrixWorld(true); src.traverse(o => { if (o.isSkinnedMesh) o.skeleton.update(); });   // updateMatrixWorld (no updateWorldMatrix) + skeleton.update: imprescindibles para medir una malla con esqueleto
+      const box = new THREE.Box3().setFromObject(norm, true), h0 = box.max.y - box.min.y, H = +spec.height || 1.8, sc = h0 > 1e-4 ? H / h0 : 1;
+      norm.scale.setScalar(sc); norm.updateMatrixWorld(true);
+      // Orientación automática: en un humano, la puntera está delante del tobillo
+      let yaw = 0; const fwd = new THREE.Vector3(), tv = new THREE.Vector3(), fv = new THREE.Vector3();   // suma de ambos pies: compensa la apertura de las punteras
+      src.traverse(o => { const n = String(o.userData.name || o.name).toLowerCase(); if (o.isBone && /toe|ball/.test(n) && !/end|tip/.test(n) && o.parent && /foot|ankle/.test(String(o.parent.userData.name || o.parent.name).toLowerCase())) fwd.add(o.getWorldPosition(tv).sub(o.parent.getWorldPosition(fv)).setY(0).normalize()); });
+      if (typeof spec.yaw === 'number') yaw = spec.yaw; else if (Math.hypot(fwd.x, fwd.z) > 0.2) yaw = -Math.atan2(fwd.x, fwd.z);
+      else warn.push('No se encontraron huesos de pie/puntera: orientación sin comprobar (ajusta «yaw»).');
+      norm.rotation.y = yaw; norm.updateMatrixWorld(true);
+      const rig = new HumanRig(norm), c = rig.hips ? rig.hips.getWorldPosition(new THREE.Vector3()) : box.getCenter(new THREE.Vector3()).multiplyScalar(sc).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+      norm.position.set(-c.x, -box.min.y * sc, -c.z); norm.updateMatrixWorld(true); const rigT = new HumanRig(norm);   // detección definitiva, en la pose de reposo
+      // Clips: los del propio archivo + los de archivos extra. Los clips «mixamo.com» toman el nombre de su archivo.
+      const clips = gltf.animations.slice(); for (const [url, g] of extra) for (const cl of g.animations) { if (!cl.name || /^mixamo\.com$|^take ?0*1$|^armature\|/i.test(cl.name)) cl.name = decodeURIComponent(url.split(/[?#]/)[0].split('/').pop().replace(/\.(glb|gltf)$/i, '')); clips.push(cl); }
+      const det = detectClips(clips, spec.clips);
+      // Clips cíclicos con desplazamiento de raíz («root motion»): se elimina la deriva neta para que el personaje no se salga de su cápsula
+      if (rig.hips) { const hn = rig.hips.name, pm = rig.hips.parent.matrixWorld, inv = pm.clone().invert(), v = new THREE.Vector3(), v0 = new THREE.Vector3(), v1 = new THREE.Vector3();
+        for (const n of CLIP_ORDER) { const cl = det.map[n]; if (!cl || CLIP_ONCE[n]) continue; const tr = cl.tracks.find(t => t.name === hn + '.position'); if (!tr || tr.times.length < 2) continue;
+          const N = tr.times.length, a = tr.values, T = tr.times[N - 1] - tr.times[0]; v0.fromArray(a, 0).applyMatrix4(pm); v1.fromArray(a, (N - 1) * 3).applyMatrix4(pm); const dx = v1.x - v0.x, dz = v1.z - v0.z;
+          if (Math.hypot(dx, dz) < 0.05) continue;
+          for (let i = 0; i < N; i++) { const k = T > 0 ? (tr.times[i] - tr.times[0]) / T : 0; v.fromArray(a, i * 3).applyMatrix4(pm); v.x -= dx * k; v.z -= dz * k; v.applyMatrix4(inv).toArray(a, i * 3); } warn.push(`Clip «${cl.name}»: tenía desplazamiento de raíz (${Math.hypot(dx, dz).toFixed(2)} m); se ha dejado en el sitio.`); } }
+      if (!skinned) warn.push('El modelo no tiene malla con esqueleto (SkinnedMesh): no se podrá animar.');
+      if (!rigT.arms) warn.push('No se reconocen los brazos (huesos «hand»): el arma no se sujetará con las manos.'); if (!rigT.legs) warn.push('No se reconocen las piernas (huesos «foot»): agacharse usará la alternativa simple.');
+      if ((json.extensionsUsed || []).includes('KHR_materials_pbrSpecularGlossiness')) warn.push('Usa materiales specular-glossiness (obsoletos): reexporta como metallic-roughness o se verá sin texturas.');
+      if (tris > 70000) warn.push(`Malla muy densa para móvil (${Math.round(tris / 1000)}k triángulos; recomendado ≤ 40k).`); if (texMax > 2048) warn.push(`Texturas de ${texMax}px: en móvil se recomienda 2048 como máximo.`);
+      if (h0 * sc && (h0 < 0.5 || h0 > 3)) warn.push(`Escala original atípica (${h0.toFixed(2)} unidades de alto): se ha reescalado a ${H} m.`);
+      const usable = !!(det.map.Idle && (det.map.Walk || det.map.Run));
+      return { model: norm, clips, spec, usable, rig: rigT, rigOk: !!(rigT.arms && rigT.legs), report: { height0: +h0.toFixed(3), scale: +sc.toFixed(4), yawDeg: Math.round(yaw * 180 / Math.PI), triangles: Math.round(tris), bones, skinned, materials: mats.size, texMax, found: det.found, missing: det.missing, warn } };
+    }
+    /** Sustituye el operador procedural por un modelo GLB (menú y partida). spec: 'url' u objeto (ver CONFIG.assets). Devuelve una promesa. */
+    loadModel(op, spec) {
+      if (typeof spec === 'string') spec = { url: spec }; const id = op.def.id;
+      const skel = import('three/addons/utils/SkeletonUtils.js').catch(() => null);   // clonado de mallas con esqueleto
+      return this.gltfLoader().then(L => Promise.all([L.loadAsync(spec.url), skel, Promise.all((spec.anims || []).map(u => L.loadAsync(u).then(g => [u, g])))])).then(([gltf, SU, extra]) => {
+        const a = this.prepModel(gltf, spec, extra); a.clone = SU ? SU.clone : null; if (!a.clone) a.usable = false; const r = a.report; this.assets[id] = a;
+        console.info(`[Modelo] ${op.def.name}: ${r.triangles} triángulos · ${r.bones} huesos · ${r.materials} materiales · texturas hasta ${r.texMax}px · escala ×${r.scale} · giro ${r.yawDeg}°\n` +
+          `[Animación] ${op.def.name}: clips detectados → ${r.found.join(', ') || 'ninguno'} · faltan → ${r.missing.join(', ') || 'ninguno'} (se cubren con IK y animación procedural)` +
+          (a.usable ? '' : ' · NO APTO para partida: requiere clips Idle y Walk o Run') + (r.warn.length ? '\n[Avisos] ' + r.warn.join(' | ') : ''));
+        // Menú: el modelo ocupa el lugar de la figura procedural y sujeta el fusil del operador con IK
+        op.root.remove(op.hips); const model = a.model; op.root.add(model); op.model = model; op.mScale = model.scale.y; op.clips = new ClipPlayer(model, a.clips, spec.clips); op.mixer = op.clips.mixer;
+        if (op.clips.layers) { op.clips.playLayer('lo', 'Idle', 0); op.clips.playLayer('up', 'Idle', 0); } else if (!op.clips.play('Idle', 0) && a.clips[0]) op.mixer.clipAction(a.clips[0]).play();
+        op.rig = a.rig; if (op.rig.arms) { const P = op.gunPose = new THREE.Group(); P.rotation.order = 'YXZ'; P.position.set(-0.13, 1.14, 0.24); P.rotation.set(0.55, 0.6, 0.1); op.gun.position.set(0, 0, 0); op.gun.rotation.set(0, 0, 0); P.add(op.gun); op.root.add(P); }
+        return a;
+      }).catch(e => { console.warn('Modelo no disponible, se mantiene el operador procedural:', spec.url, e); return null; });
+    }
+    /** En partida: si el GLB del operador es apto, lo clona dentro de la figura, oculta las piezas procedurales y monta el arma. */
+    attachTo(fig, id, h = 1) {
+      const a = this.assets[id]; if (!a || !a.usable || fig.glb) return false;
+      const model = a.clone(a.model), wrap = new THREE.Group(), gun = new THREE.Group(), inner = new THREE.Group(); wrap.scale.setScalar(h);
       wrap.add(model); fig.root.add(wrap); fig.upper.visible = false; for (const l of fig.legs) l.visible = false;
-      fig.glb = { root: wrap, clips: new ClipPlayer(model, a.gltf.animations) }; if (!fig.glb.clips.layers) fig.glb.clips.play('Idle', 0); return true;
+      const cp = new ClipPlayer(model, a.clips, a.spec.clips), rig = HumanRig.from(a.rig, model), ik = !!rig.arms && (a.spec.ik === true || (a.spec.ik !== false && !cp.has('Aim')));
+      // Arma: grupo de pose (cañón +Z) → mallas del arma (su eje propio es −Y). Con IK cuelga del cuerpo y las manos la buscan; sin IK va en el hueso de la mano derecha.
+      gun.rotation.order = 'YXZ'; inner.rotation.x = -Math.PI / 2; gun.add(inner); for (const wp of [fig.wpn, fig.wpn2]) if (wp) { wp.position.set(0, 0, 0); wp.rotation.set(0, 0, 0); inner.add(wp); }
+      if (ik || !rig.arms) { gun.position.set(-0.13, 1.14, 0.24); wrap.add(gun); }
+      else { const hand = rig.arms[0].end, hold = new THREE.Group(), gp = a.spec.grip || {}, ws = hand.getWorldScale(new THREE.Vector3()); hold.scale.set(1 / ws.x, 1 / ws.y, 1 / ws.z);
+        hold.position.fromArray(gp.pos || [0, 0, 0]); hold.rotation.fromArray(gp.rot || [0, 0, 0]); hand.add(hold); hold.add(gun); }
+      fig.glb = { root: wrap, model, clips: cp, rig, gun, ik, T: [0, 0, 0, 0, 0, 0] }; if (!cp.layers) cp.play('Idle', 0); return true;
     }
     update(dt, t) {
       for (const op of this.ops) {
-        if (op.mixer) { op.mixer.update(dt); if (!op.clips || !op.clips.has('Idle')) { op.t += dt; op.model.scale.y = op.mScale * (1 + Math.sin(op.t * 1.35) * 0.006); } continue; }   // sin Idle: respiración procedural
+        if (op.mixer) { op.mixer.update(dt); if (!op.clips || !op.clips.has('Idle')) { op.t += dt; op.model.scale.y = op.mScale * (1 + Math.sin(op.t * 1.35) * 0.006); }   // sin Idle: respiración procedural
+          if (op.gunPose) { const P = op.gunPose, G = GRIPS.menu; op.t += dt; P.position.y = 1.14 + Math.sin(op.t * 1.35) * 0.004; P.updateWorldMatrix(true, false);
+            holdAt(op.rig, 0, _tR.fromArray(G[0]).applyMatrix4(P.matrixWorld), P, op.root, 0.15, 0.3, 0.94, 1, 0, -0.1, 0.95, 1); holdAt(op.rig, 1, _tL.fromArray(G[1]).applyMatrix4(P.matrixWorld), P, op.root, -0.75, 0.1, 0.65, 0.1, 1, 0, 0.75, 1); }
+          continue; }
         op.t += dt; const u = op.t, p = op.pose, br = Math.sin(u * 1.35);
         // Respiración y tensión corporal
         op.spine.scale.set(1 + br * 0.012, 1 + br * 0.006, 1 + br * 0.022); op.spine.position.y = 1.05 + br * 0.004;
@@ -1756,9 +1922,9 @@ async function startGame() {
     /** Figura con modelo GLB: elige el clip por estado (con prioridades y crossfade). Si un clip falta, aplica una
         alternativa procedural sobre la raíz del modelo (independiente del esqueleto: no usa nombres de huesos). */
     animGlb(f, dt, sp, run) {
-      const g = f.glb, cp = g.clips, c = f.cue, w = f.w;
+      const g = f.glb, cp = g.clips, c = f.cue, w = f.w, fallen = c.down || c.dead || c.knock;
       let want = 'Idle', tok = 0, dur = 0;
-      if (c.down || c.dead || c.knock) want = 'Idle';
+      if (fallen) want = cp.has('Death') ? 'Death' : 'Idle';
       else if (f.act && cp.has('Melee')) { want = 'Melee'; tok = f.actId; }
       else if (w.hit > 0.85 && cp.has('Hit')) { want = 'Hit'; tok = w.hitN; }
       else if (c.reload >= 0 && cp.has('Reload')) { want = 'Reload'; dur = c.relT || RELOAD_ANIM; }
@@ -1771,7 +1937,7 @@ async function startGame() {
       else if (w.aim > 0.5 && cp.has('Aim')) want = 'Aim';
       if (!cp.has(want)) want = 'Idle';
       if (cp.layers) {   // piernas: locomoción · torso: apuntar/disparar/recargar encima (o el cuerpo entero para melé, impacto y salto)
-        const A = cp.layers.act, full = want === 'Melee' || want === 'Hit' || want === 'Jump' || c.down || c.dead || c.knock;
+        const A = cp.layers.act, full = want === 'Melee' || want === 'Hit' || want === 'Jump' || want === 'Death' || fallen;
         let base = w.ck > 0.5 && A.lo.Crouch ? 'Crouch' : sp > 4.6 ? (A.lo.Sprint ? 'Sprint' : A.lo.Run ? 'Run' : 'Walk') : sp > 2.6 ? (A.lo.Sprint && A.lo.Run ? 'Run' : A.lo.Walk ? 'Walk' : 'Run') : sp > 0.4 ? (A.lo.Walk ? 'Walk' : 'Run') : 'Idle';
         if (!A.lo[base]) base = 'Idle';
         const over = c.reload >= 0 && A.up.Reload ? 'Reload' : c.shoot && A.up.Fire ? 'Fire' : w.aim > 0.5 && A.up.Aim ? 'Aim' : null;
@@ -1781,10 +1947,54 @@ async function startGame() {
       } else { const busy = cp.busy(); if (!(busy && busy >= (CLIP_ONCE[want] || 0) && want !== cp.name)) cp.play(want, 0.22, dur, tok); }
       // Alternativas procedurales sobre la raíz del modelo para los clips que faltan
       const r = g.root, n = cp.name, ln = cp.layers ? cp.layers.lo.name : n, sx = f.act === 'STRIKE' && n !== 'Melee' ? bell(f.actT, 0, 0.3) * (f.actN % 2 ? -0.35 : 0.35) : 0;
-      const pitch = (ln === 'Crouch' ? 0 : 0.22 * w.ck) + (ln === 'Sprint' ? 0 : 0.12 * run) - (n === 'Fire' ? 0 : 0.05 * w.kick) - (n === 'Hit' ? 0 : 0.2 * w.hit) + 0.1 * w.land;
-      r.rotation.x = damp(r.rotation.x, pitch, 14, dt); r.rotation.y = damp(r.rotation.y, sx, 18, dt);
-      r.position.y = damp(r.position.y, (ln === 'Crouch' ? 0 : -0.26 * w.ck) - 0.08 * w.land, 14, dt);
+      const pitch = (ln === 'Crouch' ? 0 : 0.22 * w.ck) + (ln === 'Sprint' ? 0 : 0.12 * run) - (n === 'Fire' ? 0 : 0.05 * w.kick) - (n === 'Hit' ? 0 : 0.2 * w.hit) + 0.1 * w.land + (sx ? 0.35 * Math.abs(sx) : 0);
+      const legIk = g.rig && g.rig.legs, dth = n === 'Death';
+      // Con clip de caída propio, la raíz del modelo anula el vuelco procedural de la figura (root.rotation.x / position.y) para no caer dos veces
+      if (dth) { const a = f.root.rotation.x, ry = f.root.position.y; r.rotation.x = -a; r.rotation.y = 0; r.position.set(0, -ry * Math.cos(a), ry * Math.sin(a)); }
+      else { g.lean = damp(g.lean || 0, pitch, 14, dt); g.twist = damp(g.twist || 0, sx * (legIk ? 1.5 : 1), 18, dt); r.rotation.x = legIk ? 0 : g.lean; r.rotation.y = legIk ? 0 : g.twist; r.position.z = 0;   // con piernas por IK la inclinación se aplica en la cadera (los pies no giran)
+        r.position.y = damp(r.position.y, legIk ? 0 : (ln === 'Crouch' ? 0 : -0.26 * w.ck) - 0.08 * w.land, 14, dt); }
+      if (g.rig) g.rig.restore();
       cp.mixer.update(dt);
+      if (g.rig) this.rigGlb(f, dt, run, ln, dth);
+    }
+    /** Capa procedural sobre el esqueleto del GLB (después del mixer): piernas por IK al agacharse/aterrizar/deslizarse y
+        arma sujeta con las dos manos por IK (reposo, sprint, apuntado, retroceso, recarga, cambio de arma y melé). */
+    rigGlb(f, dt, run, ln, dth) {
+      const g = f.glb, rig = g.rig, c = f.cue, w = f.w, wrap = g.root, alive = dth ? 0 : (1 - w.down) * (1 - w.dead) * (1 - w.knock);
+      if (f.wpn2) { const alt = c.wi === 1; f.wpn2.visible = alt; f.wpn.visible = !alt; }
+      wrap.updateWorldMatrix(true, false);
+      const pre = c.air >= 0 ? 1 - sstep(c.air / 0.14) : 0, drop = alive * ((ln === 'Crouch' ? 0 : 0.3 * w.ck) + 0.16 * w.slide + 0.14 * w.land + 0.12 * pre + 0.05 * w.cb);
+      const lean = dth ? 0 : (g.lean || 0) * alive, tw = dth ? 0 : (g.twist || 0) * alive; if (rig.legs && (drop > 0.003 || Math.abs(lean) > 0.004 || Math.abs(tw) > 0.004)) rig.crouch(drop * wrap.scale.y, lean, tw, wrap);
+      if (!g.ik) return;
+      // Pose del arma en el espacio del personaje (metros; derecha = −X, delante = +Z): mezcla de posturas por pesos ya suavizados
+      const pistol = c.wi === 1, aim = w.aim, rn = run * (1 - aim), rel = w.rel, r = c.reload < 0 ? 1 : c.reload, sw = c.swap >= 0 ? bell(c.swap, 0, 1) : 0, cb = w.cb, k = w.kick, T = g.T, P = g.gun;
+      let x = pistol ? -0.1 : -0.13, y = pistol ? 1.08 : 1.14, z = pistol ? 0.3 : 0.24, pit = pistol ? 0.7 : 0.55, yw = pistol ? 0.15 : 0.6, rl = 0.1;                       // reposo («low ready»)
+      x = lerp(x, pistol ? -0.06 : -0.15, aim); y = lerp(y, pistol ? 1.46 : 1.43, aim); z = lerp(z, pistol ? 0.42 : 0.2, aim); pit = lerp(pit, 0, aim); yw = lerp(yw, 0, aim); rl = lerp(rl, 0, aim);   // apuntado: culata al hombro
+      x = lerp(x, -0.04, rn); y = lerp(y, 1.22, rn); z = lerp(z, 0.22, rn); pit = lerp(pit, -0.75, rn); yw = lerp(yw, 0.95, rn);                                        // sprint: arma cruzada al pecho
+      y = lerp(y, 1.2, rel * (1 - aim * 0.5)); pit += rel * (-0.35 - pit * 0.5); rl += rel * 0.55 * bell(r, 0, 0.94);                                                    // recarga: boca arriba e inclinada
+      y -= 0.32 * sw; pit += 0.9 * sw; z -= 0.08 * sw;                                                                                                               // cambio de arma: baja a la funda
+      x = lerp(x, 0.06, cb); y = lerp(y, 1.02, cb); z = lerp(z, 0.17, cb); pit = lerp(pit, 1.15, cb); yw = lerp(yw, 1.35, cb); rl = lerp(rl, 0.3, cb);                       // melé: fusil colgado en diagonal
+      z -= 0.045 * k; pit -= 0.05 * k; y -= drop * 0.9; z += (g.lean || 0) * 0.45;   // el arma acompaña al tronco al agacharse o inclinarse
+      const e = 1 - Math.exp(-18 * dt); T[0] += (x - T[0]) * e; T[1] += (y - T[1]) * e; T[2] += (z - T[2]) * e; T[3] += (pit - T[3]) * e; T[4] += (yw - T[4]) * e; T[5] += (rl - T[5]) * e;
+      P.position.set(T[0], T[1], T[2]); P.rotation.set(T[3], T[4], T[5]); P.updateWorldMatrix(true, false);
+      // Manos: empuñadura y guardamanos; en recarga la izquierda va al cargador y a la cintura; en melé sueltan el arma (guardia y golpes)
+      const G = pistol ? GRIPS.pistol : GRIPS.rifle, mw = P.matrixWorld, ww = wrap.matrixWorld;
+      _tR.fromArray(G[0]).applyMatrix4(mw); _tL.fromArray(G[1]).applyMatrix4(mw);
+      if (rel > 0.01) { const out = bell(r, 0.1, 0.55), mag = sstep(r / 0.12) * (1 - sstep((r - 0.8) / 0.12)); _tF.fromArray(G[2]).applyMatrix4(mw); _tL.lerp(_tF, mag * rel); _tF.set(0.17, 0.98, 0.1).applyMatrix4(ww); _tL.lerp(_tF, out * rel); }
+      if (sw > 0.01) { _tF.set(0.2, 1.0, 0.16).applyMatrix4(ww); _tL.lerp(_tF, sw * 0.7); }
+      let kr = cb, kl = cb;   // peso de «mano libre» de cada mano (el puño que golpea no espera a que termine la transición a melé)
+      if (cb > 0.01) {
+        const t = f.actT, act = f.act, left = f.actN % 2 === 1, gd = w.guard; let rx = -0.14, ry = 1.4 + 0.1 * gd, rz = 0.3 - 0.06 * gd, lx = 0.13, ly = 1.44 + 0.1 * gd, lz = 0.34 - 0.06 * gd;   // guardia
+        if (act === 'STRIKE') { const p = t < 0.07 ? sstep(t / 0.07) : 1 - sstep((t - 0.07) / 0.24); if (left) { lx = lerp(lx, 0.03, p); ly = lerp(ly, 1.45, p); lz = lerp(lz, 0.82, p); kl = Math.max(cb, p); } else { rx = lerp(rx, -0.03, p); ry = lerp(ry, 1.45, p); rz = lerp(rz, 0.82, p); kr = Math.max(cb, p); } }
+        else if (act === 'GRAPPLE') { const p = sstep(t / 0.25), q = sstep((t - 0.25) / 0.4); rx = -0.16; lx = 0.16; ry = ly = lerp(1.4, 1.32, p); rz = lz = lerp(0.3, 0.62 - 0.22 * q, p); }
+        else if (act === 'TAKEDOWN') { const p = sstep(t / 0.12), q = sstep((t - 0.18) / 0.22) * (1 - sstep((t - 0.55) / 0.2)); rx = -0.16; lx = 0.16; ry = ly = lerp(1.4, 1.3, p) - 0.5 * q; rz = lz = lerp(0.3, 0.6, p); }
+        else if (act === 'DISARM') { const p = sstep(t / 0.15) * (1 - sstep((t - 0.5) / 0.3)), q = bell(t, 0.15, 0.6); lx = lerp(lx, 0.05, p); lz = lerp(lz, 0.7, p); ly = lerp(ly, 1.3, p); rx = lerp(rx, 0.1, q); rz = lerp(rz, 0.6, q); ry = lerp(ry, 1.25, q); }
+        else if (act === 'ENV_FINISHER') { const up = sstep(t / 0.3), sl = sstep((t - 0.32) / 0.14), q = up * (1 - sstep((t - 0.65) / 0.25)); rx = -0.12; lx = 0.12; ry = ly = lerp(1.4, lerp(1.95, 0.95, sl), q); rz = lz = lerp(0.3, lerp(0.2, 0.6, sl), q); }
+        _tF.set(rx, ry - drop, rz).applyMatrix4(ww); _tR.lerp(_tF, kr); _tF.set(lx, ly - drop, lz).applyMatrix4(ww); _tL.lerp(_tF, kl);
+      }
+      // Orientación de las manos: sobre el arma (empuñadura y guardamanos) o, en melé, puños cerrados respecto al cuerpo
+      if (kr > 0.5) holdAt(rig, 0, _tR, wrap, wrap, 0.1, 0.25, 0.96, 1, 0, 0, 1.25, alive); else holdAt(rig, 0, _tR, P, wrap, 0.15, 0.3, 0.94, 1, 0, -0.1, 0.95, alive);
+      if (kl > 0.5) holdAt(rig, 1, _tL, wrap, wrap, -0.1, 0.25, 0.96, -1, 0, 0, 1.25, alive); else holdAt(rig, 1, _tL, P, wrap, pistol ? 0.3 : -0.75, pistol ? 0.3 : 0.1, pistol ? 0.9 : 0.65, pistol ? -1 : 0.1, pistol ? 0 : 1, 0, pistol ? 0.9 : 0.75, alive);
     }
     spawnEnemy(type, x, z, alerted, apt = -1) {
       const d = ENEMY[type], EM = this.EM, look = type === 'armored' ? { cloth: EM.armor, vest: EM.gold, head: EM.armor, helmet: EM.gold } : type === 'boss' ? { cloth: EM.apron, vest: EM.blood, head: EM.skin } : d.melee ? { cloth: EM.olive, head: EM.skin } : { cloth: EM.thug, vest: EM.dark, head: EM.skin };
@@ -1800,7 +2010,7 @@ async function startGame() {
     }
     addPlayer(i) {
       const sq = this.app.squad.M, lead = this.players.find(p => !p.downed) || this.players[0];
-      const fig = this.makeFigure({ style: OPERATORS[i].id, cloth: sq.cloth, vest: i === 1 ? sq.tan : sq.cloth, head: sq.leather, helmet: sq.shell, boot: sq.leather, weapon: 'rifle', weapon2: 'pistol', accent: this.accents[i], bulk: OPERATORS[i].bulk }); this.app.squad.attachTo(fig, OPERATORS[i].id); this.world.add(fig.root);
+      const fig = this.makeFigure({ style: OPERATORS[i].id, cloth: sq.cloth, vest: i === 1 ? sq.tan : sq.cloth, head: sq.leather, helmet: sq.shell, boot: sq.leather, weapon: 'rifle', weapon2: 'pistol', accent: this.accents[i], bulk: OPERATORS[i].bulk }); this.world.add(fig.root); this.app.squad.attachTo(fig, OPERATORS[i].id, OPERATORS[i].h);
       const pl = { slot: i, ref: this.input.slots[i], x: lead ? lead.x + 0.8 : (i - 1.5) * 1.1, z: lead ? lead.z + 0.6 : 6.2, yaw: lead ? lead.yaw : 0, pitch: 0, r: 0.35, hp: 100, alive: true, downed: false, crouched: false, mag: 30, reserve: 120, reload: 0,
         fireCd: 0, spread: 0, wi: 0, magAlt: WEAPONS[1].mag, swapT: 0, reloadT: RELOAD_ANIM, pSwap: 0, wantSwap: false, shake: 0, fig, hop: 0, v: 0, lastHit: -9, revive: 0, bleed: 0, hitFx: 0, dmgFx: 0, iframes: 0, dash: 0, idle: 0, pMelee: 0, shots: 0, msg: '', msgT: 0, hint: '', near: null, wantReload: false, sl: null, cam: null };
       if (this.level) this.level.resolve(pl, pl.r); this.players.push(pl); this.players.sort((a, b) => a.slot - b.slot);
@@ -2004,7 +2214,7 @@ async function startGame() {
     /* ------------------------------ Simulación ------------------------------ */
     step(dt) {
       const lv = this.level; this.syncPlayers();
-      for (const pl of this.players) this.updPlayer(pl, dt);
+      for (const pl of this.players) { if (!pl.fig.glb) { const o = OPERATORS[pl.slot]; if (this.app.squad.assets[o.id]) this.app.squad.attachTo(pl.fig, o.id, o.h); } this.updPlayer(pl, dt); }   // el GLB puede llegar con la partida empezada
       for (let i = this.enemies.length - 1; i >= 0; i--) if (!this.updEnemy(this.enemies[i], dt)) { this.world.remove(this.enemies[i].fig.root); this.enemies.splice(i, 1); }
       // Separación entre cuerpos
       const ents = [...this.enemies.filter(e => e.alive), ...this.players.filter(p => !p.downed)];
