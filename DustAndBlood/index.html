@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#140a05">
+  <meta name="description" content="Dust & Blood: Weird West Survivor — horda-survival cenital en un Oeste Oculto de pólvora, magia negra y forajidos malditos.">
+  <title>Dust &amp; Blood: Weird West Survivor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23140a05'/%3E%3Cpath d='M32 8l6 16h17l-14 10 5 17-14-10-14 10 5-17L9 24h17z' fill='%23c9a54a' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E">
+</head>
+<body>
+  <div id="app">
+    <!-- ============================ MENÚ PRINCIPAL ============================ -->
+    <section id="screen-main" class="screen menu active" aria-label="Menú principal">
+      <header class="topbar">
+        <div class="logo">
+          <span class="logo-main">DUST <em>&amp;</em> BLOOD</span>
+          <span class="logo-sub">Weird West Survivor</span>
+        </div>
+        <div class="topbar-right">
+          <div class="coin-badge" title="Monedas de Oro Maldito"><i class="coin"></i><span data-coins>0</span></div>
+          <button class="icon-btn" data-action="settings" aria-label="Ajustes">⚙</button>
+        </div>
+      </header>
+
+      <h2 class="section-title"><span>Elige tu Vanguardia</span></h2>
+      <div class="cards" id="cards"></div>
+
+      <div class="hero-info" id="hero-info"></div>
+
+      <nav class="main-actions">
+        <button class="btn btn-gold big" data-action="campaign">⚔ Campaña</button>
+        <button class="btn" data-action="armory">🔫 Armería</button>
+      </nav>
+
+      <div class="ad-wrap">
+        <span class="ad-label">Publicidad</span>
+        <ins class="adsbygoogle" data-slot-key="main" style="display:block" data-ad-format="auto" data-full-width-responsive="true"></ins>
+      </div>
+      <footer class="foot">Sin pagos reales · Toda la economía usa Monedas de Oro Maldito · Progreso guardado en este dispositivo</footer>
+    </section>
+
+    <!-- ============================ MAPA DE MISIONES ============================ -->
+    <section id="screen-map" class="screen menu" aria-label="Mapa de misiones">
+      <header class="topbar">
+        <button class="btn small" data-action="back">◀ Volver</button>
+        <h1 class="screen-title">Mapa de Campaña</h1>
+        <div class="coin-badge"><i class="coin"></i><span data-coins>0</span></div>
+      </header>
+      <p class="map-hint">Completa cada misión para desbloquear la siguiente. Rejugar una misión da el 60% de la recompensa.</p>
+      <div class="scenarios" id="scenarios"></div>
+      <div class="ad-wrap">
+        <span class="ad-label">Publicidad</span>
+        <ins class="adsbygoogle" data-slot-key="map" style="display:block" data-ad-format="auto" data-full-width-responsive="true"></ins>
+      </div>
+    </section>
+
+    <!-- ============================ ARMERÍA ============================ -->
+    <section id="screen-armory" class="screen menu" aria-label="Armería del Forajido">
+      <header class="topbar">
+        <button class="btn small" data-action="back">◀ Volver</button>
+        <h1 class="screen-title">Armería del Forajido</h1>
+        <div class="coin-badge"><i class="coin"></i><span data-coins>0</span></div>
+      </header>
+      <div class="weapons" id="weapons"></div>
+      <div class="ad-wrap">
+        <span class="ad-label">Publicidad</span>
+        <ins class="adsbygoogle" data-slot-key="armory" style="display:block" data-ad-format="auto" data-full-width-responsive="true"></ins>
+      </div>
+    </section>
+
+    <!-- ============================ RESUMEN DE MISIÓN ============================ -->
+    <section id="screen-summary" class="screen menu" aria-label="Resumen de misión">
+      <div class="summary" id="summary"></div>
+      <div class="ad-wrap">
+        <span class="ad-label">Publicidad</span>
+        <ins class="adsbygoogle" data-slot-key="summary" style="display:block" data-ad-format="auto" data-full-width-responsive="true"></ins>
+      </div>
+    </section>
+
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-box" id="modal-box"></div></div>
+  </div>
+
+  <!-- ============================ PARTIDA (sin anuncios) ============================ -->
+  <div id="game-root" class="hidden">
+    <canvas id="game"></canvas>
+    <div id="levelup" class="overlay hidden">
+      <div class="overlay-box">
+        <h2 class="overlay-title">¡Subes de nivel!</h2>
+        <p class="overlay-sub">Elige una mejora (teclas 1 · 2 · 3)</p>
+        <div class="upgrade-list" id="upgrade-list"></div>
+      </div>
+    </div>
+    <div id="pause" class="overlay hidden">
+      <div class="overlay-box">
+        <h2 class="overlay-title">Pausa</h2>
+        <div class="pause-actions">
+          <button class="btn btn-gold big" data-action="resume">Continuar</button>
+          <button class="btn" data-action="toggle-sound">Sonido: <b data-sound>Sí</b></button>
+          <button class="btn" data-action="toggle-aim">Apuntado: <b data-aim>Auto</b></button>
+          <button class="btn btn-red" data-action="abandon">Abandonar misión</button>
+        </div>
+        <p class="overlay-sub controls-help">WASD/Flechas mover · Ratón apuntar · Q/Clic dcho. habilidad · Espacio Racha de Pólvora · Esc pausa</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <noscript><p style="color:#fff;padding:2em">Este juego necesita JavaScript.</p></noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
