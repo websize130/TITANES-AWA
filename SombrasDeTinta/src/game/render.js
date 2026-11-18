@@ -1,7 +1,9 @@
 // Render con claroscuro: el mundo se pinta completo y luego una capa de oscuridad con trama de semitono
 // se "recorta" con las fuentes de luz (farol del forajido, faroles de gas, fuego, explosiones, fogonazos).
 // Encima, en aditivo, balas, chispas y ojos de la horda brillando en la penumbra.
-import { HALF, BK, EK, PK, PT, ZK } from './engine.js';
+import { HX, HY, BK, EK, PK, PT, ZK } from './engine.js';
+import { ZONES } from '../data/story.js';
+import { pokerFace } from '../art/cardArt.js';
 import { drawHud } from './hud.js';
 import { makeCanvas, INK, TAU, halftonePattern, skull as skullArt } from '../art/ink.js';
 import { balloon } from '../art/comicPage.js';
@@ -88,9 +90,11 @@ function bubbleImg(text, scream) {
   const key = (scream ? '!' : '') + text;
   let b = bubbleCache.get(key);
   if (b) return b;
-  const c = makeCanvas(260, 110), x = c.getContext('2d');
-  const m = balloon(x, text, 130, 46, 170, 13, 118, 100, scream);
-  b = { c, w: 260, h: 110 }; b.m = m;
+  const long = text.length > 34;
+  const W = long ? 380 : 260, H = long ? 150 : 110;
+  const c = makeCanvas(W, H), x = c.getContext('2d');
+  const m = balloon(x, text, W / 2, long ? 62 : 46, long ? 240 : 170, 13, W / 2 - 12, H - 10, scream);
+  b = { c, w: W, h: H }; b.m = m;
   if (bubbleCache.size > 80) bubbleCache.clear();
   bubbleCache.set(key, b);
   return b;
@@ -107,13 +111,45 @@ export function renderGame(g, dt) {
   g.lightN = 0;
 
   ctx.setTransform(S, 0, 0, S, tx, ty); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = g.groundPattern; ctx.fillRect(vx0, vy0, vx1 - vx0, vy1 - vy0);
+  if (g.zoned) {
+    // comarca por zonas: pueblo · cementerio · mina, unidas por un camino de tierra
+    for (let i = 0; i < ZONES.length; i++) {
+      const z = ZONES[i], zx0 = Math.max(vx0, z.x0 * HX - (i ? 0 : 400)), zx1 = Math.min(vx1, z.x1 * HX + (i === ZONES.length - 1 ? 400 : 0));
+      if (zx1 <= zx0) continue;
+      ctx.fillStyle = g.groundPatterns[i]; ctx.fillRect(zx0, vy0, zx1 - zx0, vy1 - vy0);
+    }
+    for (let i = 1; i < ZONES.length; i++) {
+      const bx = ZONES[i].x0 * HX;
+      if (bx < vx0 - 80 || bx > vx1 + 80) continue;
+      ctx.fillStyle = 'rgba(10,6,4,0.35)'; ctx.fillRect(bx - 50, vy0, 100, vy1 - vy0);
+      ctx.fillStyle = 'rgba(10,6,4,0.25)'; ctx.fillRect(bx - 90, vy0, 180, vy1 - vy0);
+    }
+    ctx.strokeStyle = 'rgba(90,66,44,0.55)'; ctx.lineWidth = 70; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    const x0 = Math.max(-HX, vx0 - 50), x1 = Math.min(HX, vx1 + 50);
+    for (let x = x0; x <= x1; x += 40) { const y = g.roadY(x); if (x === x0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(20,12,6,0.35)'; ctx.lineWidth = 2; ctx.setLineDash([14, 22]);
+    ctx.beginPath(); for (let x = x0; x <= x1; x += 40) { const y = g.roadY(x) + 18; if (x === x0) ctx.moveTo(x, y); else ctx.lineTo(x, y); } ctx.stroke();
+    ctx.setLineDash([]);
+  } else { ctx.fillStyle = g.groundPatterns[0]; ctx.fillRect(vx0, vy0, vx1 - vx0, vy1 - vy0); }
   ctx.fillStyle = 'rgba(2,1,1,0.9)';
-  const L = HALF + 50;
-  if (vx0 < -L) ctx.fillRect(vx0, vy0, -L - vx0, vy1 - vy0);
-  if (vx1 > L) ctx.fillRect(L, vy0, vx1 - L, vy1 - vy0);
-  if (vy0 < -L) ctx.fillRect(vx0, vy0, vx1 - vx0, -L - vy0);
-  if (vy1 > L) ctx.fillRect(vx0, L, vx1 - vx0, vy1 - L);
+  const LX = HX + 50, LY = HY + 50;
+  if (vx0 < -LX) ctx.fillRect(vx0, vy0, -LX - vx0, vy1 - vy0);
+  if (vx1 > LX) ctx.fillRect(LX, vy0, vx1 - LX, vy1 - vy0);
+  if (vy0 < -LY) ctx.fillRect(vx0, vy0, vx1 - vx0, -LY - vy0);
+  if (vy1 > LY) ctx.fillRect(vx0, LY, vx1 - vx0, vy1 - LY);
+
+  // anillo de tinta del alcance de disparo
+  {
+    const R = g.range();
+    ctx.save();
+    ctx.globalAlpha = 0.32; ctx.strokeStyle = '#0a0605'; ctx.lineWidth = 3; ctx.setLineDash([10, 9]); ctx.lineDashOffset = -t * 12;
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, R, R * 0.62, 0, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = 0.18; ctx.strokeStyle = g.pal.glow; ctx.lineWidth = 1.2; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, R - 3, R * 0.62 - 2, 0, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
 
   // manchas
   const D = g.decals;
@@ -165,6 +201,20 @@ export function renderGame(g, dt) {
         ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.45 * a; ctx.drawImage(sp.glow('#c8b8ff'), z.x - z.r, z.y - z.r * 0.6, z.r * 2, z.r * 1.2); ctx.globalCompositeOperation = 'source-over';
         break;
       }
+      case ZK.INK: {
+        const a = Math.min(1, z.life * 3, (z.max - z.life) * 1.5);
+        ctx.globalAlpha = 0.85 * a; ctx.fillStyle = '#07060c';
+        ctx.beginPath(); ctx.ellipse(z.x, z.y, z.r, z.r * 0.6, 0, 0, TAU); ctx.fill();
+        ctx.globalAlpha = 0.5 * a; ctx.fillStyle = '#1a1830'; ctx.beginPath(); ctx.ellipse(z.x - z.r * 0.25, z.y - z.r * 0.15, z.r * 0.35, z.r * 0.15, -0.2, 0, TAU); ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+      }
+      case ZK.CONE: {
+        ctx.globalAlpha = 0.18 + 0.25 * ((t * 8) % 1); ctx.fillStyle = '#3a1a7a';
+        ctx.beginPath(); ctx.moveTo(z.x, z.y); ctx.arc(z.x, z.y, z.r, z.ang - z.len / 2, z.ang + z.len / 2); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+      }
       case ZK.CHARGE:
         ctx.globalAlpha = 0.25 + 0.35 * ((t * 10) % 1);
         ctx.setTransform(S * Math.cos(z.ang), S * Math.sin(z.ang), -S * Math.sin(z.ang), S * Math.cos(z.ang), tx + z.x * S, ty + z.y * S);
@@ -188,7 +238,7 @@ export function renderGame(g, dt) {
     if (tr.x < vx0 - 80 || tr.x > vx1 + 80 || tr.y < vy0 - 40 || tr.y > vy1 + 140) continue;
     let s;
     if (tr.kind === 'bear') { s = sp.prop(tr.armed ? 'beartrap_open' : 'beartrap_closed'); ctx.globalAlpha = tr.armed && !tr.owned ? 0.5 : 1; }
-    else if (tr.kind === 'lantern') { s = sp.prop(tr.dead ? 'lantern_broken' : 'lantern_lit'); if (!tr.dead) addLight(g, tr.x + 18, tr.y - 70, 210 + Math.sin(t * 9 + i) * 8, 1); }
+    else if (tr.kind === 'lantern') { s = sp.prop(tr.dead ? 'lantern_broken' : 'lantern_lit'); if (!tr.dead) addLight(g, tr.x + 21, tr.y - 84, 210 + Math.sin(t * 9 + i) * 8, 1); }
     else if (tr.kind === 'barrel') { if (tr.dead) continue; s = sp.prop('dynbarrel'); }
     else { if (tr.dead) continue; s = sp.prop('cover_' + tr.variant + '_' + tr.phase); }
     ctx.drawImage(s.canvas, tr.x - s.ox, tr.y - s.oy, s.w, s.h);
@@ -209,6 +259,14 @@ export function renderGame(g, dt) {
   for (let i = 0; i < g.items.n; i++) {
     const it = IT[i];
     if (it.x < vx0 || it.x > vx1 || it.y < vy0 || it.y > vy1) continue;
+    if (it.kind === PK.CARD) {
+      const f = pokerFace({ r: it.cr, s: it.cs }, 16, sp.res), wob = Math.sin(t * 4 + i) * 0.25;
+      ctx.save(); ctx.translate(it.x, it.y - 14 + Math.sin(t * 5 + i) * 3); ctx.rotate(wob);
+      ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(sp.glow('#ffcf6a'), -18, -20, 36, 40); ctx.globalCompositeOperation = 'source-over';
+      ctx.drawImage(f, -8, -11, 16, 22.4); ctx.restore();
+      addLight(g, it.x, it.y - 14, 60, 0.6);
+      continue;
+    }
     const bob = Math.sin(t * 5 + i) * 2, ic = it.kind === PK.HEAL ? icons.heal : it.kind === PK.BIGSOUL ? icons.bigsoul : icons.soul;
     ctx.drawImage(ic.c, it.x - ic.w / 2, it.y - ic.h / 2 - 8 + bob, ic.w, ic.h);
   }
@@ -240,6 +298,18 @@ export function renderGame(g, dt) {
   ctx.globalAlpha = 1; ctx.setTransform(S, 0, 0, S, tx, ty);
   // corazas
   for (let i = 0; i < n; i++) { const e = E[i]; if (e.dead || e.maxArmor <= 0 || e.armor <= 0 || e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1) continue; ctx.fillStyle = INK; ctx.fillRect(e.x - 15, e.y - e.spr.oy - 6, 30, 5); ctx.fillStyle = '#b8c0c8'; ctx.fillRect(e.x - 14, e.y - e.spr.oy - 5, 28 * (e.armor / e.maxArmor), 3); }
+  // horda aterrada por los chistes
+  for (let i = 0; i < n; i++) {
+    const e = E[i];
+    if (e.dead || e.fearT <= 0 || e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1) continue;
+    const yy = e.y - e.spr.oy - 10 + Math.sin(t * 16 + e.uid) * 2;
+    ctx.fillStyle = '#fbf6ea'; ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(e.x, yy, 8, 9, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#9a140e'; ctx.font = font(12, 'T'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', e.x, yy + 1);
+  }
+  // aturdimiento y tinta pegajosa en el forajido
+  if (p.stunT > 0) for (let k = 0; k < 3; k++) { const a = t * 6 + k * 2.1; ctx.fillStyle = '#ffe08a'; ctx.font = font(12, 'T'); ctx.fillText('✦', p.x + Math.cos(a) * 16, p.y - 78 + Math.sin(a) * 5); }
+  if (p.inkT > 0) { ctx.fillStyle = 'rgba(10,8,20,0.7)'; for (let k = 0; k < 4; k++) ctx.fillRect(p.x - 12 + k * 7, p.y - 6 + ((t * 30 + k * 7) % 10), 3, 6); }
   // cuervos y sombras gemelas
   for (const c of g.crows) ctx.drawImage(icons.crow.c, c.x - 14, c.y - 9 + Math.sin(t * 14) * 2, 28, 18);
   if (g.st.shadows) {
@@ -322,6 +392,7 @@ export function renderGame(g, dt) {
     }
     const gr = b.r * 3;
     ctx.drawImage(sp.glow(b.color), b.x - gr, b.y - gr, gr * 2, gr * 2);
+    if (b.kind === EK.INK) { ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = '#07060c'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(160,140,255,0.5)'; ctx.fillRect(b.x - 2, b.y - 3, 2, 2); ctx.globalCompositeOperation = 'lighter'; continue; }
     if (b.kind === EK.PAGE) { ctx.globalCompositeOperation = 'source-over'; ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.t * 6); ctx.drawImage(icons.page.c, -8, -9, 16, 18); ctx.restore(); ctx.globalCompositeOperation = 'lighter'; continue; }
     ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.55, 0, TAU); ctx.fill();
   }
@@ -372,7 +443,7 @@ export function renderGame(g, dt) {
     const sx = (b.x - camX) * g.scale + g.w / 2, sy = (b.y - camY) * g.scale + g.h / 2;
     const k = b.life / b.max, a = Math.min(1, b.life * 8, (1 - k) * 5);
     ctx.globalAlpha = a;
-    ctx.drawImage(img.c, sx - 118, sy - 100, img.w, img.h);
+    ctx.drawImage(img.c, sx - img.w / 2 + 12, sy - img.h + 10, img.w, img.h);
   }
   ctx.globalAlpha = 1;
 

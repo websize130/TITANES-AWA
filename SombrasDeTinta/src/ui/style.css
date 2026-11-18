@@ -55,7 +55,8 @@ button { font-family: inherit; }
 .tagline { font-size: clamp(13px, 2vw, 17px); color: var(--bone); margin: 22px 0 26px; text-shadow: 2px 2px 0 var(--ink); }
 
 /* ------------------------------------------------ dossiers */
-.dossiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.dossiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.alias.temper { background: var(--blood); }
 .dossier {
   position: relative; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink);
   padding: 12px 12px 14px; transform: rotate(var(--rot, 0deg)); transition: transform 0.15s;
@@ -162,10 +163,17 @@ button { font-family: inherit; }
 .overlay-box { width: min(900px, 100%); text-align: center; }
 .overlay-title { margin: 0; font-family: var(--ft); font-weight: normal; font-size: clamp(26px, 6vw, 46px); color: var(--paper); text-shadow: 4px 4px 0 var(--ink), 0 0 26px rgba(196, 26, 18, 0.6); }
 .overlay-sub { color: var(--muted); margin: 6px 0 16px; } .overlay-sub.small { font-size: 12px; margin-top: 16px; }
-.draft-cards { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-.draft-cards canvas { cursor: pointer; transition: transform 0.12s; filter: drop-shadow(6px 6px 0 #000); }
-.draft-cards canvas:hover { transform: translateY(-8px) rotate(-1.5deg); }
-.draft-cards .slot { display: grid; gap: 6px; justify-items: center; color: var(--muted); font-size: 12px; }
+.draft-cards { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; perspective: 900px; }
+/* Microinteracciones de las cartas de tarot: reparto escalonado, elevación suave y sombra profunda al pasar el cursor */
+.tarot { cursor: pointer; border-radius: 10px; transition: transform 0.22s cubic-bezier(.2, .9, .3, 1.3), filter 0.22s ease, box-shadow 0.22s ease;
+  filter: drop-shadow(4px 6px 0 #000); }
+.tarot:hover, .tarot:focus-visible { transform: translateY(-16px) rotate(-1.2deg) scale(1.03);
+  filter: drop-shadow(0 26px 22px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 14px rgba(255, 170, 70, 0.25)); }
+.tarot:active { transform: translateY(-6px) scale(0.98); }
+.draft-cards .slot { display: grid; gap: 8px; justify-items: center; color: var(--muted); font-size: 12px; animation: deal 0.45s cubic-bezier(.2, .9, .3, 1.2) both; animation-delay: calc(var(--i) * 0.09s); }
+.draft-cards .slot.r4 .tarot { filter: drop-shadow(4px 6px 0 #000) drop-shadow(0 0 18px rgba(255, 140, 40, 0.45)); }
+.draft-cards .slot.r3 .tarot { filter: drop-shadow(4px 6px 0 #000) drop-shadow(0 0 14px rgba(180, 210, 255, 0.35)); }
+@keyframes deal { from { opacity: 0; transform: translateY(60px) rotate(8deg) scale(0.85); } to { opacity: 1; transform: none; } }
 
 @media (max-width: 720px) {
   .dossiers { grid-template-columns: 1fr; }

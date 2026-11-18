@@ -1,5 +1,5 @@
 // IA de la horda y de los Colosos de Élite. Estado en los objetos del pool; sin asignaciones por frame.
-import { HALF, EK, ZK, PT } from './engine.js';
+import { HX, HY, EK, ZK, PT } from './engine.js';
 import { zombieVsCovers } from './traps.js';
 import { Sfx } from '../core/audio.js';
 import { TAU } from '../art/ink.js';
@@ -33,6 +33,7 @@ export function updateZombies(g, dt) {
     const slow = e.slowT > 0 ? 0.6 : 1;
     if (e.slowT > 0) e.slowT -= dt;
     if (e.stunT > 0) e.stunT -= dt;
+    if (e.fearT > 0) e.fearT -= dt;
     if (e.rootT > 0) e.rootT -= dt;
     const frozen = e.stunT > 0 || e.rootT > 0;
     let tx = p.x, ty = p.y;
@@ -40,7 +41,41 @@ export function updateZombies(g, dt) {
     const sp = frozen ? 0 : e.speed * slow * spdK;
 
     if (e.colossus) updateColossus(g, e, frozen ? 0 : dt);
-    else switch (e.type) {
+    else if (e.fearT > 0) { // aterrado por un chiste: huye
+      const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy) || 1;
+      e.x += (dx / d) * sp * 0.9 * dt; e.y += (dy / d) * sp * 0.9 * dt; e.face = dx > 0 ? 1 : -1;
+    } else switch (e.type) {
+      case 'hound': { // zig-zag y flanqueo: rodea al objetivo antes de morder
+        const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy) || 1;
+        const side = d > 90 ? 0.9 * e.flank : 0.15 * e.flank, zz = Math.sin(g.time * 7 + e.uid) * 0.55;
+        const nx = dx / d, ny = dy / d, px = -ny * (side + zz), py = nx * (side + zz);
+        const mx = nx + px, my = ny + py, ml = Math.hypot(mx, my) || 1;
+        e.x += (mx / ml) * sp * dt; e.y += (my / ml) * sp * dt; e.face = dx > 0 ? 1 : -1;
+        if (Math.random() < dt * 0.4) e.flank = -e.flank;
+        break;
+      }
+      case 'spider': // enjambre: avanzan en grupo con un temblor nervioso
+        chase(e, tx + Math.sin(g.time * 11 + e.uid) * 24, ty + Math.cos(g.time * 9 + e.uid * 1.3) * 24, sp, dt);
+        break;
+      case 'abomination': {
+        const S = e.def.spit, d = Math.hypot(tx - e.x, ty - e.y);
+        e.atkT -= dt;
+        if (e.state === 1) { // apunta y escupe bilis de tinta en cono
+          e.stateT -= dt;
+          if (e.stateT <= 0) {
+            e.state = 0; e.atkT = S.cd;
+            for (let k = 0; k < S.count; k++) g.addEBullet(e.x + e.face * 20, e.y - 40, e.ang + (k - (S.count - 1) / 2) * (S.cone / (S.count - 1)), S.speed * (0.85 + Math.random() * 0.3), e.dmg * 0.6, 8, 1.6, '#3a2a6a', EK.INK);
+            Sfx.play('groan');
+          }
+        } else {
+          if (d > S.range * 0.75) chase(e, tx, ty, sp, dt);
+          if (d < S.range && e.atkT <= 0 && !frozen) {
+            e.state = 1; e.stateT = 0.6; e.ang = Math.atan2(ty - 20 - (e.y - 40), tx - e.x);
+            const z = g.addZone(ZK.CONE, e.x, e.y - 20, S.range, 0.6, 0, '#5a3aaa', 0); if (z) { z.ang = e.ang; z.len = S.cone; }
+          }
+        }
+        break;
+      }
       case 'runner':
         chase(e, tx + Math.sin(g.time * 3 + e.uid) * 30, ty, sp, dt);
         break;
@@ -67,9 +102,8 @@ export function updateZombies(g, dt) {
     }
 
     e.x += e.vx * dt; e.y += e.vy * dt; e.vx *= damp; e.vy *= damp;
-    const lim = HALF + 120;
-    if (e.x < -lim) e.x = -lim; else if (e.x > lim) e.x = lim;
-    if (e.y < -lim) e.y = -lim; else if (e.y > lim) e.y = lim;
+    if (e.x < -HX - 120) e.x = -HX - 120; else if (e.x > HX + 120) e.x = HX + 120;
+    if (e.y < -HY - 120) e.y = -HY - 120; else if (e.y > HY + 120) e.y = HY + 120;
     zombieVsCovers(g, e, dt);
     for (let k = 0; k < g.structs.length; k++) {
       const s = g.structs[k];
@@ -78,9 +112,9 @@ export function updateZombies(g, dt) {
       if (d < m) { e.x = s.x + (dx / d) * m; e.y = s.y + (dy / d) * m; if (e.target === s) s.hp -= e.dmg * 0.7 * dt * g.objective.dmgMult; }
     }
     if (!e.colossus) g.grid.insert(e);
-    if (e.stunT <= 0) {
+    if (e.stunT <= 0 && e.fearT <= 0) {
       const dx = p.x - e.x, dy = p.y - e.y, rr = e.r + p.r;
-      if (dx * dx + dy * dy < rr * rr) g.hurtPlayer(e.dmg);
+      if (dx * dx + dy * dy < rr * rr) { g.hurtPlayer(e.dmg); if (e.def.stun) g.stunPlayer(e.def.stun); }
     }
   }
   separate(g);
@@ -164,7 +198,7 @@ function updateColossus(g, e, dt) {
       if (e.subT < 0.4) e.alpha = Math.max(0.05, 1 - e.subT / 0.4);
       else if (e.state === 0) {
         e.state = 1; const a = Math.random() * TAU;
-        e.x = Math.max(-HALF + 60, Math.min(HALF - 60, p.x + Math.cos(a) * 230)); e.y = Math.max(-HALF + 60, Math.min(HALF - 60, p.y + Math.sin(a) * 230));
+        e.x = Math.max(-HX + 60, Math.min(HX - 60, p.x + Math.cos(a) * 230)); e.y = Math.max(-HY + 60, Math.min(HY - 60, p.y + Math.sin(a) * 230));
         for (let i = 0; i < 16; i++) g.addPart(e.x, e.y - 50, (Math.random() - 0.5) * 260, (Math.random() - 0.5) * 260, 0.6, 5, col, PT.EMBER, true);
       } else {
         e.alpha = Math.min(1, (e.subT - 0.4) / 0.4);

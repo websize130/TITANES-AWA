@@ -2,8 +2,8 @@
 import { INK, poly, blob, ellipse, circle, line, star, skull, glow, shade, rgba, makeRng, makeCanvas, beginArt, hatch, hatchPoly, TAU } from './ink.js';
 import { MAPS } from '../data/story.js';
 
-export function makeGround(mapId) {
-  const T = MAPS[mapId], S = 512;
+export function makeGround(mapId, T = MAPS[mapId]) {
+  const S = 512;
   const c = makeCanvas(S, S), ctx = c.getContext('2d');
   const r = makeRng(mapId.length * 977 + 31);
   ctx.fillStyle = T.ground; ctx.fillRect(0, 0, S, S);
@@ -93,8 +93,20 @@ function beartrap_closed() {
   c.fillStyle = '#9a9a9a'; for (let x = -12; x <= 12; x += 4) { c.beginPath(); c.moveTo(x, -8); c.lineTo(x + 2, -2); c.lineTo(x + 4, -8); c.fill(); }
   c.fillStyle = 'rgba(90,10,10,0.7)'; c.fillRect(-6, -10, 8, 4);
 }
-function lantern_lit() { const c = this; poly(c, [-3, 0, -3, -78, 3, -78, 3, 0], IRON); line(c, 0, -78, 18, -82, IRON, 3); poly(c, [10, -84, 26, -84, 24, -102, 12, -102], '#2a2a2e', 2.5, 0); c.fillStyle = '#ffe08a'; c.fillRect(13, -100, 10, 14); poly(c, [8, -104, 28, -104, 18, -112], '#2a2a2e', 2, 0); }
-function lantern_broken() { const c = this; poly(c, [-3, 0, -3, -78, 3, -78, 3, 0], IRON); line(c, 0, -78, 18, -84, IRON, 3); poly(c, [10, -84, 20, -86, 16, -96], '#1a1a1c', 2, 0); }
+// farol colgante: poste, brazo, cadena y lámpara de gas
+function lantern_lit() {
+  const c = this;
+  poly(c, [-3, 0, -3, -112, 3, -112, 3, 0], IRON); line(c, 0, -106, 26, -110, IRON, 3.5); line(c, 0, -94, 12, -108, IRON, 2);
+  c.strokeStyle = '#6a6a70'; c.lineWidth = 1.5; c.beginPath(); for (let y = -108; y < -96; y += 3) { c.moveTo(20, y); c.lineTo(22, y + 2); } c.stroke();
+  poly(c, [13, -96, 29, -96, 27, -78, 15, -78], '#2a2a2e', 2.5, 0); c.fillStyle = '#ffe08a'; c.fillRect(16, -93, 10, 13);
+  poly(c, [11, -96, 31, -96, 21, -103], '#2a2a2e', 2, 0); poly(c, [15, -78, 27, -78, 21, -73], '#2a2a2e', 2, 0);
+}
+function lantern_broken() {
+  const c = this;
+  poly(c, [-3, 0, -3, -112, 3, -112, 3, 0], IRON); line(c, 0, -106, 26, -110, IRON, 3.5);
+  c.strokeStyle = '#6a6a70'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(20, -108); c.lineTo(23, -98); c.stroke();
+  poly(c, [16, -98, 26, -96, 22, -90], '#1a1a1c', 2, 0);
+}
 function dynbarrel() {
   const c = this;
   poly(c, [-17, 0, -19, -16, -17, -40, 17, -40, 19, -16, 17, 0], '#8a1a10');
@@ -108,7 +120,14 @@ function coverDraw(c, kind, phase) {
   const r = makeRng(kind.length * 13 + phase);
   const miss = phase * 0.28;
   ellipse(c, 0, 0, 52, 12, 'rgba(0,0,0,0.45)', 0);
-  if (kind === 'wagon') {
+  if (kind === 'tomb') {
+    const pts = [-34, 0, -34, -52, -26, -68, 0, -76, 26, -68, 34, -52, 34, 0];
+    poly(c, pts, phase > 1 ? '#3a3a3e' : STONE2);
+    hatchPoly(c, pts, 4, 'rgba(0,0,0,0.35)', 1, phase > 0);
+    line(c, 0, -60, 0, -26, INK, 3); line(c, -10, -48, 10, -48, INK, 3);
+    c.font = 'bold 9px "Courier Prime", monospace'; c.textAlign = 'center'; c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillText('R.I.P.', 0, -14);
+    if (phase > 0) { c.fillStyle = '#1a1a1c'; for (let i = 0; i < phase * 3; i++) { const x = (r() - 0.5) * 60, y = -r() * 70; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 6, y + 4); c.lineTo(x + 1, y + 9); c.fill(); } }
+  } else if (kind === 'wagon') {
     poly(c, [-50, 0, -54, -46, 50, -46, 54, 0], phase > 1 ? shade(WOOD, -0.2) : WOOD);
     for (let x = -46; x < 50; x += 12) if (r() > miss) poly(c, [x, -44, x + 10, -44, x + 10, -2, x, -2], WOOD2, 1.5, 0);
     circle(c, -34, -4, 14, '#2a1e14', 3); if (phase < 2) circle(c, 34, -4, 14, '#2a1e14', 3);
@@ -121,12 +140,18 @@ function coverDraw(c, kind, phase) {
     for (let i = 0; i < 5; i++) { if (r() < miss) continue; const y = -8 - i * 9; poly(c, [-52, y + 3, 52, y - 3, 52, y - 10, -52, y - 4], i % 2 ? WOOD : WOOD2, 2, 0); }
     poly(c, [-44, 0, -40, -54, -34, -54, -36, 0], WOOD); poly(c, [36, 0, 34, -54, 40, -54, 44, 0], WOOD);
   }
+  // fase 2: chamuscada y humeante
+  if (phase === 2 && kind !== 'tomb') {
+    c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(10,6,4,0.45)'; c.fillRect(-60, -80, 120, 90); c.globalCompositeOperation = 'source-over';
+    for (let i = 0; i < 6; i++) glowDot(c, (r() - 0.5) * 80, -r() * 40, '#ff6a1a');
+  }
   // astillas y grietas
   c.strokeStyle = INK; c.lineWidth = 1.5;
   for (let i = 0; i < phase * 7; i++) { const x = (r() - 0.5) * 90, y = -r() * 46; c.beginPath(); c.moveTo(x, y); c.lineTo(x + (r() - 0.5) * 16, y + r() * 12); c.stroke(); }
   c.fillStyle = '#c8a878';
   for (let i = 0; i < phase * 6; i++) c.fillRect((r() - 0.5) * 100, -r() * 8, 5, 2);
 }
+function glowDot(c, x, y, col) { glow(c, x, y, 7, col, 0.9); c.fillStyle = '#ffd27a'; c.fillRect(x - 1, y - 1, 2, 2); }
 function refuge() {
   const c = this;
   ellipse(c, 0, 2, 120, 26, 'rgba(0,0,0,0.5)', 0);
@@ -142,7 +167,7 @@ const PROPS = { gravecross, deadtree, rock, fence, skullpile, post, barrel, crat
 export const PROP_SIZE = {
   gravecross: [44, 60], deadtree: [70, 116], rock: [76, 50], fence: [84, 44], skullpile: [56, 34], post: [110, 86], barrel: [44, 48], crate: [64, 56],
   wheel: [64, 40], tomb: [40, 52], pew: [90, 44], beam: [76, 86], cart: [80, 64], ore: [60, 34], reeds: [56, 66], stump: [40, 32], bones: [52, 26],
-  gallows: [150, 190], well: [74, 76], beartrap_open: [48, 22], beartrap_closed: [40, 24], lantern_lit: [40, 116], lantern_broken: [40, 100],
+  gallows: [150, 190], well: [74, 76], beartrap_open: [48, 22], beartrap_closed: [40, 24], lantern_lit: [40, 120], lantern_broken: [40, 120],
   dynbarrel: [44, 54], refuge: [240, 240],
 };
 

@@ -68,7 +68,8 @@ button { font-family: inherit; }
 .tagline { font-size: clamp(13px, 2vw, 17px); color: var(--bone); margin: 22px 0 26px; text-shadow: 2px 2px 0 var(--ink); }
 
 /* ------------------------------------------------ dossiers */
-.dossiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.dossiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.alias.temper { background: var(--blood); }
 .dossier {
   position: relative; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink);
   padding: 12px 12px 14px; transform: rotate(var(--rot, 0deg)); transition: transform 0.15s;
@@ -175,10 +176,17 @@ button { font-family: inherit; }
 .overlay-box { width: min(900px, 100%); text-align: center; }
 .overlay-title { margin: 0; font-family: var(--ft); font-weight: normal; font-size: clamp(26px, 6vw, 46px); color: var(--paper); text-shadow: 4px 4px 0 var(--ink), 0 0 26px rgba(196, 26, 18, 0.6); }
 .overlay-sub { color: var(--muted); margin: 6px 0 16px; } .overlay-sub.small { font-size: 12px; margin-top: 16px; }
-.draft-cards { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-.draft-cards canvas { cursor: pointer; transition: transform 0.12s; filter: drop-shadow(6px 6px 0 #000); }
-.draft-cards canvas:hover { transform: translateY(-8px) rotate(-1.5deg); }
-.draft-cards .slot { display: grid; gap: 6px; justify-items: center; color: var(--muted); font-size: 12px; }
+.draft-cards { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; perspective: 900px; }
+/* Microinteracciones de las cartas de tarot: reparto escalonado, elevación suave y sombra profunda al pasar el cursor */
+.tarot { cursor: pointer; border-radius: 10px; transition: transform 0.22s cubic-bezier(.2, .9, .3, 1.3), filter 0.22s ease, box-shadow 0.22s ease;
+  filter: drop-shadow(4px 6px 0 #000); }
+.tarot:hover, .tarot:focus-visible { transform: translateY(-16px) rotate(-1.2deg) scale(1.03);
+  filter: drop-shadow(0 26px 22px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 14px rgba(255, 170, 70, 0.25)); }
+.tarot:active { transform: translateY(-6px) scale(0.98); }
+.draft-cards .slot { display: grid; gap: 8px; justify-items: center; color: var(--muted); font-size: 12px; animation: deal 0.45s cubic-bezier(.2, .9, .3, 1.2) both; animation-delay: calc(var(--i) * 0.09s); }
+.draft-cards .slot.r4 .tarot { filter: drop-shadow(4px 6px 0 #000) drop-shadow(0 0 18px rgba(255, 140, 40, 0.45)); }
+.draft-cards .slot.r3 .tarot { filter: drop-shadow(4px 6px 0 #000) drop-shadow(0 0 14px rgba(180, 210, 255, 0.35)); }
+@keyframes deal { from { opacity: 0; transform: translateY(60px) rotate(8deg) scale(0.85); } to { opacity: 1; transform: none; } }
 
 @media (max-width: 720px) {
   .dossiers { grid-template-columns: 1fr; }
@@ -279,7 +287,7 @@ button { font-family: inherit; }
 (function () {
 'use strict';
 // ---- src/data/heroes.js
-// Los tres forajidos: dossier de origen, pasiva única, carta de firma, armas y aspectos por hitos de nivel.
+// La Cuadrilla de los 4 Condenados: dossier, personalidad (frases), pasiva, carta de firma, armas y aspectos.
 // Hitos cada 10 niveles alternando: 10 aspecto · 20 arma · 30 aspecto · 40 arma · 50 aspecto legendario.
 
 const MAX_LEVEL = 50;
@@ -293,18 +301,18 @@ const MILESTONES = [
 
 const HEROES = [
   {
-    id: 'silas', name: 'Silas "El Tuerto" O\'Connor', short: 'Silas', alias: 'EL TUERTO',
-    role: 'Crítico a larga distancia · Resistencia',
-    lore: 'Cazó a cuarenta y dos hombres para la Compañía Ferroviaria. El cuarenta y tres fue su propio socio, que le vació un ojo y lo enterró vivo en Boot Hill. Silas salió de la tumba tres días después. Algo le devolvió el aliento… y ese algo todavía espera cobrarse la deuda.',
+    id: 'silas', name: 'Silas "El Tuerto" O\'Connor', short: 'Silas', alias: 'EL TUERTO', temper: 'Mal genio',
+    role: 'Escopeta de cono corto · Resistencia · Trampas',
+    lore: 'Cazó a cuarenta y dos hombres para la Compañía Ferroviaria. El cuarenta y tres fue su propio socio, que le vació un ojo y lo enterró vivo en Boot Hill. Salió de la tumba con más rabia que aliento. No da las gracias, no pide perdón y no falla a tres pasos.',
     panels: [
-      { scene: 'grave', cap: 'Boot Hill, 1879. Le cerraron la tapa del ataúd con un ojo menos y una bala de sobra.' },
-      { scene: 'eye', cap: 'Tres noches después, la tierra se abrió.' },
-      { scene: 'hero', cap: 'Ahora caza lo que ni la muerte quiere.', say: 'Me deben un ojo. Y pienso cobrarlo con intereses.' },
+      { scene: 'grave', cap: 'Boot Hill, 1879. Le cerraron la tapa del ataúd con un ojo menos y una deuda de más.' },
+      { scene: 'eye', cap: 'Tres noches después, la tierra escupió a un hombre de muy mal humor.' },
+      { scene: 'hero', cap: 'Ahora caza lo que ni la muerte quiere.', say: '¿Qué miras? ¿Nunca has visto a un muerto cabreado?' },
     ],
-    passive: { name: 'Ojo de la Muerte', desc: '+12% de crítico y los críticos hacen más daño cuanto más lejos está el blanco. +20% de vida máxima.' },
-    stats: { hp: 130, speed: 175, dmg: 1, crit: 0.17, critMult: 2.2, armor: 1, dodge: 0, closeBonus: 0, farCrit: true, trapMaster: false, luck: 0 },
-    signature: 'tuerto',
-    weapons: ['sharps', 'cyclops', 'leviathan'],
+    passive: { name: 'Mal Genio', desc: 'Con menos de la mitad de vida hace +35% de daño. +25% de vida máxima, +3 de armadura y empuje brutal. Las trampas no le hieren y hacen el doble de daño a la horda.' },
+    stats: { hp: 165, speed: 172, dmg: 1, crit: 0.06, critMult: 2, armor: 3, dodge: 0, closeBonus: 0.15, farCrit: false, trapMaster: true, luck: 0, rage: 0.35, kbMult: 1.4 },
+    signature: 'rabia',
+    weapons: ['sawn', 'grudge', 'badtemper'],
     skins: [
       { name: 'Cazarrecompensas Traicionado', pal: { coat: '#7a4a22', coatDark: '#4a2a12', hat: '#3e2614', band: '#1e120a', scarf: '#8a1c14', shirt: '#2a201a', pants: '#3a2c22', boots: '#3a2214', skin: '#b07a55', metal: '#c9a54a', patch: '#120a06', eye: '#ffcf6a', glow: '#ffb347', shot: '#ffd27a', core: '#fff4d6' } },
       { name: 'Abrigo del Verdugo', pal: { coat: '#5a1a10', coatDark: '#360c06', hat: '#1e0e08', band: '#8a1c14', scarf: '#2a0a06', shirt: '#1a120e', pants: '#2a1c16', boots: '#1e120a', skin: '#a8724e', metal: '#b8862e', patch: '#0a0604', eye: '#ff7a3a', glow: '#ff6a2a', shot: '#ff9a4a', core: '#fff0c0' } },
@@ -313,18 +321,18 @@ const HEROES = [
     ],
   },
   {
-    id: 'maeve', name: 'Maeve "La Sota de Picas" Duprat', short: 'Maeve', alias: 'LA SOTA DE PICAS',
-    role: 'Magia de control · Barajas arcanas · Suerte',
-    lore: 'Desplumó a tahúres de Nueva Orleans a San Francisco. Una noche, en un saloon sin nombre, un caballero de guantes rojos le ofreció una última mano. Maeve ganó la partida y perdió la sombra. Desde entonces, las cartas le obedecen… y los muertos la buscan por el olor a azufre.',
+    id: 'maeve', name: 'Maeve "La Sota de Picas" Duprat', short: 'Maeve', alias: 'LA SOTA DE PICAS', temper: 'Alocada',
+    role: 'Naipes explosivos · Ráfagas rápidas · Suerte',
+    lore: 'Desplumó a tahúres de Nueva Orleans a San Francisco. Una noche, un caballero de guantes rojos le ofreció una última mano. Maeve ganó la partida, perdió la sombra y se rió tan fuerte que el diablo se marchó sin despedirse. Desde entonces sus cartas estallan… y ella sigue riéndose.',
     panels: [
       { scene: 'devil', cap: 'Saloon sin nombre, medianoche. La apuesta: su sombra contra el bote del diablo.' },
-      { scene: 'cards', cap: 'Ganó. Pero al amanecer, el suelo no quiso devolverle la silueta.' },
-      { scene: 'hero', cap: 'Ahora reparte cartas que cortan como cuchillas.', say: 'La casa siempre gana, cariño. Y la casa soy yo.' },
+      { scene: 'cards', cap: 'Ganó. Al amanecer el suelo no quiso devolverle la silueta. A ella le hizo gracia.' },
+      { scene: 'hero', cap: 'Ahora reparte cartas que vuelan en pedazos.', say: '¡Hagan juego, señores! ¡La casa explota!' },
     ],
-    passive: { name: 'Mano Marcada', desc: 'Mejor probabilidad de cartas de rareza alta, las cartas de habilidad se recargan un 25% más rápido y un 12% de esquivar (no tiene sombra que golpear).' },
-    stats: { hp: 100, speed: 195, dmg: 1, crit: 0.06, critMult: 2, armor: 0, dodge: 0.12, closeBonus: 0, farCrit: false, trapMaster: false, luck: 1, cardCd: 0.75 },
+    passive: { name: 'Mano Marcada', desc: 'Mejor suerte en la rareza de las cartas, recarga de cartas de habilidad un 25% más rápida, 12% de esquiva (no tiene sombra que golpear) y encuentra un 60% más de naipes de tinta para el póker.' },
+    stats: { hp: 105, speed: 195, dmg: 1, crit: 0.08, critMult: 2, armor: 0, dodge: 0.12, closeBonus: 0, farCrit: false, trapMaster: false, luck: 1, cardCd: 0.75, pokerLuck: 0.6 },
     signature: 'deadhand',
-    weapons: ['cards', 'devildeck', 'pepperbox'],
+    weapons: ['cards', 'devildeck', 'judgement'],
     skins: [
       { name: 'La Sota de Picas', pal: { coat: '#5a1018', coatDark: '#360810', hat: '#160a0c', band: '#c9a54a', corset: '#120a0c', hair: '#2a140e', skin: '#c08a68', metal: '#c9a54a', lips: '#8a1018', eye: '#2a0a0a', glow: '#ff5a4a', shot: '#ffe8d0', core: '#ffffff', card: '#f2e6cc' } },
       { name: 'Reina de Corazones', pal: { coat: '#9a1a22', coatDark: '#5e0c12', hat: '#2a0a0e', band: '#ffd27a', corset: '#3a0a10', hair: '#5a1a0e', skin: '#c89070', metal: '#e8c25a', lips: '#c41a22', eye: '#3a0a0a', glow: '#ff3a4a', shot: '#ffd0d0', core: '#ffffff', card: '#ffe8e0' } },
@@ -333,67 +341,112 @@ const HEROES = [
     ],
   },
   {
-    id: 'caleb', name: 'Caleb Blackwood', short: 'Caleb', alias: 'EL PURGADOR',
-    role: 'Tanque · Corta distancia · Trampas letales',
-    lore: 'Predicó treinta años en la parroquia de Gallow\'s Rest. La noche en que los muertos subieron del cementerio, tocó la campana hasta sangrar mientras su rebaño ardía. Enterró la Biblia junto a su fe y desenterró la escopeta de su padre. Ahora reparte la extremaunción en calibre doce.',
+    id: 'caleb', name: 'Caleb Blackwood', short: 'Caleb', alias: 'EL POETA', temper: 'Melancólico',
+    role: 'Rifle monotiro de precisión · Críticos a distancia',
+    lore: 'Predicó treinta años en Gallow\'s Rest y escribía versos que nadie leía. La noche en que los muertos subieron del cementerio, tocó la campana hasta sangrar. Al alba enterró la Biblia, conservó el cuaderno y desenterró el rifle de su padre. Ahora cada disparo es una estrofa, y cada estrofa, un epitafio.',
     panels: [
       { scene: 'chapel', cap: 'Gallow\'s Rest. La campana sonó toda la noche. Nadie vino.' },
-      { scene: 'cross', cap: 'Al alba, de la parroquia solo quedaba la cruz… y un hombre con una escopeta.' },
-      { scene: 'hero', cap: 'Dios dejó de escuchar. Caleb no.', say: 'Polvo eres. Y yo te devolveré al polvo.' },
+      { scene: 'cross', cap: 'Al alba solo quedaba la cruz, un cuaderno de versos… y un rifle.' },
+      { scene: 'hero', cap: 'Escribe epitafios con pólvora.', say: 'La luna también sangra… y nadie le pone vendas.' },
     ],
-    passive: { name: 'Extremaunción', desc: '+35% de daño a corta distancia, +4 de armadura y vida extra. Las trampas y barriles hacen el doble de daño a la horda y no le hieren.' },
-    stats: { hp: 175, speed: 168, dmg: 1, crit: 0.05, critMult: 2, armor: 4, dodge: 0, closeBonus: 0.35, farCrit: false, trapMaster: true, luck: 0 },
-    signature: 'beartrap',
-    weapons: ['penance', 'psalm', 'purifier'],
+    passive: { name: 'Elegía', desc: '+14% de crítico y los críticos crecen con la distancia del blanco. Cada disparo de su rifle atraviesa a varios cuerpos.' },
+    stats: { hp: 120, speed: 180, dmg: 1, crit: 0.2, critMult: 2.2, armor: 1, dodge: 0, closeBonus: 0, farCrit: true, trapMaster: false, luck: 0 },
+    signature: 'verso',
+    weapons: ['whitworth', 'requiem', 'leviathan'],
     skins: [
-      { name: 'Predicador Purgador', pal: { coat: '#2a1c14', coatDark: '#160e08', hat: '#120a06', band: '#3a2618', collar: '#e8e2d4', shirt: '#1a1210', pants: '#2a2018', boots: '#24160c', skin: '#b08060', metal: '#b8a070', eye: '#ffd27a', glow: '#ffb347', shot: '#ffcf6a', core: '#fff4d6' } },
+      { name: 'Poeta de Luto', pal: { coat: '#2a1c14', coatDark: '#160e08', hat: '#120a06', band: '#3a2618', collar: '#e8e2d4', shirt: '#1a1210', pants: '#2a2018', boots: '#24160c', skin: '#b08060', metal: '#b8a070', eye: '#ffd27a', glow: '#ffb347', shot: '#ffcf6a', core: '#fff4d6' } },
       { name: 'Hábito de Ceniza', pal: { coat: '#5a4a3a', coatDark: '#3a2e24', hat: '#2a2018', band: '#7a6a5a', collar: '#d8d0c0', shirt: '#2a2018', pants: '#3a2e24', boots: '#2a1e14', skin: '#a8805e', metal: '#a89878', eye: '#ffcf8a', glow: '#ffc070', shot: '#ffe0a0', core: '#ffffff' } },
       { name: 'Cruzado del Plomo', pal: { coat: '#6a2a10', coatDark: '#401806', hat: '#2a1206', band: '#b8b8b0', collar: '#e8e2d4', shirt: '#7a7a80', pants: '#3a2414', boots: '#2a1a0e', skin: '#b08060', metal: '#d0d0c8', eye: '#ffa060', glow: '#ff8a3a', shot: '#ffb070', core: '#fff0d0', plate: true } },
       { name: 'Arcángel de Pólvora', pal: { coat: '#e8d8b0', coatDark: '#b0a07a', hat: '#f2e8cc', band: '#c9a227', collar: '#ffffff', shirt: '#c9a227', pants: '#d8c8a0', boots: '#a8822a', skin: '#c09070', metal: '#ffd24a', eye: '#ffe08a', glow: '#ffd27a', shot: '#fff0b0', core: '#ffffff', halo: true } },
     ],
   },
+  {
+    id: 'barnaby', name: 'Barnaby "Tripas" McGovern', short: 'Barnaby', alias: 'TRIPAS', temper: 'Humor negro',
+    role: 'Revólveres duales · Chistes que aterran a la horda',
+    lore: 'Fue carnicero en Deadwood hasta que una vaca se levantó del gancho y le pidió la cuenta. Barnaby se rió, la despiezó por segunda vez y descubrió su vocación. Lleva dos revólveres, un delantal que nunca lava y un repertorio de chistes tan macabros que hasta los muertos retroceden para no oírlos.',
+    panels: [
+      { scene: 'butcher', cap: 'Carnicería McGovern, Deadwood. "Cortes finos. Clientes fríos."' },
+      { scene: 'horde', cap: 'El día que los clientes volvieron por su propio pie, él ya tenía las manos ocupadas.' },
+      { scene: 'hero', cap: 'Dos revólveres, un delantal y cero respeto.', say: '¿Sabéis por qué no peleo con zombis desarmados? ¡Porque ya vienen así!' },
+    ],
+    passive: { name: 'Humor Negro', desc: 'Cada 12 s suelta un chiste macabro que aterroriza a la horda cercana durante 2,5 s. Los enemigos aterrados huyen y reciben +25% de daño.' },
+    stats: { hp: 135, speed: 186, dmg: 1, crit: 0.1, critMult: 2, armor: 1, dodge: 0.04, closeBonus: 0.1, farCrit: false, trapMaster: false, luck: 0, fearAura: 1 },
+    signature: 'chiste',
+    weapons: ['twins', 'butcher', 'wake'],
+    skins: [
+      { name: 'Carnicero de Deadwood', pal: { coat: '#4a3a2a', coatDark: '#2a2018', apron: '#d8ccb0', blood: '#7a1410', hat: '#1a1410', band: '#5a3a1e', shirt: '#c8b8a0', pants: '#3a3028', boots: '#2a1a10', skin: '#c08a6a', mustache: '#3a2014', metal: '#b8b0a0', eye: '#ffcf8a', glow: '#ffb060', shot: '#ffd890', core: '#fff4d6' } },
+      { name: 'Enterrador Risueño', pal: { coat: '#1e1e24', coatDark: '#101014', apron: '#3a3a40', blood: '#5a0a0a', hat: '#0e0e12', band: '#8a1a14', shirt: '#a8a8a0', pants: '#22222a', boots: '#141418', skin: '#b08a72', mustache: '#1a1a1a', metal: '#c8c8d0', eye: '#ffd890', glow: '#ff9a5a', shot: '#ffc890', core: '#ffffff' } },
+      { name: 'Matarife de Oro', pal: { coat: '#6a2a14', coatDark: '#40180a', apron: '#e8c870', blood: '#9a2410', hat: '#2a1408', band: '#e8b84a', shirt: '#f2e2b8', pants: '#4a2a14', boots: '#2a160a', skin: '#c89070', mustache: '#6a3014', metal: '#ffd24a', eye: '#ffe08a', glow: '#ffc04a', shot: '#ffe090', core: '#ffffff' } },
+      { name: 'El Último Chiste', pal: { coat: '#120806', coatDark: '#080302', apron: '#2a0806', blood: '#ff3a12', hat: '#0a0402', band: '#ff4a12', shirt: '#2a1a14', pants: '#120806', boots: '#0a0402', skin: '#8a6450', mustache: '#ff6a2a', metal: '#ff8a3a', eye: '#ff4a12', glow: '#ff5a1a', shot: '#ff9a50', core: '#ffffff', ember: true } },
+    ],
+  },
 ];
 
-// Armas (base + exclusivas por hito). kind determina la lógica de disparo.
+// Armas con cargador, recarga y ALCANCE corto/medio (el anillo de tinta del suelo).
+// kind: shotgun | cards | rifle | harpoon | revolvers
 const WEAPONS = {
-  sharps: { name: 'Rifle Sharps "Viuda de Boot Hill"', kind: 'rifle', dmg: 34, rate: 1.7, speed: 1350, range: 760, count: 1, spread: 0, pierce: 2, kb: 140, desc: 'Un disparo, un muerto. Perfora dos cuerpos.' },
-  cyclops: { name: 'Carabina "Ojo de Cíclope"', kind: 'rifle', dmg: 24, rate: 3.4, speed: 1400, range: 720, count: 1, spread: 0.02, pierce: 3, kb: 110, desc: 'Palanca rápida y mira de latón tallada en un ojo de vidrio.' },
-  leviathan: { name: 'Arpón-Rifle "Leviatán"', kind: 'harpoon', dmg: 80, rate: 1.05, speed: 1100, range: 820, count: 1, spread: 0, pierce: 99, kb: 260, radius: 72, desc: 'Arpón ballenero que atraviesa la horda y estalla al primer impacto.' },
-  cards: { name: 'Naipes Afilados', kind: 'cards', dmg: 15, rate: 4, speed: 640, range: 480, count: 1, spread: 0.08, pierce: 0, kb: 50, chain: 1, desc: 'Cartas de canto de acero que rebotan a un segundo blanco.' },
-  devildeck: { name: 'Baraja del Diablo', kind: 'cards', dmg: 14, rate: 3.4, speed: 600, range: 500, count: 3, spread: 0.25, pierce: 0, kb: 40, chain: 1, homing: 3, desc: 'Tres naipes que buscan carne por sí solos.' },
-  pepperbox: { name: 'Pimienta "Ruleta Rusa"', kind: 'pepper', dmg: 19, rate: 1.6, speed: 900, range: 520, count: 6, spread: 0.55, pierce: 0, kb: 90, critBonus: 0.3, desc: 'Seis cañones giratorios. Nunca sabes cuál escupe el diablo.' },
-  penance: { name: 'Escopeta "Penitencia"', kind: 'shotgun', dmg: 10, rate: 1.4, speed: 760, range: 320, count: 7, spread: 0.55, pierce: 0, kb: 300, desc: 'La escopeta de su padre. Siete perdigones de penitencia.' },
-  psalm: { name: 'Doble Cañón "Salmo 23"', kind: 'shotgun', dmg: 11, rate: 1.25, speed: 800, range: 340, count: 12, spread: 0.6, pierce: 1, kb: 380, desc: '"Aunque ande en valle de sombra de muerte…" Doce perdigones.' },
-  purifier: { name: 'Lanzallamas "Fuego Purificador"', kind: 'flame', dmg: 5, rate: 16, speed: 430, range: 240, count: 1, spread: 0.32, pierce: 99, kb: 30, burn: 9, desc: 'Un tanque de queroseno bendecido. Purifica todo lo que toca.' },
+  sawn: { name: 'Recortada "Mal Trago"', kind: 'shotgun', dmg: 11, rate: 1.7, mag: 2, reload: 1.25, speed: 760, range: 235, count: 7, spread: 0.62, pierce: 0, kb: 320, desc: 'Dos cañones recortados. Siete perdigones de mala uva.' },
+  grudge: { name: 'Doble Cañón "Rencor"', kind: 'shotgun', dmg: 12, rate: 1.9, mag: 2, reload: 1.05, speed: 800, range: 255, count: 10, spread: 0.7, pierce: 1, kb: 420, desc: 'Diez perdigones que no olvidan. Perforan a un primer cuerpo.' },
+  badtemper: { name: 'Escopeta de Palanca "Mala Leche"', kind: 'shotgun', dmg: 11, rate: 2.6, mag: 6, reload: 1.7, speed: 800, range: 265, count: 8, spread: 0.52, pierce: 0, kb: 300, desc: 'Seis cartuchos seguidos sin dar explicaciones.' },
+  cards: { name: 'Naipes de Pólvora', kind: 'cards', dmg: 9, rate: 1.7, mag: 9, reload: 1.0, speed: 640, range: 300, count: 1, burst: 3, spread: 0.1, pierce: 0, kb: 60, explode: 46, desc: 'Ráfagas de tres naipes con pólvora en el canto. Estallan al tocar carne.' },
+  devildeck: { name: 'Baraja del Diablo', kind: 'cards', dmg: 10, rate: 1.8, mag: 12, reload: 1.0, speed: 600, range: 310, count: 1, burst: 3, spread: 0.18, pierce: 0, kb: 60, explode: 54, homing: 3.5, desc: 'Ráfagas de naipes que buscan carne y estallan.' },
+  judgement: { name: 'Baraja del Juicio Final', kind: 'cards', dmg: 12, rate: 1.25, mag: 4, reload: 1.15, speed: 660, range: 320, count: 5, burst: 1, spread: 0.22, pierce: 0, kb: 80, explode: 62, desc: 'Abanicos de cinco naipes explosivos. La banca siempre gana.' },
+  whitworth: { name: 'Rifle Whitworth "Elegía"', kind: 'rifle', dmg: 78, rate: 1, mag: 1, reload: 1.05, speed: 1700, range: 400, count: 1, spread: 0, pierce: 3, kb: 230, desc: 'Monotiro pesado de precisión. Un verso, un muerto, tres a lo sumo.' },
+  requiem: { name: 'Rifle de Caza "Réquiem"', kind: 'rifle', dmg: 100, rate: 1, mag: 1, reload: 0.95, speed: 1800, range: 420, count: 1, spread: 0, pierce: 5, kb: 260, desc: 'Cañón octogonal y culata grabada con nombres que ya no respiran.' },
+  leviathan: { name: 'Arpón-Rifle "Leviatán"', kind: 'harpoon', dmg: 125, rate: 1, mag: 1, reload: 1.3, speed: 1250, range: 430, count: 1, spread: 0, pierce: 99, kb: 300, explode: 80, desc: 'Arpón ballenero que atraviesa la horda y estalla al primer impacto.' },
+  twins: { name: 'Revólveres "Tripa y Corazón"', kind: 'revolvers', dmg: 13, rate: 7, mag: 12, reload: 1.6, speed: 900, range: 310, count: 1, spread: 0.07, pierce: 0, kb: 80, desc: 'Dos Colt de seis tiros que se turnan como un buen dúo cómico.' },
+  butcher: { name: 'Schofield del Carnicero', kind: 'revolvers', dmg: 17, rate: 6.5, mag: 12, reload: 1.4, speed: 940, range: 320, count: 1, spread: 0.06, pierce: 0, kb: 90, burn: 5, desc: 'Balas de punta hueca que dejan sangrando a la horda.' },
+  wake: { name: 'Peacemakers "Velorio"', kind: 'revolvers', dmg: 17, rate: 8, mag: 12, reload: 1.3, speed: 980, range: 330, count: 1, spread: 0.06, pierce: 0, kb: 90, chain: 1, desc: 'Cada bala rebota a un segundo invitado del velorio.' },
 };
 
-// Frases en combate (bocadillos flotantes).
+// Personalidad en combate (bocadillos flotantes).
 const BARKS = {
   silas: {
-    start: ['Hora de cobrar.', 'Un ojo me basta.', 'Que se pongan en fila.'],
-    streak: ['Siguiente.', 'Cuarenta y cuatro…', '¿Eso es todo?'],
-    low: ['Ya estuve muerto una vez…', 'No vuelvo a esa tumba.'],
-    card: ['Mira esto.', 'Bala con tu nombre.'],
-    boss: ['Tú vales una buena recompensa.', 'Grande. Más fácil de acertar.'],
-    trap: ['Cuidado dónde pisas.'],
+    start: ['Otra noche, otra pila de idiotas muertos.', 'Acabemos rápido, me duele el ojo.', 'Si alguien va a morir dos veces hoy, que no sea yo.'],
+    streak: ['¿Eso es todo? Patético.', 'Ni muertos sabéis perder.', 'Siguiente. Y que sea menos feo.'],
+    low: ['Ya estuve en una tumba. No me gustó la decoración.', 'Ahora sí que me habéis cabreado.'],
+    card: ['Toma, desgraciado.', 'Aquí tienes tu propina.'],
+    boss: ['Grande y feo. Mi tipo de problema.', 'Cuanto más grande, más ruido al caer.'],
+    trap: ['Mira dónde pisas, imbécil.'],
+    reload: ['Cargando… no me metáis prisa.'],
   },
   maeve: {
-    start: ['Barajemos.', 'La banca abre.', 'Apuesten, caballeros.'],
-    streak: ['Escalera de color.', 'Full de muertos.', 'Otra mano perdida.'],
-    low: ['Malas cartas…', 'Aún me queda un as.'],
-    card: ['Mi carta.', 'Ases y ochos.'],
-    boss: ['Tú hueles a mi antiguo socio.', 'Subo la apuesta.'],
-    trap: ['Mal paso, cariño.'],
+    start: ['¡Hagan juego, caballeros!', '¡Esta noche la casa paga en pólvora!', '¿Alguien tiene cambio para el infierno?'],
+    streak: ['¡Escalera de color y de cadáveres!', '¡Ja! ¡Otra mano perdida!', '¡Bote! ¡Bote! ¡BOTE!'],
+    low: ['Malas cartas… ¡pero aún me queda un farol!', '¡Uy! ¡Eso ha dolido, cariño!'],
+    card: ['¡Carta marcada!', '¡Ases y ochos, querido!'],
+    boss: ['¡Subo la apuesta y te la meto en la boca!', '¡Tú hueles a mi antiguo socio!'],
+    trap: ['¡Mal paso, cielo!'],
+    reload: ['¡Barajando! ¡Un segundito!'],
   },
   caleb: {
-    start: ['Oremos.', 'Polvo al polvo.', 'Que Dios me perdone. Yo no a vosotros.'],
-    streak: ['Amén.', 'Descansad.', 'Otra alma devuelta.'],
-    low: ['Señor, aún no…', 'Mi cruz pesa…'],
-    card: ['¡Arrepentíos!', 'Fuego y azufre.'],
-    boss: ['Abominación.', 'Tu sermón termina aquí.'],
-    trap: ['Bendito cepo.'],
+    start: ['Cae la noche como un sudario sobre el valle.', 'Que la pólvora rece por los que ya no pueden.', 'Escribo con plomo lo que la tierra olvidará.'],
+    streak: ['Otro nombre para la lápida sin nombre.', 'Duerme, polvo; tu verso ha terminado.', 'La muerte también se cansa de esperar.'],
+    low: ['Mi sangre es tinta… y se me acaba el papel.', 'Aún no, Señor; me falta la última estrofa.'],
+    card: ['Que este verso te sirva de epitafio.', 'Escucha, carne triste, tu último poema.'],
+    boss: ['Hasta los gigantes caben en una fosa.', 'Tu sombra es larga; tu final, breve.'],
+    trap: ['Hasta el hierro reza cuando muerde.'],
+    reload: ['Una pausa entre estrofas…'],
+  },
+  barnaby: {
+    start: ['¡Clientes nuevos! ¿Lo de siempre? ¿Un brazo y medio?', 'Tranquilos, chicos, hoy hay descuento en costillas.', 'He traído el delantal bueno. El de manchar.'],
+    streak: ['¿Por qué ese zombi cruzó la calle? ¡Porque se le cayó la pierna al otro lado!', '¡Echadle una mano! Ah, no, que ya se le ha caído.', 'Este se ha quedado sin cabeza… ¡y aun así ha dicho más tonterías que mi cuñado!'],
+    low: ['Tranquilo, Barnaby, son solo tripas… ¡las tuyas!', 'Me están desmontando más rápido que a un pollo en Navidad.'],
+    card: ['¿Sabéis cuál es el colmo de un zombi? ¡Perder la cabeza por mí!', '¡Os voy a dejar hechos filetes!'],
+    boss: ['¡Madre mía, con ese tendré salchichas para un año!', '¡Grandullón! ¿Te corto en rodajas o en tacos?'],
+    trap: ['¡Ese pie ya no vuelve a bailar!'],
+    reload: ['¡Recargando! Id haciendo cola, por número.'],
+    jokes: [
+      '¿Qué le dijo un zombi a otro? «¡Échame una mano!» Y se la arrancó.',
+      'Mi abuelo murió en paz, dormido. No como vosotros: ¡a pedazos y gritando!',
+      'Doctor, me duele aquí. —Pues no se toque ahí… ¡que se le cae!',
+      '¿Cómo se llama un zombi sin brazos ni piernas? ¡Como quieras, no va a venir!',
+      'Hoy tengo oferta: dos por uno en cabezas. ¡Las vuestras!',
+      'Sé que tenéis hambre, pero ¿no preferís un buen chuletón… de vuestro vecino?',
+    ],
   },
   zombie: ['Grrrhh…', 'Caaarne…', 'Hhhaaa…', '…sed…', 'Grrk.', 'Mmmhhh…'],
+  scared: ['¡¿…?!', '¡Hhhiii!', '…no…', '¡¡GRK!!'],
 };
 
 // ---- src/core/save.js
@@ -721,7 +774,7 @@ const Sfx = {
 // obj.type: survive | kill | defend | boss | escape
 
 const MAPS = {
-  crossroads: { name: 'El Cruce de los Condenados', ground: '#2a2420', g2: '#3a302a', g3: '#15100c', props: ['gravecross', 'deadtree', 'rock', 'fence', 'skullpile', 'post'], fog: false },
+  crossroads: { name: 'El Cruce de los Condenados', ground: '#2a2420', g2: '#3a302a', g3: '#15100c', props: ['gravecross', 'deadtree', 'rock', 'fence', 'skullpile', 'post'], fog: false, zoned: true },
   town: { name: 'Hollow Creek', ground: '#3a2a20', g2: '#4a3628', g3: '#1a120c', props: ['barrel', 'crate', 'fence', 'wheel', 'post', 'deadtree'], fog: false },
   chapel: { name: 'Capilla de Gallow\'s Rest', ground: '#2a2228', g2: '#3a2e34', g3: '#140e12', props: ['gravecross', 'tomb', 'deadtree', 'fence', 'pew'], fog: true },
   mine: { name: 'Minas de Plata Negra', ground: '#2a2622', g2: '#3a342c', g3: '#12100c', props: ['rock', 'beam', 'cart', 'crate', 'ore'], fog: false },
@@ -732,7 +785,7 @@ const MAPS = {
 const MISSIONS = [
   {
     id: 'm1', name: 'Polvo en la Tumba', map: 'town', reward: 150,
-    obj: { type: 'survive', time: 100 }, spawn: { walker: 8, runner: 2 }, rate: 1.1,
+    obj: { type: 'survive', time: 100 }, spawn: { walker: 8, runner: 2, hound: 1 }, rate: 1.1,
     intro: [
       { scene: 'town', cap: 'Hollow Creek, Territorio de Arizona. El reloj de la iglesia se paró a las 3:15. Nadie lo ha vuelto a dar cuerda.' },
       { scene: 'hero', cap: 'El telegrama decía "trabajo fácil". Los telegramas siempre mienten.', say: 'Huele a cementerio removido.' },
@@ -744,7 +797,7 @@ const MISSIONS = [
   },
   {
     id: 'm2', name: 'La Campana de Gallow\'s Rest', map: 'chapel', reward: 220,
-    obj: { type: 'defend', time: 110, hp: 1200, label: 'DEFIENDE A LOS SUPERVIVIENTES' }, spawn: { walker: 6, runner: 3, bloater: 1 }, rate: 1.25,
+    obj: { type: 'defend', time: 110, hp: 1800, label: 'DEFIENDE A LOS SUPERVIVIENTES' }, spawn: { walker: 6, runner: 3, bloater: 1, spider: 2 }, rate: 1.25,
     intro: [
       { scene: 'chapel', cap: 'La capilla quemada aún humea. Dentro, tres niños y una viuda rezan junto a la campana.' },
       { scene: 'hero', cap: 'Alguien tiene que mantener la puerta cerrada hasta el alba.', say: 'Nadie entra. Nadie sale.' },
@@ -755,7 +808,7 @@ const MISSIONS = [
   },
   {
     id: 'm3', name: 'Plata Negra', map: 'mine', reward: 320, boss: 'foreman',
-    obj: { type: 'boss', boss: 'foreman' }, spawn: { walker: 5, runner: 2, armored: 2, dynamiter: 1 }, rate: 1.1,
+    obj: { type: 'boss', boss: 'foreman' }, spawn: { walker: 5, runner: 2, armored: 2, dynamiter: 1, spider: 2, abomination: 0.4 }, rate: 1.1,
     intro: [
       { scene: 'mine', cap: 'Minas de Plata Negra. Ciento doce mineros murieron en el derrumbe del 76. Ninguno dejó de trabajar.' },
       { scene: 'horde', cap: 'Picos, palas y dinamita. La horda tiene herramientas.' },
@@ -766,7 +819,7 @@ const MISSIONS = [
   },
   {
     id: 'm4', name: 'Aguas de Saint-Mort', map: 'swamp', reward: 420,
-    obj: { type: 'kill', count: 140, label: 'PURGA LA CIÉNAGA' }, spawn: { walker: 5, runner: 3, bloater: 2, forker: 2 }, rate: 1.5,
+    obj: { type: 'kill', count: 140, label: 'PURGA LA CIÉNAGA' }, spawn: { walker: 5, runner: 3, bloater: 2, forker: 2, hound: 2, spider: 2 }, rate: 1.5,
     intro: [
       { scene: 'swamp', cap: 'Pantano de Saint-Mort. Los cajún dicen que el agua tiene memoria… y hambre.' },
       { scene: 'hero', cap: 'La niebla traga los disparos. Hay que vaciar la ciénaga uno a uno.', say: 'Que salgan del barro.' },
@@ -777,7 +830,7 @@ const MISSIONS = [
   },
   {
     id: 'm5', name: 'La Bestia de la Ciénaga', map: 'swamp', reward: 520, boss: 'beast',
-    obj: { type: 'boss', boss: 'beast' }, spawn: { walker: 4, runner: 3, forker: 2, bloater: 1 }, rate: 1.1,
+    obj: { type: 'boss', boss: 'beast' }, spawn: { walker: 4, runner: 3, forker: 2, bloater: 1, hound: 2, abomination: 0.4 }, rate: 1.1,
     intro: [
       { scene: 'eyes', cap: 'Lo que observaba desde los juncos ha perdido la paciencia.' },
       { scene: 'boss_beast', cap: 'Mitad caimán, mitad pesadilla. Se tragó una diligencia entera en el 81.', say2: 'GRRRAAAAOOOH' },
@@ -788,7 +841,7 @@ const MISSIONS = [
   },
   {
     id: 'm6', name: 'El Último Sermón', map: 'pulpit', reward: 800, boss: 'faceless',
-    obj: { type: 'boss', boss: 'faceless' }, spawn: { walker: 4, runner: 3, armored: 2, dynamiter: 1, bloater: 1 }, rate: 1.25,
+    obj: { type: 'boss', boss: 'faceless' }, spawn: { walker: 4, runner: 3, armored: 2, dynamiter: 1, bloater: 1, hound: 2, spider: 2, abomination: 0.5 }, rate: 1.25,
     intro: [
       { scene: 'pulpit', cap: 'Todas las huellas llevan al mismo sitio: una iglesia que no aparece en ningún mapa.' },
       { scene: 'boss_faceless', cap: 'En el púlpito, un predicador sin rostro recita un sermón sin palabras. Y los muertos escuchan.' },
@@ -800,6 +853,13 @@ const MISSIONS = [
 ];
 
 const SURVIVAL = { id: 'survival', name: 'El Cruce de los Condenados', map: 'crossroads' };
+
+// Comarca conectada (supervivencia): pueblo al oeste, cementerio en el centro, mina al este.
+const ZONES = [
+  { id: 'town', name: 'EL PUEBLO', x0: -1, x1: -1 / 3, ground: '#3a2a20', g2: '#4a3628', g3: '#1a120c', props: ['barrel', 'crate', 'fence', 'wheel', 'post', 'deadtree'], mini: '#6a4a30' },
+  { id: 'cemetery', name: 'EL CEMENTERIO', x0: -1 / 3, x1: 1 / 3, ground: '#2a2228', g2: '#3a2e34', g3: '#140e12', props: ['gravecross', 'tomb', 'deadtree', 'skullpile', 'fence', 'gravecross'], mini: '#4a3a4a' },
+  { id: 'mine', name: 'LA MINA', x0: 1 / 3, x1: 1, ground: '#2a2622', g2: '#3a342c', g3: '#12100c', props: ['rock', 'beam', 'cart', 'crate', 'ore', 'rock'], mini: '#4a4238' },
+];
 
 // ---- src/data/cards.js
 // Mazo de cartas de la partida. Rarezas: Bronce → Plata → Oro → Platino → Diamante.
@@ -819,26 +879,33 @@ const P = 'passive', A = 'action';
 const CARDS = [
   // ---------------- BRONCE: efecto básico
   { id: 'polvora', r: 0, t: P, name: 'Pólvora Barata', icon: '💥', desc: '+12% de daño.', apply: (g) => { g.st.dmg *= 1.12; } },
-  { id: 'gatillo', r: 0, t: P, name: 'Gatillo Ligero', icon: '🔫', desc: '+12% de cadencia.', apply: (g) => { g.st.rate *= 1.12; } },
+  { id: 'gatillo', r: 0, t: P, mod: true, name: 'Gatillo Ligero', icon: '🔫', desc: '+12% de cadencia.', apply: (g) => { g.st.rate *= 1.12; } },
   { id: 'botas', r: 0, t: P, name: 'Botas Gastadas', icon: '👢', desc: '+8% de velocidad.', apply: (g) => { g.st.speed *= 1.08; } },
   { id: 'cuero', r: 0, t: P, name: 'Cuero Curtido', icon: '🛡', desc: '+20 de vida máxima.', apply: (g) => { g.addMaxHp(20); } },
   { id: 'whisky', r: 0, t: P, name: 'Whisky Aguado', icon: '🥃', desc: 'Cura el 30% de la vida.', heal: true, apply: (g) => { g.heal(g.player.maxHp * 0.3); } },
   { id: 'bolsillos', r: 0, t: P, name: 'Bolsillos Hondos', icon: '👝', desc: '+35% de radio de recogida.', apply: (g) => { g.st.pickup *= 1.35; } },
+  { id: 'puntas', r: 0, t: P, mod: true, name: 'Puntas de Acero', icon: '🔩', desc: 'Munición perforante: +1 cuerpo atravesado por bala.', apply: (g) => { g.st.pierce += 1; } },
+  { id: 'cargador', r: 0, t: P, mod: true, name: 'Cargador Engrasado', icon: '🛢', desc: 'Recarga un 25% más rápida.', apply: (g) => { g.st.reloadMult *= 0.75; } },
   { id: 'sal', r: 0, t: A, name: 'Puñado de Sal', icon: '🧂', cd: 6, desc: 'Cono de sal gruesa que repele y aturde a la horda cercana.' },
 
   // ---------------- PLATA: doble beneficio
-  { id: 'plata', r: 1, t: P, name: 'Munición de Plata', icon: '🌙', desc: '+15% de daño y +1 perforación.', apply: (g) => { g.st.dmg *= 1.15; g.st.pierce += 1; } },
-  { id: 'cartuchera', r: 1, t: P, name: 'Doble Cartuchera', icon: '🎒', desc: '+15% de cadencia y cartas un 12% más rápidas.', apply: (g) => { g.st.rate *= 1.15; g.st.cardCd *= 0.88; } },
+  { id: 'plata', r: 1, t: P, mod: true, name: 'Munición de Plata', icon: '🌙', desc: '+15% de daño y +1 perforación.', apply: (g) => { g.st.dmg *= 1.15; g.st.pierce += 1; } },
+  { id: 'cartuchera', r: 1, t: P, mod: true, name: 'Doble Cartuchera', icon: '🎒', desc: '+15% de cadencia y recarga un 15% más rápida.', apply: (g) => { g.st.rate *= 1.15; g.st.reloadMult *= 0.85; } },
   { id: 'espuelas', r: 1, t: P, name: 'Espuelas del Muerto', icon: '⭐', desc: '+12% de velocidad y +6% de esquiva.', apply: (g) => { g.st.speed *= 1.12; g.st.dodge += 0.06; } },
   { id: 'biblia', r: 1, t: P, name: 'Biblia de Bolsillo', icon: '📖', desc: '+25 de vida máxima y regeneras 1 vida/s.', heal: true, apply: (g) => { g.addMaxHp(25); g.st.regen += 1; } },
-  { id: 'halcon', r: 1, t: P, name: 'Ojo de Halcón', icon: '🎯', desc: '+8% de crítico y +25% de daño crítico.', apply: (g) => { g.st.crit += 0.08; g.st.critMult += 0.25; } },
+  { id: 'buitre', r: 1, t: P, name: 'Mirada de Buitre', icon: '🦅', desc: '+8% de crítico y +25% de daño crítico.', apply: (g) => { g.st.crit += 0.08; g.st.critMult += 0.25; } },
+  { id: 'halcon', r: 1, t: P, mod: true, range: true, name: 'Ojo de Halcón', icon: '🎯', desc: 'LARGO ALCANCE: +35% de alcance de disparo y de detección.', apply: (g) => { g.st.rangeMult *= 1.35; } },
+  { id: 'tambor', r: 1, t: P, mod: true, name: 'Tambor Ampliado', icon: '🥁', desc: '+50% de capacidad del cargador y recarga un 15% más rápida.', apply: (g) => { g.st.magMult *= 1.5; g.st.reloadMult *= 0.85; } },
+  { id: 'polvorarea', r: 1, t: P, mod: true, name: 'Pólvora Negra', icon: '💣', desc: 'Disparos en área: cada impacto estalla en un radio pequeño.', apply: (g) => { g.st.splash += 40; } },
   { id: 'dinamita', r: 1, t: A, name: 'Cartucho de Dinamita', icon: '🧨', cd: 8, desc: 'Lanza dinamita que estalla en un gran radio.' },
   { id: 'cepo', r: 1, t: A, name: 'Cepo de Oso', icon: '🪤', cd: 7, desc: 'Coloca dos cepos que atrapan y desgarran zombis.' },
 
   // ---------------- ORO: impacto táctico
-  { id: 'cadena', r: 2, t: P, name: 'Balas Encadenadas', icon: '⛓', desc: 'Cada impacto rebota a otro zombi cercano.', apply: (g) => { g.st.chain += 1; } },
-  { id: 'salbendita', r: 2, t: P, name: 'Sal Bendita', icon: '✝', desc: 'Tus disparos ralentizan un 35% a la horda.', apply: (g) => { g.st.slowOnHit = Math.max(g.st.slowOnHit, 1.2); } },
-  { id: 'incendiarias', r: 2, t: P, name: 'Cartuchos Incendiarios', icon: '🔥', desc: 'Tus disparos prenden fuego a los zombis.', apply: (g) => { g.st.burnOnHit += 7; } },
+  { id: 'metralla', r: 2, t: P, mod: true, name: 'Metralla', icon: '✴', desc: 'Cada impacto revienta en 4 esquirlas que hieren a la horda cercana.', apply: (g) => { g.st.shrapnel += 4; } },
+  { id: 'catalejo', r: 2, t: P, mod: true, range: true, name: 'Catalejo de Latón', icon: '🔭', desc: 'LARGO ALCANCE: +60% de alcance y +6% de crítico.', apply: (g) => { g.st.rangeMult *= 1.6; g.st.crit += 0.06; } },
+  { id: 'cadena', r: 2, t: P, mod: true, name: 'Balas Encadenadas', icon: '⛓', desc: 'Cada impacto rebota a otro zombi cercano.', apply: (g) => { g.st.chain += 1; } },
+  { id: 'salbendita', r: 2, t: P, mod: true, name: 'Sal Bendita', icon: '✝', desc: 'Tus disparos ralentizan un 35% a la horda.', apply: (g) => { g.st.slowOnHit = Math.max(g.st.slowOnHit, 1.2); } },
+  { id: 'incendiarias', r: 2, t: P, mod: true, name: 'Plomo Incendiario', icon: '🔥', desc: 'Tus balas prenden fuego: 9 de daño por segundo durante 3 s.', apply: (g) => { g.st.burnOnHit += 9; } },
   { id: 'trampero', r: 2, t: P, name: 'Trampero', icon: '⚙', desc: 'Cada 9 s colocas un cepo automático. Las trampas hacen +50% de daño.', apply: (g) => { g.st.trapper += 1; g.st.trapMult *= 1.5; } },
   { id: 'cuervo', r: 2, t: P, name: 'Cuervo Guardián', icon: '🐦', desc: 'Un cuervo de tinta orbita a tu alrededor y picotea zombis.', apply: (g) => { g.st.crows += 1; } },
   { id: 'farol', r: 2, t: A, name: 'Farol Arrojadizo', icon: '🏮', cd: 9, desc: 'Lanza un farol de gas que deja el suelo en llamas.' },
@@ -856,15 +923,17 @@ const CARDS = [
   { id: 'corazon', r: 4, t: P, name: 'Corazón del Diablo', icon: '❤', desc: 'BENDICIÓN: +100 de vida máxima y regeneras 3 vida/s.', heal: true, curse: { type: 'vuln', amount: 0.5, time: 30, text: 'MALDICIÓN: recibes +50% de daño durante 30 s.' }, apply: (g) => { g.addMaxHp(100); g.st.regen += 3; } },
   { id: 'ases', r: 4, t: P, name: 'Ases y Ochos', icon: '🂡', desc: 'BENDICIÓN: +35% de crítico y los críticos hacen x3.', curse: { type: 'vuln', amount: 0.4, time: 25, text: 'MALDICIÓN: +40% de daño recibido y sin esquiva 25 s.' }, apply: (g) => { g.st.crit += 0.35; g.st.critMult = Math.max(g.st.critMult, 3); } },
   { id: 'sombra', r: 4, t: P, name: 'Sombra Vendida', icon: '👤', desc: 'BENDICIÓN: dos sombras gemelas disparan contigo.', curse: { type: 'slow', amount: 0.5, time: 20, text: 'MALDICIÓN: -50% de velocidad durante 20 s.' }, apply: (g) => { g.st.shadows += 2; } },
-  { id: 'ahorcado', r: 4, t: P, name: 'Bala del Ahorcado', icon: '🪢', desc: 'BENDICIÓN: todos tus disparos atraviesan cualquier cuerpo.', curse: { type: 'slow', amount: 0.3, time: 30, text: 'MALDICIÓN: -30% de velocidad durante 30 s.' }, apply: (g) => { g.st.pierce += 99; } },
+  { id: 'ciclope', r: 4, t: P, mod: true, range: true, name: 'Ojo del Cíclope', icon: '👁', desc: 'BENDICIÓN: alcance x2 y +20% de crítico.', curse: { type: 'slow', amount: 0.4, time: 25, text: 'MALDICIÓN: -40% de velocidad durante 25 s.' }, apply: (g) => { g.st.rangeMult *= 2; g.st.crit += 0.2; } },
+  { id: 'ahorcado', r: 4, t: P, mod: true, name: 'Bala del Ahorcado', icon: '🪢', desc: 'BENDICIÓN: todos tus disparos atraviesan cualquier cuerpo.', curse: { type: 'slow', amount: 0.3, time: 30, text: 'MALDICIÓN: -30% de velocidad durante 30 s.' }, apply: (g) => { g.st.pierce += 99; } },
   { id: 'trompeta', r: 4, t: A, name: 'Trompeta del Juicio', icon: '📯', cd: 40, desc: 'BENDICIÓN: aniquila a toda la horda visible (los colosos sufren un golpe brutal).', curse: { type: 'vuln', amount: 0.6, time: 12, text: 'MALDICIÓN al tocarla: +60% de daño recibido 12 s.' } },
 ];
 
 // Cartas de firma (no salen en el sorteo; empiezan en la mano).
 const SIGNATURE = {
-  tuerto: { id: 'tuerto', r: 2, t: A, name: 'Tiro del Tuerto', icon: '👁', cd: 6, desc: 'Disparo de rifle cargado que lo atraviesa todo con crítico garantizado.' },
-  deadhand: { id: 'deadhand', r: 2, t: A, name: 'Mano de Muerto', icon: '🂠', cd: 7, desc: 'Abanico de cinco naipes malditos que aturden y hechizan.' },
-  beartrap: { id: 'beartrap', r: 2, t: A, name: 'Cepo Bendito', icon: '🪤', cd: 8, desc: 'Planta tres cepos bendecidos frente a ti.' },
+  rabia: { id: 'rabia', r: 2, t: A, name: 'Arrebato de Mal Genio', icon: '💢', cd: 7, desc: 'Silas revienta: corona de perdigones en 360° con empuje brutal.' },
+  deadhand: { id: 'deadhand', r: 2, t: A, name: 'Mano de Muerto', icon: '🂡', cd: 7, desc: 'Abanico de cinco naipes explosivos que aturden y hechizan.' },
+  verso: { id: 'verso', r: 2, t: A, name: 'Último Verso', icon: '✒', cd: 6, desc: 'Disparo de precisión que lo atraviesa todo con crítico garantizado y alcance doble.' },
+  chiste: { id: 'chiste', r: 2, t: A, name: 'Chiste de Carnicero', icon: '🔪', cd: 9, desc: 'Un chiste tan macabro que la horda cercana huye aterrada 4 s.' },
 };
 
 const cardById = (id) => CARDS.find((c) => c.id === id) || SIGNATURE[id];
@@ -1331,13 +1400,15 @@ function silas(ctx, c) {
   dusterFront(ctx, c, w);
   if (c.ember) { glow(ctx, -30, -18, 18, c.glow, 0.5); glow(ctx, 30, -18, 18, c.glow, 0.5); }
   star(ctx, -24, -112, 6, 5, c.metal, 1.8);
-  // rifle en postura de duelo: bajo y en diagonal
-  limb(ctx, 31, -124, 40, -98, 8, 7, c.coat);
-  limb(ctx, -31, -124, -24, -96, 8, 7, c.coat);
-  line(ctx, -40, -70, 64, -114, INK, 9); line(ctx, -40, -70, 64, -114, '#5a3418', 5);
-  line(ctx, 10, -98, 78, -126, INK, 7); line(ctx, 10, -98, 78, -126, '#3a3a40', 3.5);
-  poly(ctx, [-6, -92, 10, -99, 12, -92, -4, -86], c.metal, 2, 0);
-  hand(ctx, -22, -91, 6.5, '#3a2214'); hand(ctx, 42, -104, 6.5, '#3a2214');
+  // recortada de doble cañón, corta y fea, empuñada a la cadera
+  limb(ctx, 31, -124, 44, -100, 8, 7, c.coat);
+  limb(ctx, -31, -124, -18, -98, 8, 7, c.coat);
+  poly(ctx, [-26, -84, -6, -98, 0, -90, -20, -76], '#5a3418');
+  poly(ctx, [-4, -100, 14, -104, 16, -94, -2, -90], c.metal, 2.5, 0.4);
+  poly(ctx, [12, -106, 52, -112, 54, -100, 14, -94], '#2a2a30', 3, 0.4);
+  line(ctx, 14, -100, 53, -106, 'rgba(220,220,230,0.35)', 1.2);
+  ellipse(ctx, 53, -109, 2, 3, '#111', 1.2); ellipse(ctx, 54, -103, 2, 3, '#111', 1.2);
+  hand(ctx, -14, -94, 6.5, '#3a2214'); hand(ctx, 44, -104, 6.5, '#3a2214');
   // cabeza: parche en el ojo, barba de días
   poly(ctx, [-6, -134, 6, -134, 5, -126, -5, -126], c.skin, 2, 0);
   head(ctx, c);
@@ -1410,13 +1481,16 @@ function caleb(ctx, c) {
   // cruz colgante y rosario
   ctx.strokeStyle = c.metal; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-8, -134); ctx.quadraticCurveTo(-4, -110, 0, -104); ctx.stroke();
   poly(ctx, [-2, -106, 2, -106, 2, -90, -2, -90], c.metal, 1.5, 0); poly(ctx, [-6, -101, 6, -101, 6, -97, -6, -97], c.metal, 1.5, 0);
-  // escopeta cruzada sobre el pecho
+  // rifle monotiro largo de precisión, terciado y con mira de latón
   limb(ctx, -32, -126, -36, -98, 9, 8, c.coat);
-  limb(ctx, 32, -126, 34, -110, 9, 8, c.coat);
-  line(ctx, -46, -84, 62, -132, INK, 10); line(ctx, -46, -84, 10, -110, '#5a3418', 6);
-  line(ctx, 6, -108, 64, -134, '#2a2a30', 6);
-  line(ctx, 8, -112, 66, -138, '#2a2a30', 4);
-  hand(ctx, -34, -94, 7, '#2a1a10'); hand(ctx, 36, -114, 7, '#2a1a10');
+  limb(ctx, 32, -126, 30, -104, 9, 8, c.coat);
+  line(ctx, -50, -70, 96, -150, INK, 9); line(ctx, -50, -70, 4, -100, '#5a3418', 5.5);
+  line(ctx, 2, -99, 96, -150, '#2a2a30', 3.5);
+  poly(ctx, [10, -110, 40, -126, 42, -121, 12, -105], c.metal, 2, 0);
+  circle(ctx, 12, -108, 3, c.metal, 1.2);
+  hand(ctx, -32, -92, 7, '#2a1a10'); hand(ctx, 32, -102, 7, '#2a1a10');
+  // cuaderno de versos al cinto
+  poly(ctx, [-26, -80, -12, -80, -12, -62, -26, -62], '#3a2414', 2, 0); line(ctx, -24, -76, -14, -76, '#e8dcc0', 1);
   // cabeza y alzacuellos
   poly(ctx, [-8, -136, 8, -136, 7, -128, -7, -128], c.collar, 2, 0);
   head(ctx, c, 0, -152);
@@ -1428,7 +1502,44 @@ function caleb(ctx, c) {
   if (c.halo) { ctx.strokeStyle = c.glow; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, -186, 26, 7, 0, 0, Math.PI * 2); ctx.stroke(); glow(ctx, 0, -186, 34, c.glow, 0.6); }
 }
 
-const DRAW_HERO = { silas, maeve, caleb };
+// ------------------------------------------------------------------ BARNABY "TRIPAS" McGOVERN
+function barnaby(ctx, c) {
+  const w = duster(ctx, c, 1.1, -22);
+  boots(ctx, c, null);
+  // barriga y camisa
+  blob(ctx, [-30, -134, 30, -134, 38, -104, 32, -76, -32, -76, -38, -104], c.shirt);
+  // chaleco abierto
+  poly(ctx, [-32, -134, -12, -132, -16, -78, -34, -82, -40, -104], c.coat);
+  poly(ctx, [32, -134, 12, -132, 16, -78, 34, -82, 40, -104], c.coat);
+  // delantal de carnicero manchado
+  poly(ctx, [-22, -122, 22, -122, 26, -40, -26, -40], c.apron);
+  ctx.fillStyle = c.blood; for (const [x, y, r] of [[-8, -100, 6], [10, -80, 8], [-14, -60, 5], [6, -52, 4], [16, -110, 3]]) { ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.7, 0.4, 0, Math.PI * 2); ctx.fill(); }
+  line(ctx, -22, -122, -30, -134, '#2a1a10', 2); line(ctx, 22, -122, 30, -134, '#2a1a10', 2);
+  poly(ctx, [-34, -86, 34, -86, 34, -78, -34, -78], '#2a1a10', 2.5, 0);
+  // cuchillo de carnicero al cinto
+  poly(ctx, [26, -84, 40, -84, 40, -64, 30, -60], c.metal, 2, 0); poly(ctx, [24, -90, 30, -90, 30, -84, 24, -84], '#3a2414', 1.5, 0);
+  // brazos con dos revólveres
+  limb(ctx, -36, -126, -54, -100, 9, 8, c.shirt); limb(ctx, -54, -100, -62, -84, 8, 7, c.skin);
+  limb(ctx, 36, -126, 56, -110, 9, 8, c.shirt); limb(ctx, 56, -110, 70, -104, 8, 7, c.skin);
+  poly(ctx, [-66, -84, -60, -84, -60, -60, -66, -60], '#2a2a30', 2, 0); poly(ctx, [-70, -86, -58, -86, -58, -80, -70, -80], c.metal, 1.5, 0);
+  poly(ctx, [70, -108, 98, -110, 98, -102, 70, -100], c.metal, 2.5, 0.3); poly(ctx, [72, -102, 80, -102, 78, -90, 72, -92], '#5a3a24', 2, 0);
+  hand(ctx, -63, -82, 6.5, c.skin); hand(ctx, 72, -104, 6.5, c.skin);
+  // cabeza redonda, bigote de manillar, sonrisa torcida
+  head(ctx, c, 0, -150);
+  blob(ctx, [-16, -140, -6, -144, 0, -140, 6, -144, 16, -140, 20, -134, 6, -137, 0, -134, -6, -137, -20, -134], c.mustache, 2, 0);
+  line(ctx, -4, -131, 6, -132, INK, 1.8);
+  ctx.fillStyle = 'rgba(8,5,4,0.55)'; ctx.fillRect(-12, -158, 24, 6);
+  ctx.fillStyle = c.eye; ctx.fillRect(-7, -153, 4, 2); ctx.fillRect(3, -154, 4, 2);
+  // bombín
+  ctx.save(); ctx.translate(0, -160);
+  blob(ctx, [-16, 0, -16, -18, -8, -26, 8, -26, 16, -18, 16, 0], c.hat);
+  poly(ctx, [-16, -3, 16, -3, 16, -8, -16, -8], c.band, 2, 0);
+  poly(ctx, [-26, 0, 26, 0, 22, 5, -22, 5], shade(c.hat, 0.08));
+  ctx.restore();
+  if (c.ember) glow(ctx, 0, -60, 46, c.glow, 0.3);
+}
+
+const DRAW_HERO = { silas, maeve, caleb, barnaby };
 
 function drawHero(ctx, id, pal, detail = 1, seed = 1234) {
   beginArt(seed, detail);
@@ -1443,7 +1554,8 @@ function drawHeroFx(ctx, id, c, t) {
   }
   if (id === 'silas') glow(ctx, 6, -151, 10, c.eye, 0.4 + Math.sin(t * 3) * 0.2);
   if (id === 'maeve') glow(ctx, 58, -164, 24, c.glow, 0.25 + Math.sin(t * 2.4) * 0.12);
-  if (id === 'caleb') glow(ctx, 66, -138, 14, c.glow, 0.3 + Math.sin(t * 5) * 0.15);
+  if (id === 'caleb') glow(ctx, 96, -150, 14, c.glow, 0.3 + Math.sin(t * 5) * 0.15);
+  if (id === 'barnaby') glow(ctx, 98, -106, 14, c.glow, 0.3 + Math.sin(t * 6) * 0.15);
 }
 
 // ---- src/art/zombieArt.js
@@ -1664,11 +1776,73 @@ function beast(ctx) {
   ctx.fillStyle = INK; ctx.fillRect(91, -145, 2, 6);
 }
 
-const DRAW_Z = { walker, runner, bloater, armored, forker, dynamiter, foreman, faceless, beast };
+
+// ------------------------------------------------------------------ SABUESO DE TINTA (vista lateral, flaco y veloz)
+function hound(ctx) {
+  const ink = '#1a1c22', ink2 = '#2a2e36';
+  limb(ctx, -40, -46, -58, -4, 6, 4, ink); limb(ctx, 22, -48, 16, -4, 6, 4, ink);
+  const body = [-62, -54, -36, -80, 10, -86, 44, -76, 54, -58, 32, -40, -24, -40, -54, -44];
+  blob(ctx, body, ink2, 3, 0.6);
+  hatchPoly(ctx, body, 4, 'rgba(0,0,0,0.55)', 1, true, 0.3);
+  // costillas al aire
+  ctx.strokeStyle = '#8a8e96'; ctx.lineWidth = 1.6; ctx.beginPath();
+  for (let i = 0; i < 5; i++) { const x = -20 + i * 9; ctx.moveTo(x, -78); ctx.quadraticCurveTo(x + 5, -62, x, -46); } ctx.stroke();
+  // lomo erizado de tinta
+  const sp = [];
+  for (let i = 0; i <= 10; i++) { const t = i / 10, x = -60 + t * 104, y = -58 - Math.sin(t * Math.PI) * 28; sp.push(x, y + 6, x + 4, y - 12 - (i % 2) * 7); }
+  sp.push(46, -64, -58, -54);
+  poly(ctx, sp, '#101216', 2.5, 0);
+  limb(ctx, -30, -44, -38, -4, 7, 5, ink2); limb(ctx, 34, -48, 44, -4, 7, 5, ink2);
+  // cabeza alargada con fauces y goteo de tinta
+  blob(ctx, [40, -96, 58, -108, 86, -100, 104, -88, 96, -78, 70, -76, 50, -70], ink2, 3, 0.6);
+  poly(ctx, [54, -106, 50, -124, 62, -110], '#101216', 2.5, 0); poly(ctx, [66, -106, 68, -122, 74, -104], '#101216', 2.5, 0);
+  poly(ctx, [70, -80, 100, -82, 96, -70, 72, -68], '#050506', 2, 0);
+  ctx.fillStyle = '#d8d8d0'; for (let i = 0; i < 5; i++) { const x = 73 + i * 5; ctx.beginPath(); ctx.moveTo(x, -80); ctx.lineTo(x + 2, -74); ctx.lineTo(x + 4, -80); ctx.fill(); }
+  glow(ctx, 70, -96, 12, '#7fa8ff', 1); ctx.fillStyle = '#d8e8ff'; ctx.fillRect(67, -98, 6, 3);
+  ctx.fillStyle = '#050506'; for (const [x, l] of [[80, 16], [90, 10]]) { ctx.beginPath(); ctx.ellipse(x, -64 + l / 2, 2.2, l / 2, 0, 0, Math.PI * 2); ctx.fill(); }
+  poly(ctx, [-58, -56, -88, -74, -94, -66, -64, -46], '#101216', 2.5, 0);
+}
+
+// ------------------------------------------------------------------ ARAÑA DE CRIPTA (enjambre)
+function spider(ctx) {
+  const leg = '#1a1a1e';
+  for (const sgn of [-1, 1]) for (let i = 0; i < 4; i++) {
+    const bx = sgn * 14, by = -34 + i * 6, kx = sgn * (46 + i * 4), ky = -64 + i * 10, fx = sgn * (60 + i * 6), fy = -4 + (i % 2) * 2;
+    line(ctx, bx, by, kx, ky, INK, 6); line(ctx, kx, ky, fx, fy, INK, 5);
+    line(ctx, bx, by, kx, ky, leg, 3); line(ctx, kx, ky, fx, fy, leg, 2.5);
+  }
+  const abd = [-26, -40, -18, -70, 18, -70, 26, -40, 14, -18, -14, -18];
+  blob(ctx, abd, '#22242a', 3, 0.6);
+  hatchPoly(ctx, abd, 4, 'rgba(0,0,0,0.5)', 1, true, 0.3);
+  skull(ctx, 0, -50, 0.6, '#b8b8b0', 1.2);
+  blob(ctx, [-14, -30, -10, -42, 10, -42, 14, -30, 8, -20, -8, -20], '#18181c', 2.5, 0);
+  for (const [x, y] of [[-6, -34], [-2, -36], [2, -36], [6, -34], [-4, -30], [4, -30]]) { glow(ctx, x, y, 5, '#ff4a3a', 0.9); ctx.fillStyle = '#ffb0a0'; ctx.fillRect(x - 1, y - 1, 2, 2); }
+}
+
+// ------------------------------------------------------------------ ABOMINACIÓN (caparazón blindado, escupe bilis de tinta)
+function abomination(ctx) {
+  for (const [x1, x2] of [[-60, -78], [-30, -36], [30, 34], [60, 76]]) { limb(ctx, x1, -40, x2, -2, 10, 7, '#2a2e2a'); poly(ctx, [x2 - 8, -6, x2 + 8, -6, x2 + 10, 2, x2 - 10, 2], '#1a1c1a', 2, 0); }
+  const shell = [-84, -50, -70, -110, -30, -140, 30, -142, 72, -112, 88, -52, 50, -36, -50, -36];
+  blob(ctx, shell, '#3a3e3a', 3.5, 0.8);
+  hatchPoly(ctx, shell, 5, 'rgba(0,0,0,0.5)', 1.1, true, 0.4);
+  // placas del caparazón con remaches
+  ctx.strokeStyle = INK; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-60, -116); ctx.quadraticCurveTo(0, -90, 62, -118); ctx.moveTo(-76, -76); ctx.quadraticCurveTo(0, -56, 80, -78); ctx.moveTo(0, -142); ctx.lineTo(0, -40); ctx.stroke();
+  for (const [x, y] of [[-40, -120], [36, -122], [-56, -84], [56, -86], [-20, -66], [22, -66]]) circle(ctx, x, y, 3.2, '#8a8e86', 1.2);
+  // cabeza baja con fauces abiertas goteando tinta
+  blob(ctx, [-30, -54, -20, -74, 20, -74, 30, -54, 18, -30, -18, -30], '#4a5048', 3, 0.6);
+  poly(ctx, [-18, -50, 18, -50, 14, -34, -14, -34], '#050506', 2, 0);
+  ctx.fillStyle = '#d0ccb8'; for (let i = -14; i <= 10; i += 6) { ctx.beginPath(); ctx.moveTo(i, -50); ctx.lineTo(i + 3, -42); ctx.lineTo(i + 6, -50); ctx.fill(); }
+  for (const x of [-10, 10]) { glow(ctx, x, -64, 10, '#9a7aff', 1); ctx.fillStyle = '#e0d0ff'; ctx.fillRect(x - 3, -66, 6, 3); }
+  ctx.fillStyle = '#0a0a10'; for (const [x, l] of [[-6, 22], [4, 30], [12, 16]]) { ctx.beginPath(); ctx.ellipse(x, -34 + l / 2, 2.6, l / 2, 0, 0, Math.PI * 2); ctx.fill(); }
+}
+
+const DRAW_Z = { walker, runner, bloater, armored, forker, dynamiter, hound, spider, abomination, foreman, faceless, beast };
 
 const Z_BOX = {
   walker: { w: 200, h: 190, cy: 0.9, s: 0.3 }, runner: { w: 190, h: 170, cy: 0.9, s: 0.3 }, bloater: { w: 200, h: 190, cy: 0.9, s: 0.32 },
   armored: { w: 200, h: 190, cy: 0.9, s: 0.32 }, forker: { w: 240, h: 200, cy: 0.9, s: 0.3 }, dynamiter: { w: 200, h: 190, cy: 0.9, s: 0.3 },
+  hound: { w: 230, h: 150, cy: 0.9, s: 0.3 }, spider: { w: 150, h: 90, cy: 0.88, s: 0.28 }, abomination: { w: 200, h: 170, cy: 0.9, s: 0.62 },
   foreman: { w: 330, h: 270, cy: 0.94, s: 0.52 }, faceless: { w: 240, h: 260, cy: 0.94, s: 0.55 }, beast: { w: 340, h: 200, cy: 0.92, s: 0.58 },
 };
 
@@ -1682,8 +1856,8 @@ function drawZombie(ctx, type, detail = 0, seed = 77) {
 
 
 
-function makeGround(mapId) {
-  const T = MAPS[mapId], S = 512;
+function makeGround(mapId, T = MAPS[mapId]) {
+  const S = 512;
   const c = makeCanvas(S, S), ctx = c.getContext('2d');
   const r = makeRng(mapId.length * 977 + 31);
   ctx.fillStyle = T.ground; ctx.fillRect(0, 0, S, S);
@@ -1773,8 +1947,20 @@ function beartrap_closed() {
   c.fillStyle = '#9a9a9a'; for (let x = -12; x <= 12; x += 4) { c.beginPath(); c.moveTo(x, -8); c.lineTo(x + 2, -2); c.lineTo(x + 4, -8); c.fill(); }
   c.fillStyle = 'rgba(90,10,10,0.7)'; c.fillRect(-6, -10, 8, 4);
 }
-function lantern_lit() { const c = this; poly(c, [-3, 0, -3, -78, 3, -78, 3, 0], IRON); line(c, 0, -78, 18, -82, IRON, 3); poly(c, [10, -84, 26, -84, 24, -102, 12, -102], '#2a2a2e', 2.5, 0); c.fillStyle = '#ffe08a'; c.fillRect(13, -100, 10, 14); poly(c, [8, -104, 28, -104, 18, -112], '#2a2a2e', 2, 0); }
-function lantern_broken() { const c = this; poly(c, [-3, 0, -3, -78, 3, -78, 3, 0], IRON); line(c, 0, -78, 18, -84, IRON, 3); poly(c, [10, -84, 20, -86, 16, -96], '#1a1a1c', 2, 0); }
+// farol colgante: poste, brazo, cadena y lámpara de gas
+function lantern_lit() {
+  const c = this;
+  poly(c, [-3, 0, -3, -112, 3, -112, 3, 0], IRON); line(c, 0, -106, 26, -110, IRON, 3.5); line(c, 0, -94, 12, -108, IRON, 2);
+  c.strokeStyle = '#6a6a70'; c.lineWidth = 1.5; c.beginPath(); for (let y = -108; y < -96; y += 3) { c.moveTo(20, y); c.lineTo(22, y + 2); } c.stroke();
+  poly(c, [13, -96, 29, -96, 27, -78, 15, -78], '#2a2a2e', 2.5, 0); c.fillStyle = '#ffe08a'; c.fillRect(16, -93, 10, 13);
+  poly(c, [11, -96, 31, -96, 21, -103], '#2a2a2e', 2, 0); poly(c, [15, -78, 27, -78, 21, -73], '#2a2a2e', 2, 0);
+}
+function lantern_broken() {
+  const c = this;
+  poly(c, [-3, 0, -3, -112, 3, -112, 3, 0], IRON); line(c, 0, -106, 26, -110, IRON, 3.5);
+  c.strokeStyle = '#6a6a70'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(20, -108); c.lineTo(23, -98); c.stroke();
+  poly(c, [16, -98, 26, -96, 22, -90], '#1a1a1c', 2, 0);
+}
 function dynbarrel() {
   const c = this;
   poly(c, [-17, 0, -19, -16, -17, -40, 17, -40, 19, -16, 17, 0], '#8a1a10');
@@ -1788,7 +1974,14 @@ function coverDraw(c, kind, phase) {
   const r = makeRng(kind.length * 13 + phase);
   const miss = phase * 0.28;
   ellipse(c, 0, 0, 52, 12, 'rgba(0,0,0,0.45)', 0);
-  if (kind === 'wagon') {
+  if (kind === 'tomb') {
+    const pts = [-34, 0, -34, -52, -26, -68, 0, -76, 26, -68, 34, -52, 34, 0];
+    poly(c, pts, phase > 1 ? '#3a3a3e' : STONE2);
+    hatchPoly(c, pts, 4, 'rgba(0,0,0,0.35)', 1, phase > 0);
+    line(c, 0, -60, 0, -26, INK, 3); line(c, -10, -48, 10, -48, INK, 3);
+    c.font = 'bold 9px "Courier Prime", monospace'; c.textAlign = 'center'; c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillText('R.I.P.', 0, -14);
+    if (phase > 0) { c.fillStyle = '#1a1a1c'; for (let i = 0; i < phase * 3; i++) { const x = (r() - 0.5) * 60, y = -r() * 70; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 6, y + 4); c.lineTo(x + 1, y + 9); c.fill(); } }
+  } else if (kind === 'wagon') {
     poly(c, [-50, 0, -54, -46, 50, -46, 54, 0], phase > 1 ? shade(WOOD, -0.2) : WOOD);
     for (let x = -46; x < 50; x += 12) if (r() > miss) poly(c, [x, -44, x + 10, -44, x + 10, -2, x, -2], WOOD2, 1.5, 0);
     circle(c, -34, -4, 14, '#2a1e14', 3); if (phase < 2) circle(c, 34, -4, 14, '#2a1e14', 3);
@@ -1801,12 +1994,18 @@ function coverDraw(c, kind, phase) {
     for (let i = 0; i < 5; i++) { if (r() < miss) continue; const y = -8 - i * 9; poly(c, [-52, y + 3, 52, y - 3, 52, y - 10, -52, y - 4], i % 2 ? WOOD : WOOD2, 2, 0); }
     poly(c, [-44, 0, -40, -54, -34, -54, -36, 0], WOOD); poly(c, [36, 0, 34, -54, 40, -54, 44, 0], WOOD);
   }
+  // fase 2: chamuscada y humeante
+  if (phase === 2 && kind !== 'tomb') {
+    c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(10,6,4,0.45)'; c.fillRect(-60, -80, 120, 90); c.globalCompositeOperation = 'source-over';
+    for (let i = 0; i < 6; i++) glowDot(c, (r() - 0.5) * 80, -r() * 40, '#ff6a1a');
+  }
   // astillas y grietas
   c.strokeStyle = INK; c.lineWidth = 1.5;
   for (let i = 0; i < phase * 7; i++) { const x = (r() - 0.5) * 90, y = -r() * 46; c.beginPath(); c.moveTo(x, y); c.lineTo(x + (r() - 0.5) * 16, y + r() * 12); c.stroke(); }
   c.fillStyle = '#c8a878';
   for (let i = 0; i < phase * 6; i++) c.fillRect((r() - 0.5) * 100, -r() * 8, 5, 2);
 }
+function glowDot(c, x, y, col) { glow(c, x, y, 7, col, 0.9); c.fillStyle = '#ffd27a'; c.fillRect(x - 1, y - 1, 2, 2); }
 function refuge() {
   const c = this;
   ellipse(c, 0, 2, 120, 26, 'rgba(0,0,0,0.5)', 0);
@@ -1822,7 +2021,7 @@ const PROPS = { gravecross, deadtree, rock, fence, skullpile, post, barrel, crat
 const PROP_SIZE = {
   gravecross: [44, 60], deadtree: [70, 116], rock: [76, 50], fence: [84, 44], skullpile: [56, 34], post: [110, 86], barrel: [44, 48], crate: [64, 56],
   wheel: [64, 40], tomb: [40, 52], pew: [90, 44], beam: [76, 86], cart: [80, 64], ore: [60, 34], reeds: [56, 66], stump: [40, 32], bones: [52, 26],
-  gallows: [150, 190], well: [74, 76], beartrap_open: [48, 22], beartrap_closed: [40, 24], lantern_lit: [40, 116], lantern_broken: [40, 100],
+  gallows: [150, 190], well: [74, 76], beartrap_open: [48, 22], beartrap_closed: [40, 24], lantern_lit: [40, 120], lantern_broken: [40, 120],
   dynbarrel: [44, 54], refuge: [240, 240],
 };
 
@@ -2089,6 +2288,21 @@ const SCENES = {
     }
   },
 };
+SCENES.butcher = (ctx, x, y, w, h) => {
+  sky(ctx, x, y, w, h, '#2a0a06', '#080302');
+  glow(ctx, x + w * 0.3, y + h * 0.2, w * 0.5, '#ffb040', 0.5);
+  halftone(ctx, x, y, w, h, 6, '#000000', 0.45, false);
+  ctx.strokeStyle = '#3a3a3e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, y + h * 0.12); ctx.lineTo(x + w, y + h * 0.12); ctx.stroke();
+  for (let i = 0; i < 5; i++) {
+    const hx = x + w * (0.12 + i * 0.19), len = h * (0.3 + (i % 2) * 0.12);
+    ctx.strokeStyle = '#8a8a90'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(hx, y + h * 0.12); ctx.lineTo(hx, y + h * 0.2); ctx.arc(hx - 6, y + h * 0.2, 6, 0, Math.PI); ctx.stroke();
+    ctx.fillStyle = '#060303'; ctx.beginPath(); ctx.ellipse(hx - 4, y + h * 0.2 + len * 0.55, w * 0.045, len * 0.5, 0.1, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(120,10,10,0.6)'; ctx.fillRect(hx - 8, y + h * 0.2 + len * 0.4, 8, 4);
+  }
+  ctx.fillStyle = '#1a0e08'; ctx.fillRect(x, y + h * 0.78, w, h * 0.22);
+  ctx.fillStyle = '#c8c0b0'; ctx.save(); ctx.translate(x + w * 0.7, y + h * 0.74); ctx.rotate(-0.2); ctx.fillRect(0, -10, w * 0.12, 20); ctx.fillStyle = '#3a2414'; ctx.fillRect(-w * 0.06, -5, w * 0.06, 10); ctx.restore();
+  inkText(ctx, 'CARNICERÍA McGOVERN', x + w * 0.5, y + h * 0.06, Math.min(w * 0.06, 20), '#e8dcc0', FT, 3);
+};
 function bossScene(type, col) {
   return (ctx, x, y, w, h) => {
     sky(ctx, x, y, w, h, '#0a0606', '#050304');
@@ -2275,116 +2489,307 @@ function paintScene(ctx, scene, x, y, w, h, hero, pal) {
   (SCENES[scene] || SCENES.town)(ctx, x, y, w, h, hero, pal);
 }
 
+// ---- src/data/poker.js
+// Naipes de tinta: la horda los suelta al morir. Al reunir 5 se evalúa la mano de póker y la jugada
+// desata una "ráfaga de furia" pasiva y temporal. Baraja corta (8 a As) para que las jugadas sean alcanzables.
+
+const RANKS = ['8', '9', '10', 'J', 'Q', 'K', 'A'];
+const SUITS = ['♠', '♥', '♦', '♣'];
+const RED = [false, true, true, false];
+
+// Efectos multiplicativos/aditivos de cada furia.
+const FURIES = {
+  PAREJA: { name: 'Pareja', label: 'FURIA DE LA PAREJA', time: 8, rate: 1.25, color: '#e8dcc0', desc: '+25% cadencia' },
+  DOBLE: { name: 'Doble Pareja', label: 'DOBLE FURIA', time: 10, rate: 1.25, dmg: 1.2, color: '#c8d8ff', desc: '+25% cadencia · +20% daño' },
+  TRIO: { name: 'Trío', label: 'FURIA DEL TRÍO', time: 10, dmg: 1.45, speed: 1.15, color: '#ffcf6a', desc: '+45% daño · +15% velocidad' },
+  ESCALERA: { name: 'Escalera', label: 'FURIA DE LA ESCALERA', time: 12, pierce: 3, range: 1.3, speed: 1.25, color: '#9dff6a', desc: '+3 perforación · +30% alcance · +25% velocidad' },
+  COLOR: { name: 'Color', label: 'FURIA DEL COLOR', time: 8, crit: 1, color: '#ff6a8a', desc: 'Todos los disparos son críticos' },
+  FULL: { name: 'Full', label: '¡FULL! FURIA TOTAL', time: 12, dmg: 1.5, rate: 1.4, reload: 0, color: '#ffb347', desc: '+50% daño · +40% cadencia · recarga instantánea' },
+  POKER: { name: 'Póker', label: '¡PÓKER DE MUERTOS!', time: 8, dmg: 2, invuln: true, explode: 70, color: '#d0a8ff', desc: 'Daño x2 · invulnerable · balas explosivas' },
+};
+
+function evaluateHand(hand) {
+  const counts = new Array(RANKS.length).fill(0), suits = new Array(4).fill(0);
+  for (const c of hand) { counts[c.r]++; suits[c.s]++; }
+  const groups = counts.filter((n) => n > 0).sort((a, b) => b - a);
+  const flush = hand.length === 5 && suits.some((n) => n === 5);
+  let straight = false;
+  if (hand.length === 5 && groups.length === 5) {
+    const rs = hand.map((c) => c.r).sort((a, b) => a - b);
+    straight = rs[4] - rs[0] === 4;
+  }
+  if (groups[0] === 4) return 'POKER';
+  if (groups[0] === 3 && groups[1] === 2) return 'FULL';
+  if (flush) return 'COLOR';
+  if (straight) return 'ESCALERA';
+  if (groups[0] === 3) return 'TRIO';
+  if (groups[0] === 2 && groups[1] === 2) return 'DOBLE';
+  if (groups[0] === 2) return 'PAREJA';
+  return null;
+}
+
 // ---- src/art/cardArt.js
-// Cartas de habilidad con marcos por rareza: hierro oxidado, plata envejecida, oro oscuro con ámbar,
-// platino oscuro cinemático y cristal tallado oscuro (diamante).
+// Cartas en formato TAROT vertical (1 : 1,75) con estética de cómic noir de los 90.
+// Bordes de tinta irregular a plumilla y materia por rareza:
+//   Bronce   → pergamino oscuro y esquinas de hierro oxidado
+//   Plata    → acero con tramas de semitono
+//   Oro      → latón con filigranas grabadas
+//   Platino  → platino oscuro con barridos de luz cinematográficos
+//   Diamante → tinta negra absoluta, grabado de plancha de cobre y destellos ámbar/naranja
 
 
+
+
+const TAROT = 1.75;
 
 function rr(ctx, x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
 
-function frame(ctx, W, H, rar, seed) {
-  const R = RARITY[rar], r = makeRng(seed);
+// Contorno a plumilla: varias pasadas temblorosas de grosor variable.
+function penBorder(ctx, x, y, w, h, r, seed, lw, color = INK) {
+  const rnd = makeRng(seed);
+  const pts = [];
+  const step = 5;
+  const add = (px, py) => pts.push(px, py);
+  for (let i = 0; i <= w - 2 * r; i += step) add(x + r + i, y);
+  for (let a = -Math.PI / 2; a <= 0; a += 0.3) add(x + w - r + Math.cos(a) * r, y + r + Math.sin(a) * r);
+  for (let i = 0; i <= h - 2 * r; i += step) add(x + w, y + r + i);
+  for (let a = 0; a <= Math.PI / 2; a += 0.3) add(x + w - r + Math.cos(a) * r, y + h - r + Math.sin(a) * r);
+  for (let i = 0; i <= w - 2 * r; i += step) add(x + w - r - i, y + h);
+  for (let a = Math.PI / 2; a <= Math.PI; a += 0.3) add(x + r + Math.cos(a) * r, y + h - r + Math.sin(a) * r);
+  for (let i = 0; i <= h - 2 * r; i += step) add(x, y + h - r - i);
+  for (let a = Math.PI; a <= Math.PI * 1.5; a += 0.3) add(x + r + Math.cos(a) * r, y + r + Math.sin(a) * r);
+  ctx.strokeStyle = color; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  for (let pass = 0; pass < 3; pass++) {
+    ctx.lineWidth = lw * (pass === 0 ? 1 : 0.45);
+    ctx.beginPath();
+    for (let i = 0; i < pts.length; i += 2) {
+      const j = (rnd() - 0.5) * (pass === 0 ? 1.2 : 2.4);
+      if (i === 0) ctx.moveTo(pts[i] + j, pts[i + 1] + j); else ctx.lineTo(pts[i] + j, pts[i + 1] - j);
+    }
+    ctx.closePath(); ctx.stroke();
+  }
+  // salpicaduras de plumilla
+  ctx.fillStyle = color;
+  for (let i = 0; i < 6; i++) { const k = (rnd() * (pts.length / 2)) | 0; ctx.beginPath(); ctx.arc(pts[k * 2] + (rnd() - 0.5) * 6, pts[k * 2 + 1] + (rnd() - 0.5) * 6, rnd() * 1.6 + 0.4, 0, TAU); ctx.fill(); }
+}
+
+function archPath(ctx, x, y, w, h) {
+  const r = w / 2;
+  ctx.beginPath(); ctx.moveTo(x, y + h); ctx.lineTo(x, y + r); ctx.arc(x + r, y + r, r, Math.PI, 0); ctx.lineTo(x + w, y + h); ctx.closePath();
+}
+
+function spiral(ctx, cx, cy, r, dir, turns = 1.6) {
+  ctx.beginPath();
+  for (let a = 0; a < TAU * turns; a += 0.15) { const k = r * (1 - a / (TAU * turns)); const px = cx + Math.cos(a * dir) * k, py = cy + Math.sin(a * dir) * k; a === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
+  ctx.stroke();
+}
+
+function material(ctx, W, H, rar, rnd, t) {
   const g = ctx.createLinearGradient(0, 0, W, H);
   switch (rar) {
-    case 0: g.addColorStop(0, '#8a5232'); g.addColorStop(0.5, '#5a3218'); g.addColorStop(1, '#3a1e0e'); break;
-    case 1: g.addColorStop(0, '#d8d8d0'); g.addColorStop(0.45, '#8a8a84'); g.addColorStop(0.7, '#c0c0b8'); g.addColorStop(1, '#5a5a56'); break;
-    case 2: g.addColorStop(0, '#e8b84a'); g.addColorStop(0.4, '#8a5a12'); g.addColorStop(0.7, '#d0a03a'); g.addColorStop(1, '#4a2e06'); break;
-    case 3: g.addColorStop(0, '#c8d4e4'); g.addColorStop(0.35, '#4a5468'); g.addColorStop(0.6, '#a8b4c8'); g.addColorStop(1, '#1e2430'); break;
-    default: g.addColorStop(0, '#6a4a9a'); g.addColorStop(0.3, '#1e1236'); g.addColorStop(0.55, '#5a8ab0'); g.addColorStop(0.8, '#2a1640'); g.addColorStop(1, '#0a0614');
-  }
-  ctx.fillStyle = g; rr(ctx, 0, 0, W, H, W * 0.07); ctx.fill();
-  ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke();
-  if (rar === 0) { // óxido y remaches
-    for (let i = 0; i < 120; i++) { ctx.fillStyle = r() < 0.5 ? 'rgba(160,70,20,0.45)' : 'rgba(20,10,4,0.4)'; ctx.fillRect(r() * W, r() * H, 1 + r() * 3, 1 + r() * 2); }
-    ctx.fillStyle = '#3a2416'; for (const [x, y] of [[0.08, 0.06], [0.92, 0.06], [0.08, 0.94], [0.92, 0.94]]) { ctx.beginPath(); ctx.arc(x * W, y * H, W * 0.025, 0, TAU); ctx.fill(); ctx.stroke(); }
-  }
-  if (rar === 1) { ctx.strokeStyle = 'rgba(40,40,36,0.6)'; ctx.lineWidth = 1; rr(ctx, W * 0.035, W * 0.035, W - W * 0.07, H - W * 0.07, W * 0.05); ctx.stroke(); }
-  if (rar === 4) { // facetas de cristal
-    ctx.save(); rr(ctx, 0, 0, W, H, W * 0.07); ctx.clip();
-    for (let i = 0; i < 14; i++) {
-      ctx.fillStyle = `rgba(${150 + r() * 100 | 0},${120 + r() * 120 | 0},255,${0.06 + r() * 0.12})`;
-      ctx.beginPath(); ctx.moveTo(r() * W, r() * H); ctx.lineTo(r() * W, r() * H); ctx.lineTo(r() * W, r() * H); ctx.fill();
+    case 0: { // pergamino oscuro
+      g.addColorStop(0, '#5a4228'); g.addColorStop(0.5, '#3e2c1a'); g.addColorStop(1, '#2a1c10');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < 14; i++) { const x = rnd() * W, y = rnd() * H, r = 8 + rnd() * 30; const sg = ctx.createRadialGradient(x, y, 0, x, y, r); sg.addColorStop(0, 'rgba(20,10,4,0.35)'); sg.addColorStop(1, 'rgba(20,10,4,0)'); ctx.fillStyle = sg; ctx.fillRect(x - r, y - r, r * 2, r * 2); }
+      ctx.strokeStyle = 'rgba(230,200,150,0.08)'; ctx.lineWidth = 0.7; ctx.beginPath();
+      for (let i = 0; i < 40; i++) { const x = rnd() * W, y = rnd() * H; ctx.moveTo(x, y); ctx.lineTo(x + (rnd() - 0.5) * 20, y + (rnd() - 0.5) * 4); } ctx.stroke();
+      break;
     }
-    ctx.restore();
+    case 1: { // acero con semitono
+      g.addColorStop(0, '#b8bcc2'); g.addColorStop(0.45, '#6a6e74'); g.addColorStop(0.7, '#a0a4aa'); g.addColorStop(1, '#3e4248');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(10,12,16,0.35)';
+      for (let y = 0; y < H; y += 5) for (let x = ((y / 5) % 2) * 2.5; x < W; x += 5) { const r = 0.4 + (x / W) * 1.3; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
+      break;
+    }
+    case 2: { // latón grabado
+      g.addColorStop(0, '#d8a848'); g.addColorStop(0.35, '#8a5e18'); g.addColorStop(0.65, '#c89a3a'); g.addColorStop(1, '#5a3a0a');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(60,30,4,0.35)'; ctx.lineWidth = 0.8; ctx.beginPath();
+      for (let i = -H; i < W; i += 4) { ctx.moveTo(i, 0); ctx.lineTo(i + H, H); } ctx.stroke();
+      break;
+    }
+    case 3: { // platino oscuro
+      g.addColorStop(0, '#8a94a8'); g.addColorStop(0.35, '#2e3440'); g.addColorStop(0.6, '#6a7488'); g.addColorStop(1, '#14181e');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(200,220,255,0.06)'; for (let i = 0; i < 5; i++) { ctx.save(); ctx.translate(rnd() * W, 0); ctx.rotate(0.5); ctx.fillRect(0, -H, 6 + rnd() * 18, H * 3); ctx.restore(); }
+      break;
+    }
+    default: { // tinta negra absoluta + grabado de plancha de cobre
+      ctx.fillStyle = '#030203'; ctx.fillRect(0, 0, W, H);
+      ctx.lineWidth = 0.7;
+      for (let y = 2; y < H; y += 2.4) {
+        const d = Math.abs(y - H * 0.38) / H;
+        ctx.strokeStyle = `rgba(184,104,48,${(0.06 + d * 0.32).toFixed(3)})`;
+        ctx.beginPath(); ctx.moveTo(0, y);
+        for (let x = 0; x <= W; x += 8) ctx.lineTo(x, y + Math.sin(x * 0.08 + y * 0.05) * 0.8);
+        ctx.stroke();
+      }
+    }
   }
-  // ventana interior oscura
-  const m = W * 0.07;
-  ctx.fillStyle = '#120c08'; rr(ctx, m, m, W - m * 2, H - m * 2, W * 0.04); ctx.fill();
-  ctx.lineWidth = 2; ctx.strokeStyle = R.glow; ctx.globalAlpha = rar >= 2 ? 0.9 : 0.5; ctx.stroke(); ctx.globalAlpha = 1;
-  if (rar >= 2) { // brillo ámbar/cinemático interior
-    const ig = ctx.createRadialGradient(W / 2, H * 0.32, 0, W / 2, H * 0.32, W * 0.6);
-    ig.addColorStop(0, rgba(R.glow, rar === 4 ? 0.35 : 0.22)); ig.addColorStop(1, rgba(R.glow, 0));
-    ctx.fillStyle = ig; ctx.fillRect(m, m, W - m * 2, H - m * 2);
+}
+
+function frameBand(ctx, W, H, rar, rnd, m) {
+  if (rar === 0) { // esquinas de hierro oxidado con remaches
+    for (const [cx, cy, sx, sy] of [[0, 0, 1, 1], [W, 0, -1, 1], [0, H, 1, -1], [W, H, -1, -1]]) {
+      ctx.fillStyle = '#4a3a30'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + sx * W * 0.22, cy); ctx.lineTo(cx, cy + sy * W * 0.22); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(170,80,30,0.55)'; for (let i = 0; i < 18; i++) ctx.fillRect(cx + sx * rnd() * W * 0.14, cy + sy * rnd() * W * 0.14, 1.5 + rnd() * 2, 1.5);
+      ctx.fillStyle = '#8a7a6a'; ctx.beginPath(); ctx.arc(cx + sx * W * 0.06, cy + sy * W * 0.06, W * 0.018, 0, TAU); ctx.fill();
+      ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.stroke();
+    }
   }
-  // semitono en el fondo de la ventana
-  ctx.save(); rr(ctx, m, m, W - m * 2, H - m * 2, W * 0.04); ctx.clip();
-  ctx.fillStyle = 'rgba(255,240,200,0.04)';
-  for (let y = m; y < H - m; y += 5) for (let x = m + ((y / 5) % 2) * 2.5; x < W - m; x += 5) { ctx.beginPath(); ctx.arc(x, y, 1, 0, TAU); ctx.fill(); }
+  if (rar === 1) { ctx.strokeStyle = 'rgba(20,22,26,0.7)'; ctx.lineWidth = 1; rr(ctx, m * 0.45, m * 0.45, W - m * 0.9, H - m * 0.9, W * 0.05); ctx.stroke(); rr(ctx, m * 0.6, m * 0.6, W - m * 1.2, H - m * 1.2, W * 0.045); ctx.stroke(); }
+  if (rar === 2) { // filigranas grabadas en las esquinas
+    ctx.strokeStyle = 'rgba(50,24,2,0.8)'; ctx.lineWidth = 1.2;
+    for (const [cx, cy, d] of [[m * 1.4, m * 1.4, 1], [W - m * 1.4, m * 1.4, -1], [m * 1.4, H - m * 1.4, -1], [W - m * 1.4, H - m * 1.4, 1]]) { spiral(ctx, cx, cy, W * 0.07, d); spiral(ctx, cx + d * W * 0.08, cy, W * 0.035, -d, 1.2); }
+    ctx.strokeStyle = 'rgba(255,230,160,0.35)'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); for (let x = m * 2.6; x < W - m * 2.6; x += 9) { ctx.moveTo(x, m * 0.5); ctx.quadraticCurveTo(x + 4.5, m * 0.1, x + 9, m * 0.5); ctx.moveTo(x, H - m * 0.5); ctx.quadraticCurveTo(x + 4.5, H - m * 0.1, x + 9, H - m * 0.5); } ctx.stroke();
+  }
+}
+
+function toRoman(n) {
+  if (n <= 0) return '0';
+  const v = [[40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+  let s = '';
+  for (const [k, r] of v) while (n >= k) { s += r; n -= k; }
+  return s;
+}
+
+function glints(ctx, W, H, t, rnd, color, n) {
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < n; i++) {
+    const x = rnd() * W, y = rnd() * H, ph = rnd() * TAU, k = Math.max(0, Math.sin(t * 2.2 + ph));
+    if (k < 0.2) continue;
+    const s = (2 + rnd() * 4) * k;
+    ctx.strokeStyle = rgba(color, 0.9 * k); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x - s * 2, y); ctx.lineTo(x + s * 2, y); ctx.moveTo(x, y - s * 2); ctx.lineTo(x, y + s * 2); ctx.stroke();
+    ctx.fillStyle = rgba('#fff2c8', 0.8 * k); ctx.beginPath(); ctx.arc(x, y, s * 0.4, 0, TAU); ctx.fill();
+  }
   ctx.restore();
-  return m;
 }
 
-// Dibuja una carta completa (sorteo, dossier). W×H en px de CSS (ctx ya escalado).
+// Carta completa (sorteo, dossier). W×H en px CSS (ctx ya escalado). H ≈ W·1,75.
 function drawCard(ctx, card, W, H, t = 0, extra = '') {
-  const R = RARITY[card.r];
-  const m = frame(ctx, W, H, card.r, card.id.length * 7 + card.r);
-  // nombre
-  ctx.font = `${Math.round(W * 0.075)}px "${FT}", Georgia, serif`;
-  let fs = W * 0.075; const tw = ctx.measureText(card.name).width;
-  if (tw > W - m * 3) fs *= (W - m * 3) / tw;
-  inkText(ctx, card.name, W / 2, m + H * 0.07, fs, R.text, FT, 3);
-  // medallón con icono
-  const cy = m + H * 0.27, cr = W * 0.19;
-  ctx.beginPath(); ctx.arc(W / 2, cy, cr, 0, TAU); ctx.fillStyle = '#1e140c'; ctx.fill();
-  ctx.lineWidth = 3; ctx.strokeStyle = R.frame; ctx.stroke(); ctx.lineWidth = 1.5; ctx.strokeStyle = INK; ctx.stroke();
-  if (card.r >= 3) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.35 + Math.sin(t * 3) * 0.15; ctx.fillStyle = R.glow; ctx.beginPath(); ctx.arc(W / 2, cy, cr * 1.15, 0, TAU); ctx.fill(); ctx.restore(); }
-  ctx.font = `${Math.round(cr * 1.1)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#fff'; ctx.fillText(card.icon, W / 2, cy + 2);
-  // tipo
-  const type = card.t === 'action' ? `ACCIÓN · ${card.cd}s` : 'PASIVA';
-  inkText(ctx, type, W / 2, cy + cr + H * 0.045, W * 0.052, card.t === 'action' ? '#ffcf6a' : '#c8b898', FB, 0);
-  // descripción
-  ctx.font = `bold ${Math.round(W * 0.064)}px "${FB}", "Courier New", monospace`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = '#e8dcc0';
-  let y = cy + cr + H * 0.085;
-  const lh = W * 0.075;
-  for (const l of wrapText(ctx, card.desc, W - m * 2.6)) { ctx.fillText(l, W / 2, y); y += lh; }
-  if (card.curse) {
-    y += lh * 0.3; ctx.fillStyle = '#ff6a5a';
-    for (const l of wrapText(ctx, card.curse.text, W - m * 2.6)) { ctx.fillText(l, W / 2, y); y += lh; }
-  }
-  if (extra) { y += lh * 0.3; ctx.fillStyle = '#a8c8ff'; for (const l of wrapText(ctx, extra, W - m * 2.6)) { ctx.fillText(l, W / 2, y); y += lh; } }
+  const R = RARITY[card.r], rnd = makeRng(card.id.length * 131 + card.r * 7), m = W * 0.065;
+  ctx.save();
+  rr(ctx, 0, 0, W, H, W * 0.06); ctx.clip();
+  material(ctx, W, H, card.r, rnd, t);
+  frameBand(ctx, W, H, card.r, rnd, m);
+  ctx.restore();
+  // numeral de arcano
+  const idx = CARDS.indexOf(card);
+  const numeral = idx < 0 ? '0' : toRoman(idx + 1);
+  const darkText = card.r === 1 || card.r === 2;
+  ctx.fillStyle = card.r === 4 ? '#1a0c06' : darkText ? 'rgba(20,12,4,0.85)' : 'rgba(8,5,3,0.75)';
+  rr(ctx, W / 2 - W * 0.14, m * 0.55, W * 0.28, W * 0.12, 4); ctx.fill();
+  inkText(ctx, numeral, W / 2, m * 0.55 + W * 0.062, W * 0.075, card.r === 4 ? '#ff9a3a' : R.text, FT, 0);
+  // ventana en arco con la ilustración
+  const ax = m * 1.3, ay = m + W * 0.13, aw = W - m * 2.6, ah = H * 0.43;
+  ctx.save();
+  archPath(ctx, ax, ay, aw, ah); ctx.clip();
+  const ig = ctx.createLinearGradient(0, ay, 0, ay + ah);
+  ig.addColorStop(0, card.r === 4 ? '#0a0504' : '#1a120c'); ig.addColorStop(1, '#060403');
+  ctx.fillStyle = ig; ctx.fillRect(ax, ay, aw, ah);
+  const cx = ax + aw / 2, cy = ay + ah * 0.56;
+  ctx.strokeStyle = rgba(R.glow, card.r === 4 ? 0.4 : 0.22); ctx.lineWidth = 1;
+  ctx.beginPath();
+  if (card.t === 'action') for (let a = 0; a < TAU; a += TAU / 36) { ctx.moveTo(cx + Math.cos(a) * aw * 0.2, cy + Math.sin(a) * aw * 0.2); ctx.lineTo(cx + Math.cos(a) * aw, cy + Math.sin(a) * aw); }
+  else for (let r = aw * 0.22; r < aw; r += 5) { ctx.moveTo(cx + r, cy); ctx.arc(cx, cy, r, 0, TAU); }
+  ctx.stroke();
+  // trama de semitono en el fondo de la ilustración
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  for (let y = ay; y < ay + ah; y += 5) for (let x = ax + ((y / 5) % 2) * 2.5; x < ax + aw; x += 5) { const d = Math.hypot(x - cx, y - cy) / aw; if (d > 0.3) { ctx.beginPath(); ctx.arc(x, y, Math.min(2, (d - 0.3) * 4), 0, TAU); ctx.fill(); } }
+  const cr = aw * 0.27;
+  const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr * 1.8);
+  halo.addColorStop(0, rgba(R.glow, card.r >= 2 ? 0.45 : 0.25)); halo.addColorStop(1, rgba(R.glow, 0));
+  ctx.fillStyle = halo; ctx.fillRect(ax, ay, aw, ah);
+  ctx.beginPath(); ctx.arc(cx, cy, cr, 0, TAU); ctx.fillStyle = '#120a06'; ctx.fill();
+  ctx.font = `${Math.round(cr * 1.15)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+  ctx.fillText(card.icon, cx, cy + 2);
+  ctx.restore();
+  ctx.save(); archPath(ctx, ax, ay, aw, ah); ctx.lineWidth = 2.5; ctx.strokeStyle = card.r === 4 ? '#b86830' : INK; ctx.stroke(); ctx.restore();
+  // cinta con el nombre
+  const by = ay + ah - H * 0.02, bh = H * 0.075;
+  ctx.fillStyle = card.r === 4 ? '#140806' : '#e8dcc0';
+  ctx.beginPath(); ctx.moveTo(m * 0.4, by); ctx.lineTo(W - m * 0.4, by); ctx.lineTo(W - m * 1.2, by + bh / 2); ctx.lineTo(W - m * 0.4, by + bh); ctx.lineTo(m * 0.4, by + bh); ctx.lineTo(m * 1.2, by + bh / 2); ctx.closePath();
+  ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = card.r === 4 ? '#b86830' : INK; ctx.stroke();
+  let fs = W * 0.072;
+  ctx.font = `${fs}px "${FT}", Georgia, serif`;
+  const tw = ctx.measureText(card.name.toUpperCase()).width;
+  if (tw > W - m * 3.4) fs *= (W - m * 3.4) / tw;
+  inkText(ctx, card.name.toUpperCase(), W / 2, by + bh / 2 + 1, fs, card.r === 4 ? '#ffb347' : '#1a0e06', FT, 0);
+  // tipo y etiquetas
+  const tags = (card.t === 'action' ? `ACCIÓN · ${card.cd}s` : 'PASIVA') + (card.range ? ' · LARGO ALCANCE' : card.mod ? ' · MOD. DE ARMA' : '');
+  inkText(ctx, tags, W / 2, by + bh + H * 0.03, W * 0.048, card.r === 4 ? '#ff9a3a' : darkText ? '#1a0e06' : '#ffcf6a', FB, 0);
+  // texto en papeleta
+  const py = by + bh + H * 0.055, ph = H - py - m * 1.6;
+  ctx.fillStyle = card.r === 4 ? 'rgba(20,8,4,0.85)' : 'rgba(240,228,200,0.92)';
+  rr(ctx, m * 0.9, py, W - m * 1.8, ph, 3); ctx.fill();
+  ctx.lineWidth = 1.2; ctx.strokeStyle = card.r === 4 ? '#6a3a1a' : 'rgba(10,6,4,0.7)'; ctx.stroke();
+  ctx.font = `bold ${Math.round(W * 0.058)}px "${FB}", "Courier New", monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  let y = py + W * 0.035; const lh = W * 0.066;
+  ctx.fillStyle = card.r === 4 ? '#f2e2c8' : '#1a0e06';
+  for (const l of wrapText(ctx, card.desc, W - m * 2.8)) { ctx.fillText(l, W / 2, y); y += lh; }
+  if (card.curse) { ctx.fillStyle = card.r === 4 ? '#ff6a3a' : '#9a140e'; for (const l of wrapText(ctx, card.curse.text, W - m * 2.8)) { ctx.fillText(l, W / 2, y); y += lh; } }
+  if (extra) { ctx.fillStyle = card.r === 4 ? '#ffd27a' : '#2a4a7a'; for (const l of wrapText(ctx, extra, W - m * 2.8)) { ctx.fillText(l, W / 2, y); y += lh; } }
   // rareza
-  inkText(ctx, R.name.toUpperCase() + ' · ' + R.label, W / 2, H - m - H * 0.035, W * 0.05, R.text, FB, 0);
-  // destello cinemático (platino/diamante)
+  inkText(ctx, '◆ ' + R.name.toUpperCase() + ' ◆', W / 2, H - m * 0.85, W * 0.05, card.r === 4 ? '#ff9a3a' : darkText ? '#1a0e06' : R.text, FB, 0);
+  // brillo cinematográfico y destellos
   if (card.r >= 3) {
-    const sx = ((t * 0.5) % 1.6 - 0.3) * W;
+    const sx = ((t * 0.45) % 1.6 - 0.3) * W;
     const sg = ctx.createLinearGradient(sx - 30, 0, sx + 30, H);
-    sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.5, 'rgba(255,255,255,0.18)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = sg; rr(ctx, 0, 0, W, H, W * 0.07); ctx.fill(); ctx.restore();
+    sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.5, card.r === 4 ? 'rgba(255,170,80,0.16)' : 'rgba(220,235,255,0.18)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = sg; rr(ctx, 0, 0, W, H, W * 0.06); ctx.fill(); ctx.restore();
   }
+  if (card.r === 4) glints(ctx, W, H, t, makeRng(card.id.length * 3 + 1), '#ff9a3a', 14);
+  if (card.r === 2) glints(ctx, W, H, t, makeRng(card.id.length * 5 + 2), '#ffe08a', 4);
+  penBorder(ctx, 1.5, 1.5, W - 3, H - 3, W * 0.06, card.id.length * 17 + card.r, W * 0.022, card.r === 4 ? '#000' : INK);
 }
 
-// Miniatura para el HUD (mano de cartas). Se cachea por carta.
+// Miniatura de tarot para el HUD (mano de habilidad). Cacheada por carta y tamaño.
 const mini = new Map();
 function miniCard(card, size, dpr) {
   const key = card.id + size + dpr;
   let c = mini.get(key);
   if (c) return c;
-  const W = size, H = size * 1.35;
+  const W = size, H = Math.round(size * 1.6);
   c = makeCanvas(W * dpr, H * dpr);
   const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
-  const m = frame(ctx, W, H, card.r, card.id.length * 7 + card.r);
-  ctx.font = `${Math.round(W * 0.46)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
-  ctx.fillText(card.icon, W / 2, H * 0.45);
-  ctx.font = `bold ${Math.round(W * 0.13)}px "${FB}", monospace`; ctx.fillStyle = RARITY[card.r].text;
-  ctx.fillText(card.name.split(' ')[0].slice(0, 9), W / 2, H - m - W * 0.1);
+  const rnd = makeRng(card.id.length * 131);
+  ctx.save(); rr(ctx, 0, 0, W, H, W * 0.08); ctx.clip(); material(ctx, W, H, card.r, rnd, 0); ctx.restore();
+  const m = W * 0.1;
+  ctx.save(); archPath(ctx, m, m, W - m * 2, H * 0.7); ctx.fillStyle = card.r === 4 ? '#050302' : '#140c08'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = card.r === 4 ? '#b86830' : INK; ctx.stroke(); ctx.restore();
+  ctx.font = `${Math.round(W * 0.48)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+  ctx.fillText(card.icon, W / 2, m + H * 0.4);
+  ctx.font = `bold ${Math.round(W * 0.14)}px "${FB}", monospace`; ctx.fillStyle = card.r === 4 ? '#ff9a3a' : card.r === 1 || card.r === 2 ? '#1a0e06' : RARITY[card.r].text;
+  ctx.fillText(card.name.split(' ')[0].slice(0, 9), W / 2, H - m * 1.2);
+  penBorder(ctx, 1, 1, W - 2, H - 2, W * 0.08, card.id.length * 5, 2.2);
   mini.set(key, c);
   return c;
+}
+
+// Naipe de tinta (póker) para el HUD.
+const faces = new Map();
+function pokerFace(c, w, dpr) {
+  const key = c.r * 10 + c.s + '|' + w + dpr;
+  let cv = faces.get(key);
+  if (cv) return cv;
+  const h = Math.round(w * 1.4);
+  cv = makeCanvas(w * dpr, h * dpr);
+  const x = cv.getContext('2d'); x.scale(dpr, dpr);
+  x.fillStyle = '#efe2c4'; rr(x, 0, 0, w, h, 4); x.fill();
+  x.fillStyle = 'rgba(120,80,30,0.12)'; for (let i = 0; i < 20; i++) x.fillRect(Math.random() * w, Math.random() * h, 1.5, 1.5);
+  const col = RED[c.s] ? '#9a140e' : '#120a06';
+  x.fillStyle = col; x.textAlign = 'left'; x.textBaseline = 'top';
+  x.font = `${Math.round(w * 0.36)}px "${FT}", Georgia, serif`; x.fillText(RANKS[c.r], w * 0.1, h * 0.05);
+  x.font = `${Math.round(w * 0.55)}px serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(SUITS[c.s], w / 2, h * 0.6);
+  penBorder(x, 1, 1, w - 2, h - 2, 4, c.r * 7 + c.s, 1.8);
+  faces.set(key, cv);
+  return cv;
 }
 
 // ---- src/game/pool.js
@@ -2546,7 +2951,7 @@ class Sprites {
 }
 
 // ---- src/data/enemies.js
-// La Horda: siluetas asimétricas, paleta fría y desaturada. Colosos de élite desde la Ronda 6.
+// La Plaga: siluetas asimétricas, paleta fría y desaturada. Colosos de élite desde la Ronda 6.
 const ZOMBIES = {
   walker: { name: 'Errante', hp: 22, speed: 62, r: 14, dmg: 9, xp: 1, soul: 1 },
   runner: { name: 'Corredor', hp: 15, speed: 150, r: 12, dmg: 7, xp: 1, soul: 1 },
@@ -2554,6 +2959,10 @@ const ZOMBIES = {
   armored: { name: 'Acorazado', hp: 40, armor: 90, speed: 66, r: 16, dmg: 13, xp: 3, soul: 3 },
   forker: { name: 'Horquero', hp: 38, speed: 92, r: 14, dmg: 14, xp: 2, soul: 2, lunge: true },
   dynamiter: { name: 'Dinamitero', hp: 26, speed: 118, r: 14, dmg: 30, xp: 2, soul: 2, bomb: { r: 95 } },
+  // ---- bestiario ampliado
+  hound: { name: 'Sabueso de Tinta', hp: 18, speed: 178, r: 12, dmg: 6, xp: 1, soul: 1, pack: [3, 5], stun: 1 },
+  spider: { name: 'Araña de Cripta', hp: 8, speed: 118, r: 9, dmg: 4, xp: 1, soul: 1, pack: [7, 11], puddle: { r: 62, slow: 0.45, time: 5 } },
+  abomination: { name: 'Abominación', hp: 240, armor: 220, speed: 40, r: 30, dmg: 18, xp: 8, soul: 10, spit: { range: 330, cd: 3.4, count: 7, cone: 0.7, speed: 260 } },
 };
 
 const COLOSSI = {
@@ -2574,6 +2983,7 @@ const COLOSSI = {
 
 
 const COVERS = ['wagon', 'crates', 'barricade'];
+const ZONE_COVERS = [['barricade', 'wagon', 'crates'], ['tomb', 'tomb', 'barricade'], ['crates', 'barricade', 'wagon']];
 
 function mk(g, kind, x, y, extra) {
   const t = { kind, x, y, r: 16, hp: 1, maxHp: 1, dead: false, solid: false, flash: 0, armed: true, rearm: 0, owned: false, fuse: 0, phase: 0, variant: '', life: 0, ...extra };
@@ -2587,15 +2997,20 @@ function buildTraps(g) {
   const ok = (x, y, d) => Math.hypot(x, y - 120) > 230 && pts.every((p) => Math.hypot(p[0] - x, p[1] - y) > d);
   const place = (n, d, fn) => {
     for (let i = 0, tries = 0; i < n && tries < 400; tries++) {
-      const x = (r() * 2 - 1) * (HALF - 120), y = (r() * 2 - 1) * (HALF - 120);
+      const x = (r() * 2 - 1) * (HX - 120), y = (r() * 2 - 1) * (HY - 120);
       if (!ok(x, y, d)) continue;
       pts.push([x, y]); fn(x, y, i); i++;
     }
   };
-  place(7, 200, (x, y, i) => mk(g, 'cover', x, y, { r: 46, hp: 320, maxHp: 320, solid: true, variant: COVERS[i % 3] }));
-  place(8, 160, (x, y) => mk(g, 'lantern', x, y, { r: 10 }));
-  place(7, 150, (x, y) => mk(g, 'barrel', x, y, { r: 18, hp: 30, maxHp: 30, solid: true }));
-  place(12, 110, (x, y) => mk(g, 'bear', x, y, { r: 18 }));
+  const tombish = g.mapId === 'chapel' || g.mapId === 'pulpit';
+  place(20, 200, (x, y, i) => {
+    const v = g.zoned ? ZONE_COVERS[zoneAt(x)][i % 3] : tombish && i % 2 ? 'tomb' : COVERS[i % 3];
+    const hp = v === 'tomb' ? 520 : 320;
+    mk(g, 'cover', x, y, { r: v === 'tomb' ? 36 : 46, hp, maxHp: hp, solid: true, variant: v });
+  });
+  place(22, 160, (x, y) => mk(g, 'lantern', x, y, { r: 10 }));
+  place(16, 150, (x, y) => mk(g, 'barrel', x, y, { r: 18, hp: 30, maxHp: 30, solid: true }));
+  place(28, 110, (x, y) => mk(g, 'bear', x, y, { r: 18 }));
 }
 
 // Restaura destructibles (supervivencia: cada pocas rondas).
@@ -2607,7 +3022,7 @@ function restoreTraps(g) {
 }
 
 function placeTrap(g, x, y) {
-  x = Math.max(-HALF, Math.min(HALF, x)); y = Math.max(-HALF, Math.min(HALF, y));
+  x = Math.max(-HX, Math.min(HX, x)); y = Math.max(-HY, Math.min(HY, y));
   mk(g, 'bear', x, y, { r: 20, owned: true, life: 30 });
 }
 
@@ -2647,6 +3062,7 @@ function updateTraps(g, dt) {
       case 'cover':
         if (t.dead) break;
         t.phase = t.hp > t.maxHp * 0.66 ? 0 : t.hp > t.maxHp * 0.33 ? 1 : 2;
+        if (t.phase === 2 && t.variant !== 'tomb' && Math.random() < dt * 5) g.addPart(t.x + (Math.random() - 0.5) * 70, t.y - 30, (Math.random() - 0.5) * 20, -30 - Math.random() * 30, 1.4, 6, '#2a2624', PT.SMOKE, false).grow = 14;
         if (t.hp <= 0) {
           t.dead = true; Sfx.play('kill');
           g.comicText(t.x, t.y - 50, '¡CRACK!', '#c8a878', 22);
@@ -2668,9 +3084,9 @@ function blowBarrel(g, t) {
 function breakLantern(g, t) {
   if (t.dead) return;
   t.dead = true; Sfx.play('boom');
-  g.addZone(ZK.FIRE, t.x + 18, t.y, 100, 6.5, 26 * g.st.trapMult, '#ff6a1a', 1);
+  g.addZone(ZK.FIRE, t.x + 21, t.y + 6, 100, 6.5, 26 * g.st.trapMult, '#ff6a1a', 1);
   g.comicText(t.x, t.y - 110, '¡FWOOSH!', '#ffb040', 22);
-  for (let k = 0; k < 14; k++) g.addPart(t.x + 18, t.y - 92, (Math.random() - 0.5) * 200, Math.random() * 120, 0.6, 3, '#ffe08a', PT.SPARK, true);
+  for (let k = 0; k < 14; k++) g.addPart(t.x + 21, t.y - 88, (Math.random() - 0.5) * 200, Math.random() * 120, 0.6, 3, '#ffe08a', PT.SPARK, true);
 }
 
 // Proyectil del jugador contra faroles/barriles. Devuelve true si el proyectil se consume.
@@ -2679,7 +3095,7 @@ function bulletVsTraps(g, b) {
     const t = g.traps[i];
     if (t.dead) continue;
     if (t.kind === 'lantern') {
-      const dx = t.x + 18 - b.x, dy = t.y - 92 - b.y;
+      const dx = t.x + 21 - b.x, dy = t.y - 88 - b.y;
       if (dx * dx + dy * dy < 196) { breakLantern(g, t); return true; }
     } else if (t.kind === 'barrel') {
       const dx = t.x - b.x, dy = t.y - 20 - b.y;
@@ -2722,36 +3138,36 @@ function zombieVsCovers(g, e, dt) {
 
 
 
+
 function shoot(g, x, y, aim, dmgMul) {
-  const w = g.weapon, pal = g.pal, life = w.range / w.speed;
+  const w = g.weapon, pal = g.pal, R = g.range(), life = R / w.speed, st = g.st;
+  const kb = w.kb * st.kbMult, pierce = w.pierce + g.fx.pierce;
   switch (w.kind) {
     case 'rifle': case 'harpoon': {
-      const b = g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed, w.dmg * dmgMul, w.kind === 'harpoon' ? 6 : 4.5, w.pierce, life, pal.shot, pal.core, w.kind === 'harpoon' ? BK.HARPOON : BK.RIFLE, w.kb);
-      if (b && w.radius) b.radius = w.radius;
+      const b = g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed, w.dmg * dmgMul, w.kind === 'harpoon' ? 6 : 5, pierce, life, pal.shot, pal.core, w.kind === 'harpoon' ? BK.HARPOON : BK.RIFLE, kb);
+      if (b && w.explode) b.radius = w.explode;
+      g.cam.shake = Math.max(g.cam.shake, 4);
       Sfx.play('rifle');
       break;
     }
     case 'cards':
       for (let i = 0; i < w.count; i++) {
-        const b = g.addBullet(x, y, aim + (i - (w.count - 1) / 2) * w.spread + (Math.random() - 0.5) * 0.04, w.speed, w.dmg * dmgMul, 5, w.pierce, life, pal.card || '#f2e6cc', '#ffffff', BK.CARD, w.kb);
-        if (b) { b.chain += w.chain || 0; b.homing = w.homing || 0; }
+        const b = g.addBullet(x, y, aim + (i - (w.count - 1) / 2) * w.spread + (Math.random() - 0.5) * 0.06, w.speed, w.dmg * dmgMul, 5, pierce, life, pal.card || '#f2e6cc', '#ffffff', BK.CARD, kb);
+        if (b) { b.chain += w.chain || 0; b.homing = w.homing || 0; b.radius = w.explode || 0; }
       }
       Sfx.play('card');
       break;
-    case 'pepper':
-      for (let i = 0; i < w.count; i++) g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed * (0.9 + Math.random() * 0.2), w.dmg * dmgMul, 4, w.pierce, life, pal.shot, pal.core, BK.BULLET, w.kb);
-      Sfx.play('shot');
-      break;
     case 'shotgun':
-      for (let i = 0; i < w.count; i++) g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed * (0.8 + Math.random() * 0.35), w.dmg * dmgMul, 3.5, w.pierce, life * (0.85 + Math.random() * 0.3), pal.shot, pal.core, BK.PELLET, w.kb);
+      for (let i = 0; i < w.count; i++) g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed * (0.8 + Math.random() * 0.35), w.dmg * dmgMul, 3.5, pierce, life * (0.8 + Math.random() * 0.25), pal.shot, pal.core, BK.PELLET, kb);
       for (let i = 0; i < 3; i++) g.addPart(x + Math.cos(aim) * 14, y + Math.sin(aim) * 14, Math.cos(aim) * 60, Math.sin(aim) * 60 - 20, 0.6, 8, '#8a7a6a', PT.SMOKE, false).grow = 18;
       g.cam.shake = Math.max(g.cam.shake, 3);
       Sfx.play('shotgun');
       break;
-    case 'flame': {
-      const b = g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed * (0.8 + Math.random() * 0.4), w.dmg * dmgMul, 10, w.pierce, life * (0.7 + Math.random() * 0.4), Math.random() < 0.5 ? '#ff6a1a' : '#ffb02a', '#fff2c0', BK.FLAME, w.kb);
-      if (b) b.burn = Math.max(b.burn, w.burn);
-      if (Math.random() < 0.3) Sfx.play('gatling');
+    case 'revolvers': {
+      const side = g.player.alt ? 9 : -9, ca = Math.cos(aim), sa = Math.sin(aim);
+      const b = g.addBullet(x - sa * side, y + ca * side, aim + (Math.random() - 0.5) * w.spread, w.speed, w.dmg * dmgMul, 4, pierce, life, pal.shot, pal.core, BK.BULLET, kb);
+      if (b) { b.chain += w.chain || 0; if (w.burn) b.burn = Math.max(b.burn, w.burn); }
+      Sfx.play('shot');
       break;
     }
     default: break;
@@ -2759,22 +3175,49 @@ function shoot(g, x, y, aim, dmgMul) {
 }
 
 function fireWeapon(g, dt, has) {
-  const p = g.player, w = g.weapon;
-  p.fireT -= dt * g.st.rate;
+  const p = g.player, w = g.weapon, st = g.st;
+  // recarga
+  if (p.reloadT > 0) {
+    p.reloadT -= dt;
+    if (p.reloadT <= 0 || g.fx.reload === 0) { p.reloadT = 0; p.ammo = g.magSize(); Sfx.play('trap'); }
+    return;
+  }
+  // ráfagas en curso (naipes de Maeve)
+  if (p.burstN > 0) {
+    p.burstT -= dt;
+    if (p.burstT <= 0) { p.burstN--; p.burstT = 0.075; emit(g, p); }
+    return;
+  }
+  p.fireT -= dt * st.rate * g.fx.rate;
   if (p.fireT > 0) return;
-  if (!has) { p.fireT = 0; return; }
+  if (!has) { p.fireT = 0; if (p.ammo < g.magSize()) startReload(g); return; }
   p.fireT += 1 / w.rate; if (p.fireT < 0) p.fireT = 0;
+  if (w.burst > 1) { p.burstN = w.burst - 1; p.burstT = 0.075; }
+  emit(g, p);
+}
+
+function emit(g, p) {
+  const w = g.weapon, st = g.st;
+  if (p.ammo <= 0) { startReload(g); return; }
+  p.ammo--; p.alt = 1 - p.alt;
   const ca = Math.cos(p.aim), sa = Math.sin(p.aim);
   const mx = p.x + ca * 26, my = p.y - 26 + sa * 18;
   p.muzzle = 0.07;
   shoot(g, mx, my, p.aim, 1);
-  g.addPart(mx + ca * 6, my + sa * 6, 0, 0, 0.06, w.kind === 'shotgun' ? 26 : 14, g.pal.glow, PT.FLASH, true);
-  // sombras gemelas (Diamante: Sombra Vendida)
-  for (let i = 0; i < g.st.shadows; i++) {
-    const a = g.realTime * 1.6 + (i / g.st.shadows) * TAU, sx = p.x + Math.cos(a) * 46, sy = p.y - 26 + Math.sin(a) * 26;
-    const t = g.nearest(sx, sy + 26, w.range, 0);
+  g.addPart(mx + ca * 6, my + sa * 6, 0, 0, 0.06, w.kind === 'shotgun' || w.kind === 'rifle' ? 26 : 14, g.pal.glow, PT.FLASH, true);
+  for (let i = 0; i < st.shadows; i++) {
+    const a = g.realTime * 1.6 + (i / st.shadows) * TAU, sx = p.x + Math.cos(a) * 46, sy = p.y - 26 + Math.sin(a) * 26;
+    const t = g.nearest(sx, sy + 26, g.range(), 0);
     shoot(g, sx, sy, t ? Math.atan2(t.y - t.r - sy, t.x - sx) : p.aim, 0.5);
   }
+  if (p.ammo <= 0) { p.burstN = 0; startReload(g); }
+}
+
+function startReload(g) {
+  const p = g.player;
+  if (p.reloadT > 0) return;
+  p.reloadT = g.fx.reload === 0 ? 0.05 : g.weapon.reload * g.st.reloadMult;
+  if (Math.random() < 0.08) g.say(null, BARKS[g.hero.id].reload, 1.4);
 }
 
 // ---------------------------------------------------------------- cartas de acción
@@ -2782,16 +3225,28 @@ function playCard(g, card) {
   const p = g.player, pal = g.pal, st = g.st, aim = p.aim;
   const ax = p.x + Math.cos(aim) * Math.min(380, p.aimDist || 300), ay = p.y + Math.sin(aim) * Math.min(380, p.aimDist || 300);
   switch (card.id) {
-    case 'tuerto': {
-      const b = g.addBullet(p.x + Math.cos(aim) * 26, p.y - 26 + Math.sin(aim) * 18, aim, 1900, 170, 7, 99, 0.7, '#ffe08a', '#ffffff', BK.HARPOON, 400);
+    case 'rabia': {
+      for (let i = 0; i < 32; i++) g.addBullet(p.x, p.y - 22, (i / 32) * TAU, 760, 26, 4, 1, 0.34, pal.shot, pal.core, BK.PELLET, 520);
+      g.explode(p.x, p.y - 10, 160, 45 * st.dmg, pal.glow, 1, 0, 620, true);
+      g.cam.shake = 12; g.comicText(p.x, p.y - 96, '¡¿QUÉ MIRÁIS?!', '#ff6a3a', 28);
+      Sfx.play('shotgun');
+      break;
+    }
+    case 'verso': {
+      const life = (g.range() * 2) / 1900;
+      const b = g.addBullet(p.x + Math.cos(aim) * 26, p.y - 26 + Math.sin(aim) * 18, aim, 1900, 190, 7, 99, life, '#ffe08a', '#ffffff', BK.HARPOON, 400);
       if (b) b.crit = true;
-      g.cam.shake = 10; g.comicText(p.x, p.y - 96, '¡BLAM!', '#ffd23a', 34);
+      g.cam.shake = 10; g.comicText(p.x, p.y - 96, '«…y la noche calló.»', '#ffd23a', 20);
       Sfx.play('rifle');
       break;
     }
     case 'deadhand':
-      for (let i = 0; i < 5; i++) { const b = g.addBullet(p.x, p.y - 26, aim + (i - 2) * 0.2, 720, 34, 6, 2, 0.8, '#f2e6cc', '#ff4a4a', BK.CARD, 120); if (b) { b.stun = 1.6; b.slow = 2; } }
+      for (let i = 0; i < 5; i++) { const b = g.addBullet(p.x, p.y - 26, aim + (i - 2) * 0.2, 720, 34, 6, 2, 0.6, '#f2e6cc', '#ff4a4a', BK.CARD, 120); if (b) { b.stun = 1.6; b.slow = 2; b.radius = 60; } }
       g.comicText(p.x, p.y - 96, '¡ASES Y OCHOS!', pal.glow, 26);
+      break;
+    case 'chiste':
+      g.tellJoke(320, 4);
+      g.comicText(p.x, p.y - 110, '¡JA, JA, JA!', '#ffcf6a', 30);
       break;
     case 'beartrap': case 'cepo': {
       const n = card.id === 'beartrap' ? 3 : 2;
@@ -2888,7 +3343,6 @@ function updatePassives(g, dt) {
       else c.cd = 0.2;
     }
   }
-  if (p.x < -HALF) p.x = -HALF;
 }
 
 // ---- src/game/ai.js
@@ -2927,6 +3381,7 @@ function updateZombies(g, dt) {
     const slow = e.slowT > 0 ? 0.6 : 1;
     if (e.slowT > 0) e.slowT -= dt;
     if (e.stunT > 0) e.stunT -= dt;
+    if (e.fearT > 0) e.fearT -= dt;
     if (e.rootT > 0) e.rootT -= dt;
     const frozen = e.stunT > 0 || e.rootT > 0;
     let tx = p.x, ty = p.y;
@@ -2934,7 +3389,41 @@ function updateZombies(g, dt) {
     const sp = frozen ? 0 : e.speed * slow * spdK;
 
     if (e.colossus) updateColossus(g, e, frozen ? 0 : dt);
-    else switch (e.type) {
+    else if (e.fearT > 0) { // aterrado por un chiste: huye
+      const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy) || 1;
+      e.x += (dx / d) * sp * 0.9 * dt; e.y += (dy / d) * sp * 0.9 * dt; e.face = dx > 0 ? 1 : -1;
+    } else switch (e.type) {
+      case 'hound': { // zig-zag y flanqueo: rodea al objetivo antes de morder
+        const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy) || 1;
+        const side = d > 90 ? 0.9 * e.flank : 0.15 * e.flank, zz = Math.sin(g.time * 7 + e.uid) * 0.55;
+        const nx = dx / d, ny = dy / d, px = -ny * (side + zz), py = nx * (side + zz);
+        const mx = nx + px, my = ny + py, ml = Math.hypot(mx, my) || 1;
+        e.x += (mx / ml) * sp * dt; e.y += (my / ml) * sp * dt; e.face = dx > 0 ? 1 : -1;
+        if (Math.random() < dt * 0.4) e.flank = -e.flank;
+        break;
+      }
+      case 'spider': // enjambre: avanzan en grupo con un temblor nervioso
+        chase(e, tx + Math.sin(g.time * 11 + e.uid) * 24, ty + Math.cos(g.time * 9 + e.uid * 1.3) * 24, sp, dt);
+        break;
+      case 'abomination': {
+        const S = e.def.spit, d = Math.hypot(tx - e.x, ty - e.y);
+        e.atkT -= dt;
+        if (e.state === 1) { // apunta y escupe bilis de tinta en cono
+          e.stateT -= dt;
+          if (e.stateT <= 0) {
+            e.state = 0; e.atkT = S.cd;
+            for (let k = 0; k < S.count; k++) g.addEBullet(e.x + e.face * 20, e.y - 40, e.ang + (k - (S.count - 1) / 2) * (S.cone / (S.count - 1)), S.speed * (0.85 + Math.random() * 0.3), e.dmg * 0.6, 8, 1.6, '#3a2a6a', EK.INK);
+            Sfx.play('groan');
+          }
+        } else {
+          if (d > S.range * 0.75) chase(e, tx, ty, sp, dt);
+          if (d < S.range && e.atkT <= 0 && !frozen) {
+            e.state = 1; e.stateT = 0.6; e.ang = Math.atan2(ty - 20 - (e.y - 40), tx - e.x);
+            const z = g.addZone(ZK.CONE, e.x, e.y - 20, S.range, 0.6, 0, '#5a3aaa', 0); if (z) { z.ang = e.ang; z.len = S.cone; }
+          }
+        }
+        break;
+      }
       case 'runner':
         chase(e, tx + Math.sin(g.time * 3 + e.uid) * 30, ty, sp, dt);
         break;
@@ -2961,9 +3450,8 @@ function updateZombies(g, dt) {
     }
 
     e.x += e.vx * dt; e.y += e.vy * dt; e.vx *= damp; e.vy *= damp;
-    const lim = HALF + 120;
-    if (e.x < -lim) e.x = -lim; else if (e.x > lim) e.x = lim;
-    if (e.y < -lim) e.y = -lim; else if (e.y > lim) e.y = lim;
+    if (e.x < -HX - 120) e.x = -HX - 120; else if (e.x > HX + 120) e.x = HX + 120;
+    if (e.y < -HY - 120) e.y = -HY - 120; else if (e.y > HY + 120) e.y = HY + 120;
     zombieVsCovers(g, e, dt);
     for (let k = 0; k < g.structs.length; k++) {
       const s = g.structs[k];
@@ -2972,9 +3460,9 @@ function updateZombies(g, dt) {
       if (d < m) { e.x = s.x + (dx / d) * m; e.y = s.y + (dy / d) * m; if (e.target === s) s.hp -= e.dmg * 0.7 * dt * g.objective.dmgMult; }
     }
     if (!e.colossus) g.grid.insert(e);
-    if (e.stunT <= 0) {
+    if (e.stunT <= 0 && e.fearT <= 0) {
       const dx = p.x - e.x, dy = p.y - e.y, rr = e.r + p.r;
-      if (dx * dx + dy * dy < rr * rr) g.hurtPlayer(e.dmg);
+      if (dx * dx + dy * dy < rr * rr) { g.hurtPlayer(e.dmg); if (e.def.stun) g.stunPlayer(e.def.stun); }
     }
   }
   separate(g);
@@ -3058,7 +3546,7 @@ function updateColossus(g, e, dt) {
       if (e.subT < 0.4) e.alpha = Math.max(0.05, 1 - e.subT / 0.4);
       else if (e.state === 0) {
         e.state = 1; const a = Math.random() * TAU;
-        e.x = Math.max(-HALF + 60, Math.min(HALF - 60, p.x + Math.cos(a) * 230)); e.y = Math.max(-HALF + 60, Math.min(HALF - 60, p.y + Math.sin(a) * 230));
+        e.x = Math.max(-HX + 60, Math.min(HX - 60, p.x + Math.cos(a) * 230)); e.y = Math.max(-HY + 60, Math.min(HY - 60, p.y + Math.sin(a) * 230));
         for (let i = 0; i < 16; i++) g.addPart(e.x, e.y - 50, (Math.random() - 0.5) * 260, (Math.random() - 0.5) * 260, 0.6, 5, col, PT.EMBER, true);
       } else {
         e.alpha = Math.min(1, (e.subT - 0.4) / 0.4);
@@ -3106,9 +3594,9 @@ function ringPoint(g, extra) {
   const p = g.player, R = Math.hypot(g.viewW, g.viewH) / 2 + extra;
   for (let t = 0; t < 6; t++) {
     const a = Math.random() * TAU, x = p.x + Math.cos(a) * R, y = p.y + Math.sin(a) * R;
-    if (x > -HALF - 40 && x < HALF + 40 && y > -HALF - 40 && y < HALF + 40) { g.q.x = x; g.q.y = y; return g.q; }
+    if (x > -HX - 40 && x < HX + 40 && y > -HY - 40 && y < HY + 40) { g.q.x = x; g.q.y = y; return g.q; }
   }
-  g.q.x = Math.max(-HALF, Math.min(HALF, p.x + (Math.random() - 0.5) * 2 * R)); g.q.y = Math.random() < 0.5 ? -HALF - 30 : HALF + 30;
+  g.q.x = Math.max(-HX, Math.min(HX, p.x + (Math.random() - 0.5) * 2 * R)); g.q.y = Math.max(-HY - 30, Math.min(HY + 30, p.y + (Math.random() < 0.5 ? -R : R)));
   return g.q;
 }
 
@@ -3159,7 +3647,9 @@ class Story extends Base {
         this.acc -= 1;
         if (g.zombies.n >= cap) { this.acc = 0; break; }
         const t = pick(this.m.spawn), pt = ringPoint(g, g.map.fog ? -30 : 60);
-        g.spawnZombie(t, pt.x, pt.y, this.hpMult * (1 + g.time / 300), this.speedMult);
+        const pack = (ZOMBIES[t] || {}).pack, n = pack ? pack[0] + ((Math.random() * (pack[1] - pack[0] + 1)) | 0) : 1;
+        for (let k = 0; k < n; k++) g.spawnZombie(t, pt.x + (Math.random() - 0.5) * 70, pt.y + (Math.random() - 0.5) * 70, this.hpMult * (1 + g.time / 300), this.speedMult);
+        if (n > 1) this.acc -= (n - 1) * 0.35;
       }
     }
     switch (o.type) {
@@ -3185,38 +3675,45 @@ class Story extends Base {
   }
 }
 
-// ---------------------------------------------------------------- SUPERVIVENCIA
+// ---------------------------------------------------------------- SUPERVIVENCIA (rondas de 120 s exactos)
 const COLOSSUS_CYCLE = ['foreman', 'faceless', 'beast'];
+const ROUND_TIME = 120;
+// Curva de intensidad escalonada dentro de cada ronda.
+const PHASES = [
+  { t: 0, name: 'ACLIMATACIÓN', sub: 'Que no te tiemble el pulso', rate: 1.0, w: { walker: 10, runner: 3, hound: 1.5 } },
+  { t: 30, name: 'PRESIÓN DE ARAÑAS', sub: 'Algo se arrastra bajo las lápidas', rate: 1.55, w: { walker: 5, runner: 3, spider: 9, hound: 3 } },
+  { t: 60, name: 'CLÍMAX: COLOSOS Y HORDA', sub: 'La tierra entera se levanta', rate: 2.4, w: { walker: 8, runner: 5, bloater: 2, armored: 3, forker: 3, dynamiter: 2, hound: 3, spider: 4 }, abom: true },
+  { t: 105, name: 'ÚLTIMO CARTUCHO', sub: 'Quince segundos. Dispáralo todo.', rate: 3.5, w: { walker: 6, runner: 8, hound: 5, spider: 6, dynamiter: 3 }, fever: true },
+];
+const LATE = ['armored', 'forker', 'dynamiter'];
 
 function roundParams(r) {
   const hp = r <= 3 ? 1 + 0.12 * (r - 1) : r <= 5 ? 2.1 + 0.4 * (r - 4) : r < 10 ? 3.0 * Math.pow(1.2, r - 6) : 3.0 * Math.pow(1.2, 4) * Math.pow(1.35, r - 9);
-  const count = r <= 3 ? 12 + r * 6 : r <= 5 ? 36 + (r - 4) * 12 : r < 10 ? 54 + (r - 6) * 11 : 96 + (r - 10) * 16;
   const speed = Math.min(1.75, 1 + 0.025 * r + (r >= 4 ? 0.14 : 0) + (r >= 10 ? 0.2 : 0));
   const dmg = 1 + 0.1 * r + (r >= 4 ? 0.5 : 0) + (r >= 10 ? 0.9 : 0);
-  const rate = 1.2 + r * 0.3 + (r >= 4 ? 1.6 : 0) + (r >= 10 ? 3 : 0);
+  const rate = 1 + 0.15 * (r - 1) + (r >= 4 ? 0.6 : 0) + (r >= 10 ? 1.2 : 0);
   const colossi = r < 6 ? 0 : r < 10 ? 1 : r < 15 ? 2 : 3;
-  const w = { walker: 10 };
-  if (r >= 2) w.runner = 4 + r * 0.5;
-  if (r >= 3) w.bloater = 2 + r * 0.2;
-  if (r >= 4) { w.armored = 3 + r * 0.6; w.forker = 3 + r * 0.4; w.dynamiter = 2 + r * 0.3; }
-  if (r >= 10) { w.armored += 6; w.runner += 6; }
-  return { hp, count, speed, dmg, rate, colossi, w };
+  const abominations = r < 3 ? 1 : r < 6 ? 2 : r < 10 ? 3 : 4;
+  return { hp, speed, dmg, rate, colossi, abominations };
 }
 
 class Survival extends Base {
   constructor(g) {
     super(g);
-    this.round = 0; this.state = 'break'; this.breakT = 2.5; this.toSpawn = 0; this.acc = 0; this.colossiLeft = 0; this.colT = 0;
+    this.round = 0; this.state = 'break'; this.breakT = 3; this.t = 0; this.acc = 0; this.phase = -1; this.fever = false;
     this.label = 'EL CRUCE DE LOS CONDENADOS';
+    this.weights = [];
   }
   startRound() {
     const g = this.g;
     this.round++;
     const P = roundParams(this.round);
     this.P = P; this.hpMult = P.hp; this.dmgMult = P.dmg; this.speedMult = P.speed;
-    this.toSpawn = P.count; this.acc = 0; this.colossiLeft = P.colossi; this.colT = 4; this.state = 'fight';
     this.label = 'RONDA ' + this.round;
-    const sub = this.round === 4 ? 'LA NOCHE SE ESPESA… YA NO HAY PIEDAD' : this.round === 6 ? 'LLEGAN LOS COLOSOS' : this.round === 10 ? 'EL MURO INFERNAL' : this.round > 10 ? 'SOLO PARA LEYENDAS' : 'Que no quede ni uno';
+    this.t = 0; this.acc = 0; this.phase = -1; this.state = 'fight'; this.abomLeft = P.abominations; this.abomT = 0; this.colLeft = P.colossi; this.colT = 0;
+    // pesos por tramo (sin armadura ni improvisados en las rondas 1-3)
+    this.weights = PHASES.map((ph) => { const w = {}; for (const k in ph.w) if (this.round >= 4 || !LATE.includes(k)) w[k] = ph.w[k]; return w; });
+    const sub = this.round === 4 ? 'LA NOCHE SE ESPESA… YA NO HAY PIEDAD' : this.round === 6 ? 'LLEGAN LOS COLOSOS' : this.round === 10 ? 'EL MURO INFERNAL' : this.round > 10 ? 'SOLO PARA LEYENDAS' : 'Dos minutos. Ni uno más.';
     g.showBanner('RONDA ' + this.round, sub, 2.6);
     Sfx.play(this.round >= 4 ? 'bell' : 'round');
     if (this.round > 1 && (this.round - 1) % 3 === 0) restoreTraps(g);
@@ -3224,42 +3721,55 @@ class Survival extends Base {
   update(dt) {
     const g = this.g;
     if (this.state === 'break') {
-      this.breakT -= dt; this.timer = this.breakT;
-      this.count = 'descanso';
+      this.breakT -= dt; this.timer = this.breakT; this.count = 'descanso'; this.fever = false; this.progress = -1;
       if (this.breakT <= 0) this.startRound();
       return;
     }
-    this.timer = -1;
-    const P = this.P, cap = g.input.isTouch ? 150 : 210;
-    if (this.toSpawn > 0) {
-      this.acc += dt * P.rate;
-      while (this.acc >= 1 && this.toSpawn > 0) {
-        this.acc -= 1;
-        if (g.zombies.n >= cap) { this.acc = 0; break; }
-        const pt = ringPoint(g, 50);
-        g.spawnZombie(pick(P.w), pt.x, pt.y, P.hp, P.speed);
-        this.toSpawn--;
-      }
+    this.t += dt;
+    const t = this.t;
+    let ph = 0; for (let i = 0; i < PHASES.length; i++) if (t >= PHASES[i].t) ph = i;
+    if (ph !== this.phase) {
+      this.phase = ph; this.fever = !!PHASES[ph].fever;
+      if (t > 1) { g.showBanner(PHASES[ph].name, PHASES[ph].sub, 2.2); Sfx.play(ph === 3 ? 'bell' : 'round'); }
+      this.count = PHASES[ph].name;
     }
-    if (this.colossiLeft > 0) {
+    this.timer = Math.max(0, ROUND_TIME - t);
+    this.progress = t / ROUND_TIME;
+    const PH = PHASES[ph], P = this.P, cap = g.input.isTouch ? 150 : 210;
+    this.acc += dt * PH.rate * P.rate * 1.6;
+    while (this.acc >= 1) {
+      this.acc -= 1;
+      if (g.zombies.n >= cap) { this.acc = 0; break; }
+      const type = pick(this.weights[ph]), pt = ringPoint(g, 50);
+      const pack = (ZOMBIES[type] || {}).pack;
+      const n = pack ? pack[0] + ((Math.random() * (pack[1] - pack[0] + 1)) | 0) : 1;
+      for (let k = 0; k < n; k++) g.spawnZombie(type, pt.x + (Math.random() - 0.5) * 70, pt.y + (Math.random() - 0.5) * 70, P.hp, P.speed * (PH.fever ? 1.15 : 1));
+      if (n > 1) this.acc -= (n - 1) * 0.35;
+    }
+    // clímax: abominaciones y colosos de élite
+    if (PH.abom || PH.fever) {
+      this.abomT -= dt;
+      if (this.abomLeft > 0 && this.abomT <= 0) { this.abomT = 9; this.abomLeft--; const pt = ringPoint(g, 40); g.spawnZombie('abomination', pt.x, pt.y, P.hp, 1); g.showBanner('¡ABOMINACIÓN!', 'Caparazón blindado · escupe bilis de tinta', 1.6); }
       this.colT -= dt;
-      if (this.colT <= 0) {
-        this.colT = 10;
-        const type = COLOSSUS_CYCLE[(this.round - 6 + this.colossiLeft) % 3];
-        g.spawnColossus(type, 1 + (this.round - 6) * 0.3 + (this.round >= 10 ? (this.round - 9) * 0.35 : 0));
-        this.colossiLeft--;
-      }
+      if (this.colLeft > 0 && this.colT <= 0) { this.colT = 12; this.colLeft--; g.spawnColossus(COLOSSUS_CYCLE[(this.round + this.colLeft) % 3], 1 + (this.round - 6) * 0.3 + (this.round >= 10 ? (this.round - 9) * 0.35 : 0)); }
     }
-    const alive = g.zombies.n;
-    this.count = 'quedan ' + (this.toSpawn + alive + this.colossiLeft);
-    this.progress = 1 - (this.toSpawn + alive + this.colossiLeft) / (P.count + P.colossi);
-    if (this.toSpawn === 0 && this.colossiLeft === 0 && alive === 0) {
-      this.state = 'break'; this.breakT = 6;
-      g.profileXp += 25 * this.round;
-      g.heal(g.player.maxHp * 0.15);
-      g.showBanner('RONDA ' + this.round + ' SUPERADA', 'Carta de recompensa', 2);
-      g.pendingDrafts++; g.draftLuck = Math.max(g.draftLuck, 1 + Math.floor(this.round / 4));
+    if (t >= ROUND_TIME) this.endRound();
+  }
+  endRound() {
+    const g = this.g, E = g.zombies.items;
+    // al amanecer la horda se deshace en tinta
+    for (let i = 0; i < g.zombies.n; i++) {
+      const e = E[i];
+      if (e.dead) continue;
+      e.dead = true;
+      for (let k = 0; k < 4; k++) g.addPart(e.x, e.y - e.r, (Math.random() - 0.5) * 120, -Math.random() * 120, 0.8, 4, '#0a0605', 2, false);
     }
+    this.state = 'break'; this.breakT = 8; this.fever = false;
+    g.profileXp += 30 * this.round;
+    g.heal(g.player.maxHp * 0.15);
+    g.showBanner('RONDA ' + this.round + ' SUPERADA', 'La horda se disuelve en tinta · carta de recompensa', 2.4);
+    g.flash = 0.5;
+    g.pendingDrafts++; g.draftLuck = Math.max(g.draftLuck, 1 + Math.floor(this.round / 4));
   }
 }
 
@@ -3270,6 +3780,9 @@ function createMode(g, mode, mission) {
 // ---- src/game/hud.js
 // HUD limpio: barra de salud metálica desgastada, mano/mazo de cartas con recarga, ronda u objetivo,
 // maldiciones activas, barras de colosos, flechas a objetivos, joystick y rótulos de tinta.
+
+
+
 
 
 
@@ -3319,6 +3832,8 @@ function metalBar(ctx, x, y, w, h, k, c1, c2) {
 
 const BTN = { c0: { id: 'c0', x: 0, y: 0, r: 0 }, c1: { id: 'c1', x: 0, y: 0, r: 0 }, c2: { id: 'c2', x: 0, y: 0, r: 0 }, pause: { id: 'pause', x: 0, y: 0, r: 0 } };
 
+const HUDCARDS = [BTN.c0, BTN.c1, BTN.c2];
+
 function drawHud(g, ctx, t) {
   const W = g.w, H = g.h, p = g.player, inp = g.input, touch = inp.isTouch, small = W < 640, dpr = g.dpr;
 
@@ -3333,11 +3848,28 @@ function drawHud(g, ctx, t) {
   metalBar(ctx, bx, 38, bw, 6, g.souls / g.nextSouls, '#9ac8ff', '#e8f4ff');
   text(ctx, txt('lvl', g.level, (v) => 'NV ' + v), bx, 55, 12, '#c8d8ff', 'T', 'left', 3);
   text(ctx, txt('k', g.kills, (v) => '☠ ' + v), bx + bw, 55, 12, '#e8d8b8', 'B', 'right', 3);
-  // maldiciones activas
-  for (let i = 0; i < g.curses.length; i++) {
-    const c = g.curses[i];
-    text(ctx, (c.type === 'slow' ? '⛓ LENTITUD ' : '☠ VULNERABLE ') + Math.ceil(c.t) + 's', 14, 82 + i * 18, 11, '#d8a8ff', 'B', 'left', 3);
+  // munición / recarga
+  const mag = g.magSize();
+  if (p.reloadT > 0) {
+    const k = 1 - p.reloadT / (g.weapon.reload * g.st.reloadMult);
+    metalBar(ctx, 14, 74, 120, 7, k, '#c9a54a', '#fff0b0');
+    text(ctx, 'RECARGANDO', 140, 78, 10, '#ffcf6a', 'B', 'left', 2.5);
+  } else {
+    const pw2 = Math.min(7, 150 / mag);
+    for (let i = 0; i < mag; i++) { ctx.fillStyle = i < p.ammo ? '#d8b860' : '#2a2018'; ctx.fillRect(14 + i * (pw2 + 2), 72, pw2, 11); ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.strokeRect(14 + i * (pw2 + 2), 72, pw2, 11); }
   }
+  let ly = 98;
+  // maldiciones activas
+  for (let i = 0; i < g.curses.length; i++, ly += 18) {
+    const c = g.curses[i];
+    text(ctx, (c.type === 'slow' ? '⛓ LENTITUD ' : '☠ VULNERABLE ') + Math.ceil(c.t) + 's', 14, ly, 11, '#d8a8ff', 'B', 'left', 3);
+  }
+  // furias del póker
+  for (let i = 0; i < g.furies.length; i++, ly += 18) {
+    const f = g.furies[i], F = FURIES[f.id];
+    text(ctx, '♠ ' + F.name.toUpperCase() + ' ' + Math.ceil(f.t) + 's', 14, ly, 11, F.color, 'B', 'left', 3);
+  }
+  if (g.objective.fever) text(ctx, '🔥 ÚLTIMO CARTUCHO +30% DAÑO', 14, ly, 11, '#ff6a3a', 'B', 'left', 3);
 
   // ---------------- pausa + mazo (arriba derecha)
   BTN.pause.r = touch ? 24 : 18; BTN.pause.x = W - 12 - BTN.pause.r; BTN.pause.y = 12 + BTN.pause.r;
@@ -3347,9 +3879,21 @@ function drawHud(g, ctx, t) {
   ctx.drawImage(plate(dw, 36, dpr), dx, 12, dw, 36);
   for (let i = 0; i < 3; i++) { ctx.fillStyle = i === 2 ? '#e8dcc0' : '#a89878'; ctx.strokeStyle = INK; ctx.lineWidth = 1.2; ctx.fillRect(dx + 10 + i * 3, 19 - i * 2, 14, 20); ctx.strokeRect(dx + 10 + i * 3, 19 - i * 2, 14, 20); }
   text(ctx, txt('deck', g.deck, (v) => 'MAZO ' + v), dx + 34, 30, 12, '#f2e2b8', 'T', 'left', 3);
+  // minimapa de la comarca (3× el viewport)
+  const mw = small ? 96 : 150, mh = Math.round(mw * HY / HX), mx = W - 12 - mw, my = 56;
+  ctx.drawImage(plate(mw + 8, mh + 8, dpr), mx - 4, my - 4, mw + 8, mh + 8);
+  if (g.zoned) for (const z of ZONES) { ctx.fillStyle = z.mini; ctx.fillRect(mx + (z.x0 + 1) / 2 * mw, my, (z.x1 - z.x0) / 2 * mw, mh); }
+  else { ctx.fillStyle = g.map.g2; ctx.fillRect(mx, my, mw, mh); }
+  const wx = (x) => mx + ((x + HX) / (2 * HX)) * mw, wy = (y) => my + ((y + HY) / (2 * HY)) * mh;
+  ctx.strokeStyle = 'rgba(232,220,192,0.5)'; ctx.lineWidth = 1;
+  ctx.strokeRect(wx(g.cam.x - g.viewW / 2), wy(g.cam.y - g.viewH / 2), (g.viewW / (2 * HX)) * mw, (g.viewH / (2 * HY)) * mh);
+  const Z = g.zombies.items;
+  for (let i = 0; i < g.zombies.n; i++) { const e = Z[i]; if (e.dead || !(e.colossus || e.type === 'abomination')) continue; ctx.fillStyle = e.colossus ? '#ff3a2a' : '#b04dff'; ctx.fillRect(wx(e.x) - 2, wy(e.y) - 2, 4, 4); }
+  for (const st2 of g.structs) { ctx.fillStyle = '#5aff4a'; ctx.fillRect(wx(st2.x) - 2, wy(st2.y) - 2, 4, 4); }
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(wx(p.x), wy(p.y), 2.5, 0, TAU); ctx.fill();
 
   // ---------------- objetivo / ronda
-  const o = g.objective, ow = small ? Math.min(W - 24, 270) : 360, ox = (W - ow) / 2, oy = small ? 76 : 10;
+  const o = g.objective, ow = small ? Math.min(W - 24, 270) : 360, ox = (W - ow) / 2, oy = small ? 140 : 10;
   ctx.drawImage(plate(ow, o.progress >= 0 ? 60 : 48, dpr), ox, oy, ow, o.progress >= 0 ? 60 : 48);
   text(ctx, o.headline(), W / 2, oy + 16, small ? 12 : 15, '#f2d27a', 'T', 'center', 3);
   if (o.timer >= 0) text(ctx, txt('tm', Math.ceil(o.timer), mmss), W / 2, oy + 36, small ? 15 : 18, o.timer < 10 && o.round === 0 ? '#ff6a4a' : '#fff2dc', 'T', 'center', 4);
@@ -3381,11 +3925,12 @@ function drawHud(g, ctx, t) {
   }
 
   // ---------------- mano de cartas (indicador del mazo de habilidad)
-  const size = touch ? 54 : 50, gap = 10;
-  const baseX = touch ? W - (size + gap) * 3 - 6 : W / 2 - ((size + gap) * 3 - gap) / 2, baseY = H - size * 1.35 - (touch ? 14 : 12);
+  const size = touch ? 46 : 44, gap = 10;
+  const baseX = touch ? W - (size + gap) * 3 - 6 : W / 2 - ((size + gap) * 3 - gap) / 2, baseY = H - Math.round(size * 1.6) - (touch ? 14 : 12);
   inp.buttons.length = 0; inp.buttons.push(BTN.pause);
+  g.hudCards = HUDCARDS;
   for (let i = 0; i < 3; i++) {
-    const h = g.hand[i], x = baseX + i * (size + gap), y = baseY, ch = size * 1.35;
+    const h = g.hand[i], x = baseX + i * (size + gap), y = baseY, ch = Math.round(size * 1.6);
     const B = BTN['c' + i]; B.x = x + size / 2; B.y = y + ch / 2; B.r = size * 0.62;
     if (touch) inp.buttons.push(B);
     if (!h) {
@@ -3404,6 +3949,23 @@ function drawHud(g, ctx, t) {
     if (!touch) { ctx.fillStyle = '#120a06'; ctx.fillRect(x + size / 2 - 9, y - 10, 18, 16); text(ctx, '' + (i + 1), x + size / 2, y - 2, 11, '#f2e2b8', 'T', 'center', 0); }
   }
 
+  // ---------------- mano de póker de tinta (5 naipes)
+  const pw3 = touch ? 30 : 34, phh = pw3 * 1.4, px0 = 14, py0 = H - phh - (touch ? 14 : 16);
+  text(ctx, 'PÓKER DE TINTA', px0, py0 - 12, 10, '#e8dcc0', 'T', 'left', 2.5);
+  const show = g.pokerShow, hand = show ? show.hand : g.poker;
+  for (let i = 0; i < 5; i++) {
+    const x = px0 + i * (pw3 + 5);
+    if (hand[i]) ctx.drawImage(pokerFace(hand[i], pw3, dpr), x, py0 - (show ? Math.sin(Math.min(1, (2.2 - show.t) * 4) * Math.PI) * 8 : 0), pw3, phh);
+    else { ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(232,220,192,0.3)'; ctx.lineWidth = 1.5; ctx.strokeRect(x, py0, pw3, phh); ctx.setLineDash([]); }
+  }
+  if (show) text(ctx, show.combo ? '¡' + FURIES[show.combo].name.toUpperCase() + '!' : 'Carta alta', px0 + 5 * (pw3 + 5) + 6, py0 + phh / 2, 15, show.combo ? FURIES[show.combo].color : '#a89a82', 'T', 'left', 3);
+
+  // ---------------- rótulo de zona
+  if (g.zoneBanner) {
+    const zb = g.zoneBanner; ctx.globalAlpha = Math.min(1, zb.t * 2, (2.2 - zb.t) * 4);
+    text(ctx, '— ' + zb.text + ' —', W / 2, H * 0.2, small ? 18 : 26, '#e8dcc0', 'T', 'center', 4); ctx.globalAlpha = 1;
+  }
+
   // ---------------- joystick
   if (touch && inp.joy.active) {
     const j = inp.joy;
@@ -3412,6 +3974,15 @@ function drawHud(g, ctx, t) {
   } else if (touch && g.time < 6) {
     ctx.globalAlpha = Math.max(0, 0.6 - g.time / 10); text(ctx, 'Arrastra para moverte', 20, H - 40, 13, '#e8dcc0', 'B', 'left', 3); ctx.globalAlpha = 1;
   }
+
+  // ---------------- partículas de tinta y pólvora (pantalla)
+  for (const u of g.uiParts) {
+    if (!u.on) continue;
+    const k = u.life / u.max; ctx.globalAlpha = 1 - k; ctx.fillStyle = u.color;
+    if (u.ink) { ctx.beginPath(); ctx.ellipse(u.x, u.y, u.size, u.size * 0.7, u.vx * 0.01, 0, TAU); ctx.fill(); }
+    else ctx.fillRect(u.x - u.size / 2, u.y - u.size / 2, u.size, u.size);
+  }
+  ctx.globalAlpha = 1;
 
   // ---------------- rótulo
   const bn = g.banner;
@@ -3432,6 +4003,8 @@ function drawHud(g, ctx, t) {
 // Render con claroscuro: el mundo se pinta completo y luego una capa de oscuridad con trama de semitono
 // se "recorta" con las fuentes de luz (farol del forajido, faroles de gas, fuego, explosiones, fogonazos).
 // Encima, en aditivo, balas, chispas y ojos de la horda brillando en la penumbra.
+
+
 
 
 const skullArt = skull;
@@ -3519,9 +4092,11 @@ function bubbleImg(text, scream) {
   const key = (scream ? '!' : '') + text;
   let b = bubbleCache.get(key);
   if (b) return b;
-  const c = makeCanvas(260, 110), x = c.getContext('2d');
-  const m = balloon(x, text, 130, 46, 170, 13, 118, 100, scream);
-  b = { c, w: 260, h: 110 }; b.m = m;
+  const long = text.length > 34;
+  const W = long ? 380 : 260, H = long ? 150 : 110;
+  const c = makeCanvas(W, H), x = c.getContext('2d');
+  const m = balloon(x, text, W / 2, long ? 62 : 46, long ? 240 : 170, 13, W / 2 - 12, H - 10, scream);
+  b = { c, w: W, h: H }; b.m = m;
   if (bubbleCache.size > 80) bubbleCache.clear();
   bubbleCache.set(key, b);
   return b;
@@ -3538,13 +4113,45 @@ function renderGame(g, dt) {
   g.lightN = 0;
 
   ctx.setTransform(S, 0, 0, S, tx, ty); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = g.groundPattern; ctx.fillRect(vx0, vy0, vx1 - vx0, vy1 - vy0);
+  if (g.zoned) {
+    // comarca por zonas: pueblo · cementerio · mina, unidas por un camino de tierra
+    for (let i = 0; i < ZONES.length; i++) {
+      const z = ZONES[i], zx0 = Math.max(vx0, z.x0 * HX - (i ? 0 : 400)), zx1 = Math.min(vx1, z.x1 * HX + (i === ZONES.length - 1 ? 400 : 0));
+      if (zx1 <= zx0) continue;
+      ctx.fillStyle = g.groundPatterns[i]; ctx.fillRect(zx0, vy0, zx1 - zx0, vy1 - vy0);
+    }
+    for (let i = 1; i < ZONES.length; i++) {
+      const bx = ZONES[i].x0 * HX;
+      if (bx < vx0 - 80 || bx > vx1 + 80) continue;
+      ctx.fillStyle = 'rgba(10,6,4,0.35)'; ctx.fillRect(bx - 50, vy0, 100, vy1 - vy0);
+      ctx.fillStyle = 'rgba(10,6,4,0.25)'; ctx.fillRect(bx - 90, vy0, 180, vy1 - vy0);
+    }
+    ctx.strokeStyle = 'rgba(90,66,44,0.55)'; ctx.lineWidth = 70; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    const x0 = Math.max(-HX, vx0 - 50), x1 = Math.min(HX, vx1 + 50);
+    for (let x = x0; x <= x1; x += 40) { const y = g.roadY(x); if (x === x0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(20,12,6,0.35)'; ctx.lineWidth = 2; ctx.setLineDash([14, 22]);
+    ctx.beginPath(); for (let x = x0; x <= x1; x += 40) { const y = g.roadY(x) + 18; if (x === x0) ctx.moveTo(x, y); else ctx.lineTo(x, y); } ctx.stroke();
+    ctx.setLineDash([]);
+  } else { ctx.fillStyle = g.groundPatterns[0]; ctx.fillRect(vx0, vy0, vx1 - vx0, vy1 - vy0); }
   ctx.fillStyle = 'rgba(2,1,1,0.9)';
-  const L = HALF + 50;
-  if (vx0 < -L) ctx.fillRect(vx0, vy0, -L - vx0, vy1 - vy0);
-  if (vx1 > L) ctx.fillRect(L, vy0, vx1 - L, vy1 - vy0);
-  if (vy0 < -L) ctx.fillRect(vx0, vy0, vx1 - vx0, -L - vy0);
-  if (vy1 > L) ctx.fillRect(vx0, L, vx1 - vx0, vy1 - L);
+  const LX = HX + 50, LY = HY + 50;
+  if (vx0 < -LX) ctx.fillRect(vx0, vy0, -LX - vx0, vy1 - vy0);
+  if (vx1 > LX) ctx.fillRect(LX, vy0, vx1 - LX, vy1 - vy0);
+  if (vy0 < -LY) ctx.fillRect(vx0, vy0, vx1 - vx0, -LY - vy0);
+  if (vy1 > LY) ctx.fillRect(vx0, LY, vx1 - vx0, vy1 - LY);
+
+  // anillo de tinta del alcance de disparo
+  {
+    const R = g.range();
+    ctx.save();
+    ctx.globalAlpha = 0.32; ctx.strokeStyle = '#0a0605'; ctx.lineWidth = 3; ctx.setLineDash([10, 9]); ctx.lineDashOffset = -t * 12;
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, R, R * 0.62, 0, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = 0.18; ctx.strokeStyle = g.pal.glow; ctx.lineWidth = 1.2; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, R - 3, R * 0.62 - 2, 0, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
 
   // manchas
   const D = g.decals;
@@ -3596,6 +4203,20 @@ function renderGame(g, dt) {
         ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.45 * a; ctx.drawImage(sp.glow('#c8b8ff'), z.x - z.r, z.y - z.r * 0.6, z.r * 2, z.r * 1.2); ctx.globalCompositeOperation = 'source-over';
         break;
       }
+      case ZK.INK: {
+        const a = Math.min(1, z.life * 3, (z.max - z.life) * 1.5);
+        ctx.globalAlpha = 0.85 * a; ctx.fillStyle = '#07060c';
+        ctx.beginPath(); ctx.ellipse(z.x, z.y, z.r, z.r * 0.6, 0, 0, TAU); ctx.fill();
+        ctx.globalAlpha = 0.5 * a; ctx.fillStyle = '#1a1830'; ctx.beginPath(); ctx.ellipse(z.x - z.r * 0.25, z.y - z.r * 0.15, z.r * 0.35, z.r * 0.15, -0.2, 0, TAU); ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+      }
+      case ZK.CONE: {
+        ctx.globalAlpha = 0.18 + 0.25 * ((t * 8) % 1); ctx.fillStyle = '#3a1a7a';
+        ctx.beginPath(); ctx.moveTo(z.x, z.y); ctx.arc(z.x, z.y, z.r, z.ang - z.len / 2, z.ang + z.len / 2); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+      }
       case ZK.CHARGE:
         ctx.globalAlpha = 0.25 + 0.35 * ((t * 10) % 1);
         ctx.setTransform(S * Math.cos(z.ang), S * Math.sin(z.ang), -S * Math.sin(z.ang), S * Math.cos(z.ang), tx + z.x * S, ty + z.y * S);
@@ -3619,7 +4240,7 @@ function renderGame(g, dt) {
     if (tr.x < vx0 - 80 || tr.x > vx1 + 80 || tr.y < vy0 - 40 || tr.y > vy1 + 140) continue;
     let s;
     if (tr.kind === 'bear') { s = sp.prop(tr.armed ? 'beartrap_open' : 'beartrap_closed'); ctx.globalAlpha = tr.armed && !tr.owned ? 0.5 : 1; }
-    else if (tr.kind === 'lantern') { s = sp.prop(tr.dead ? 'lantern_broken' : 'lantern_lit'); if (!tr.dead) addLight(g, tr.x + 18, tr.y - 70, 210 + Math.sin(t * 9 + i) * 8, 1); }
+    else if (tr.kind === 'lantern') { s = sp.prop(tr.dead ? 'lantern_broken' : 'lantern_lit'); if (!tr.dead) addLight(g, tr.x + 21, tr.y - 84, 210 + Math.sin(t * 9 + i) * 8, 1); }
     else if (tr.kind === 'barrel') { if (tr.dead) continue; s = sp.prop('dynbarrel'); }
     else { if (tr.dead) continue; s = sp.prop('cover_' + tr.variant + '_' + tr.phase); }
     ctx.drawImage(s.canvas, tr.x - s.ox, tr.y - s.oy, s.w, s.h);
@@ -3640,6 +4261,14 @@ function renderGame(g, dt) {
   for (let i = 0; i < g.items.n; i++) {
     const it = IT[i];
     if (it.x < vx0 || it.x > vx1 || it.y < vy0 || it.y > vy1) continue;
+    if (it.kind === PK.CARD) {
+      const f = pokerFace({ r: it.cr, s: it.cs }, 16, sp.res), wob = Math.sin(t * 4 + i) * 0.25;
+      ctx.save(); ctx.translate(it.x, it.y - 14 + Math.sin(t * 5 + i) * 3); ctx.rotate(wob);
+      ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(sp.glow('#ffcf6a'), -18, -20, 36, 40); ctx.globalCompositeOperation = 'source-over';
+      ctx.drawImage(f, -8, -11, 16, 22.4); ctx.restore();
+      addLight(g, it.x, it.y - 14, 60, 0.6);
+      continue;
+    }
     const bob = Math.sin(t * 5 + i) * 2, ic = it.kind === PK.HEAL ? icons.heal : it.kind === PK.BIGSOUL ? icons.bigsoul : icons.soul;
     ctx.drawImage(ic.c, it.x - ic.w / 2, it.y - ic.h / 2 - 8 + bob, ic.w, ic.h);
   }
@@ -3671,6 +4300,18 @@ function renderGame(g, dt) {
   ctx.globalAlpha = 1; ctx.setTransform(S, 0, 0, S, tx, ty);
   // corazas
   for (let i = 0; i < n; i++) { const e = E[i]; if (e.dead || e.maxArmor <= 0 || e.armor <= 0 || e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1) continue; ctx.fillStyle = INK; ctx.fillRect(e.x - 15, e.y - e.spr.oy - 6, 30, 5); ctx.fillStyle = '#b8c0c8'; ctx.fillRect(e.x - 14, e.y - e.spr.oy - 5, 28 * (e.armor / e.maxArmor), 3); }
+  // horda aterrada por los chistes
+  for (let i = 0; i < n; i++) {
+    const e = E[i];
+    if (e.dead || e.fearT <= 0 || e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1) continue;
+    const yy = e.y - e.spr.oy - 10 + Math.sin(t * 16 + e.uid) * 2;
+    ctx.fillStyle = '#fbf6ea'; ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(e.x, yy, 8, 9, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#9a140e'; ctx.font = font(12, 'T'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', e.x, yy + 1);
+  }
+  // aturdimiento y tinta pegajosa en el forajido
+  if (p.stunT > 0) for (let k = 0; k < 3; k++) { const a = t * 6 + k * 2.1; ctx.fillStyle = '#ffe08a'; ctx.font = font(12, 'T'); ctx.fillText('✦', p.x + Math.cos(a) * 16, p.y - 78 + Math.sin(a) * 5); }
+  if (p.inkT > 0) { ctx.fillStyle = 'rgba(10,8,20,0.7)'; for (let k = 0; k < 4; k++) ctx.fillRect(p.x - 12 + k * 7, p.y - 6 + ((t * 30 + k * 7) % 10), 3, 6); }
   // cuervos y sombras gemelas
   for (const c of g.crows) ctx.drawImage(icons.crow.c, c.x - 14, c.y - 9 + Math.sin(t * 14) * 2, 28, 18);
   if (g.st.shadows) {
@@ -3753,6 +4394,7 @@ function renderGame(g, dt) {
     }
     const gr = b.r * 3;
     ctx.drawImage(sp.glow(b.color), b.x - gr, b.y - gr, gr * 2, gr * 2);
+    if (b.kind === EK.INK) { ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = '#07060c'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(160,140,255,0.5)'; ctx.fillRect(b.x - 2, b.y - 3, 2, 2); ctx.globalCompositeOperation = 'lighter'; continue; }
     if (b.kind === EK.PAGE) { ctx.globalCompositeOperation = 'source-over'; ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.t * 6); ctx.drawImage(icons.page.c, -8, -9, 16, 18); ctx.restore(); ctx.globalCompositeOperation = 'lighter'; continue; }
     ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.55, 0, TAU); ctx.fill();
   }
@@ -3803,7 +4445,7 @@ function renderGame(g, dt) {
     const sx = (b.x - camX) * g.scale + g.w / 2, sy = (b.y - camY) * g.scale + g.h / 2;
     const k = b.life / b.max, a = Math.min(1, b.life * 8, (1 - k) * 5);
     ctx.globalAlpha = a;
-    ctx.drawImage(img.c, sx - 118, sy - 100, img.w, img.h);
+    ctx.drawImage(img.c, sx - img.w / 2 + 12, sy - img.h + 10, img.w, img.h);
   }
   ctx.globalAlpha = 1;
 
@@ -3844,8 +4486,9 @@ function drawPlayer(g, ctx, S, tx, ty, t) {
 
 
 // ---- src/game/engine.js
-// Núcleo de partida: bucle a 60 FPS, pools sin basura, daño (armadura, esquiva, críticos), mano de cartas,
-// sorteos de cartas, maldiciones, almas (XP de partida) y XP de perfil. Modos: historia y supervivencia.
+// Núcleo de partida: bucle a 60 FPS, pools sin basura, daño (armadura, esquiva, críticos), alcance limitado,
+// cargadores y recarga, mano de cartas, sorteos, maldiciones, miedo/aturdimiento/tinta pegajosa, póker de tinta
+// con furias, mundo de 3× el viewport por zonas y cámara de seguimiento suave. Modos: historia y supervivencia.
 
 
 
@@ -3861,27 +4504,31 @@ function drawPlayer(g, ctx, S, tx, ty, t) {
 
 
 
-const HALF = 1100;
+
+// Mundo ≈ 3× el viewport en cada eje (≈ 3.600 × 2.600 unidades).
+const HX = 1800, HY = 1300;
+function zoneAt(x) { const k = x / HX; for (let i = 0; i < ZONES.length; i++) if (k < ZONES[i].x1 || i === ZONES.length - 1) return i; return 0; }
 
 const mkZ = () => ({
   uid: 0, type: '', def: null, x: 0, y: 0, vx: 0, vy: 0, r: 10, hp: 1, maxHp: 1, armor: 0, maxArmor: 0, speed: 0, dmg: 0,
   colossus: false, elite: false, spr: null, flash: 0, burnT: 0, burnDps: 0, burnTick: 0, slowT: 0, stunT: 0, rootT: 0,
   atkT: 0, state: 0, stateT: 0, ax: 0, ay: 0, face: 1, target: null, xp: 1, soul: 1, dead: false, alpha: 1, name: '',
-  mode: '', modeT: 0, patIdx: 0, subT: 0, subN: 0, phase: 0, ang: 0, hitBy: 0, tauntT: 0,
+  mode: '', modeT: 0, patIdx: 0, subT: 0, subN: 0, phase: 0, ang: 0, hitBy: 0, tauntT: 0, fearT: 0, flank: 1,
 });
 const mkB = () => ({ x: 0, y: 0, vx: 0, vy: 0, r: 3, dmg: 0, pierce: 0, life: 0, color: '#fff', core: '#fff', kind: 0, kb: 0, crit: false, hits: [], chain: 0, homing: 0, burn: 0, slow: 0, stun: 0, radius: 0, len: 10, spin: 0, ox: 0, oy: 0 });
 const mkE = () => ({ x: 0, y: 0, vx: 0, vy: 0, r: 5, dmg: 0, life: 0, color: '#fff', kind: 0, t: 0, tmax: 0, sx: 0, sy: 0, tx: 0, ty: 0, radius: 0, homing: 0 });
 const mkP = () => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: '#fff', kind: 0, grow: 0, drag: 0, add: true });
 const mkT = () => ({ x: 0, y: 0, vy: 0, life: 0, max: 1, str: '', color: '#fff', size: 14, big: false });
-const mkI = () => ({ x: 0, y: 0, kind: 0, value: 0, vx: 0, vy: 0, mag: false, t: 0 });
+const mkI = () => ({ x: 0, y: 0, kind: 0, value: 0, vx: 0, vy: 0, mag: false, t: 0, cr: 0, cs: 0 });
+const mkU = () => ({ on: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: '#000', ink: true });
 const mkZn = () => ({ uid: 0, kind: 0, x: 0, y: 0, r: 0, maxR: 0, life: 0, max: 0, dmg: 0, color: '#fff', tick: 0, owner: 0, ang: 0, len: 0, vx: 0, vy: 0 });
 const mkBub = () => ({ on: false, x: 0, y: 0, follow: null, uid: 0, text: '', life: 0, max: 0, scream: false });
 
-const BK = { BULLET: 0, PELLET: 1, RIFLE: 2, HARPOON: 3, CARD: 4, FLAME: 5, LOB: 6 };
-const EK = { ORB: 0, FAST: 1, LOB: 2, PAGE: 3 };
-const PK = { SOUL: 0, BIGSOUL: 1, HEAL: 2 };
+const BK = { BULLET: 0, PELLET: 1, RIFLE: 2, HARPOON: 3, CARD: 4, FLAME: 5, LOB: 6, SHRAP: 7 };
+const EK = { ORB: 0, FAST: 1, LOB: 2, PAGE: 3, INK: 4 };
+const PK = { SOUL: 0, BIGSOUL: 1, HEAL: 2, CARD: 3 };
 const PT = { SPARK: 0, SMOKE: 1, BLOOD: 2, RING: 3, FLASH: 4, EMBER: 5, DEBRIS: 6, SPLINTER: 7 };
-const ZK = { FIRE: 0, RING: 1, STRIKE: 2, POOL: 3, GAS: 4, SLAM: 5, CHARGE: 6, BOMB: 7, TRAIN: 8, RIDERS: 9 };
+const ZK = { FIRE: 0, RING: 1, STRIKE: 2, POOL: 3, GAS: 4, SLAM: 5, CHARGE: 6, BOMB: 7, TRAIN: 8, RIDERS: 9, INK: 10, CONE: 11 };
 
 class Game {
   constructor(canvas, input, cb) {
@@ -3895,14 +4542,16 @@ class Game {
     this.items = new Pool(mkI, 500);
     this.zones = new Pool(mkZn, 120);
     this.bubbles = []; for (let i = 0; i < 8; i++) this.bubbles.push(mkBub());
-    this.grid = new Grid(HALF + 200, 80);
+    this.uiParts = []; for (let i = 0; i < 160; i++) this.uiParts.push(mkU());
+    this.fx = { dmg: 1, rate: 1, speed: 1, pierce: 0, range: 1, crit: 0, reload: 1, invuln: false, explode: 0 };
+    this.grid = new Grid(Math.max(HX, HY) + 200, 80);
     this.decals = new Float32Array(160 * 4); this.decalN = 0; this.decalI = 0;
     this.traps = []; this.props = []; this.structs = []; this.crows = [];
     this.lights = new Float32Array(64 * 4); this.lightN = 0;
     this.uid = 1; this.running = false; this._raf = 0;
     this._loop = (ts) => this.frame(ts);
-    this.player = { x: 0, y: 0, r: 15, hp: 100, maxHp: 100, face: 1, inv: 0, hurt: 0, aim: 0, aimDist: 300, fireT: 0, alt: 0, moving: false, muzzle: 0, rootT: 0, regenT: 0, spin: 0 };
-    this.cam = { x: 0, y: 0, shake: 0, sx: 0, sy: 0 };
+    this.player = { x: 0, y: 0, r: 15, hp: 100, maxHp: 100, face: 1, inv: 0, hurt: 0, aim: 0, aimDist: 300, fireT: 0, alt: 0, moving: false, muzzle: 0, rootT: 0, regenT: 0, spin: 0, ammo: 0, reloadT: 0, burstN: 0, burstT: 0, stunT: 0, stunImmune: 0, inkT: 0, vx: 0, vy: 0, jokeT: 8 };
+    this.cam = { x: 0, y: 0, shake: 0, sx: 0, sy: 0, lx: 0, ly: 0 };
     this.q = { x: 0, y: 0, r: 0, best: null, bestD: 0, dmg: 0, kb: 0, burn: 0, stun: 0, ex: 0 };
     this._nearestFn = (e) => {
       if (e.dead || e.uid === this.q.ex) return false;
@@ -3941,9 +4590,13 @@ class Game {
     this.map = MAPS[this.mapId];
     const res = Math.max(1.5, Math.min(3, this.scale * this.dpr));
     if (!this.spr || Math.abs(this.spr.res - res) > 0.01) this.spr = new Sprites(res);
-    this.groundPattern = this.ctx.createPattern(makeGround(this.mapId), 'repeat');
+    this.zoned = !!this.map.zoned;
+    this.groundPatterns = this.zoned ? ZONES.map((z) => this.ctx.createPattern(makeGround(z.id, z), 'repeat')) : [this.ctx.createPattern(makeGround(this.mapId), 'repeat')];
+    this.zoneIdx = -1;
     for (const P of [this.zombies, this.bullets, this.ebullets, this.parts, this.texts, this.items, this.zones]) P.clear();
     for (const b of this.bubbles) b.on = false;
+    for (const u of this.uiParts) u.on = false;
+    this.poker = []; this.furies = []; this.pokerShow = null; this.pokerCount = 0;
     this.structs.length = 0; this.crows.length = 0; this.decalN = 0; this.decalI = 0;
     this.time = 0; this.realTime = 0; this.kills = 0; this.level = 1; this.souls = 0; this.nextSouls = this.soulsFor(1);
     this.profileXp = 0; this.state = 'play'; this.endT = 0; this.result = null; this.banner = null; this.flash = 0;
@@ -3956,10 +4609,12 @@ class Game {
       pickup: 95, pierce: 0, regen: 0, cardCd: s.cardCd || 1, chain: 0, slowOnHit: 0, burnOnHit: 0, trapper: 0, trapMult: 1,
       crows: 0, leadStorm: 0, holyFire: 0, ghostTrain: 0, critExplode: 0, shadows: 0,
       closeBonus: s.closeBonus, farCrit: s.farCrit, trapMaster: s.trapMaster, luck: s.luck,
+      rangeMult: 1, magMult: 1, reloadMult: 1, splash: 0, shrapnel: 0, rage: s.rage || 0, kbMult: s.kbMult || 1,
+      fearAura: s.fearAura || 0, pokerLuck: s.pokerLuck || 0,
     };
     const p = this.player;
-    p.maxHp = Math.round(s.hp * (s.farCrit ? 1.2 : 1) + lvl * 1.5); p.hp = p.maxHp;
-    p.x = 0; p.y = 120; p.inv = 1.5; p.hurt = 0; p.fireT = 0.3; p.alt = 0; p.muzzle = 0; p.rootT = 0; p.regenT = 0; p.aim = -Math.PI / 2; p.spin = 0;
+    p.maxHp = Math.round(s.hp * (s.rage ? 1.25 : 1) + lvl * 1.5); p.hp = p.maxHp;
+    p.x = this.zoned ? 0 : 0; p.y = 120; p.inv = 1.5; p.ammo = this.magSize(); p.reloadT = 0; p.burstN = 0; p.burstT = 0; p.stunT = 0; p.stunImmune = 0; p.inkT = 0; p.vx = 0; p.vy = 0; p.jokeT = 8; p.hurt = 0; p.fireT = 0.3; p.alt = 0; p.muzzle = 0; p.rootT = 0; p.regenT = 0; p.aim = -Math.PI / 2; p.spin = 0;
     this.cam.x = p.x; this.cam.y = p.y; this.cam.shake = 0;
     // mano: carta de firma + 2 huecos
     this.hand = [{ card: SIGNATURE[hero.signature], cd: 0 }, null, null];
@@ -3985,19 +4640,29 @@ class Game {
 
   buildProps() {
     this.props.length = 0;
-    const r = makeRng(this.mapId.length * 7919 + 13), list = this.map.props;
-    for (let i = 0; i < 110; i++) {
-      const x = (r() * 2 - 1) * (HALF - 40), y = (r() * 2 - 1) * (HALF - 40);
+    const r = makeRng(this.mapId.length * 7919 + 13);
+    const N = 300;
+    for (let i = 0; i < N; i++) {
+      const x = (r() * 2 - 1) * (HX - 40), y = (r() * 2 - 1) * (HY - 40);
       if (Math.hypot(x, y - 120) < 260) continue;
+      if (this.zoned && Math.abs(y - this.roadY(x)) < 70) continue; // el camino queda despejado
+      const list = this.zoned ? ZONES[zoneAt(x)].props : this.map.props;
       this.props.push({ x, y, spr: this.spr.prop(list[(r() * list.length) | 0]) });
     }
-    if (this.mapId === 'crossroads') { this.props.push({ x: 0, y: -40, spr: this.spr.prop('gallows') }); this.props.push({ x: 300, y: -260, spr: this.spr.prop('well') }); this.props.push({ x: -260, y: 260, spr: this.spr.prop('post') }); }
-    for (let a = 0; a < TAU; a += 0.1) {
-      const cx = Math.cos(a), cy = Math.sin(a), k = 1 / Math.max(Math.abs(cx), Math.abs(cy));
-      this.props.push({ x: cx * k * (HALF + 30), y: cy * k * (HALF + 30), spr: this.spr.prop(this.mapId === 'mine' || this.mapId === 'swamp' ? 'rock' : 'fence') });
+    if (this.zoned) {
+      this.props.push({ x: 40, y: -60, spr: this.spr.prop('gallows') });
+      this.props.push({ x: -1200, y: 300, spr: this.spr.prop('well') });
+      this.props.push({ x: -HX / 3, y: this.roadY(-HX / 3) - 80, spr: this.spr.prop('post') });
+      this.props.push({ x: HX / 3, y: this.roadY(HX / 3) - 80, spr: this.spr.prop('post') });
     }
+    const edge = this.mapId === 'mine' || this.mapId === 'swamp' ? 'rock' : 'fence';
+    for (let x = -HX; x <= HX; x += 90) { this.props.push({ x, y: -HY - 30, spr: this.spr.prop(edge) }); this.props.push({ x, y: HY + 30, spr: this.spr.prop(edge) }); }
+    for (let y = -HY; y <= HY; y += 90) { this.props.push({ x: -HX - 30, y, spr: this.spr.prop(edge) }); this.props.push({ x: HX + 30, y, spr: this.spr.prop(edge) }); }
     this.props.sort((a, b) => a.y - b.y);
   }
+
+  // Camino de tierra que une las zonas (curva suave).
+  roadY(x) { return Math.sin(x / 520) * 160 + Math.sin(x / 190) * 30; }
 
   stop() { this.running = false; cancelAnimationFrame(this._raf); this.input.detach(); }
 
@@ -4021,6 +4686,7 @@ class Game {
     this.realTime += dt;
     if (this.input.consume('pause') && this.state === 'play') { this.pause(true); return; }
     this.updateFx(dt);
+    this.updateUi(dt);
     if (this.state === 'over') {
       this.endT -= dt; this.updateItems(dt);
       if (this.endT <= 0 && this.result) { const r = this.result; this.result = null; this.stop(); this.cb.onEnd(r); }
@@ -4030,6 +4696,7 @@ class Game {
     this.flash = Math.max(0, this.flash - dt * 3);
     if (this.banner) { this.banner.t -= dt; if (this.banner.t <= 0) this.banner = null; }
     this.updateCurses(dt);
+    this.updateFuries(dt);
     this.updatePlayer(dt);
     updateZombies(this, dt);
     this.updateBullets(dt);
@@ -4056,8 +4723,13 @@ class Game {
     }
     const T = this.texts.items;
     for (let i = this.texts.n - 1; i >= 0; i--) { const t = T[i]; t.life += dt; t.y += t.vy * dt; t.vy *= 1 - 2 * dt; if (t.life >= t.max) this.texts.kill(i); }
-    const c = this.cam, p = this.player, k = 1 - Math.exp(-dt * 8);
-    c.x += (p.x - c.x) * k; c.y += (p.y - c.y) * k;
+    // cámara de seguimiento suave con anticipación y límites del mundo
+    const c = this.cam, p = this.player, k = 1 - Math.exp(-dt * 5), kl = 1 - Math.exp(-dt * 2.5);
+    c.lx += (p.vx * 0.35 - c.lx) * kl; c.ly += (p.vy * 0.35 - c.ly) * kl;
+    let tx = p.x + c.lx, ty = p.y - 20 + c.ly;
+    const mx = Math.max(0, HX + 60 - this.viewW / 2), my = Math.max(0, HY + 60 - this.viewH / 2);
+    tx = Math.max(-mx, Math.min(mx, tx)); ty = Math.max(-my, Math.min(my, ty));
+    c.x += (tx - c.x) * k; c.y += (ty - c.y) * k;
     c.shake = Math.max(0, c.shake - dt * 30);
     const sh = this.settings.shake ? c.shake : 0;
     c.sx = (Math.random() - 0.5) * sh; c.sy = (Math.random() - 0.5) * sh;
@@ -4084,12 +4756,18 @@ class Game {
     const p = this.player, inp = this.input, st = this.st;
     const mv = inp.move();
     p.inv = Math.max(0, p.inv - dt); p.hurt = Math.max(0, p.hurt - dt); p.muzzle = Math.max(0, p.muzzle - dt);
-    p.rootT = Math.max(0, p.rootT - dt);
+    p.rootT = Math.max(0, p.rootT - dt); p.stunT = Math.max(0, p.stunT - dt); p.stunImmune = Math.max(0, p.stunImmune - dt); p.inkT = Math.max(0, p.inkT - dt);
     for (let i = 0; i < 3; i++) { const h = this.hand[i]; if (h && h.cd > 0) h.cd = Math.max(0, h.cd - dt); }
-    const sp = p.rootT > 0 ? 0 : st.speed * this.curseSlow;
+    const stunned = p.stunT > 0;
+    const sp = p.rootT > 0 || stunned ? 0 : st.speed * this.curseSlow * this.fx.speed * (p.inkT > 0 ? 0.5 : 1);
     p.moving = (mv.x !== 0 || mv.y !== 0) && sp > 0;
-    p.x += mv.x * sp * dt; p.y += mv.y * sp * dt;
-    if (p.x < -HALF) p.x = -HALF; if (p.x > HALF) p.x = HALF; if (p.y < -HALF) p.y = -HALF; if (p.y > HALF) p.y = HALF;
+    p.vx = mv.x * sp; p.vy = mv.y * sp;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.x < -HX) p.x = -HX; if (p.x > HX) p.x = HX; if (p.y < -HY) p.y = -HY; if (p.y > HY) p.y = HY;
+    if (this.zoned) { const zi = zoneAt(p.x); if (zi !== this.zoneIdx) { if (this.zoneIdx >= 0) this.zoneBanner = { text: ZONES[zi].name, t: 2.2 }; this.zoneIdx = zi; } }
+    if (this.zoneBanner) { this.zoneBanner.t -= dt; if (this.zoneBanner.t <= 0) this.zoneBanner = null; }
+    // Humor Negro (Barnaby): chiste periódico que aterra a la horda cercana
+    if (st.fearAura) { p.jokeT -= dt; if (p.jokeT <= 0) { p.jokeT = 12; this.tellJoke(220, 2.5); } }
     this.collideSolids(p, p.r);
     if (st.regen > 0) { p.regenT += dt; if (p.regenT >= 1) { p.regenT = 0; this.heal(st.regen, true); } }
     // apuntado
@@ -4098,13 +4776,13 @@ class Game {
       const wx = this.cam.x + (inp.mouse.x - this.w / 2) / this.scale, wy = this.cam.y + (inp.mouse.y - this.h / 2) / this.scale;
       p.aim = Math.atan2(wy - (p.y - 24), wx - p.x); p.aimDist = Math.hypot(wx - p.x, wy - p.y); has = true;
     } else {
-      const t = this.nearest(p.x, p.y, this.weapon.range * 1.05, 0);
+      const t = this.nearest(p.x, p.y, this.range(), 0);
       if (t) { p.aim = Math.atan2(t.y - t.r - (p.y - 24), t.x - p.x); p.aimDist = Math.sqrt(this.q.bestD); has = true; }
     }
     const ca = Math.cos(p.aim);
     if (ca > 0.15) p.face = 1; else if (ca < -0.15) p.face = -1; else if (mv.x) p.face = mv.x > 0 ? 1 : -1;
-    fireWeapon(this, dt, has);
-    for (let i = 0; i < 3; i++) if (inp.consume('c' + i)) this.useHand(i);
+    if (!stunned) fireWeapon(this, dt, has);
+    for (let i = 0; i < 3; i++) if (inp.consume('c' + i) && !stunned) this.useHand(i);
     if (p.hp / p.maxHp < 0.3) { this.lowBarkT -= dt; if (this.lowBarkT <= 0) { this.lowBarkT = 20; this.say(null, BARKS[this.hero.id].low, 2.2); } }
   }
 
@@ -4114,9 +4792,91 @@ class Game {
     if (h.cd > 0) { this.addText(this.player.x, this.player.y - 76, 'Recargando…', '#a8987a', 12, false); return; }
     h.cd = h.card.cd * this.st.cardCd;
     playCard(this, h.card);
+    // partículas de tinta y pólvora al jugar la carta (desde su hueco en el HUD)
+    const hb = this.hudCards ? this.hudCards[i] : null;
+    this.uiBurst(hb ? hb.x : this.w / 2, hb ? hb.y : this.h - 60, '#ffb347', 30, true);
+    const p = this.player;
+    for (let k = 0; k < 16; k++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 200; this.addPart(p.x, p.y - 30, Math.cos(a) * sp, Math.sin(a) * sp, 0.6, 3 + Math.random() * 3, k % 2 ? '#0a0605' : '#3a2a20', PT.SMOKE, false).grow = 10; }
     Sfx.play('card');
     if (Math.random() < 0.35) this.say(null, BARKS[this.hero.id].card, 1.6);
     if (h.card.curse) this.addCurse(h.card.curse, h.card.name);
+  }
+
+  // Alcance real de disparo/detección (anillo de tinta en el suelo).
+  range() { return this.weapon.range * this.st.rangeMult * this.fx.range; }
+  magSize() { return Math.max(1, Math.round(this.weapon.mag * (this.st ? this.st.magMult : 1))); }
+
+  tellJoke(radius, time) {
+    const p = this.player, jokes = BARKS.barnaby.jokes;
+    this.say(null, jokes, 3.2);
+    const q = this.q; q.x = p.x; q.y = p.y; let n = 0;
+    const E = this.zombies.items;
+    for (let i = 0; i < this.zombies.n; i++) {
+      const e = E[i];
+      if (e.dead || e.colossus) continue;
+      if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < radius * radius) { e.fearT = Math.max(e.fearT, time); n++; if (n === 3) this.say(e, BARKS.scared, 1.2); }
+    }
+    this.addPart(p.x, p.y - 20, 0, 0, 0.5, radius * 0.3, '#e8dcc0', PT.RING, true).grow = radius * 1.6;
+  }
+
+  stunPlayer(t) {
+    const p = this.player;
+    if (p.stunImmune > 0 || this.fx.invuln || this.state !== 'play') return;
+    p.stunT = t; p.stunImmune = t + 2.5;
+    this.addText(p.x, p.y - 80, '¡ATURDIDO!', '#9ab8ff', 15, true);
+  }
+
+  // ---------------------------------------------------------------- póker de tinta y furias
+  addPokerCard(r, s) {
+    this.poker.push({ r, s });
+    this.pokerCount++;
+    Sfx.play('card');
+    if (this.poker.length < 5) return;
+    const combo = evaluateHand(this.poker);
+    this.pokerShow = { hand: this.poker.slice(), combo, t: 2.2 };
+    this.poker.length = 0;
+    if (!combo) { this.addText(this.player.x, this.player.y - 90, 'Carta alta… nada', '#a89a82', 14, false); return; }
+    const F = FURIES[combo];
+    const ex = this.furies.find((f) => f.id === combo);
+    if (ex) ex.t = F.time; else this.furies.push({ id: combo, t: F.time, max: F.time });
+    this.showBanner(F.label, F.desc, 1.8);
+    this.comicText(this.player.x, this.player.y - 110, '¡' + F.name.toUpperCase() + '!', F.color, 30);
+    this.flash = 0.35; Sfx.play('combo');
+    this.uiBurst(this.w * 0.12, this.h - 60, F.color, 40, false);
+  }
+
+  updateFuries(dt) {
+    const fx = this.fx;
+    fx.dmg = 1; fx.rate = 1; fx.speed = 1; fx.pierce = 0; fx.range = 1; fx.crit = 0; fx.reload = 1; fx.invuln = false; fx.explode = 0;
+    for (let i = this.furies.length - 1; i >= 0; i--) {
+      const f = this.furies[i]; f.t -= dt;
+      if (f.t <= 0) { this.furies.splice(i, 1); continue; }
+      const F = FURIES[f.id];
+      if (F.dmg) fx.dmg *= F.dmg; if (F.rate) fx.rate *= F.rate; if (F.speed) fx.speed *= F.speed;
+      if (F.pierce) fx.pierce += F.pierce; if (F.range) fx.range *= F.range; if (F.crit) fx.crit = 1;
+      if (F.reload === 0) fx.reload = 0; if (F.invuln) fx.invuln = true; if (F.explode) fx.explode = Math.max(fx.explode, F.explode);
+    }
+    // Último cartucho (fiebre final de la ronda): +30% daño
+    if (this.objective && this.objective.fever) { fx.dmg *= 1.3; fx.rate *= 1.15; }
+    if (this.pokerShow) { this.pokerShow.t -= dt; if (this.pokerShow.t <= 0) this.pokerShow = null; }
+  }
+
+  // ---------------------------------------------------------------- partículas de tinta/pólvora en pantalla
+  uiBurst(x, y, color, n = 24, ink = true) {
+    for (let i = 0, k = 0; i < this.uiParts.length && k < n; i++) {
+      const u = this.uiParts[i];
+      if (u.on) continue;
+      const a = Math.random() * TAU, s = 60 + Math.random() * 260;
+      u.on = true; u.x = x; u.y = y; u.vx = Math.cos(a) * s; u.vy = Math.sin(a) * s - 60; u.life = 0; u.max = 0.5 + Math.random() * 0.5;
+      u.size = 2 + Math.random() * (ink ? 5 : 3); u.color = k % 3 === 0 && ink ? '#0a0605' : color; u.ink = ink && k % 3 === 0; k++;
+    }
+  }
+  updateUi(dt) {
+    for (const u of this.uiParts) {
+      if (!u.on) continue;
+      u.life += dt; if (u.life >= u.max) { u.on = false; continue; }
+      u.x += u.vx * dt; u.y += u.vy * dt; u.vy += 420 * dt; u.vx *= 1 - 2 * dt;
+    }
   }
 
   collideSolids(o, r) {
@@ -4150,7 +4910,7 @@ class Game {
 
   hurtPlayer(dmg, fromTrap = false) {
     const p = this.player;
-    if (p.inv > 0 || this.state !== 'play') return;
+    if (p.inv > 0 || this.state !== 'play' || this.fx.invuln) return;
     if (fromTrap && this.st.trapMaster) return;
     const vulnNoDodge = this.curses.some((c) => c.type === 'vuln');
     if (!vulnNoDodge && Math.random() < this.st.dodge) { p.inv = 0.25; this.addText(p.x, p.y - 70, '¡ESQUIVA!', '#c8b8ff', 13, false); return; }
@@ -4173,7 +4933,7 @@ class Game {
     e.speed = d.speed * spdMult * (0.88 + Math.random() * 0.24); e.dmg = d.dmg;
     e.colossus = false; e.elite = false; e.spr = this.spr.zombie(type); e.flash = 0; e.burnT = 0; e.burnDps = 0; e.burnTick = 0;
     e.slowT = 0; e.stunT = 0; e.rootT = 0; e.atkT = 0.5 + Math.random(); e.state = 0; e.stateT = 0; e.face = 1; e.target = null;
-    e.xp = d.xp; e.soul = d.soul; e.dead = false; e.alpha = 1; e.name = ''; e.hitBy = 0;
+    e.xp = d.xp; e.soul = d.soul; e.dead = false; e.alpha = 1; e.name = ''; e.hitBy = 0; e.fearT = 0; e.flank = Math.random() < 0.5 ? 1 : -1;
     if (this.objective.assignTarget) this.objective.assignTarget(e);
     return e;
   }
@@ -4183,11 +4943,11 @@ class Game {
     if (!e) return null;
     const a = Math.random() * TAU;
     e.uid = this.uid++; e.type = type; e.def = C;
-    e.x = Math.max(-HALF + 80, Math.min(HALF - 80, p.x + Math.cos(a) * 460)); e.y = Math.max(-HALF + 80, Math.min(HALF - 80, p.y + Math.sin(a) * 460));
+    e.x = Math.max(-HX + 80, Math.min(HX - 80, p.x + Math.cos(a) * 460)); e.y = Math.max(-HY + 80, Math.min(HY - 80, p.y + Math.sin(a) * 460));
     e.vx = 0; e.vy = 0; e.r = C.r; e.maxHp = e.hp = Math.round(C.hp * hpMult); e.armor = e.maxArmor = 0;
     e.speed = C.speed; e.dmg = C.dmg; e.colossus = true; e.elite = false; e.spr = this.spr.zombie(type);
     e.flash = 0; e.burnT = 0; e.slowT = 0; e.stunT = 0; e.rootT = 0; e.dead = false; e.alpha = 1; e.name = C.name; e.xp = C.xp; e.soul = C.soul;
-    e.mode = 'move'; e.modeT = 2.2; e.patIdx = 0; e.subT = 0; e.subN = 0; e.phase = 0; e.ang = 0; e.state = 0; e.target = null; e.tauntT = 4;
+    e.fearT = 0; e.flank = 1; e.mode = 'move'; e.modeT = 2.2; e.patIdx = 0; e.subT = 0; e.subN = 0; e.phase = 0; e.ang = 0; e.state = 0; e.target = null; e.tauntT = 4;
     this.colossi.push(e);
     this.showBanner(C.name.toUpperCase(), '¡COLOSO DE ÉLITE!', 2.4);
     this.cam.shake = 16; Sfx.play('boss');
@@ -4201,6 +4961,7 @@ class Game {
   hurtZombie(e, dmg, crit, nx, ny, kb, burn, slow, stun) {
     if (e.dead) return false;
     let d = dmg;
+    if (e.fearT > 0 && this.st.fearAura) d *= 1.25;
     if (e.armor > 0) {
       const absorbed = d * 0.7; e.armor -= absorbed; d -= absorbed;
       if (e.armor <= 0) { e.armor = 0; this.addText(e.x, e.y - e.r * 3, '¡CORAZA ROTA!', '#c8c8d0', 12, false); for (let i = 0; i < 8; i++) this.addPart(e.x, e.y - 30, (Math.random() - 0.5) * 260, -Math.random() * 200, 0.6, 4, '#8a8a90', PT.DEBRIS, false); }
@@ -4224,6 +4985,10 @@ class Game {
     const souls = e.xp;
     for (let v = souls; v > 0;) { const k = v >= 5 ? 5 : 1; this.drop(e.x, e.y, k === 5 ? PK.BIGSOUL : PK.SOUL, k); v -= k; }
     if (Math.random() < (e.colossus ? 1 : 0.012)) this.drop(e.x, e.y, PK.HEAL, 25);
+    // naipes de tinta para el póker
+    const cardChance = (e.colossus ? 2 : e.type === 'abomination' ? 0.7 : 0.055) * (1 + this.st.pokerLuck);
+    for (let n = cardChance; n > 0; n -= 1) if (Math.random() < n) this.dropCard(e.x, e.y);
+    if (e.def.puddle) this.addZone(ZK.INK, e.x, e.y, e.def.puddle.r, e.def.puddle.time, 0, '#0a0a12', 0);
     for (let i = 0; i < 7; i++) { const a = Math.random() * TAU, s = 60 + Math.random() * 200; this.addPart(e.x, e.y - e.r, Math.cos(a) * s, Math.sin(a) * s, 0.4 + Math.random() * 0.3, 2 + Math.random() * 3, i % 3 ? '#3a0c0a' : '#0a0806', PT.BLOOD, false); }
     this.addDecal(e.x, e.y, e.r * (0.8 + Math.random() * 0.6), Math.random() < 0.5 ? 1 : 0);
     if (e.def.bomb) { this.explode(e.x, e.y, e.def.bomb.r, 90, '#ff8a2a', 1, 0, 300, false); this.explodeHitsPlayer(e.x, e.y, e.def.bomb.r, e.dmg); }
@@ -4245,6 +5010,13 @@ class Game {
     const it = this.items.get(); if (!it) return;
     const a = Math.random() * TAU, s = 30 + Math.random() * 90;
     it.x = x; it.y = y; it.kind = kind; it.value = value; it.vx = Math.cos(a) * s; it.vy = Math.sin(a) * s; it.mag = false; it.t = 0;
+  }
+
+  dropCard(x, y) {
+    const it = this.items.get(); if (!it) return;
+    const a = Math.random() * TAU;
+    it.x = x; it.y = y; it.kind = PK.CARD; it.value = 1; it.vx = Math.cos(a) * 80; it.vy = Math.sin(a) * 80; it.mag = false; it.t = 0;
+    it.cr = (Math.random() * RANKS.length) | 0; it.cs = (Math.random() * SUITS.length) | 0;
   }
 
   addDecal(x, y, r, kind) {
@@ -4317,7 +5089,7 @@ class Game {
         }
       }
       b.x += b.vx * dt; b.y += b.vy * dt;
-      if (b.life <= 0 || b.x < -HALF - 200 || b.x > HALF + 200 || b.y < -HALF - 200 || b.y > HALF + 200) { this.bullets.kill(i); continue; }
+      if (b.life <= 0 || b.x < -HX - 200 || b.x > HX + 200 || b.y < -HY - 200 || b.y > HY + 200) { this.bullets.kill(i); continue; }
       if (bulletVsTraps(this, b)) { this.bullets.kill(i); continue; }
       if (this.bulletHits(b)) this.bullets.kill(i);
     }
@@ -4349,8 +5121,9 @@ class Game {
   applyHit(b, e) {
     const st = this.st, p = this.player;
     const dist = Math.hypot(e.x - p.x, e.y - p.y);
-    let crit = b.crit || Math.random() < st.crit + (this.weapon.critBonus || 0);
-    let mult = st.dmg;
+    let crit = b.crit || this.fx.crit > 0 || Math.random() < st.crit + (this.weapon.critBonus || 0);
+    let mult = st.dmg * this.fx.dmg;
+    if (st.rage && p.hp < p.maxHp * 0.5) mult *= 1 + st.rage;
     if (dist < 170 && st.closeBonus) mult *= 1 + st.closeBonus;
     let cm = st.critMult;
     if (st.farCrit) cm *= 1 + Math.min(1, dist / 600) * 0.6;
@@ -4358,7 +5131,16 @@ class Game {
     const sp = Math.hypot(b.vx, b.vy) || 1;
     this.hurtZombie(e, dmg, crit, b.vx / sp, b.vy / sp, b.kb, b.burn, b.slow, b.stun);
     if (crit && st.critExplode) this.explode(e.x, e.y - e.r, 55 + 10 * st.critExplode, dmg * 0.4, '#ff4a8a', 1, 0, 160, true);
-    if (b.kind === BK.HARPOON && b.radius > 0) { this.explode(b.x, b.y, b.radius, b.dmg * st.dmg * 0.6, this.pal.glow, 1, 0, 300, false); b.radius = 0; }
+    if ((b.kind === BK.HARPOON || b.kind === BK.CARD) && b.radius > 0) { this.explode(b.x, b.y, b.radius, b.dmg * mult * 0.7, b.kind === BK.CARD ? '#ff8a3a' : this.pal.glow, 1, 0, 260, b.kind === BK.CARD); b.radius = 0; }
+    // disparos en área (Pólvora Negra / Póker) y metralla
+    const area = Math.max(st.splash, this.fx.explode);
+    if (area > 0 && b.kind !== BK.LOB && b.kind !== BK.SHRAP) this.explode(b.x, b.y, area, dmg * 0.35, '#ffb347', 1, 0, 120, true);
+    if (st.shrapnel > 0 && b.kind !== BK.SHRAP) {
+      for (let k = 0; k < st.shrapnel; k++) {
+        const s2 = this.addBullet(b.x, b.y, Math.random() * TAU, 520, b.dmg * 0.3, 2.5, 0, 0.22, '#d8c8a0', '#ffffff', BK.SHRAP, 40);
+        if (s2) { s2.hits.push(e.uid); s2.chain = 0; s2.burn = 0; }
+      }
+    }
     this.addPart(b.x, b.y, -b.vx * 0.15 + (Math.random() - 0.5) * 80, -b.vy * 0.15 + (Math.random() - 0.5) * 80, 0.15, 4, b.color, PT.SPARK, true);
     if (b.hits.length < 16) b.hits.push(e.uid);
     if (b.chain > 0) {
@@ -4406,13 +5188,13 @@ class Game {
         b.vx = Math.cos(na) * sp; b.vy = Math.sin(na) * sp;
       }
       b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; b.t += dt;
-      if (b.life <= 0) { this.ebullets.kill(i); continue; }
+      if (b.life <= 0) { if (b.kind === EK.INK) this.addZone(ZK.INK, b.x, b.y + 20, 34, 3, 0, '#0a0a12', 0); this.ebullets.kill(i); continue; }
       // las coberturas detienen los proyectiles enemigos
       let blocked = false;
       for (let k = 0; k < this.traps.length; k++) { const t = this.traps[k]; if (t.solid && !t.dead && Math.abs(t.x - b.x) < t.r && Math.abs(t.y - 20 - b.y) < t.r * 0.8) { t.hp -= b.dmg; t.flash = 0.1; blocked = true; break; } }
       if (blocked) { this.addPart(b.x, b.y, 0, -40, 0.3, 4, '#c8a878', PT.SPLINTER, false); this.ebullets.kill(i); continue; }
       const dx = p.x - b.x, dy = (p.y - 22) - b.y, rr = p.r + b.r;
-      if (dx * dx + dy * dy < rr * rr && p.inv <= 0) { this.hurtPlayer(b.dmg); this.ebullets.kill(i); }
+      if (dx * dx + dy * dy < rr * rr && p.inv <= 0) { this.hurtPlayer(b.dmg); if (b.kind === EK.INK) p.inkT = 1.5; this.ebullets.kill(i); }
     }
   }
 
@@ -4454,6 +5236,9 @@ class Game {
         case ZK.SLAM:
           if (z.tick === 0 && z.life >= z.max) { z.tick = 1; this.explode(z.x, z.y, z.r, 0, z.color, 0, 0, 0, false); this.explodeHitsPlayer(z.x, z.y, z.r, z.dmg); }
           break;
+        case ZK.INK:
+          if ((p.x - z.x) ** 2 + ((p.y - z.y) / 0.6) ** 2 < z.r * z.r) p.inkT = 0.15;
+          break;
         case ZK.TRAIN: case ZK.RIDERS: {
           z.x += z.vx * dt;
           const q = this.q; q.x = z.x; q.y = z.y; q.r = z.r; q.dmg = z.dmg; q.kb = 700; q.burn = 0; q.stun = 0.5;
@@ -4488,6 +5273,7 @@ class Game {
 
   collect(it) {
     if (it.kind === PK.HEAL) { this.heal(it.value); return; }
+    if (it.kind === PK.CARD) { this.addPokerCard(it.cr, it.cs); return; }
     this.souls += it.value; Sfx.play('xp');
     while (this.souls >= this.nextSouls) { this.souls -= this.nextSouls; this.level++; this.nextSouls = this.soulsFor(this.level); this.pendingDrafts++; }
   }
@@ -4711,12 +5497,12 @@ function renderDossiers() {
   const box = $('#dossiers');
   box.innerHTML = HEROES.map((h, i) => {
     const st = Save.hero(h.id), pct = st.level >= MAX_LEVEL ? 100 : (st.xp / xpForLevel(st.level)) * 100;
-    return `<article class="dossier ${Save.data.hero === h.id ? 'selected' : ''}" style="--rot:${[-1.2, 0.8, -0.6][i]}deg">
-      <span class="tab">EXPEDIENTE Nº ${['047', '113', '666'][i]}</span>
+    return `<article class="dossier ${Save.data.hero === h.id ? 'selected' : ''}" style="--rot:${[-1.2, 0.8, -0.6, 1][i]}deg">
+      <span class="tab">EXPEDIENTE Nº ${['047', '113', '666', '208'][i]}</span>
       ${st.level >= 50 ? '<span class="stampmark">LEYENDA</span>' : ''}
       <canvas data-portrait="${h.id}"></canvas>
-      <h3>${h.name}</h3><span class="alias">${h.alias}</span>
-      <p><b>${h.role}</b></p>
+      <h3>${h.name}</h3><span class="alias">${h.alias}</span> <span class="alias temper">${h.temper}</span>
+      <p><b>${h.role}</b> · Arma: ${WEAPONS[h.weapons[st.weapon]].name}</p>
       <p class="passive"><b>Pasiva · ${h.passive.name}:</b> ${h.passive.desc}</p>
       <div class="lvl"><b>NV ${st.level}</b><span class="xpbar"><i style="width:${pct}%"></i></span><span>${st.level >= MAX_LEVEL ? 'MÁX' : fmt(st.xp) + '/' + fmt(xpForLevel(st.level))}</span></div>
       <div class="row"><button class="btn small" data-dossier="${h.id}">Abrir dossier</button><button class="btn btn-blood" data-pick="${h.id}">Elegir</button></div>
@@ -4740,7 +5526,7 @@ function openDossier(h) {
     <canvas class="origin" id="origin"></canvas>
     <p>${h.lore}</p>
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
-      <canvas id="sigcard" width="200" height="290" style="width:160px;height:232px"></canvas>
+      <canvas id="sigcard" class="tarot" width="200" height="350" style="width:160px;height:280px"></canvas>
       <div style="flex:1;min-width:240px">
         <p><b>Pasiva · ${h.passive.name}:</b> ${h.passive.desc}</p>
         <p><b>Nivel ${st.level}</b> de ${MAX_LEVEL}. Hitos de desbloqueo:</p>
@@ -4757,7 +5543,7 @@ function openDossier(h) {
       const cv = b.querySelector('#origin'), W = Math.min(860, b.clientWidth - 40), H = Math.round(W * (window.innerWidth < 640 ? 1.25 : 0.46));
       renderPage(cv, h.panels, h, heroPal(h), { w: W, h: H, title: 'ORIGEN' });
       cv.style.width = '100%'; cv.style.height = 'auto';
-      const sc = b.querySelector('#sigcard'), x = sc.getContext('2d'); drawCard(x, SIGNATURE[h.signature], 200, 290, 0, 'Carta de firma: empieza en tu mano.');
+      const sc = b.querySelector('#sigcard'), x = sc.getContext('2d'); drawCard(x, SIGNATURE[h.signature], 200, 350, 0, 'Carta de firma: empieza en tu mano.');
     });
     $$('[data-skin]', b).forEach((x) => x.addEventListener('click', () => { Save.setSkin(h.id, +x.dataset.skin); close(); openDossier(h); renderDossiers(); }));
     $$('[data-weapon]', b).forEach((x) => x.addEventListener('click', () => { Save.setWeapon(h.id, +x.dataset.weapon); close(); openDossier(h); }));
@@ -4835,9 +5621,10 @@ let lastRun = null;
 
 let draftRaf = 0;
 function showDraft(choices, reason) {
-  const box = $('#draft-cards'), d = dprOf(), W = window.innerWidth < 640 ? 150 : 210, H = Math.round(W * 1.45);
+  const small = window.innerWidth < 640, box = $('#draft-cards'), d = dprOf();
+  const W = small ? Math.min(118, Math.floor((window.innerWidth - 96) / 3)) : 200, H = Math.round(W * TAROT);
   $('#draft-title').textContent = reason === 'bonus' ? 'Recompensa: roba una carta' : '¡Nivel ' + game.level + '! Roba una carta';
-  box.innerHTML = choices.map((c, i) => `<div class="slot"><canvas data-i="${i}" style="width:${W}px;height:${H}px"></canvas><span>[${i + 1}] ${RARITY[c.r].name}</span></div>`).join('');
+  box.innerHTML = choices.map((c, i) => `<div class="slot r${c.r}" style="--i:${i}"><canvas class="tarot" data-i="${i}" style="width:${W}px;height:${H}px"></canvas><span>[${i + 1}] ${RARITY[c.r].name}</span></div>`).join('');
   const cvs = $$('canvas', box);
   cvs.forEach((cv) => { cv.width = W * d; cv.height = H * d; });
   const t0 = performance.now();
@@ -4845,16 +5632,19 @@ function showDraft(choices, reason) {
     draftRaf = requestAnimationFrame(loop);
     const t = (performance.now() - t0) / 1000;
     cvs.forEach((cv, i) => { const x = cv.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H); drawCard(x, choices[i], W, H, t, choices[i].t === 'action' && game.hand.every((hh) => hh) ? 'Mano llena: sustituirá tu carta de menor rareza.' : ''); });
-    if (choices.every((c) => c.r < 3)) cancelAnimationFrame(draftRaf);
+    if (choices.every((c) => c.r < 2)) cancelAnimationFrame(draftRaf);
   };
   loop();
   $('#draft').classList.remove('hidden');
   const pick = (i) => {
     if (!choices[i]) return;
     cancelAnimationFrame(draftRaf); window.removeEventListener('keydown', onKey);
+    const rect = cvs[i].getBoundingClientRect();
     $('#draft').classList.add('hidden');
     Sfx.play(choices[i].r === 4 ? 'curse' : 'card');
     game.takeCard(choices[i]);
+    // la carta "se juega": estallido de tinta y pólvora en su posición
+    game.uiBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, RARITY[choices[i].r].glow, 60, true);
   };
   const onKey = (e) => { const n = parseInt(e.key, 10); if (n >= 1 && n <= 3) pick(n - 1); };
   window.addEventListener('keydown', onKey);

@@ -1,7 +1,10 @@
 // HUD limpio: barra de salud metálica desgastada, mano/mazo de cartas con recarga, ronda u objetivo,
 // maldiciones activas, barras de colosos, flechas a objetivos, joystick y rótulos de tinta.
 import { INK, TAU, makeCanvas, makeRng, burst } from '../art/ink.js';
-import { miniCard } from '../art/cardArt.js';
+import { miniCard, pokerFace } from '../art/cardArt.js';
+import { HX, HY } from './engine.js';
+import { ZONES } from '../data/story.js';
+import { FURIES } from '../data/poker.js';
 
 const FONT = new Map();
 function f(size, face) { const k = face + size; let v = FONT.get(k); if (!v) { v = face === 'T' ? `${size}px "Holtwood One SC", Georgia, serif` : `bold ${size}px "Courier Prime", "Courier New", monospace`; FONT.set(k, v); } return v; }
@@ -49,6 +52,8 @@ function metalBar(ctx, x, y, w, h, k, c1, c2) {
 
 const BTN = { c0: { id: 'c0', x: 0, y: 0, r: 0 }, c1: { id: 'c1', x: 0, y: 0, r: 0 }, c2: { id: 'c2', x: 0, y: 0, r: 0 }, pause: { id: 'pause', x: 0, y: 0, r: 0 } };
 
+const HUDCARDS = [BTN.c0, BTN.c1, BTN.c2];
+
 export function drawHud(g, ctx, t) {
   const W = g.w, H = g.h, p = g.player, inp = g.input, touch = inp.isTouch, small = W < 640, dpr = g.dpr;
 
@@ -63,11 +68,28 @@ export function drawHud(g, ctx, t) {
   metalBar(ctx, bx, 38, bw, 6, g.souls / g.nextSouls, '#9ac8ff', '#e8f4ff');
   text(ctx, txt('lvl', g.level, (v) => 'NV ' + v), bx, 55, 12, '#c8d8ff', 'T', 'left', 3);
   text(ctx, txt('k', g.kills, (v) => '☠ ' + v), bx + bw, 55, 12, '#e8d8b8', 'B', 'right', 3);
-  // maldiciones activas
-  for (let i = 0; i < g.curses.length; i++) {
-    const c = g.curses[i];
-    text(ctx, (c.type === 'slow' ? '⛓ LENTITUD ' : '☠ VULNERABLE ') + Math.ceil(c.t) + 's', 14, 82 + i * 18, 11, '#d8a8ff', 'B', 'left', 3);
+  // munición / recarga
+  const mag = g.magSize();
+  if (p.reloadT > 0) {
+    const k = 1 - p.reloadT / (g.weapon.reload * g.st.reloadMult);
+    metalBar(ctx, 14, 74, 120, 7, k, '#c9a54a', '#fff0b0');
+    text(ctx, 'RECARGANDO', 140, 78, 10, '#ffcf6a', 'B', 'left', 2.5);
+  } else {
+    const pw2 = Math.min(7, 150 / mag);
+    for (let i = 0; i < mag; i++) { ctx.fillStyle = i < p.ammo ? '#d8b860' : '#2a2018'; ctx.fillRect(14 + i * (pw2 + 2), 72, pw2, 11); ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.strokeRect(14 + i * (pw2 + 2), 72, pw2, 11); }
   }
+  let ly = 98;
+  // maldiciones activas
+  for (let i = 0; i < g.curses.length; i++, ly += 18) {
+    const c = g.curses[i];
+    text(ctx, (c.type === 'slow' ? '⛓ LENTITUD ' : '☠ VULNERABLE ') + Math.ceil(c.t) + 's', 14, ly, 11, '#d8a8ff', 'B', 'left', 3);
+  }
+  // furias del póker
+  for (let i = 0; i < g.furies.length; i++, ly += 18) {
+    const f = g.furies[i], F = FURIES[f.id];
+    text(ctx, '♠ ' + F.name.toUpperCase() + ' ' + Math.ceil(f.t) + 's', 14, ly, 11, F.color, 'B', 'left', 3);
+  }
+  if (g.objective.fever) text(ctx, '🔥 ÚLTIMO CARTUCHO +30% DAÑO', 14, ly, 11, '#ff6a3a', 'B', 'left', 3);
 
   // ---------------- pausa + mazo (arriba derecha)
   BTN.pause.r = touch ? 24 : 18; BTN.pause.x = W - 12 - BTN.pause.r; BTN.pause.y = 12 + BTN.pause.r;
@@ -77,9 +99,21 @@ export function drawHud(g, ctx, t) {
   ctx.drawImage(plate(dw, 36, dpr), dx, 12, dw, 36);
   for (let i = 0; i < 3; i++) { ctx.fillStyle = i === 2 ? '#e8dcc0' : '#a89878'; ctx.strokeStyle = INK; ctx.lineWidth = 1.2; ctx.fillRect(dx + 10 + i * 3, 19 - i * 2, 14, 20); ctx.strokeRect(dx + 10 + i * 3, 19 - i * 2, 14, 20); }
   text(ctx, txt('deck', g.deck, (v) => 'MAZO ' + v), dx + 34, 30, 12, '#f2e2b8', 'T', 'left', 3);
+  // minimapa de la comarca (3× el viewport)
+  const mw = small ? 96 : 150, mh = Math.round(mw * HY / HX), mx = W - 12 - mw, my = 56;
+  ctx.drawImage(plate(mw + 8, mh + 8, dpr), mx - 4, my - 4, mw + 8, mh + 8);
+  if (g.zoned) for (const z of ZONES) { ctx.fillStyle = z.mini; ctx.fillRect(mx + (z.x0 + 1) / 2 * mw, my, (z.x1 - z.x0) / 2 * mw, mh); }
+  else { ctx.fillStyle = g.map.g2; ctx.fillRect(mx, my, mw, mh); }
+  const wx = (x) => mx + ((x + HX) / (2 * HX)) * mw, wy = (y) => my + ((y + HY) / (2 * HY)) * mh;
+  ctx.strokeStyle = 'rgba(232,220,192,0.5)'; ctx.lineWidth = 1;
+  ctx.strokeRect(wx(g.cam.x - g.viewW / 2), wy(g.cam.y - g.viewH / 2), (g.viewW / (2 * HX)) * mw, (g.viewH / (2 * HY)) * mh);
+  const Z = g.zombies.items;
+  for (let i = 0; i < g.zombies.n; i++) { const e = Z[i]; if (e.dead || !(e.colossus || e.type === 'abomination')) continue; ctx.fillStyle = e.colossus ? '#ff3a2a' : '#b04dff'; ctx.fillRect(wx(e.x) - 2, wy(e.y) - 2, 4, 4); }
+  for (const st2 of g.structs) { ctx.fillStyle = '#5aff4a'; ctx.fillRect(wx(st2.x) - 2, wy(st2.y) - 2, 4, 4); }
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(wx(p.x), wy(p.y), 2.5, 0, TAU); ctx.fill();
 
   // ---------------- objetivo / ronda
-  const o = g.objective, ow = small ? Math.min(W - 24, 270) : 360, ox = (W - ow) / 2, oy = small ? 76 : 10;
+  const o = g.objective, ow = small ? Math.min(W - 24, 270) : 360, ox = (W - ow) / 2, oy = small ? 140 : 10;
   ctx.drawImage(plate(ow, o.progress >= 0 ? 60 : 48, dpr), ox, oy, ow, o.progress >= 0 ? 60 : 48);
   text(ctx, o.headline(), W / 2, oy + 16, small ? 12 : 15, '#f2d27a', 'T', 'center', 3);
   if (o.timer >= 0) text(ctx, txt('tm', Math.ceil(o.timer), mmss), W / 2, oy + 36, small ? 15 : 18, o.timer < 10 && o.round === 0 ? '#ff6a4a' : '#fff2dc', 'T', 'center', 4);
@@ -111,11 +145,12 @@ export function drawHud(g, ctx, t) {
   }
 
   // ---------------- mano de cartas (indicador del mazo de habilidad)
-  const size = touch ? 54 : 50, gap = 10;
-  const baseX = touch ? W - (size + gap) * 3 - 6 : W / 2 - ((size + gap) * 3 - gap) / 2, baseY = H - size * 1.35 - (touch ? 14 : 12);
+  const size = touch ? 46 : 44, gap = 10;
+  const baseX = touch ? W - (size + gap) * 3 - 6 : W / 2 - ((size + gap) * 3 - gap) / 2, baseY = H - Math.round(size * 1.6) - (touch ? 14 : 12);
   inp.buttons.length = 0; inp.buttons.push(BTN.pause);
+  g.hudCards = HUDCARDS;
   for (let i = 0; i < 3; i++) {
-    const h = g.hand[i], x = baseX + i * (size + gap), y = baseY, ch = size * 1.35;
+    const h = g.hand[i], x = baseX + i * (size + gap), y = baseY, ch = Math.round(size * 1.6);
     const B = BTN['c' + i]; B.x = x + size / 2; B.y = y + ch / 2; B.r = size * 0.62;
     if (touch) inp.buttons.push(B);
     if (!h) {
@@ -134,6 +169,23 @@ export function drawHud(g, ctx, t) {
     if (!touch) { ctx.fillStyle = '#120a06'; ctx.fillRect(x + size / 2 - 9, y - 10, 18, 16); text(ctx, '' + (i + 1), x + size / 2, y - 2, 11, '#f2e2b8', 'T', 'center', 0); }
   }
 
+  // ---------------- mano de póker de tinta (5 naipes)
+  const pw3 = touch ? 30 : 34, phh = pw3 * 1.4, px0 = 14, py0 = H - phh - (touch ? 14 : 16);
+  text(ctx, 'PÓKER DE TINTA', px0, py0 - 12, 10, '#e8dcc0', 'T', 'left', 2.5);
+  const show = g.pokerShow, hand = show ? show.hand : g.poker;
+  for (let i = 0; i < 5; i++) {
+    const x = px0 + i * (pw3 + 5);
+    if (hand[i]) ctx.drawImage(pokerFace(hand[i], pw3, dpr), x, py0 - (show ? Math.sin(Math.min(1, (2.2 - show.t) * 4) * Math.PI) * 8 : 0), pw3, phh);
+    else { ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(232,220,192,0.3)'; ctx.lineWidth = 1.5; ctx.strokeRect(x, py0, pw3, phh); ctx.setLineDash([]); }
+  }
+  if (show) text(ctx, show.combo ? '¡' + FURIES[show.combo].name.toUpperCase() + '!' : 'Carta alta', px0 + 5 * (pw3 + 5) + 6, py0 + phh / 2, 15, show.combo ? FURIES[show.combo].color : '#a89a82', 'T', 'left', 3);
+
+  // ---------------- rótulo de zona
+  if (g.zoneBanner) {
+    const zb = g.zoneBanner; ctx.globalAlpha = Math.min(1, zb.t * 2, (2.2 - zb.t) * 4);
+    text(ctx, '— ' + zb.text + ' —', W / 2, H * 0.2, small ? 18 : 26, '#e8dcc0', 'T', 'center', 4); ctx.globalAlpha = 1;
+  }
+
   // ---------------- joystick
   if (touch && inp.joy.active) {
     const j = inp.joy;
@@ -142,6 +194,15 @@ export function drawHud(g, ctx, t) {
   } else if (touch && g.time < 6) {
     ctx.globalAlpha = Math.max(0, 0.6 - g.time / 10); text(ctx, 'Arrastra para moverte', 20, H - 40, 13, '#e8dcc0', 'B', 'left', 3); ctx.globalAlpha = 1;
   }
+
+  // ---------------- partículas de tinta y pólvora (pantalla)
+  for (const u of g.uiParts) {
+    if (!u.on) continue;
+    const k = u.life / u.max; ctx.globalAlpha = 1 - k; ctx.fillStyle = u.color;
+    if (u.ink) { ctx.beginPath(); ctx.ellipse(u.x, u.y, u.size, u.size * 0.7, u.vx * 0.01, 0, TAU); ctx.fill(); }
+    else ctx.fillRect(u.x - u.size / 2, u.y - u.size / 2, u.size, u.size);
+  }
+  ctx.globalAlpha = 1;
 
   // ---------------- rótulo
   const bn = g.banner;

@@ -7,7 +7,7 @@ import { HEROES, WEAPONS, MILESTONES, MAX_LEVEL } from '../data/heroes.js';
 import { MISSIONS } from '../data/story.js';
 import { SIGNATURE, RARITY, CARDS } from '../data/cards.js';
 import { renderPage, renderPulpCover, paintScene } from '../art/comicPage.js';
-import { drawCard } from '../art/cardArt.js';
+import { drawCard, TAROT } from '../art/cardArt.js';
 import { drawHero } from '../art/heroArt.js';
 import { makeCanvas } from '../art/ink.js';
 import { Game } from '../game/engine.js';
@@ -118,12 +118,12 @@ function renderDossiers() {
   const box = $('#dossiers');
   box.innerHTML = HEROES.map((h, i) => {
     const st = Save.hero(h.id), pct = st.level >= MAX_LEVEL ? 100 : (st.xp / xpForLevel(st.level)) * 100;
-    return `<article class="dossier ${Save.data.hero === h.id ? 'selected' : ''}" style="--rot:${[-1.2, 0.8, -0.6][i]}deg">
-      <span class="tab">EXPEDIENTE Nº ${['047', '113', '666'][i]}</span>
+    return `<article class="dossier ${Save.data.hero === h.id ? 'selected' : ''}" style="--rot:${[-1.2, 0.8, -0.6, 1][i]}deg">
+      <span class="tab">EXPEDIENTE Nº ${['047', '113', '666', '208'][i]}</span>
       ${st.level >= 50 ? '<span class="stampmark">LEYENDA</span>' : ''}
       <canvas data-portrait="${h.id}"></canvas>
-      <h3>${h.name}</h3><span class="alias">${h.alias}</span>
-      <p><b>${h.role}</b></p>
+      <h3>${h.name}</h3><span class="alias">${h.alias}</span> <span class="alias temper">${h.temper}</span>
+      <p><b>${h.role}</b> · Arma: ${WEAPONS[h.weapons[st.weapon]].name}</p>
       <p class="passive"><b>Pasiva · ${h.passive.name}:</b> ${h.passive.desc}</p>
       <div class="lvl"><b>NV ${st.level}</b><span class="xpbar"><i style="width:${pct}%"></i></span><span>${st.level >= MAX_LEVEL ? 'MÁX' : fmt(st.xp) + '/' + fmt(xpForLevel(st.level))}</span></div>
       <div class="row"><button class="btn small" data-dossier="${h.id}">Abrir dossier</button><button class="btn btn-blood" data-pick="${h.id}">Elegir</button></div>
@@ -147,7 +147,7 @@ function openDossier(h) {
     <canvas class="origin" id="origin"></canvas>
     <p>${h.lore}</p>
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
-      <canvas id="sigcard" width="200" height="290" style="width:160px;height:232px"></canvas>
+      <canvas id="sigcard" class="tarot" width="200" height="350" style="width:160px;height:280px"></canvas>
       <div style="flex:1;min-width:240px">
         <p><b>Pasiva · ${h.passive.name}:</b> ${h.passive.desc}</p>
         <p><b>Nivel ${st.level}</b> de ${MAX_LEVEL}. Hitos de desbloqueo:</p>
@@ -164,7 +164,7 @@ function openDossier(h) {
       const cv = b.querySelector('#origin'), W = Math.min(860, b.clientWidth - 40), H = Math.round(W * (window.innerWidth < 640 ? 1.25 : 0.46));
       renderPage(cv, h.panels, h, heroPal(h), { w: W, h: H, title: 'ORIGEN' });
       cv.style.width = '100%'; cv.style.height = 'auto';
-      const sc = b.querySelector('#sigcard'), x = sc.getContext('2d'); drawCard(x, SIGNATURE[h.signature], 200, 290, 0, 'Carta de firma: empieza en tu mano.');
+      const sc = b.querySelector('#sigcard'), x = sc.getContext('2d'); drawCard(x, SIGNATURE[h.signature], 200, 350, 0, 'Carta de firma: empieza en tu mano.');
     });
     $$('[data-skin]', b).forEach((x) => x.addEventListener('click', () => { Save.setSkin(h.id, +x.dataset.skin); close(); openDossier(h); renderDossiers(); }));
     $$('[data-weapon]', b).forEach((x) => x.addEventListener('click', () => { Save.setWeapon(h.id, +x.dataset.weapon); close(); openDossier(h); }));
@@ -242,9 +242,10 @@ let lastRun = null;
 
 let draftRaf = 0;
 function showDraft(choices, reason) {
-  const box = $('#draft-cards'), d = dprOf(), W = window.innerWidth < 640 ? 150 : 210, H = Math.round(W * 1.45);
+  const small = window.innerWidth < 640, box = $('#draft-cards'), d = dprOf();
+  const W = small ? Math.min(118, Math.floor((window.innerWidth - 96) / 3)) : 200, H = Math.round(W * TAROT);
   $('#draft-title').textContent = reason === 'bonus' ? 'Recompensa: roba una carta' : '¡Nivel ' + game.level + '! Roba una carta';
-  box.innerHTML = choices.map((c, i) => `<div class="slot"><canvas data-i="${i}" style="width:${W}px;height:${H}px"></canvas><span>[${i + 1}] ${RARITY[c.r].name}</span></div>`).join('');
+  box.innerHTML = choices.map((c, i) => `<div class="slot r${c.r}" style="--i:${i}"><canvas class="tarot" data-i="${i}" style="width:${W}px;height:${H}px"></canvas><span>[${i + 1}] ${RARITY[c.r].name}</span></div>`).join('');
   const cvs = $$('canvas', box);
   cvs.forEach((cv) => { cv.width = W * d; cv.height = H * d; });
   const t0 = performance.now();
@@ -252,16 +253,19 @@ function showDraft(choices, reason) {
     draftRaf = requestAnimationFrame(loop);
     const t = (performance.now() - t0) / 1000;
     cvs.forEach((cv, i) => { const x = cv.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H); drawCard(x, choices[i], W, H, t, choices[i].t === 'action' && game.hand.every((hh) => hh) ? 'Mano llena: sustituirá tu carta de menor rareza.' : ''); });
-    if (choices.every((c) => c.r < 3)) cancelAnimationFrame(draftRaf);
+    if (choices.every((c) => c.r < 2)) cancelAnimationFrame(draftRaf);
   };
   loop();
   $('#draft').classList.remove('hidden');
   const pick = (i) => {
     if (!choices[i]) return;
     cancelAnimationFrame(draftRaf); window.removeEventListener('keydown', onKey);
+    const rect = cvs[i].getBoundingClientRect();
     $('#draft').classList.add('hidden');
     Sfx.play(choices[i].r === 4 ? 'curse' : 'card');
     game.takeCard(choices[i]);
+    // la carta "se juega": estallido de tinta y pólvora en su posición
+    game.uiBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, RARITY[choices[i].r].glow, 60, true);
   };
   const onKey = (e) => { const n = parseInt(e.key, 10); if (n >= 1 && n <= 3) pick(n - 1); };
   window.addEventListener('keydown', onKey);

@@ -1,40 +1,40 @@
 // Disparo por tipo de arma, cartas de acción y efectos pasivos periódicos (cuervos, tormenta de plomo,
 // tren fantasma, columna de fuego, sombras gemelas, trampero).
-import { BK, ZK, PT, HALF } from './engine.js';
+import { BK, ZK, PT, HX, HY } from './engine.js';
 import { placeTrap } from './traps.js';
 import { Sfx } from '../core/audio.js';
+import { BARKS } from '../data/heroes.js';
 import { TAU } from '../art/ink.js';
 
 function shoot(g, x, y, aim, dmgMul) {
-  const w = g.weapon, pal = g.pal, life = w.range / w.speed;
+  const w = g.weapon, pal = g.pal, R = g.range(), life = R / w.speed, st = g.st;
+  const kb = w.kb * st.kbMult, pierce = w.pierce + g.fx.pierce;
   switch (w.kind) {
     case 'rifle': case 'harpoon': {
-      const b = g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed, w.dmg * dmgMul, w.kind === 'harpoon' ? 6 : 4.5, w.pierce, life, pal.shot, pal.core, w.kind === 'harpoon' ? BK.HARPOON : BK.RIFLE, w.kb);
-      if (b && w.radius) b.radius = w.radius;
+      const b = g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed, w.dmg * dmgMul, w.kind === 'harpoon' ? 6 : 5, pierce, life, pal.shot, pal.core, w.kind === 'harpoon' ? BK.HARPOON : BK.RIFLE, kb);
+      if (b && w.explode) b.radius = w.explode;
+      g.cam.shake = Math.max(g.cam.shake, 4);
       Sfx.play('rifle');
       break;
     }
     case 'cards':
       for (let i = 0; i < w.count; i++) {
-        const b = g.addBullet(x, y, aim + (i - (w.count - 1) / 2) * w.spread + (Math.random() - 0.5) * 0.04, w.speed, w.dmg * dmgMul, 5, w.pierce, life, pal.card || '#f2e6cc', '#ffffff', BK.CARD, w.kb);
-        if (b) { b.chain += w.chain || 0; b.homing = w.homing || 0; }
+        const b = g.addBullet(x, y, aim + (i - (w.count - 1) / 2) * w.spread + (Math.random() - 0.5) * 0.06, w.speed, w.dmg * dmgMul, 5, pierce, life, pal.card || '#f2e6cc', '#ffffff', BK.CARD, kb);
+        if (b) { b.chain += w.chain || 0; b.homing = w.homing || 0; b.radius = w.explode || 0; }
       }
       Sfx.play('card');
       break;
-    case 'pepper':
-      for (let i = 0; i < w.count; i++) g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed * (0.9 + Math.random() * 0.2), w.dmg * dmgMul, 4, w.pierce, life, pal.shot, pal.core, BK.BULLET, w.kb);
-      Sfx.play('shot');
-      break;
     case 'shotgun':
-      for (let i = 0; i < w.count; i++) g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed * (0.8 + Math.random() * 0.35), w.dmg * dmgMul, 3.5, w.pierce, life * (0.85 + Math.random() * 0.3), pal.shot, pal.core, BK.PELLET, w.kb);
+      for (let i = 0; i < w.count; i++) g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed * (0.8 + Math.random() * 0.35), w.dmg * dmgMul, 3.5, pierce, life * (0.8 + Math.random() * 0.25), pal.shot, pal.core, BK.PELLET, kb);
       for (let i = 0; i < 3; i++) g.addPart(x + Math.cos(aim) * 14, y + Math.sin(aim) * 14, Math.cos(aim) * 60, Math.sin(aim) * 60 - 20, 0.6, 8, '#8a7a6a', PT.SMOKE, false).grow = 18;
       g.cam.shake = Math.max(g.cam.shake, 3);
       Sfx.play('shotgun');
       break;
-    case 'flame': {
-      const b = g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed * (0.8 + Math.random() * 0.4), w.dmg * dmgMul, 10, w.pierce, life * (0.7 + Math.random() * 0.4), Math.random() < 0.5 ? '#ff6a1a' : '#ffb02a', '#fff2c0', BK.FLAME, w.kb);
-      if (b) b.burn = Math.max(b.burn, w.burn);
-      if (Math.random() < 0.3) Sfx.play('gatling');
+    case 'revolvers': {
+      const side = g.player.alt ? 9 : -9, ca = Math.cos(aim), sa = Math.sin(aim);
+      const b = g.addBullet(x - sa * side, y + ca * side, aim + (Math.random() - 0.5) * w.spread, w.speed, w.dmg * dmgMul, 4, pierce, life, pal.shot, pal.core, BK.BULLET, kb);
+      if (b) { b.chain += w.chain || 0; if (w.burn) b.burn = Math.max(b.burn, w.burn); }
+      Sfx.play('shot');
       break;
     }
     default: break;
@@ -42,22 +42,49 @@ function shoot(g, x, y, aim, dmgMul) {
 }
 
 export function fireWeapon(g, dt, has) {
-  const p = g.player, w = g.weapon;
-  p.fireT -= dt * g.st.rate;
+  const p = g.player, w = g.weapon, st = g.st;
+  // recarga
+  if (p.reloadT > 0) {
+    p.reloadT -= dt;
+    if (p.reloadT <= 0 || g.fx.reload === 0) { p.reloadT = 0; p.ammo = g.magSize(); Sfx.play('trap'); }
+    return;
+  }
+  // ráfagas en curso (naipes de Maeve)
+  if (p.burstN > 0) {
+    p.burstT -= dt;
+    if (p.burstT <= 0) { p.burstN--; p.burstT = 0.075; emit(g, p); }
+    return;
+  }
+  p.fireT -= dt * st.rate * g.fx.rate;
   if (p.fireT > 0) return;
-  if (!has) { p.fireT = 0; return; }
+  if (!has) { p.fireT = 0; if (p.ammo < g.magSize()) startReload(g); return; }
   p.fireT += 1 / w.rate; if (p.fireT < 0) p.fireT = 0;
+  if (w.burst > 1) { p.burstN = w.burst - 1; p.burstT = 0.075; }
+  emit(g, p);
+}
+
+function emit(g, p) {
+  const w = g.weapon, st = g.st;
+  if (p.ammo <= 0) { startReload(g); return; }
+  p.ammo--; p.alt = 1 - p.alt;
   const ca = Math.cos(p.aim), sa = Math.sin(p.aim);
   const mx = p.x + ca * 26, my = p.y - 26 + sa * 18;
   p.muzzle = 0.07;
   shoot(g, mx, my, p.aim, 1);
-  g.addPart(mx + ca * 6, my + sa * 6, 0, 0, 0.06, w.kind === 'shotgun' ? 26 : 14, g.pal.glow, PT.FLASH, true);
-  // sombras gemelas (Diamante: Sombra Vendida)
-  for (let i = 0; i < g.st.shadows; i++) {
-    const a = g.realTime * 1.6 + (i / g.st.shadows) * TAU, sx = p.x + Math.cos(a) * 46, sy = p.y - 26 + Math.sin(a) * 26;
-    const t = g.nearest(sx, sy + 26, w.range, 0);
+  g.addPart(mx + ca * 6, my + sa * 6, 0, 0, 0.06, w.kind === 'shotgun' || w.kind === 'rifle' ? 26 : 14, g.pal.glow, PT.FLASH, true);
+  for (let i = 0; i < st.shadows; i++) {
+    const a = g.realTime * 1.6 + (i / st.shadows) * TAU, sx = p.x + Math.cos(a) * 46, sy = p.y - 26 + Math.sin(a) * 26;
+    const t = g.nearest(sx, sy + 26, g.range(), 0);
     shoot(g, sx, sy, t ? Math.atan2(t.y - t.r - sy, t.x - sx) : p.aim, 0.5);
   }
+  if (p.ammo <= 0) { p.burstN = 0; startReload(g); }
+}
+
+function startReload(g) {
+  const p = g.player;
+  if (p.reloadT > 0) return;
+  p.reloadT = g.fx.reload === 0 ? 0.05 : g.weapon.reload * g.st.reloadMult;
+  if (Math.random() < 0.08) g.say(null, BARKS[g.hero.id].reload, 1.4);
 }
 
 // ---------------------------------------------------------------- cartas de acción
@@ -65,16 +92,28 @@ export function playCard(g, card) {
   const p = g.player, pal = g.pal, st = g.st, aim = p.aim;
   const ax = p.x + Math.cos(aim) * Math.min(380, p.aimDist || 300), ay = p.y + Math.sin(aim) * Math.min(380, p.aimDist || 300);
   switch (card.id) {
-    case 'tuerto': {
-      const b = g.addBullet(p.x + Math.cos(aim) * 26, p.y - 26 + Math.sin(aim) * 18, aim, 1900, 170, 7, 99, 0.7, '#ffe08a', '#ffffff', BK.HARPOON, 400);
+    case 'rabia': {
+      for (let i = 0; i < 32; i++) g.addBullet(p.x, p.y - 22, (i / 32) * TAU, 760, 26, 4, 1, 0.34, pal.shot, pal.core, BK.PELLET, 520);
+      g.explode(p.x, p.y - 10, 160, 45 * st.dmg, pal.glow, 1, 0, 620, true);
+      g.cam.shake = 12; g.comicText(p.x, p.y - 96, '¡¿QUÉ MIRÁIS?!', '#ff6a3a', 28);
+      Sfx.play('shotgun');
+      break;
+    }
+    case 'verso': {
+      const life = (g.range() * 2) / 1900;
+      const b = g.addBullet(p.x + Math.cos(aim) * 26, p.y - 26 + Math.sin(aim) * 18, aim, 1900, 190, 7, 99, life, '#ffe08a', '#ffffff', BK.HARPOON, 400);
       if (b) b.crit = true;
-      g.cam.shake = 10; g.comicText(p.x, p.y - 96, '¡BLAM!', '#ffd23a', 34);
+      g.cam.shake = 10; g.comicText(p.x, p.y - 96, '«…y la noche calló.»', '#ffd23a', 20);
       Sfx.play('rifle');
       break;
     }
     case 'deadhand':
-      for (let i = 0; i < 5; i++) { const b = g.addBullet(p.x, p.y - 26, aim + (i - 2) * 0.2, 720, 34, 6, 2, 0.8, '#f2e6cc', '#ff4a4a', BK.CARD, 120); if (b) { b.stun = 1.6; b.slow = 2; } }
+      for (let i = 0; i < 5; i++) { const b = g.addBullet(p.x, p.y - 26, aim + (i - 2) * 0.2, 720, 34, 6, 2, 0.6, '#f2e6cc', '#ff4a4a', BK.CARD, 120); if (b) { b.stun = 1.6; b.slow = 2; b.radius = 60; } }
       g.comicText(p.x, p.y - 96, '¡ASES Y OCHOS!', pal.glow, 26);
+      break;
+    case 'chiste':
+      g.tellJoke(320, 4);
+      g.comicText(p.x, p.y - 110, '¡JA, JA, JA!', '#ffcf6a', 30);
       break;
     case 'beartrap': case 'cepo': {
       const n = card.id === 'beartrap' ? 3 : 2;
@@ -171,5 +210,4 @@ export function updatePassives(g, dt) {
       else c.cd = 0.2;
     }
   }
-  if (p.x < -HALF) p.x = -HALF;
 }

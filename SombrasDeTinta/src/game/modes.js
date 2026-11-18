@@ -1,6 +1,6 @@
 // Modos de juego: Historia (objetivos por misión) y Supervivencia "El Cruce de los Condenados"
 // (rondas con adaptación 1–3, salto brutal en la 4, colosos desde la 6 y muro infernal desde la 10).
-import { HALF } from './engine.js';
+import { HX, HY } from './engine.js';
 import { ZOMBIES } from '../data/enemies.js';
 import { MISSIONS } from '../data/story.js';
 import { restoreTraps } from './traps.js';
@@ -11,9 +11,9 @@ function ringPoint(g, extra) {
   const p = g.player, R = Math.hypot(g.viewW, g.viewH) / 2 + extra;
   for (let t = 0; t < 6; t++) {
     const a = Math.random() * TAU, x = p.x + Math.cos(a) * R, y = p.y + Math.sin(a) * R;
-    if (x > -HALF - 40 && x < HALF + 40 && y > -HALF - 40 && y < HALF + 40) { g.q.x = x; g.q.y = y; return g.q; }
+    if (x > -HX - 40 && x < HX + 40 && y > -HY - 40 && y < HY + 40) { g.q.x = x; g.q.y = y; return g.q; }
   }
-  g.q.x = Math.max(-HALF, Math.min(HALF, p.x + (Math.random() - 0.5) * 2 * R)); g.q.y = Math.random() < 0.5 ? -HALF - 30 : HALF + 30;
+  g.q.x = Math.max(-HX, Math.min(HX, p.x + (Math.random() - 0.5) * 2 * R)); g.q.y = Math.max(-HY - 30, Math.min(HY + 30, p.y + (Math.random() < 0.5 ? -R : R)));
   return g.q;
 }
 
@@ -64,7 +64,9 @@ class Story extends Base {
         this.acc -= 1;
         if (g.zombies.n >= cap) { this.acc = 0; break; }
         const t = pick(this.m.spawn), pt = ringPoint(g, g.map.fog ? -30 : 60);
-        g.spawnZombie(t, pt.x, pt.y, this.hpMult * (1 + g.time / 300), this.speedMult);
+        const pack = (ZOMBIES[t] || {}).pack, n = pack ? pack[0] + ((Math.random() * (pack[1] - pack[0] + 1)) | 0) : 1;
+        for (let k = 0; k < n; k++) g.spawnZombie(t, pt.x + (Math.random() - 0.5) * 70, pt.y + (Math.random() - 0.5) * 70, this.hpMult * (1 + g.time / 300), this.speedMult);
+        if (n > 1) this.acc -= (n - 1) * 0.35;
       }
     }
     switch (o.type) {
@@ -90,38 +92,45 @@ class Story extends Base {
   }
 }
 
-// ---------------------------------------------------------------- SUPERVIVENCIA
+// ---------------------------------------------------------------- SUPERVIVENCIA (rondas de 120 s exactos)
 const COLOSSUS_CYCLE = ['foreman', 'faceless', 'beast'];
+export const ROUND_TIME = 120;
+// Curva de intensidad escalonada dentro de cada ronda.
+export const PHASES = [
+  { t: 0, name: 'ACLIMATACIÓN', sub: 'Que no te tiemble el pulso', rate: 1.0, w: { walker: 10, runner: 3, hound: 1.5 } },
+  { t: 30, name: 'PRESIÓN DE ARAÑAS', sub: 'Algo se arrastra bajo las lápidas', rate: 1.55, w: { walker: 5, runner: 3, spider: 9, hound: 3 } },
+  { t: 60, name: 'CLÍMAX: COLOSOS Y HORDA', sub: 'La tierra entera se levanta', rate: 2.4, w: { walker: 8, runner: 5, bloater: 2, armored: 3, forker: 3, dynamiter: 2, hound: 3, spider: 4 }, abom: true },
+  { t: 105, name: 'ÚLTIMO CARTUCHO', sub: 'Quince segundos. Dispáralo todo.', rate: 3.5, w: { walker: 6, runner: 8, hound: 5, spider: 6, dynamiter: 3 }, fever: true },
+];
+const LATE = ['armored', 'forker', 'dynamiter'];
 
 export function roundParams(r) {
   const hp = r <= 3 ? 1 + 0.12 * (r - 1) : r <= 5 ? 2.1 + 0.4 * (r - 4) : r < 10 ? 3.0 * Math.pow(1.2, r - 6) : 3.0 * Math.pow(1.2, 4) * Math.pow(1.35, r - 9);
-  const count = r <= 3 ? 12 + r * 6 : r <= 5 ? 36 + (r - 4) * 12 : r < 10 ? 54 + (r - 6) * 11 : 96 + (r - 10) * 16;
   const speed = Math.min(1.75, 1 + 0.025 * r + (r >= 4 ? 0.14 : 0) + (r >= 10 ? 0.2 : 0));
   const dmg = 1 + 0.1 * r + (r >= 4 ? 0.5 : 0) + (r >= 10 ? 0.9 : 0);
-  const rate = 1.2 + r * 0.3 + (r >= 4 ? 1.6 : 0) + (r >= 10 ? 3 : 0);
+  const rate = 1 + 0.15 * (r - 1) + (r >= 4 ? 0.6 : 0) + (r >= 10 ? 1.2 : 0);
   const colossi = r < 6 ? 0 : r < 10 ? 1 : r < 15 ? 2 : 3;
-  const w = { walker: 10 };
-  if (r >= 2) w.runner = 4 + r * 0.5;
-  if (r >= 3) w.bloater = 2 + r * 0.2;
-  if (r >= 4) { w.armored = 3 + r * 0.6; w.forker = 3 + r * 0.4; w.dynamiter = 2 + r * 0.3; }
-  if (r >= 10) { w.armored += 6; w.runner += 6; }
-  return { hp, count, speed, dmg, rate, colossi, w };
+  const abominations = r < 3 ? 1 : r < 6 ? 2 : r < 10 ? 3 : 4;
+  return { hp, speed, dmg, rate, colossi, abominations };
 }
 
 class Survival extends Base {
   constructor(g) {
     super(g);
-    this.round = 0; this.state = 'break'; this.breakT = 2.5; this.toSpawn = 0; this.acc = 0; this.colossiLeft = 0; this.colT = 0;
+    this.round = 0; this.state = 'break'; this.breakT = 3; this.t = 0; this.acc = 0; this.phase = -1; this.fever = false;
     this.label = 'EL CRUCE DE LOS CONDENADOS';
+    this.weights = [];
   }
   startRound() {
     const g = this.g;
     this.round++;
     const P = roundParams(this.round);
     this.P = P; this.hpMult = P.hp; this.dmgMult = P.dmg; this.speedMult = P.speed;
-    this.toSpawn = P.count; this.acc = 0; this.colossiLeft = P.colossi; this.colT = 4; this.state = 'fight';
     this.label = 'RONDA ' + this.round;
-    const sub = this.round === 4 ? 'LA NOCHE SE ESPESA… YA NO HAY PIEDAD' : this.round === 6 ? 'LLEGAN LOS COLOSOS' : this.round === 10 ? 'EL MURO INFERNAL' : this.round > 10 ? 'SOLO PARA LEYENDAS' : 'Que no quede ni uno';
+    this.t = 0; this.acc = 0; this.phase = -1; this.state = 'fight'; this.abomLeft = P.abominations; this.abomT = 0; this.colLeft = P.colossi; this.colT = 0;
+    // pesos por tramo (sin armadura ni improvisados en las rondas 1-3)
+    this.weights = PHASES.map((ph) => { const w = {}; for (const k in ph.w) if (this.round >= 4 || !LATE.includes(k)) w[k] = ph.w[k]; return w; });
+    const sub = this.round === 4 ? 'LA NOCHE SE ESPESA… YA NO HAY PIEDAD' : this.round === 6 ? 'LLEGAN LOS COLOSOS' : this.round === 10 ? 'EL MURO INFERNAL' : this.round > 10 ? 'SOLO PARA LEYENDAS' : 'Dos minutos. Ni uno más.';
     g.showBanner('RONDA ' + this.round, sub, 2.6);
     Sfx.play(this.round >= 4 ? 'bell' : 'round');
     if (this.round > 1 && (this.round - 1) % 3 === 0) restoreTraps(g);
@@ -129,42 +138,55 @@ class Survival extends Base {
   update(dt) {
     const g = this.g;
     if (this.state === 'break') {
-      this.breakT -= dt; this.timer = this.breakT;
-      this.count = 'descanso';
+      this.breakT -= dt; this.timer = this.breakT; this.count = 'descanso'; this.fever = false; this.progress = -1;
       if (this.breakT <= 0) this.startRound();
       return;
     }
-    this.timer = -1;
-    const P = this.P, cap = g.input.isTouch ? 150 : 210;
-    if (this.toSpawn > 0) {
-      this.acc += dt * P.rate;
-      while (this.acc >= 1 && this.toSpawn > 0) {
-        this.acc -= 1;
-        if (g.zombies.n >= cap) { this.acc = 0; break; }
-        const pt = ringPoint(g, 50);
-        g.spawnZombie(pick(P.w), pt.x, pt.y, P.hp, P.speed);
-        this.toSpawn--;
-      }
+    this.t += dt;
+    const t = this.t;
+    let ph = 0; for (let i = 0; i < PHASES.length; i++) if (t >= PHASES[i].t) ph = i;
+    if (ph !== this.phase) {
+      this.phase = ph; this.fever = !!PHASES[ph].fever;
+      if (t > 1) { g.showBanner(PHASES[ph].name, PHASES[ph].sub, 2.2); Sfx.play(ph === 3 ? 'bell' : 'round'); }
+      this.count = PHASES[ph].name;
     }
-    if (this.colossiLeft > 0) {
+    this.timer = Math.max(0, ROUND_TIME - t);
+    this.progress = t / ROUND_TIME;
+    const PH = PHASES[ph], P = this.P, cap = g.input.isTouch ? 150 : 210;
+    this.acc += dt * PH.rate * P.rate * 1.6;
+    while (this.acc >= 1) {
+      this.acc -= 1;
+      if (g.zombies.n >= cap) { this.acc = 0; break; }
+      const type = pick(this.weights[ph]), pt = ringPoint(g, 50);
+      const pack = (ZOMBIES[type] || {}).pack;
+      const n = pack ? pack[0] + ((Math.random() * (pack[1] - pack[0] + 1)) | 0) : 1;
+      for (let k = 0; k < n; k++) g.spawnZombie(type, pt.x + (Math.random() - 0.5) * 70, pt.y + (Math.random() - 0.5) * 70, P.hp, P.speed * (PH.fever ? 1.15 : 1));
+      if (n > 1) this.acc -= (n - 1) * 0.35;
+    }
+    // clímax: abominaciones y colosos de élite
+    if (PH.abom || PH.fever) {
+      this.abomT -= dt;
+      if (this.abomLeft > 0 && this.abomT <= 0) { this.abomT = 9; this.abomLeft--; const pt = ringPoint(g, 40); g.spawnZombie('abomination', pt.x, pt.y, P.hp, 1); g.showBanner('¡ABOMINACIÓN!', 'Caparazón blindado · escupe bilis de tinta', 1.6); }
       this.colT -= dt;
-      if (this.colT <= 0) {
-        this.colT = 10;
-        const type = COLOSSUS_CYCLE[(this.round - 6 + this.colossiLeft) % 3];
-        g.spawnColossus(type, 1 + (this.round - 6) * 0.3 + (this.round >= 10 ? (this.round - 9) * 0.35 : 0));
-        this.colossiLeft--;
-      }
+      if (this.colLeft > 0 && this.colT <= 0) { this.colT = 12; this.colLeft--; g.spawnColossus(COLOSSUS_CYCLE[(this.round + this.colLeft) % 3], 1 + (this.round - 6) * 0.3 + (this.round >= 10 ? (this.round - 9) * 0.35 : 0)); }
     }
-    const alive = g.zombies.n;
-    this.count = 'quedan ' + (this.toSpawn + alive + this.colossiLeft);
-    this.progress = 1 - (this.toSpawn + alive + this.colossiLeft) / (P.count + P.colossi);
-    if (this.toSpawn === 0 && this.colossiLeft === 0 && alive === 0) {
-      this.state = 'break'; this.breakT = 6;
-      g.profileXp += 25 * this.round;
-      g.heal(g.player.maxHp * 0.15);
-      g.showBanner('RONDA ' + this.round + ' SUPERADA', 'Carta de recompensa', 2);
-      g.pendingDrafts++; g.draftLuck = Math.max(g.draftLuck, 1 + Math.floor(this.round / 4));
+    if (t >= ROUND_TIME) this.endRound();
+  }
+  endRound() {
+    const g = this.g, E = g.zombies.items;
+    // al amanecer la horda se deshace en tinta
+    for (let i = 0; i < g.zombies.n; i++) {
+      const e = E[i];
+      if (e.dead) continue;
+      e.dead = true;
+      for (let k = 0; k < 4; k++) g.addPart(e.x, e.y - e.r, (Math.random() - 0.5) * 120, -Math.random() * 120, 0.8, 4, '#0a0605', 2, false);
     }
+    this.state = 'break'; this.breakT = 8; this.fever = false;
+    g.profileXp += 30 * this.round;
+    g.heal(g.player.maxHp * 0.15);
+    g.showBanner('RONDA ' + this.round + ' SUPERADA', 'La horda se disuelve en tinta · carta de recompensa', 2.4);
+    g.flash = 0.5;
+    g.pendingDrafts++; g.draftLuck = Math.max(g.draftLuck, 1 + Math.floor(this.round / 4));
   }
 }
 

@@ -60,13 +60,15 @@ function silas(ctx, c) {
   dusterFront(ctx, c, w);
   if (c.ember) { glow(ctx, -30, -18, 18, c.glow, 0.5); glow(ctx, 30, -18, 18, c.glow, 0.5); }
   star(ctx, -24, -112, 6, 5, c.metal, 1.8);
-  // rifle en postura de duelo: bajo y en diagonal
-  limb(ctx, 31, -124, 40, -98, 8, 7, c.coat);
-  limb(ctx, -31, -124, -24, -96, 8, 7, c.coat);
-  line(ctx, -40, -70, 64, -114, INK, 9); line(ctx, -40, -70, 64, -114, '#5a3418', 5);
-  line(ctx, 10, -98, 78, -126, INK, 7); line(ctx, 10, -98, 78, -126, '#3a3a40', 3.5);
-  poly(ctx, [-6, -92, 10, -99, 12, -92, -4, -86], c.metal, 2, 0);
-  hand(ctx, -22, -91, 6.5, '#3a2214'); hand(ctx, 42, -104, 6.5, '#3a2214');
+  // recortada de doble cañón, corta y fea, empuñada a la cadera
+  limb(ctx, 31, -124, 44, -100, 8, 7, c.coat);
+  limb(ctx, -31, -124, -18, -98, 8, 7, c.coat);
+  poly(ctx, [-26, -84, -6, -98, 0, -90, -20, -76], '#5a3418');
+  poly(ctx, [-4, -100, 14, -104, 16, -94, -2, -90], c.metal, 2.5, 0.4);
+  poly(ctx, [12, -106, 52, -112, 54, -100, 14, -94], '#2a2a30', 3, 0.4);
+  line(ctx, 14, -100, 53, -106, 'rgba(220,220,230,0.35)', 1.2);
+  ellipse(ctx, 53, -109, 2, 3, '#111', 1.2); ellipse(ctx, 54, -103, 2, 3, '#111', 1.2);
+  hand(ctx, -14, -94, 6.5, '#3a2214'); hand(ctx, 44, -104, 6.5, '#3a2214');
   // cabeza: parche en el ojo, barba de días
   poly(ctx, [-6, -134, 6, -134, 5, -126, -5, -126], c.skin, 2, 0);
   head(ctx, c);
@@ -139,13 +141,16 @@ function caleb(ctx, c) {
   // cruz colgante y rosario
   ctx.strokeStyle = c.metal; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-8, -134); ctx.quadraticCurveTo(-4, -110, 0, -104); ctx.stroke();
   poly(ctx, [-2, -106, 2, -106, 2, -90, -2, -90], c.metal, 1.5, 0); poly(ctx, [-6, -101, 6, -101, 6, -97, -6, -97], c.metal, 1.5, 0);
-  // escopeta cruzada sobre el pecho
+  // rifle monotiro largo de precisión, terciado y con mira de latón
   limb(ctx, -32, -126, -36, -98, 9, 8, c.coat);
-  limb(ctx, 32, -126, 34, -110, 9, 8, c.coat);
-  line(ctx, -46, -84, 62, -132, INK, 10); line(ctx, -46, -84, 10, -110, '#5a3418', 6);
-  line(ctx, 6, -108, 64, -134, '#2a2a30', 6);
-  line(ctx, 8, -112, 66, -138, '#2a2a30', 4);
-  hand(ctx, -34, -94, 7, '#2a1a10'); hand(ctx, 36, -114, 7, '#2a1a10');
+  limb(ctx, 32, -126, 30, -104, 9, 8, c.coat);
+  line(ctx, -50, -70, 96, -150, INK, 9); line(ctx, -50, -70, 4, -100, '#5a3418', 5.5);
+  line(ctx, 2, -99, 96, -150, '#2a2a30', 3.5);
+  poly(ctx, [10, -110, 40, -126, 42, -121, 12, -105], c.metal, 2, 0);
+  circle(ctx, 12, -108, 3, c.metal, 1.2);
+  hand(ctx, -32, -92, 7, '#2a1a10'); hand(ctx, 32, -102, 7, '#2a1a10');
+  // cuaderno de versos al cinto
+  poly(ctx, [-26, -80, -12, -80, -12, -62, -26, -62], '#3a2414', 2, 0); line(ctx, -24, -76, -14, -76, '#e8dcc0', 1);
   // cabeza y alzacuellos
   poly(ctx, [-8, -136, 8, -136, 7, -128, -7, -128], c.collar, 2, 0);
   head(ctx, c, 0, -152);
@@ -157,7 +162,44 @@ function caleb(ctx, c) {
   if (c.halo) { ctx.strokeStyle = c.glow; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, -186, 26, 7, 0, 0, Math.PI * 2); ctx.stroke(); glow(ctx, 0, -186, 34, c.glow, 0.6); }
 }
 
-const DRAW_HERO = { silas, maeve, caleb };
+// ------------------------------------------------------------------ BARNABY "TRIPAS" McGOVERN
+function barnaby(ctx, c) {
+  const w = duster(ctx, c, 1.1, -22);
+  boots(ctx, c, null);
+  // barriga y camisa
+  blob(ctx, [-30, -134, 30, -134, 38, -104, 32, -76, -32, -76, -38, -104], c.shirt);
+  // chaleco abierto
+  poly(ctx, [-32, -134, -12, -132, -16, -78, -34, -82, -40, -104], c.coat);
+  poly(ctx, [32, -134, 12, -132, 16, -78, 34, -82, 40, -104], c.coat);
+  // delantal de carnicero manchado
+  poly(ctx, [-22, -122, 22, -122, 26, -40, -26, -40], c.apron);
+  ctx.fillStyle = c.blood; for (const [x, y, r] of [[-8, -100, 6], [10, -80, 8], [-14, -60, 5], [6, -52, 4], [16, -110, 3]]) { ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.7, 0.4, 0, Math.PI * 2); ctx.fill(); }
+  line(ctx, -22, -122, -30, -134, '#2a1a10', 2); line(ctx, 22, -122, 30, -134, '#2a1a10', 2);
+  poly(ctx, [-34, -86, 34, -86, 34, -78, -34, -78], '#2a1a10', 2.5, 0);
+  // cuchillo de carnicero al cinto
+  poly(ctx, [26, -84, 40, -84, 40, -64, 30, -60], c.metal, 2, 0); poly(ctx, [24, -90, 30, -90, 30, -84, 24, -84], '#3a2414', 1.5, 0);
+  // brazos con dos revólveres
+  limb(ctx, -36, -126, -54, -100, 9, 8, c.shirt); limb(ctx, -54, -100, -62, -84, 8, 7, c.skin);
+  limb(ctx, 36, -126, 56, -110, 9, 8, c.shirt); limb(ctx, 56, -110, 70, -104, 8, 7, c.skin);
+  poly(ctx, [-66, -84, -60, -84, -60, -60, -66, -60], '#2a2a30', 2, 0); poly(ctx, [-70, -86, -58, -86, -58, -80, -70, -80], c.metal, 1.5, 0);
+  poly(ctx, [70, -108, 98, -110, 98, -102, 70, -100], c.metal, 2.5, 0.3); poly(ctx, [72, -102, 80, -102, 78, -90, 72, -92], '#5a3a24', 2, 0);
+  hand(ctx, -63, -82, 6.5, c.skin); hand(ctx, 72, -104, 6.5, c.skin);
+  // cabeza redonda, bigote de manillar, sonrisa torcida
+  head(ctx, c, 0, -150);
+  blob(ctx, [-16, -140, -6, -144, 0, -140, 6, -144, 16, -140, 20, -134, 6, -137, 0, -134, -6, -137, -20, -134], c.mustache, 2, 0);
+  line(ctx, -4, -131, 6, -132, INK, 1.8);
+  ctx.fillStyle = 'rgba(8,5,4,0.55)'; ctx.fillRect(-12, -158, 24, 6);
+  ctx.fillStyle = c.eye; ctx.fillRect(-7, -153, 4, 2); ctx.fillRect(3, -154, 4, 2);
+  // bombín
+  ctx.save(); ctx.translate(0, -160);
+  blob(ctx, [-16, 0, -16, -18, -8, -26, 8, -26, 16, -18, 16, 0], c.hat);
+  poly(ctx, [-16, -3, 16, -3, 16, -8, -16, -8], c.band, 2, 0);
+  poly(ctx, [-26, 0, 26, 0, 22, 5, -22, 5], shade(c.hat, 0.08));
+  ctx.restore();
+  if (c.ember) glow(ctx, 0, -60, 46, c.glow, 0.3);
+}
+
+const DRAW_HERO = { silas, maeve, caleb, barnaby };
 
 export function drawHero(ctx, id, pal, detail = 1, seed = 1234) {
   beginArt(seed, detail);
@@ -172,5 +214,6 @@ export function drawHeroFx(ctx, id, c, t) {
   }
   if (id === 'silas') glow(ctx, 6, -151, 10, c.eye, 0.4 + Math.sin(t * 3) * 0.2);
   if (id === 'maeve') glow(ctx, 58, -164, 24, c.glow, 0.25 + Math.sin(t * 2.4) * 0.12);
-  if (id === 'caleb') glow(ctx, 66, -138, 14, c.glow, 0.3 + Math.sin(t * 5) * 0.15);
+  if (id === 'caleb') glow(ctx, 96, -150, 14, c.glow, 0.3 + Math.sin(t * 5) * 0.15);
+  if (id === 'barnaby') glow(ctx, 98, -106, 14, c.glow, 0.3 + Math.sin(t * 6) * 0.15);
 }

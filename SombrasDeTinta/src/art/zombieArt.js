@@ -215,11 +215,73 @@ function beast(ctx) {
   ctx.fillStyle = INK; ctx.fillRect(91, -145, 2, 6);
 }
 
-const DRAW_Z = { walker, runner, bloater, armored, forker, dynamiter, foreman, faceless, beast };
+
+// ------------------------------------------------------------------ SABUESO DE TINTA (vista lateral, flaco y veloz)
+function hound(ctx) {
+  const ink = '#1a1c22', ink2 = '#2a2e36';
+  limb(ctx, -40, -46, -58, -4, 6, 4, ink); limb(ctx, 22, -48, 16, -4, 6, 4, ink);
+  const body = [-62, -54, -36, -80, 10, -86, 44, -76, 54, -58, 32, -40, -24, -40, -54, -44];
+  blob(ctx, body, ink2, 3, 0.6);
+  hatchPoly(ctx, body, 4, 'rgba(0,0,0,0.55)', 1, true, 0.3);
+  // costillas al aire
+  ctx.strokeStyle = '#8a8e96'; ctx.lineWidth = 1.6; ctx.beginPath();
+  for (let i = 0; i < 5; i++) { const x = -20 + i * 9; ctx.moveTo(x, -78); ctx.quadraticCurveTo(x + 5, -62, x, -46); } ctx.stroke();
+  // lomo erizado de tinta
+  const sp = [];
+  for (let i = 0; i <= 10; i++) { const t = i / 10, x = -60 + t * 104, y = -58 - Math.sin(t * Math.PI) * 28; sp.push(x, y + 6, x + 4, y - 12 - (i % 2) * 7); }
+  sp.push(46, -64, -58, -54);
+  poly(ctx, sp, '#101216', 2.5, 0);
+  limb(ctx, -30, -44, -38, -4, 7, 5, ink2); limb(ctx, 34, -48, 44, -4, 7, 5, ink2);
+  // cabeza alargada con fauces y goteo de tinta
+  blob(ctx, [40, -96, 58, -108, 86, -100, 104, -88, 96, -78, 70, -76, 50, -70], ink2, 3, 0.6);
+  poly(ctx, [54, -106, 50, -124, 62, -110], '#101216', 2.5, 0); poly(ctx, [66, -106, 68, -122, 74, -104], '#101216', 2.5, 0);
+  poly(ctx, [70, -80, 100, -82, 96, -70, 72, -68], '#050506', 2, 0);
+  ctx.fillStyle = '#d8d8d0'; for (let i = 0; i < 5; i++) { const x = 73 + i * 5; ctx.beginPath(); ctx.moveTo(x, -80); ctx.lineTo(x + 2, -74); ctx.lineTo(x + 4, -80); ctx.fill(); }
+  glow(ctx, 70, -96, 12, '#7fa8ff', 1); ctx.fillStyle = '#d8e8ff'; ctx.fillRect(67, -98, 6, 3);
+  ctx.fillStyle = '#050506'; for (const [x, l] of [[80, 16], [90, 10]]) { ctx.beginPath(); ctx.ellipse(x, -64 + l / 2, 2.2, l / 2, 0, 0, Math.PI * 2); ctx.fill(); }
+  poly(ctx, [-58, -56, -88, -74, -94, -66, -64, -46], '#101216', 2.5, 0);
+}
+
+// ------------------------------------------------------------------ ARAÑA DE CRIPTA (enjambre)
+function spider(ctx) {
+  const leg = '#1a1a1e';
+  for (const sgn of [-1, 1]) for (let i = 0; i < 4; i++) {
+    const bx = sgn * 14, by = -34 + i * 6, kx = sgn * (46 + i * 4), ky = -64 + i * 10, fx = sgn * (60 + i * 6), fy = -4 + (i % 2) * 2;
+    line(ctx, bx, by, kx, ky, INK, 6); line(ctx, kx, ky, fx, fy, INK, 5);
+    line(ctx, bx, by, kx, ky, leg, 3); line(ctx, kx, ky, fx, fy, leg, 2.5);
+  }
+  const abd = [-26, -40, -18, -70, 18, -70, 26, -40, 14, -18, -14, -18];
+  blob(ctx, abd, '#22242a', 3, 0.6);
+  hatchPoly(ctx, abd, 4, 'rgba(0,0,0,0.5)', 1, true, 0.3);
+  skull(ctx, 0, -50, 0.6, '#b8b8b0', 1.2);
+  blob(ctx, [-14, -30, -10, -42, 10, -42, 14, -30, 8, -20, -8, -20], '#18181c', 2.5, 0);
+  for (const [x, y] of [[-6, -34], [-2, -36], [2, -36], [6, -34], [-4, -30], [4, -30]]) { glow(ctx, x, y, 5, '#ff4a3a', 0.9); ctx.fillStyle = '#ffb0a0'; ctx.fillRect(x - 1, y - 1, 2, 2); }
+}
+
+// ------------------------------------------------------------------ ABOMINACIÓN (caparazón blindado, escupe bilis de tinta)
+function abomination(ctx) {
+  for (const [x1, x2] of [[-60, -78], [-30, -36], [30, 34], [60, 76]]) { limb(ctx, x1, -40, x2, -2, 10, 7, '#2a2e2a'); poly(ctx, [x2 - 8, -6, x2 + 8, -6, x2 + 10, 2, x2 - 10, 2], '#1a1c1a', 2, 0); }
+  const shell = [-84, -50, -70, -110, -30, -140, 30, -142, 72, -112, 88, -52, 50, -36, -50, -36];
+  blob(ctx, shell, '#3a3e3a', 3.5, 0.8);
+  hatchPoly(ctx, shell, 5, 'rgba(0,0,0,0.5)', 1.1, true, 0.4);
+  // placas del caparazón con remaches
+  ctx.strokeStyle = INK; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-60, -116); ctx.quadraticCurveTo(0, -90, 62, -118); ctx.moveTo(-76, -76); ctx.quadraticCurveTo(0, -56, 80, -78); ctx.moveTo(0, -142); ctx.lineTo(0, -40); ctx.stroke();
+  for (const [x, y] of [[-40, -120], [36, -122], [-56, -84], [56, -86], [-20, -66], [22, -66]]) circle(ctx, x, y, 3.2, '#8a8e86', 1.2);
+  // cabeza baja con fauces abiertas goteando tinta
+  blob(ctx, [-30, -54, -20, -74, 20, -74, 30, -54, 18, -30, -18, -30], '#4a5048', 3, 0.6);
+  poly(ctx, [-18, -50, 18, -50, 14, -34, -14, -34], '#050506', 2, 0);
+  ctx.fillStyle = '#d0ccb8'; for (let i = -14; i <= 10; i += 6) { ctx.beginPath(); ctx.moveTo(i, -50); ctx.lineTo(i + 3, -42); ctx.lineTo(i + 6, -50); ctx.fill(); }
+  for (const x of [-10, 10]) { glow(ctx, x, -64, 10, '#9a7aff', 1); ctx.fillStyle = '#e0d0ff'; ctx.fillRect(x - 3, -66, 6, 3); }
+  ctx.fillStyle = '#0a0a10'; for (const [x, l] of [[-6, 22], [4, 30], [12, 16]]) { ctx.beginPath(); ctx.ellipse(x, -34 + l / 2, 2.6, l / 2, 0, 0, Math.PI * 2); ctx.fill(); }
+}
+
+const DRAW_Z = { walker, runner, bloater, armored, forker, dynamiter, hound, spider, abomination, foreman, faceless, beast };
 
 export const Z_BOX = {
   walker: { w: 200, h: 190, cy: 0.9, s: 0.3 }, runner: { w: 190, h: 170, cy: 0.9, s: 0.3 }, bloater: { w: 200, h: 190, cy: 0.9, s: 0.32 },
   armored: { w: 200, h: 190, cy: 0.9, s: 0.32 }, forker: { w: 240, h: 200, cy: 0.9, s: 0.3 }, dynamiter: { w: 200, h: 190, cy: 0.9, s: 0.3 },
+  hound: { w: 230, h: 150, cy: 0.9, s: 0.3 }, spider: { w: 150, h: 90, cy: 0.88, s: 0.28 }, abomination: { w: 200, h: 170, cy: 0.9, s: 0.62 },
   foreman: { w: 330, h: 270, cy: 0.94, s: 0.52 }, faceless: { w: 240, h: 260, cy: 0.94, s: 0.55 }, beast: { w: 340, h: 200, cy: 0.92, s: 0.58 },
 };
 

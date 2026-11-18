@@ -250,6 +250,21 @@ const SCENES = {
     }
   },
 };
+SCENES.butcher = (ctx, x, y, w, h) => {
+  sky(ctx, x, y, w, h, '#2a0a06', '#080302');
+  glow(ctx, x + w * 0.3, y + h * 0.2, w * 0.5, '#ffb040', 0.5);
+  halftone(ctx, x, y, w, h, 6, '#000000', 0.45, false);
+  ctx.strokeStyle = '#3a3a3e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, y + h * 0.12); ctx.lineTo(x + w, y + h * 0.12); ctx.stroke();
+  for (let i = 0; i < 5; i++) {
+    const hx = x + w * (0.12 + i * 0.19), len = h * (0.3 + (i % 2) * 0.12);
+    ctx.strokeStyle = '#8a8a90'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(hx, y + h * 0.12); ctx.lineTo(hx, y + h * 0.2); ctx.arc(hx - 6, y + h * 0.2, 6, 0, Math.PI); ctx.stroke();
+    ctx.fillStyle = '#060303'; ctx.beginPath(); ctx.ellipse(hx - 4, y + h * 0.2 + len * 0.55, w * 0.045, len * 0.5, 0.1, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(120,10,10,0.6)'; ctx.fillRect(hx - 8, y + h * 0.2 + len * 0.4, 8, 4);
+  }
+  ctx.fillStyle = '#1a0e08'; ctx.fillRect(x, y + h * 0.78, w, h * 0.22);
+  ctx.fillStyle = '#c8c0b0'; ctx.save(); ctx.translate(x + w * 0.7, y + h * 0.74); ctx.rotate(-0.2); ctx.fillRect(0, -10, w * 0.12, 20); ctx.fillStyle = '#3a2414'; ctx.fillRect(-w * 0.06, -5, w * 0.06, 10); ctx.restore();
+  inkText(ctx, 'CARNICERÍA McGOVERN', x + w * 0.5, y + h * 0.06, Math.min(w * 0.06, 20), '#e8dcc0', FT, 3);
+};
 function bossScene(type, col) {
   return (ctx, x, y, w, h) => {
     sky(ctx, x, y, w, h, '#0a0606', '#050304');

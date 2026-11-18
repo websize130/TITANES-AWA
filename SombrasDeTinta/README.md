@@ -31,22 +31,32 @@ src/ui     index.html · style.css · main.js
 
 ## Contenido
 
-- **3 forajidos** con dossier de origen en viñetas y pasiva única: Silas "El Tuerto" O'Connor (críticos a distancia,
-  resistencia), Maeve "La Sota de Picas" Duprat (control, suerte en cartas, sin sombra) y Caleb Blackwood (tanque de
-  corta distancia, trampas letales).
-- **Niveles 1–50 por forajido** (XP por bajas, rondas y casos cerrados). Hitos: 10 aspecto · 20 arma · 30 aspecto ·
-  40 arma · 50 aspecto legendario.
-- **Cartas** de Bronce, Plata, Oro, Platino y Diamante: pasivas o de acción (mano de 3 cartas con recarga, teclas 1·2·3).
-  Las de Diamante dan una Bendición enorme y una Maldición temporal (lentitud o vulnerabilidad).
-- **Modo Historia**: 6 casos con página de cómic de apertura, bocadillos en combate y viñeta final con sello
-  "CASO CERRADO" o "FINAL TRÁGICO".
-- **El Cruce de los Condenados**: supervivencia infinita. Rondas 1–3 de adaptación, salto brutal en la 4, colosos de
-  élite desde la 6 (El Capataz de la Mina, El Predicador sin Rostro, La Bestia de la Ciénaga) y muro infernal desde la 10.
-  Récords en **El Muro de los Condenados** y Game Over como portada pulp.
-- **Trampas y destructibles**: cepos ocultos, faroles de gas que incendian el suelo, barriles de dinamita en cadena y
-  coberturas que se astillan por fases.
+- **La Cuadrilla de los 4 Condenados**, cada uno con personalidad propia en sus bocadillos:
+  - Silas "El Tuerto" O'Connor: mal genio, escopeta de cono corto, frases cínicas. Pasiva *Mal Genio* (+35% de daño
+    con menos de media vida, resistencia, trampas).
+  - Maeve "La Sota de Picas" Duprat: alocada, ráfagas de naipes explosivos, humor de tahúr. Pasiva *Mano Marcada*.
+  - Caleb Blackwood: poeta melancólico, rifle monotiro pesado de precisión, versos lúgubres. Pasiva *Elegía*.
+  - Barnaby "Tripas" McGovern: humor negro, revólveres duales, chistes macabros que **aterran** a la horda cercana.
+- **Alcance limitado**: cada arma dispara a corta/media distancia (anillo de tinta en el suelo). Solo las cartas de
+  largo alcance (Ojo de Halcón, Catalejo de Latón, Ojo del Cíclope) lo amplían. Las armas tienen cargador y recarga.
+- **Cartas de tarot** (Bronce, Plata, Oro, Platino, Diamante) con bordes a plumilla y materia por rareza; elevación y
+  sombra al pasar el cursor y estallido de tinta y pólvora al jugarlas. Las **cartas modificadoras de arma** cambian la
+  balística real: perforación, plomo incendiario (daño por segundo), cargador y recarga, disparos en área y metralla.
+- **Póker de tinta**: la horda suelta naipes; al reunir 5 se evalúa la mano (Pareja, Doble Pareja, Trío, Escalera,
+  Color, Full, Póker) y se desata una ráfaga de furia temporal.
+- **La Plaga**: Errantes, Corredores, Hinchados, Acorazados, Horqueros, Dinamiteros, **Sabuesos de Tinta** (zig-zag,
+  flanqueo y mordisco que aturde 1 s), **Arañas de Cripta** (enjambres que dejan tinta pegajosa que ralentiza) y
+  **Abominaciones** (caparazón blindado, escupen bilis de tinta en cono). Más 3 Colosos de Élite.
+- **Modo Historia**: 6 casos con página de cómic, bocadillos y viñeta final ("CASO CERRADO" / "FINAL TRÁGICO").
+- **El Cruce de los Condenados**: rondas de **120 s exactos** — 0–30 s aclimatación, 30–60 s presión de arañas,
+  60–105 s clímax de colosos y horda masiva, 105–120 s fiebre final "Último Cartucho". Entre rondas la dificultad sube
+  (salto en la 4, colosos de élite desde la 6, muro infernal desde la 10). Récords en el Muro de los Condenados.
+- **Mundo de 3× el viewport** (pueblo, cementerio y mina unidos por un camino), cámara de seguimiento suave con
+  anticipación y minimapa. Destructibles: faroles colgantes que incendian el suelo, barricadas con fases (intacta,
+  astillada, humeante), lápidas de cobertura, barriles de dinamita y cepos ocultos.
+- **Niveles 1–50 por forajido** con hitos cada 10 (aspectos y armas exclusivas).
 
 ## Controles
 
-PC: WASD/flechas · disparo automático (o con ratón en Ajustes) · 1·2·3 o Q·E·R cartas · clic derecho carta 1 · Esc pausa.
+PC: WASD/flechas · disparo automático dentro del alcance (o con ratón en Ajustes) · 1·2·3 o Q·E·R cartas · clic derecho carta 1 · Esc pausa.
 Móvil: arrastra en cualquier punto (joystick translúcido) · toca las cartas de la esquina.

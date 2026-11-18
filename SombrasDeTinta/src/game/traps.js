@@ -1,11 +1,12 @@
 // Trampas ambientales y destructibles: cepos ocultos, faroles de gas que incendian el suelo al dispararles,
 // barriles de dinamita en cadena y coberturas que se astillan por fases. Afectan al jugador y a la horda.
-import { HALF, ZK, PT } from './engine.js';
+import { HX, HY, ZK, PT, zoneAt } from './engine.js';
 import { makeRng, TAU } from '../art/ink.js';
 import { Sfx } from '../core/audio.js';
 import { BARKS } from '../data/heroes.js';
 
 const COVERS = ['wagon', 'crates', 'barricade'];
+const ZONE_COVERS = [['barricade', 'wagon', 'crates'], ['tomb', 'tomb', 'barricade'], ['crates', 'barricade', 'wagon']];
 
 function mk(g, kind, x, y, extra) {
   const t = { kind, x, y, r: 16, hp: 1, maxHp: 1, dead: false, solid: false, flash: 0, armed: true, rearm: 0, owned: false, fuse: 0, phase: 0, variant: '', life: 0, ...extra };
@@ -19,15 +20,20 @@ export function buildTraps(g) {
   const ok = (x, y, d) => Math.hypot(x, y - 120) > 230 && pts.every((p) => Math.hypot(p[0] - x, p[1] - y) > d);
   const place = (n, d, fn) => {
     for (let i = 0, tries = 0; i < n && tries < 400; tries++) {
-      const x = (r() * 2 - 1) * (HALF - 120), y = (r() * 2 - 1) * (HALF - 120);
+      const x = (r() * 2 - 1) * (HX - 120), y = (r() * 2 - 1) * (HY - 120);
       if (!ok(x, y, d)) continue;
       pts.push([x, y]); fn(x, y, i); i++;
     }
   };
-  place(7, 200, (x, y, i) => mk(g, 'cover', x, y, { r: 46, hp: 320, maxHp: 320, solid: true, variant: COVERS[i % 3] }));
-  place(8, 160, (x, y) => mk(g, 'lantern', x, y, { r: 10 }));
-  place(7, 150, (x, y) => mk(g, 'barrel', x, y, { r: 18, hp: 30, maxHp: 30, solid: true }));
-  place(12, 110, (x, y) => mk(g, 'bear', x, y, { r: 18 }));
+  const tombish = g.mapId === 'chapel' || g.mapId === 'pulpit';
+  place(20, 200, (x, y, i) => {
+    const v = g.zoned ? ZONE_COVERS[zoneAt(x)][i % 3] : tombish && i % 2 ? 'tomb' : COVERS[i % 3];
+    const hp = v === 'tomb' ? 520 : 320;
+    mk(g, 'cover', x, y, { r: v === 'tomb' ? 36 : 46, hp, maxHp: hp, solid: true, variant: v });
+  });
+  place(22, 160, (x, y) => mk(g, 'lantern', x, y, { r: 10 }));
+  place(16, 150, (x, y) => mk(g, 'barrel', x, y, { r: 18, hp: 30, maxHp: 30, solid: true }));
+  place(28, 110, (x, y) => mk(g, 'bear', x, y, { r: 18 }));
 }
 
 // Restaura destructibles (supervivencia: cada pocas rondas).
@@ -39,7 +45,7 @@ export function restoreTraps(g) {
 }
 
 export function placeTrap(g, x, y) {
-  x = Math.max(-HALF, Math.min(HALF, x)); y = Math.max(-HALF, Math.min(HALF, y));
+  x = Math.max(-HX, Math.min(HX, x)); y = Math.max(-HY, Math.min(HY, y));
   mk(g, 'bear', x, y, { r: 20, owned: true, life: 30 });
 }
 
@@ -79,6 +85,7 @@ export function updateTraps(g, dt) {
       case 'cover':
         if (t.dead) break;
         t.phase = t.hp > t.maxHp * 0.66 ? 0 : t.hp > t.maxHp * 0.33 ? 1 : 2;
+        if (t.phase === 2 && t.variant !== 'tomb' && Math.random() < dt * 5) g.addPart(t.x + (Math.random() - 0.5) * 70, t.y - 30, (Math.random() - 0.5) * 20, -30 - Math.random() * 30, 1.4, 6, '#2a2624', PT.SMOKE, false).grow = 14;
         if (t.hp <= 0) {
           t.dead = true; Sfx.play('kill');
           g.comicText(t.x, t.y - 50, '¡CRACK!', '#c8a878', 22);
@@ -100,9 +107,9 @@ function blowBarrel(g, t) {
 export function breakLantern(g, t) {
   if (t.dead) return;
   t.dead = true; Sfx.play('boom');
-  g.addZone(ZK.FIRE, t.x + 18, t.y, 100, 6.5, 26 * g.st.trapMult, '#ff6a1a', 1);
+  g.addZone(ZK.FIRE, t.x + 21, t.y + 6, 100, 6.5, 26 * g.st.trapMult, '#ff6a1a', 1);
   g.comicText(t.x, t.y - 110, '¡FWOOSH!', '#ffb040', 22);
-  for (let k = 0; k < 14; k++) g.addPart(t.x + 18, t.y - 92, (Math.random() - 0.5) * 200, Math.random() * 120, 0.6, 3, '#ffe08a', PT.SPARK, true);
+  for (let k = 0; k < 14; k++) g.addPart(t.x + 21, t.y - 88, (Math.random() - 0.5) * 200, Math.random() * 120, 0.6, 3, '#ffe08a', PT.SPARK, true);
 }
 
 // Proyectil del jugador contra faroles/barriles. Devuelve true si el proyectil se consume.
@@ -111,7 +118,7 @@ export function bulletVsTraps(g, b) {
     const t = g.traps[i];
     if (t.dead) continue;
     if (t.kind === 'lantern') {
-      const dx = t.x + 18 - b.x, dy = t.y - 92 - b.y;
+      const dx = t.x + 21 - b.x, dy = t.y - 88 - b.y;
       if (dx * dx + dy * dy < 196) { breakLantern(g, t); return true; }
     } else if (t.kind === 'barrel') {
       const dx = t.x - b.x, dy = t.y - 20 - b.y;

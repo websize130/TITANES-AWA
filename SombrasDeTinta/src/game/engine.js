@@ -1,12 +1,14 @@
-// Núcleo de partida: bucle a 60 FPS, pools sin basura, daño (armadura, esquiva, críticos), mano de cartas,
-// sorteos de cartas, maldiciones, almas (XP de partida) y XP de perfil. Modos: historia y supervivencia.
+// Núcleo de partida: bucle a 60 FPS, pools sin basura, daño (armadura, esquiva, críticos), alcance limitado,
+// cargadores y recarga, mano de cartas, sorteos, maldiciones, miedo/aturdimiento/tinta pegajosa, póker de tinta
+// con furias, mundo de 3× el viewport por zonas y cámara de seguimiento suave. Modos: historia y supervivencia.
 import { Pool, Grid } from './pool.js';
 import { Sprites } from '../art/sprites.js';
 import { makeGround } from '../art/worldArt.js';
 import { makeRng, TAU } from '../art/ink.js';
 import { ZOMBIES, COLOSSI } from '../data/enemies.js';
 import { WEAPONS, BARKS } from '../data/heroes.js';
-import { MAPS } from '../data/story.js';
+import { MAPS, ZONES } from '../data/story.js';
+import { RANKS, SUITS, FURIES, evaluateHand } from '../data/poker.js';
 import { CARDS, SIGNATURE, rollRarity } from '../data/cards.js';
 import { Sfx } from '../core/audio.js';
 import { fireWeapon, playCard, updatePassives } from './combat.js';
@@ -15,27 +17,30 @@ import { buildTraps, updateTraps, bulletVsTraps, explosionVsTraps } from './trap
 import { createMode } from './modes.js';
 import { renderGame } from './render.js';
 
-export const HALF = 1100;
+// Mundo ≈ 3× el viewport en cada eje (≈ 3.600 × 2.600 unidades).
+export const HX = 1800, HY = 1300;
+export function zoneAt(x) { const k = x / HX; for (let i = 0; i < ZONES.length; i++) if (k < ZONES[i].x1 || i === ZONES.length - 1) return i; return 0; }
 
 const mkZ = () => ({
   uid: 0, type: '', def: null, x: 0, y: 0, vx: 0, vy: 0, r: 10, hp: 1, maxHp: 1, armor: 0, maxArmor: 0, speed: 0, dmg: 0,
   colossus: false, elite: false, spr: null, flash: 0, burnT: 0, burnDps: 0, burnTick: 0, slowT: 0, stunT: 0, rootT: 0,
   atkT: 0, state: 0, stateT: 0, ax: 0, ay: 0, face: 1, target: null, xp: 1, soul: 1, dead: false, alpha: 1, name: '',
-  mode: '', modeT: 0, patIdx: 0, subT: 0, subN: 0, phase: 0, ang: 0, hitBy: 0, tauntT: 0,
+  mode: '', modeT: 0, patIdx: 0, subT: 0, subN: 0, phase: 0, ang: 0, hitBy: 0, tauntT: 0, fearT: 0, flank: 1,
 });
 const mkB = () => ({ x: 0, y: 0, vx: 0, vy: 0, r: 3, dmg: 0, pierce: 0, life: 0, color: '#fff', core: '#fff', kind: 0, kb: 0, crit: false, hits: [], chain: 0, homing: 0, burn: 0, slow: 0, stun: 0, radius: 0, len: 10, spin: 0, ox: 0, oy: 0 });
 const mkE = () => ({ x: 0, y: 0, vx: 0, vy: 0, r: 5, dmg: 0, life: 0, color: '#fff', kind: 0, t: 0, tmax: 0, sx: 0, sy: 0, tx: 0, ty: 0, radius: 0, homing: 0 });
 const mkP = () => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: '#fff', kind: 0, grow: 0, drag: 0, add: true });
 const mkT = () => ({ x: 0, y: 0, vy: 0, life: 0, max: 1, str: '', color: '#fff', size: 14, big: false });
-const mkI = () => ({ x: 0, y: 0, kind: 0, value: 0, vx: 0, vy: 0, mag: false, t: 0 });
+const mkI = () => ({ x: 0, y: 0, kind: 0, value: 0, vx: 0, vy: 0, mag: false, t: 0, cr: 0, cs: 0 });
+const mkU = () => ({ on: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: '#000', ink: true });
 const mkZn = () => ({ uid: 0, kind: 0, x: 0, y: 0, r: 0, maxR: 0, life: 0, max: 0, dmg: 0, color: '#fff', tick: 0, owner: 0, ang: 0, len: 0, vx: 0, vy: 0 });
 const mkBub = () => ({ on: false, x: 0, y: 0, follow: null, uid: 0, text: '', life: 0, max: 0, scream: false });
 
-export const BK = { BULLET: 0, PELLET: 1, RIFLE: 2, HARPOON: 3, CARD: 4, FLAME: 5, LOB: 6 };
-export const EK = { ORB: 0, FAST: 1, LOB: 2, PAGE: 3 };
-export const PK = { SOUL: 0, BIGSOUL: 1, HEAL: 2 };
+export const BK = { BULLET: 0, PELLET: 1, RIFLE: 2, HARPOON: 3, CARD: 4, FLAME: 5, LOB: 6, SHRAP: 7 };
+export const EK = { ORB: 0, FAST: 1, LOB: 2, PAGE: 3, INK: 4 };
+export const PK = { SOUL: 0, BIGSOUL: 1, HEAL: 2, CARD: 3 };
 export const PT = { SPARK: 0, SMOKE: 1, BLOOD: 2, RING: 3, FLASH: 4, EMBER: 5, DEBRIS: 6, SPLINTER: 7 };
-export const ZK = { FIRE: 0, RING: 1, STRIKE: 2, POOL: 3, GAS: 4, SLAM: 5, CHARGE: 6, BOMB: 7, TRAIN: 8, RIDERS: 9 };
+export const ZK = { FIRE: 0, RING: 1, STRIKE: 2, POOL: 3, GAS: 4, SLAM: 5, CHARGE: 6, BOMB: 7, TRAIN: 8, RIDERS: 9, INK: 10, CONE: 11 };
 
 export class Game {
   constructor(canvas, input, cb) {
@@ -49,14 +54,16 @@ export class Game {
     this.items = new Pool(mkI, 500);
     this.zones = new Pool(mkZn, 120);
     this.bubbles = []; for (let i = 0; i < 8; i++) this.bubbles.push(mkBub());
-    this.grid = new Grid(HALF + 200, 80);
+    this.uiParts = []; for (let i = 0; i < 160; i++) this.uiParts.push(mkU());
+    this.fx = { dmg: 1, rate: 1, speed: 1, pierce: 0, range: 1, crit: 0, reload: 1, invuln: false, explode: 0 };
+    this.grid = new Grid(Math.max(HX, HY) + 200, 80);
     this.decals = new Float32Array(160 * 4); this.decalN = 0; this.decalI = 0;
     this.traps = []; this.props = []; this.structs = []; this.crows = [];
     this.lights = new Float32Array(64 * 4); this.lightN = 0;
     this.uid = 1; this.running = false; this._raf = 0;
     this._loop = (ts) => this.frame(ts);
-    this.player = { x: 0, y: 0, r: 15, hp: 100, maxHp: 100, face: 1, inv: 0, hurt: 0, aim: 0, aimDist: 300, fireT: 0, alt: 0, moving: false, muzzle: 0, rootT: 0, regenT: 0, spin: 0 };
-    this.cam = { x: 0, y: 0, shake: 0, sx: 0, sy: 0 };
+    this.player = { x: 0, y: 0, r: 15, hp: 100, maxHp: 100, face: 1, inv: 0, hurt: 0, aim: 0, aimDist: 300, fireT: 0, alt: 0, moving: false, muzzle: 0, rootT: 0, regenT: 0, spin: 0, ammo: 0, reloadT: 0, burstN: 0, burstT: 0, stunT: 0, stunImmune: 0, inkT: 0, vx: 0, vy: 0, jokeT: 8 };
+    this.cam = { x: 0, y: 0, shake: 0, sx: 0, sy: 0, lx: 0, ly: 0 };
     this.q = { x: 0, y: 0, r: 0, best: null, bestD: 0, dmg: 0, kb: 0, burn: 0, stun: 0, ex: 0 };
     this._nearestFn = (e) => {
       if (e.dead || e.uid === this.q.ex) return false;
@@ -95,9 +102,13 @@ export class Game {
     this.map = MAPS[this.mapId];
     const res = Math.max(1.5, Math.min(3, this.scale * this.dpr));
     if (!this.spr || Math.abs(this.spr.res - res) > 0.01) this.spr = new Sprites(res);
-    this.groundPattern = this.ctx.createPattern(makeGround(this.mapId), 'repeat');
+    this.zoned = !!this.map.zoned;
+    this.groundPatterns = this.zoned ? ZONES.map((z) => this.ctx.createPattern(makeGround(z.id, z), 'repeat')) : [this.ctx.createPattern(makeGround(this.mapId), 'repeat')];
+    this.zoneIdx = -1;
     for (const P of [this.zombies, this.bullets, this.ebullets, this.parts, this.texts, this.items, this.zones]) P.clear();
     for (const b of this.bubbles) b.on = false;
+    for (const u of this.uiParts) u.on = false;
+    this.poker = []; this.furies = []; this.pokerShow = null; this.pokerCount = 0;
     this.structs.length = 0; this.crows.length = 0; this.decalN = 0; this.decalI = 0;
     this.time = 0; this.realTime = 0; this.kills = 0; this.level = 1; this.souls = 0; this.nextSouls = this.soulsFor(1);
     this.profileXp = 0; this.state = 'play'; this.endT = 0; this.result = null; this.banner = null; this.flash = 0;
@@ -110,10 +121,12 @@ export class Game {
       pickup: 95, pierce: 0, regen: 0, cardCd: s.cardCd || 1, chain: 0, slowOnHit: 0, burnOnHit: 0, trapper: 0, trapMult: 1,
       crows: 0, leadStorm: 0, holyFire: 0, ghostTrain: 0, critExplode: 0, shadows: 0,
       closeBonus: s.closeBonus, farCrit: s.farCrit, trapMaster: s.trapMaster, luck: s.luck,
+      rangeMult: 1, magMult: 1, reloadMult: 1, splash: 0, shrapnel: 0, rage: s.rage || 0, kbMult: s.kbMult || 1,
+      fearAura: s.fearAura || 0, pokerLuck: s.pokerLuck || 0,
     };
     const p = this.player;
-    p.maxHp = Math.round(s.hp * (s.farCrit ? 1.2 : 1) + lvl * 1.5); p.hp = p.maxHp;
-    p.x = 0; p.y = 120; p.inv = 1.5; p.hurt = 0; p.fireT = 0.3; p.alt = 0; p.muzzle = 0; p.rootT = 0; p.regenT = 0; p.aim = -Math.PI / 2; p.spin = 0;
+    p.maxHp = Math.round(s.hp * (s.rage ? 1.25 : 1) + lvl * 1.5); p.hp = p.maxHp;
+    p.x = this.zoned ? 0 : 0; p.y = 120; p.inv = 1.5; p.ammo = this.magSize(); p.reloadT = 0; p.burstN = 0; p.burstT = 0; p.stunT = 0; p.stunImmune = 0; p.inkT = 0; p.vx = 0; p.vy = 0; p.jokeT = 8; p.hurt = 0; p.fireT = 0.3; p.alt = 0; p.muzzle = 0; p.rootT = 0; p.regenT = 0; p.aim = -Math.PI / 2; p.spin = 0;
     this.cam.x = p.x; this.cam.y = p.y; this.cam.shake = 0;
     // mano: carta de firma + 2 huecos
     this.hand = [{ card: SIGNATURE[hero.signature], cd: 0 }, null, null];
@@ -139,19 +152,29 @@ export class Game {
 
   buildProps() {
     this.props.length = 0;
-    const r = makeRng(this.mapId.length * 7919 + 13), list = this.map.props;
-    for (let i = 0; i < 110; i++) {
-      const x = (r() * 2 - 1) * (HALF - 40), y = (r() * 2 - 1) * (HALF - 40);
+    const r = makeRng(this.mapId.length * 7919 + 13);
+    const N = 300;
+    for (let i = 0; i < N; i++) {
+      const x = (r() * 2 - 1) * (HX - 40), y = (r() * 2 - 1) * (HY - 40);
       if (Math.hypot(x, y - 120) < 260) continue;
+      if (this.zoned && Math.abs(y - this.roadY(x)) < 70) continue; // el camino queda despejado
+      const list = this.zoned ? ZONES[zoneAt(x)].props : this.map.props;
       this.props.push({ x, y, spr: this.spr.prop(list[(r() * list.length) | 0]) });
     }
-    if (this.mapId === 'crossroads') { this.props.push({ x: 0, y: -40, spr: this.spr.prop('gallows') }); this.props.push({ x: 300, y: -260, spr: this.spr.prop('well') }); this.props.push({ x: -260, y: 260, spr: this.spr.prop('post') }); }
-    for (let a = 0; a < TAU; a += 0.1) {
-      const cx = Math.cos(a), cy = Math.sin(a), k = 1 / Math.max(Math.abs(cx), Math.abs(cy));
-      this.props.push({ x: cx * k * (HALF + 30), y: cy * k * (HALF + 30), spr: this.spr.prop(this.mapId === 'mine' || this.mapId === 'swamp' ? 'rock' : 'fence') });
+    if (this.zoned) {
+      this.props.push({ x: 40, y: -60, spr: this.spr.prop('gallows') });
+      this.props.push({ x: -1200, y: 300, spr: this.spr.prop('well') });
+      this.props.push({ x: -HX / 3, y: this.roadY(-HX / 3) - 80, spr: this.spr.prop('post') });
+      this.props.push({ x: HX / 3, y: this.roadY(HX / 3) - 80, spr: this.spr.prop('post') });
     }
+    const edge = this.mapId === 'mine' || this.mapId === 'swamp' ? 'rock' : 'fence';
+    for (let x = -HX; x <= HX; x += 90) { this.props.push({ x, y: -HY - 30, spr: this.spr.prop(edge) }); this.props.push({ x, y: HY + 30, spr: this.spr.prop(edge) }); }
+    for (let y = -HY; y <= HY; y += 90) { this.props.push({ x: -HX - 30, y, spr: this.spr.prop(edge) }); this.props.push({ x: HX + 30, y, spr: this.spr.prop(edge) }); }
     this.props.sort((a, b) => a.y - b.y);
   }
+
+  // Camino de tierra que une las zonas (curva suave).
+  roadY(x) { return Math.sin(x / 520) * 160 + Math.sin(x / 190) * 30; }
 
   stop() { this.running = false; cancelAnimationFrame(this._raf); this.input.detach(); }
 
@@ -175,6 +198,7 @@ export class Game {
     this.realTime += dt;
     if (this.input.consume('pause') && this.state === 'play') { this.pause(true); return; }
     this.updateFx(dt);
+    this.updateUi(dt);
     if (this.state === 'over') {
       this.endT -= dt; this.updateItems(dt);
       if (this.endT <= 0 && this.result) { const r = this.result; this.result = null; this.stop(); this.cb.onEnd(r); }
@@ -184,6 +208,7 @@ export class Game {
     this.flash = Math.max(0, this.flash - dt * 3);
     if (this.banner) { this.banner.t -= dt; if (this.banner.t <= 0) this.banner = null; }
     this.updateCurses(dt);
+    this.updateFuries(dt);
     this.updatePlayer(dt);
     updateZombies(this, dt);
     this.updateBullets(dt);
@@ -210,8 +235,13 @@ export class Game {
     }
     const T = this.texts.items;
     for (let i = this.texts.n - 1; i >= 0; i--) { const t = T[i]; t.life += dt; t.y += t.vy * dt; t.vy *= 1 - 2 * dt; if (t.life >= t.max) this.texts.kill(i); }
-    const c = this.cam, p = this.player, k = 1 - Math.exp(-dt * 8);
-    c.x += (p.x - c.x) * k; c.y += (p.y - c.y) * k;
+    // cámara de seguimiento suave con anticipación y límites del mundo
+    const c = this.cam, p = this.player, k = 1 - Math.exp(-dt * 5), kl = 1 - Math.exp(-dt * 2.5);
+    c.lx += (p.vx * 0.35 - c.lx) * kl; c.ly += (p.vy * 0.35 - c.ly) * kl;
+    let tx = p.x + c.lx, ty = p.y - 20 + c.ly;
+    const mx = Math.max(0, HX + 60 - this.viewW / 2), my = Math.max(0, HY + 60 - this.viewH / 2);
+    tx = Math.max(-mx, Math.min(mx, tx)); ty = Math.max(-my, Math.min(my, ty));
+    c.x += (tx - c.x) * k; c.y += (ty - c.y) * k;
     c.shake = Math.max(0, c.shake - dt * 30);
     const sh = this.settings.shake ? c.shake : 0;
     c.sx = (Math.random() - 0.5) * sh; c.sy = (Math.random() - 0.5) * sh;
@@ -238,12 +268,18 @@ export class Game {
     const p = this.player, inp = this.input, st = this.st;
     const mv = inp.move();
     p.inv = Math.max(0, p.inv - dt); p.hurt = Math.max(0, p.hurt - dt); p.muzzle = Math.max(0, p.muzzle - dt);
-    p.rootT = Math.max(0, p.rootT - dt);
+    p.rootT = Math.max(0, p.rootT - dt); p.stunT = Math.max(0, p.stunT - dt); p.stunImmune = Math.max(0, p.stunImmune - dt); p.inkT = Math.max(0, p.inkT - dt);
     for (let i = 0; i < 3; i++) { const h = this.hand[i]; if (h && h.cd > 0) h.cd = Math.max(0, h.cd - dt); }
-    const sp = p.rootT > 0 ? 0 : st.speed * this.curseSlow;
+    const stunned = p.stunT > 0;
+    const sp = p.rootT > 0 || stunned ? 0 : st.speed * this.curseSlow * this.fx.speed * (p.inkT > 0 ? 0.5 : 1);
     p.moving = (mv.x !== 0 || mv.y !== 0) && sp > 0;
-    p.x += mv.x * sp * dt; p.y += mv.y * sp * dt;
-    if (p.x < -HALF) p.x = -HALF; if (p.x > HALF) p.x = HALF; if (p.y < -HALF) p.y = -HALF; if (p.y > HALF) p.y = HALF;
+    p.vx = mv.x * sp; p.vy = mv.y * sp;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.x < -HX) p.x = -HX; if (p.x > HX) p.x = HX; if (p.y < -HY) p.y = -HY; if (p.y > HY) p.y = HY;
+    if (this.zoned) { const zi = zoneAt(p.x); if (zi !== this.zoneIdx) { if (this.zoneIdx >= 0) this.zoneBanner = { text: ZONES[zi].name, t: 2.2 }; this.zoneIdx = zi; } }
+    if (this.zoneBanner) { this.zoneBanner.t -= dt; if (this.zoneBanner.t <= 0) this.zoneBanner = null; }
+    // Humor Negro (Barnaby): chiste periódico que aterra a la horda cercana
+    if (st.fearAura) { p.jokeT -= dt; if (p.jokeT <= 0) { p.jokeT = 12; this.tellJoke(220, 2.5); } }
     this.collideSolids(p, p.r);
     if (st.regen > 0) { p.regenT += dt; if (p.regenT >= 1) { p.regenT = 0; this.heal(st.regen, true); } }
     // apuntado
@@ -252,13 +288,13 @@ export class Game {
       const wx = this.cam.x + (inp.mouse.x - this.w / 2) / this.scale, wy = this.cam.y + (inp.mouse.y - this.h / 2) / this.scale;
       p.aim = Math.atan2(wy - (p.y - 24), wx - p.x); p.aimDist = Math.hypot(wx - p.x, wy - p.y); has = true;
     } else {
-      const t = this.nearest(p.x, p.y, this.weapon.range * 1.05, 0);
+      const t = this.nearest(p.x, p.y, this.range(), 0);
       if (t) { p.aim = Math.atan2(t.y - t.r - (p.y - 24), t.x - p.x); p.aimDist = Math.sqrt(this.q.bestD); has = true; }
     }
     const ca = Math.cos(p.aim);
     if (ca > 0.15) p.face = 1; else if (ca < -0.15) p.face = -1; else if (mv.x) p.face = mv.x > 0 ? 1 : -1;
-    fireWeapon(this, dt, has);
-    for (let i = 0; i < 3; i++) if (inp.consume('c' + i)) this.useHand(i);
+    if (!stunned) fireWeapon(this, dt, has);
+    for (let i = 0; i < 3; i++) if (inp.consume('c' + i) && !stunned) this.useHand(i);
     if (p.hp / p.maxHp < 0.3) { this.lowBarkT -= dt; if (this.lowBarkT <= 0) { this.lowBarkT = 20; this.say(null, BARKS[this.hero.id].low, 2.2); } }
   }
 
@@ -268,9 +304,91 @@ export class Game {
     if (h.cd > 0) { this.addText(this.player.x, this.player.y - 76, 'Recargando…', '#a8987a', 12, false); return; }
     h.cd = h.card.cd * this.st.cardCd;
     playCard(this, h.card);
+    // partículas de tinta y pólvora al jugar la carta (desde su hueco en el HUD)
+    const hb = this.hudCards ? this.hudCards[i] : null;
+    this.uiBurst(hb ? hb.x : this.w / 2, hb ? hb.y : this.h - 60, '#ffb347', 30, true);
+    const p = this.player;
+    for (let k = 0; k < 16; k++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 200; this.addPart(p.x, p.y - 30, Math.cos(a) * sp, Math.sin(a) * sp, 0.6, 3 + Math.random() * 3, k % 2 ? '#0a0605' : '#3a2a20', PT.SMOKE, false).grow = 10; }
     Sfx.play('card');
     if (Math.random() < 0.35) this.say(null, BARKS[this.hero.id].card, 1.6);
     if (h.card.curse) this.addCurse(h.card.curse, h.card.name);
+  }
+
+  // Alcance real de disparo/detección (anillo de tinta en el suelo).
+  range() { return this.weapon.range * this.st.rangeMult * this.fx.range; }
+  magSize() { return Math.max(1, Math.round(this.weapon.mag * (this.st ? this.st.magMult : 1))); }
+
+  tellJoke(radius, time) {
+    const p = this.player, jokes = BARKS.barnaby.jokes;
+    this.say(null, jokes, 3.2);
+    const q = this.q; q.x = p.x; q.y = p.y; let n = 0;
+    const E = this.zombies.items;
+    for (let i = 0; i < this.zombies.n; i++) {
+      const e = E[i];
+      if (e.dead || e.colossus) continue;
+      if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < radius * radius) { e.fearT = Math.max(e.fearT, time); n++; if (n === 3) this.say(e, BARKS.scared, 1.2); }
+    }
+    this.addPart(p.x, p.y - 20, 0, 0, 0.5, radius * 0.3, '#e8dcc0', PT.RING, true).grow = radius * 1.6;
+  }
+
+  stunPlayer(t) {
+    const p = this.player;
+    if (p.stunImmune > 0 || this.fx.invuln || this.state !== 'play') return;
+    p.stunT = t; p.stunImmune = t + 2.5;
+    this.addText(p.x, p.y - 80, '¡ATURDIDO!', '#9ab8ff', 15, true);
+  }
+
+  // ---------------------------------------------------------------- póker de tinta y furias
+  addPokerCard(r, s) {
+    this.poker.push({ r, s });
+    this.pokerCount++;
+    Sfx.play('card');
+    if (this.poker.length < 5) return;
+    const combo = evaluateHand(this.poker);
+    this.pokerShow = { hand: this.poker.slice(), combo, t: 2.2 };
+    this.poker.length = 0;
+    if (!combo) { this.addText(this.player.x, this.player.y - 90, 'Carta alta… nada', '#a89a82', 14, false); return; }
+    const F = FURIES[combo];
+    const ex = this.furies.find((f) => f.id === combo);
+    if (ex) ex.t = F.time; else this.furies.push({ id: combo, t: F.time, max: F.time });
+    this.showBanner(F.label, F.desc, 1.8);
+    this.comicText(this.player.x, this.player.y - 110, '¡' + F.name.toUpperCase() + '!', F.color, 30);
+    this.flash = 0.35; Sfx.play('combo');
+    this.uiBurst(this.w * 0.12, this.h - 60, F.color, 40, false);
+  }
+
+  updateFuries(dt) {
+    const fx = this.fx;
+    fx.dmg = 1; fx.rate = 1; fx.speed = 1; fx.pierce = 0; fx.range = 1; fx.crit = 0; fx.reload = 1; fx.invuln = false; fx.explode = 0;
+    for (let i = this.furies.length - 1; i >= 0; i--) {
+      const f = this.furies[i]; f.t -= dt;
+      if (f.t <= 0) { this.furies.splice(i, 1); continue; }
+      const F = FURIES[f.id];
+      if (F.dmg) fx.dmg *= F.dmg; if (F.rate) fx.rate *= F.rate; if (F.speed) fx.speed *= F.speed;
+      if (F.pierce) fx.pierce += F.pierce; if (F.range) fx.range *= F.range; if (F.crit) fx.crit = 1;
+      if (F.reload === 0) fx.reload = 0; if (F.invuln) fx.invuln = true; if (F.explode) fx.explode = Math.max(fx.explode, F.explode);
+    }
+    // Último cartucho (fiebre final de la ronda): +30% daño
+    if (this.objective && this.objective.fever) { fx.dmg *= 1.3; fx.rate *= 1.15; }
+    if (this.pokerShow) { this.pokerShow.t -= dt; if (this.pokerShow.t <= 0) this.pokerShow = null; }
+  }
+
+  // ---------------------------------------------------------------- partículas de tinta/pólvora en pantalla
+  uiBurst(x, y, color, n = 24, ink = true) {
+    for (let i = 0, k = 0; i < this.uiParts.length && k < n; i++) {
+      const u = this.uiParts[i];
+      if (u.on) continue;
+      const a = Math.random() * TAU, s = 60 + Math.random() * 260;
+      u.on = true; u.x = x; u.y = y; u.vx = Math.cos(a) * s; u.vy = Math.sin(a) * s - 60; u.life = 0; u.max = 0.5 + Math.random() * 0.5;
+      u.size = 2 + Math.random() * (ink ? 5 : 3); u.color = k % 3 === 0 && ink ? '#0a0605' : color; u.ink = ink && k % 3 === 0; k++;
+    }
+  }
+  updateUi(dt) {
+    for (const u of this.uiParts) {
+      if (!u.on) continue;
+      u.life += dt; if (u.life >= u.max) { u.on = false; continue; }
+      u.x += u.vx * dt; u.y += u.vy * dt; u.vy += 420 * dt; u.vx *= 1 - 2 * dt;
+    }
   }
 
   collideSolids(o, r) {
@@ -304,7 +422,7 @@ export class Game {
 
   hurtPlayer(dmg, fromTrap = false) {
     const p = this.player;
-    if (p.inv > 0 || this.state !== 'play') return;
+    if (p.inv > 0 || this.state !== 'play' || this.fx.invuln) return;
     if (fromTrap && this.st.trapMaster) return;
     const vulnNoDodge = this.curses.some((c) => c.type === 'vuln');
     if (!vulnNoDodge && Math.random() < this.st.dodge) { p.inv = 0.25; this.addText(p.x, p.y - 70, '¡ESQUIVA!', '#c8b8ff', 13, false); return; }
@@ -327,7 +445,7 @@ export class Game {
     e.speed = d.speed * spdMult * (0.88 + Math.random() * 0.24); e.dmg = d.dmg;
     e.colossus = false; e.elite = false; e.spr = this.spr.zombie(type); e.flash = 0; e.burnT = 0; e.burnDps = 0; e.burnTick = 0;
     e.slowT = 0; e.stunT = 0; e.rootT = 0; e.atkT = 0.5 + Math.random(); e.state = 0; e.stateT = 0; e.face = 1; e.target = null;
-    e.xp = d.xp; e.soul = d.soul; e.dead = false; e.alpha = 1; e.name = ''; e.hitBy = 0;
+    e.xp = d.xp; e.soul = d.soul; e.dead = false; e.alpha = 1; e.name = ''; e.hitBy = 0; e.fearT = 0; e.flank = Math.random() < 0.5 ? 1 : -1;
     if (this.objective.assignTarget) this.objective.assignTarget(e);
     return e;
   }
@@ -337,11 +455,11 @@ export class Game {
     if (!e) return null;
     const a = Math.random() * TAU;
     e.uid = this.uid++; e.type = type; e.def = C;
-    e.x = Math.max(-HALF + 80, Math.min(HALF - 80, p.x + Math.cos(a) * 460)); e.y = Math.max(-HALF + 80, Math.min(HALF - 80, p.y + Math.sin(a) * 460));
+    e.x = Math.max(-HX + 80, Math.min(HX - 80, p.x + Math.cos(a) * 460)); e.y = Math.max(-HY + 80, Math.min(HY - 80, p.y + Math.sin(a) * 460));
     e.vx = 0; e.vy = 0; e.r = C.r; e.maxHp = e.hp = Math.round(C.hp * hpMult); e.armor = e.maxArmor = 0;
     e.speed = C.speed; e.dmg = C.dmg; e.colossus = true; e.elite = false; e.spr = this.spr.zombie(type);
     e.flash = 0; e.burnT = 0; e.slowT = 0; e.stunT = 0; e.rootT = 0; e.dead = false; e.alpha = 1; e.name = C.name; e.xp = C.xp; e.soul = C.soul;
-    e.mode = 'move'; e.modeT = 2.2; e.patIdx = 0; e.subT = 0; e.subN = 0; e.phase = 0; e.ang = 0; e.state = 0; e.target = null; e.tauntT = 4;
+    e.fearT = 0; e.flank = 1; e.mode = 'move'; e.modeT = 2.2; e.patIdx = 0; e.subT = 0; e.subN = 0; e.phase = 0; e.ang = 0; e.state = 0; e.target = null; e.tauntT = 4;
     this.colossi.push(e);
     this.showBanner(C.name.toUpperCase(), '¡COLOSO DE ÉLITE!', 2.4);
     this.cam.shake = 16; Sfx.play('boss');
@@ -355,6 +473,7 @@ export class Game {
   hurtZombie(e, dmg, crit, nx, ny, kb, burn, slow, stun) {
     if (e.dead) return false;
     let d = dmg;
+    if (e.fearT > 0 && this.st.fearAura) d *= 1.25;
     if (e.armor > 0) {
       const absorbed = d * 0.7; e.armor -= absorbed; d -= absorbed;
       if (e.armor <= 0) { e.armor = 0; this.addText(e.x, e.y - e.r * 3, '¡CORAZA ROTA!', '#c8c8d0', 12, false); for (let i = 0; i < 8; i++) this.addPart(e.x, e.y - 30, (Math.random() - 0.5) * 260, -Math.random() * 200, 0.6, 4, '#8a8a90', PT.DEBRIS, false); }
@@ -378,6 +497,10 @@ export class Game {
     const souls = e.xp;
     for (let v = souls; v > 0;) { const k = v >= 5 ? 5 : 1; this.drop(e.x, e.y, k === 5 ? PK.BIGSOUL : PK.SOUL, k); v -= k; }
     if (Math.random() < (e.colossus ? 1 : 0.012)) this.drop(e.x, e.y, PK.HEAL, 25);
+    // naipes de tinta para el póker
+    const cardChance = (e.colossus ? 2 : e.type === 'abomination' ? 0.7 : 0.055) * (1 + this.st.pokerLuck);
+    for (let n = cardChance; n > 0; n -= 1) if (Math.random() < n) this.dropCard(e.x, e.y);
+    if (e.def.puddle) this.addZone(ZK.INK, e.x, e.y, e.def.puddle.r, e.def.puddle.time, 0, '#0a0a12', 0);
     for (let i = 0; i < 7; i++) { const a = Math.random() * TAU, s = 60 + Math.random() * 200; this.addPart(e.x, e.y - e.r, Math.cos(a) * s, Math.sin(a) * s, 0.4 + Math.random() * 0.3, 2 + Math.random() * 3, i % 3 ? '#3a0c0a' : '#0a0806', PT.BLOOD, false); }
     this.addDecal(e.x, e.y, e.r * (0.8 + Math.random() * 0.6), Math.random() < 0.5 ? 1 : 0);
     if (e.def.bomb) { this.explode(e.x, e.y, e.def.bomb.r, 90, '#ff8a2a', 1, 0, 300, false); this.explodeHitsPlayer(e.x, e.y, e.def.bomb.r, e.dmg); }
@@ -399,6 +522,13 @@ export class Game {
     const it = this.items.get(); if (!it) return;
     const a = Math.random() * TAU, s = 30 + Math.random() * 90;
     it.x = x; it.y = y; it.kind = kind; it.value = value; it.vx = Math.cos(a) * s; it.vy = Math.sin(a) * s; it.mag = false; it.t = 0;
+  }
+
+  dropCard(x, y) {
+    const it = this.items.get(); if (!it) return;
+    const a = Math.random() * TAU;
+    it.x = x; it.y = y; it.kind = PK.CARD; it.value = 1; it.vx = Math.cos(a) * 80; it.vy = Math.sin(a) * 80; it.mag = false; it.t = 0;
+    it.cr = (Math.random() * RANKS.length) | 0; it.cs = (Math.random() * SUITS.length) | 0;
   }
 
   addDecal(x, y, r, kind) {
@@ -471,7 +601,7 @@ export class Game {
         }
       }
       b.x += b.vx * dt; b.y += b.vy * dt;
-      if (b.life <= 0 || b.x < -HALF - 200 || b.x > HALF + 200 || b.y < -HALF - 200 || b.y > HALF + 200) { this.bullets.kill(i); continue; }
+      if (b.life <= 0 || b.x < -HX - 200 || b.x > HX + 200 || b.y < -HY - 200 || b.y > HY + 200) { this.bullets.kill(i); continue; }
       if (bulletVsTraps(this, b)) { this.bullets.kill(i); continue; }
       if (this.bulletHits(b)) this.bullets.kill(i);
     }
@@ -503,8 +633,9 @@ export class Game {
   applyHit(b, e) {
     const st = this.st, p = this.player;
     const dist = Math.hypot(e.x - p.x, e.y - p.y);
-    let crit = b.crit || Math.random() < st.crit + (this.weapon.critBonus || 0);
-    let mult = st.dmg;
+    let crit = b.crit || this.fx.crit > 0 || Math.random() < st.crit + (this.weapon.critBonus || 0);
+    let mult = st.dmg * this.fx.dmg;
+    if (st.rage && p.hp < p.maxHp * 0.5) mult *= 1 + st.rage;
     if (dist < 170 && st.closeBonus) mult *= 1 + st.closeBonus;
     let cm = st.critMult;
     if (st.farCrit) cm *= 1 + Math.min(1, dist / 600) * 0.6;
@@ -512,7 +643,16 @@ export class Game {
     const sp = Math.hypot(b.vx, b.vy) || 1;
     this.hurtZombie(e, dmg, crit, b.vx / sp, b.vy / sp, b.kb, b.burn, b.slow, b.stun);
     if (crit && st.critExplode) this.explode(e.x, e.y - e.r, 55 + 10 * st.critExplode, dmg * 0.4, '#ff4a8a', 1, 0, 160, true);
-    if (b.kind === BK.HARPOON && b.radius > 0) { this.explode(b.x, b.y, b.radius, b.dmg * st.dmg * 0.6, this.pal.glow, 1, 0, 300, false); b.radius = 0; }
+    if ((b.kind === BK.HARPOON || b.kind === BK.CARD) && b.radius > 0) { this.explode(b.x, b.y, b.radius, b.dmg * mult * 0.7, b.kind === BK.CARD ? '#ff8a3a' : this.pal.glow, 1, 0, 260, b.kind === BK.CARD); b.radius = 0; }
+    // disparos en área (Pólvora Negra / Póker) y metralla
+    const area = Math.max(st.splash, this.fx.explode);
+    if (area > 0 && b.kind !== BK.LOB && b.kind !== BK.SHRAP) this.explode(b.x, b.y, area, dmg * 0.35, '#ffb347', 1, 0, 120, true);
+    if (st.shrapnel > 0 && b.kind !== BK.SHRAP) {
+      for (let k = 0; k < st.shrapnel; k++) {
+        const s2 = this.addBullet(b.x, b.y, Math.random() * TAU, 520, b.dmg * 0.3, 2.5, 0, 0.22, '#d8c8a0', '#ffffff', BK.SHRAP, 40);
+        if (s2) { s2.hits.push(e.uid); s2.chain = 0; s2.burn = 0; }
+      }
+    }
     this.addPart(b.x, b.y, -b.vx * 0.15 + (Math.random() - 0.5) * 80, -b.vy * 0.15 + (Math.random() - 0.5) * 80, 0.15, 4, b.color, PT.SPARK, true);
     if (b.hits.length < 16) b.hits.push(e.uid);
     if (b.chain > 0) {
@@ -560,13 +700,13 @@ export class Game {
         b.vx = Math.cos(na) * sp; b.vy = Math.sin(na) * sp;
       }
       b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; b.t += dt;
-      if (b.life <= 0) { this.ebullets.kill(i); continue; }
+      if (b.life <= 0) { if (b.kind === EK.INK) this.addZone(ZK.INK, b.x, b.y + 20, 34, 3, 0, '#0a0a12', 0); this.ebullets.kill(i); continue; }
       // las coberturas detienen los proyectiles enemigos
       let blocked = false;
       for (let k = 0; k < this.traps.length; k++) { const t = this.traps[k]; if (t.solid && !t.dead && Math.abs(t.x - b.x) < t.r && Math.abs(t.y - 20 - b.y) < t.r * 0.8) { t.hp -= b.dmg; t.flash = 0.1; blocked = true; break; } }
       if (blocked) { this.addPart(b.x, b.y, 0, -40, 0.3, 4, '#c8a878', PT.SPLINTER, false); this.ebullets.kill(i); continue; }
       const dx = p.x - b.x, dy = (p.y - 22) - b.y, rr = p.r + b.r;
-      if (dx * dx + dy * dy < rr * rr && p.inv <= 0) { this.hurtPlayer(b.dmg); this.ebullets.kill(i); }
+      if (dx * dx + dy * dy < rr * rr && p.inv <= 0) { this.hurtPlayer(b.dmg); if (b.kind === EK.INK) p.inkT = 1.5; this.ebullets.kill(i); }
     }
   }
 
@@ -608,6 +748,9 @@ export class Game {
         case ZK.SLAM:
           if (z.tick === 0 && z.life >= z.max) { z.tick = 1; this.explode(z.x, z.y, z.r, 0, z.color, 0, 0, 0, false); this.explodeHitsPlayer(z.x, z.y, z.r, z.dmg); }
           break;
+        case ZK.INK:
+          if ((p.x - z.x) ** 2 + ((p.y - z.y) / 0.6) ** 2 < z.r * z.r) p.inkT = 0.15;
+          break;
         case ZK.TRAIN: case ZK.RIDERS: {
           z.x += z.vx * dt;
           const q = this.q; q.x = z.x; q.y = z.y; q.r = z.r; q.dmg = z.dmg; q.kb = 700; q.burn = 0; q.stun = 0.5;
@@ -642,6 +785,7 @@ export class Game {
 
   collect(it) {
     if (it.kind === PK.HEAL) { this.heal(it.value); return; }
+    if (it.kind === PK.CARD) { this.addPokerCard(it.cr, it.cs); return; }
     this.souls += it.value; Sfx.play('xp');
     while (this.souls >= this.nextSouls) { this.souls -= this.nextSouls; this.level++; this.nextSouls = this.soulsFor(this.level); this.pendingDrafts++; }
   }
