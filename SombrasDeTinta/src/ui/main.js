@@ -3,7 +3,9 @@
 import { Save, xpForLevel } from '../core/save.js';
 import { Input } from '../core/input.js';
 import { Sfx } from '../core/audio.js';
-import { HEROES, WEAPONS, MILESTONES, MAX_LEVEL } from '../data/heroes.js';
+import { HEROES, MAX_LEVEL, SKIN_RULES, SKIN_TIER } from '../data/heroes.js';
+import { WEAPONS, WEAPON_LIST, CATEGORIES, canEquip } from '../data/weapons.js';
+import { drawWeaponIcon } from '../art/weaponArt.js';
 import { MISSIONS } from '../data/story.js';
 import { SIGNATURE, RARITY, CARDS } from '../data/cards.js';
 import { renderPage, renderPulpCover, paintScene } from '../art/comicPage.js';
@@ -51,6 +53,8 @@ function show(id) {
   if (id === 'modes') renderModes();
   if (id === 'story') renderChapters();
   if (id === 'records') renderRecords();
+  if (id === 'shop') renderShop();
+  $$('[data-gold]').forEach((x) => { x.textContent = fmt(Save.coins); });
 }
 
 document.addEventListener('click', (e) => {
@@ -123,7 +127,7 @@ function renderDossiers() {
       ${st.level >= 50 ? '<span class="stampmark">LEYENDA</span>' : ''}
       <canvas data-portrait="${h.id}"></canvas>
       <h3>${h.name}</h3><span class="alias">${h.alias}</span> <span class="alias temper">${h.temper}</span>
-      <p><b>${h.role}</b> · Arma: ${WEAPONS[h.weapons[st.weapon]].name}</p>
+      <p><b>${h.role}</b> · Arma: ${WEAPONS[st.weapon].name} · Aspecto: ${SKIN_TIER[st.skin]}</p>
       <p class="passive"><b>Pasiva · ${h.passive.name}:</b> ${h.passive.desc}</p>
       <div class="lvl"><b>NV ${st.level}</b><span class="xpbar"><i style="width:${pct}%"></i></span><span>${st.level >= MAX_LEVEL ? 'MÁX' : fmt(st.xp) + '/' + fmt(xpForLevel(st.level))}</span></div>
       <div class="row"><button class="btn small" data-dossier="${h.id}">Abrir dossier</button><button class="btn btn-blood" data-pick="${h.id}">Elegir</button></div>
@@ -140,9 +144,7 @@ function renderDossiers() {
 }
 
 function openDossier(h) {
-  const st = Save.hero(h.id);
-  const skinsOk = Save.unlocked(h.id, 'skin'), wOk = Save.unlocked(h.id, 'weapon');
-  const reqLevel = (kind, idx) => (MILESTONES.find((m) => m.kind === kind && m.idx === idx) || { level: 1 }).level;
+  const st = Save.hero(h.id), w = WEAPONS[st.weapon];
   modal(`<h3>${h.name} <small style="font-size:14px">· ${h.alias}</small></h3>
     <canvas class="origin" id="origin"></canvas>
     <p>${h.lore}</p>
@@ -150,14 +152,16 @@ function openDossier(h) {
       <canvas id="sigcard" class="tarot" width="200" height="350" style="width:160px;height:280px"></canvas>
       <div style="flex:1;min-width:240px">
         <p><b>Pasiva · ${h.passive.name}:</b> ${h.passive.desc}</p>
-        <p><b>Nivel ${st.level}</b> de ${MAX_LEVEL}. Hitos de desbloqueo:</p>
-        <div class="track">${MILESTONES.map((m) => `<div class="ms ${st.level >= m.level ? '' : 'off'}"><b>NV ${m.level}</b>${m.kind === 'skin' ? '🎩 ' + h.skins[m.idx].name : '🔫 ' + WEAPONS[h.weapons[m.idx]].name}</div>`).join('')}</div>
+        <p><b>Nivel ${st.level}</b> de ${MAX_LEVEL}.</p>
+        <p><b>Arma equipada:</b> ${w.name} <span class="dmg">DAÑO ${w.power}</span><br><span style="font-size:13px">${w.desc}</span></p>
+        <div class="row" style="justify-content:flex-start"><button class="btn small" data-armory>Abrir la Armería ⚙</button></div>
       </div>
     </div>
-    <p><b>Aspecto</b></p>
-    <div class="pick">${h.skins.map((s, i) => `<button data-skin="${i}" class="${st.skin === i ? 'on' : ''}" ${skinsOk.includes(i) ? '' : 'disabled'}><span class="swatch" style="background:${s.pal.coat}"></span>${s.name}${skinsOk.includes(i) ? '' : ' · NV ' + reqLevel('skin', i)}</button>`).join('')}</div>
-    <p><b>Arma</b></p>
-    <div class="pick">${h.weapons.map((wid, i) => { const w = WEAPONS[wid]; return `<button data-weapon="${i}" class="${st.weapon === i ? 'on' : ''}" ${wOk.includes(i) ? '' : 'disabled'}>${w.name}${wOk.includes(i) ? '' : ' · NV ' + reqLevel('weapon', i)}<br><span style="font-weight:400">${w.desc}</span></button>`; }).join('')}</div>
+    <p><b>Aspectos</b></p>
+    <div class="skins">${h.skins.map((s, i) => { const ok = Save.skinUnlocked(h.id, i); return `<button data-skin="${i}" class="skin ${st.skin === i ? 'on' : ''} ${ok ? '' : 'locked'} tier${i}" ${ok ? '' : 'disabled'}>
+      <canvas data-skinart="${i}" width="180" height="200"></canvas>
+      <span class="tier">${SKIN_TIER[i]}</span><span class="sname">${s.name}</span>
+      <span class="req">${ok ? (st.skin === i ? 'EQUIPADO' : 'Disponible') : '🔒 ' + SKIN_RULES[i].text}</span></button>`; }).join('')}</div>
     <div class="row"><button class="btn" data-close>Cerrar</button><button class="btn btn-blood" data-choose>Elegir a ${h.short}</button></div>`,
   (b, close) => {
     fonts().then(() => {
@@ -165,11 +169,60 @@ function openDossier(h) {
       renderPage(cv, h.panels, h, heroPal(h), { w: W, h: H, title: 'ORIGEN' });
       cv.style.width = '100%'; cv.style.height = 'auto';
       const sc = b.querySelector('#sigcard'), x = sc.getContext('2d'); drawCard(x, SIGNATURE[h.signature], 200, 350, 0, 'Carta de firma: empieza en tu mano.');
+      $$('canvas[data-skinart]', b).forEach((c) => {
+        const i = +c.dataset.skinart, x2 = c.getContext('2d');
+        const gr = x2.createLinearGradient(0, 0, 0, 200); gr.addColorStop(0, i === 2 ? '#3a0a06' : i === 1 ? '#2a1a10' : '#1a120c'); gr.addColorStop(1, '#0a0605');
+        x2.fillStyle = gr; x2.fillRect(0, 0, 180, 200);
+        x2.save(); x2.translate(90, 196); x2.scale(0.86, 0.86); drawHero(x2, h.id, h.skins[i].pal, 1, 7); x2.restore();
+        if (!Save.skinUnlocked(h.id, i)) { x2.fillStyle = 'rgba(5,3,2,0.72)'; x2.fillRect(0, 0, 180, 200); }
+      });
     });
-    $$('[data-skin]', b).forEach((x) => x.addEventListener('click', () => { Save.setSkin(h.id, +x.dataset.skin); close(); openDossier(h); renderDossiers(); }));
-    $$('[data-weapon]', b).forEach((x) => x.addEventListener('click', () => { Save.setWeapon(h.id, +x.dataset.weapon); close(); openDossier(h); }));
+    $$('[data-skin]', b).forEach((x) => x.addEventListener('click', () => { Save.setSkin(h.id, +x.dataset.skin); Sfx.play('stamp'); close(); openDossier(h); renderDossiers(); }));
+    b.querySelector('[data-armory]').addEventListener('click', () => { close(); shopHero = h.id; show('shop'); });
     b.querySelector('[data-choose]').addEventListener('click', () => { Save.selectHero(h.id); close(); Sfx.play('stamp'); show('modes'); });
   });
+}
+
+// ---------------------------------------------------------------- Armería del Oeste Oculto
+let shopHero = null;
+function renderShop() {
+  const hid = shopHero || Save.data.hero || HEROES[0].id, st = Save.hero(hid);
+  shopHero = hid;
+  $('#shop-heroes').innerHTML = HEROES.map((x) => `<button class="btn small ${x.id === hid ? 'btn-blood' : ''}" data-shophero="${x.id}">${x.short}</button>`).join('');
+  const box = $('#shop');
+  let html = '';
+  for (const [cid, cat] of Object.entries(CATEGORIES)) {
+    const list = WEAPON_LIST.filter((w) => w.cat === cid);
+    html += `<section class="cat" style="--cat:${cat.color}"><h3>${cat.name}</h3><p class="catdesc">${cat.desc}</p><div class="guns">`;
+    for (const w of list) {
+      const own = Save.owns(w.id), eq = st.weapon === w.id, fits = canEquip(w, hid), afford = Save.coins >= w.price;
+      const ownerName = w.owner ? heroById(w.owner).short : '';
+      const btn = eq ? '<span class="eq">EQUIPADA</span>'
+        : own ? (fits ? `<button class="btn small" data-equip="${w.id}">Equipar</button>` : `<span class="na">Solo ${ownerName}</span>`)
+        : `<button class="btn small ${afford ? 'btn-blood' : ''}" data-buy="${w.id}" ${afford ? '' : 'disabled'}>Comprar · ${fmt(w.price)} ⛀</button>`;
+      html += `<article class="gun ${eq ? 'on' : ''} ${w.legendary ? 'legend' : ''} ${own ? 'owned' : ''}">
+        <canvas data-gun="${w.id}"></canvas>
+        <div class="ginfo"><b>${w.name}</b>${w.owner ? `<span class="owner">${w.legendary ? 'LEGENDARIA · ' : 'DE SERIE · '}${ownerName}</span>` : ''}
+          <span class="desc">${w.desc}</span>
+          <span class="stats"><span class="dmg">DAÑO ${w.power}</span> · Cargador ${w.mag} · Recarga ${w.reload}s · Alcance ${w.range}</span></div>
+        <div class="gact">${btn}</div></article>`;
+    }
+    html += '</div></section>';
+  }
+  box.innerHTML = html;
+  const d = dprOf();
+  $$('canvas[data-gun]', box).forEach((cv) => {
+    const W = 150, H = 70; cv.width = W * d; cv.height = H * d; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    const x = cv.getContext('2d'); x.scale(d, d); drawWeaponIcon(x, WEAPONS[cv.dataset.gun], W, H, 0);
+  });
+  $$('[data-shophero]').forEach((b) => b.addEventListener('click', () => { Sfx.play('click'); shopHero = b.dataset.shophero; renderShop(); }));
+  $$('[data-buy]', box).forEach((b) => b.addEventListener('click', () => {
+    const w = WEAPONS[b.dataset.buy];
+    if (Save.buy(w.id)) { Sfx.play('buy'); toast('Comprada: ' + w.name); if (canEquip(w, hid)) Save.setWeapon(hid, w.id); show('shop'); }
+    else { Sfx.play('deny'); toast('No te llega el Oro Maldito'); }
+  }));
+  $$('[data-equip]', box).forEach((b) => b.addEventListener('click', () => { if (Save.setWeapon(hid, b.dataset.equip)) { Sfx.play('card'); renderShop(); } }));
+  $$('[data-gold]').forEach((x) => { x.textContent = fmt(Save.coins); });
 }
 
 // ---------------------------------------------------------------- modos y capítulos
@@ -234,7 +287,7 @@ async function startRun(mode, mission) {
   $('#draft').classList.add('hidden'); $('#pause').classList.add('hidden');
   if (input.isTouch && document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
   game.resize();
-  game.start({ mode, mission, hero: h, skin: st.skin, weaponIdx: st.weapon, level: st.level, settings: Save.data.settings });
+  game.start({ mode, mission, hero: h, skin: st.skin, weaponId: st.weapon, level: st.level, settings: Save.data.settings });
   lastRun = { mode, mission };
   Sfx.startMusic();
 }
@@ -280,7 +333,9 @@ async function endRun(r) {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   $('#game-root').classList.add('hidden'); $('#app').classList.remove('hidden');
   const h = heroById(Save.data.hero), before = Save.hero(h.id).skin, pal = h.skins[before].pal;
+  const skinsBefore = h.skins.map((_, i) => Save.skinUnlocked(h.id, i));
   const gain = Save.addXp(h.id, r.profileXp, r.kills);
+  Save.addCoins(r.gold || 0);
   let rank = -1;
   if (r.mode === 'story' && r.win) Save.completeStory(r.missionId);
   if (r.mode === 'survival') rank = Save.addRecord({ round: r.round, kills: r.kills, hero: h.id, skin: before, date: new Date().toLocaleDateString('es-ES'), stamp: stampFor(r.round) });
@@ -300,7 +355,7 @@ async function endRun(r) {
     }, Math.min(vw, 460), Math.round(Math.min(vw, 460) * 1.42));
   }
   const st = Save.hero(h.id);
-  const unl = gain.unlocks.map((u) => `<div class="unlock"><b>¡Desbloqueado en NV ${u.level}!</b><br>${u.kind === 'skin' ? 'Aspecto: ' + h.skins[u.idx].name : 'Arma exclusiva: ' + WEAPONS[h.weapons[u.idx]].name} (equipado)</div>`).join('');
+  const unl = h.skins.map((s, i) => (!skinsBefore[i] && Save.skinUnlocked(h.id, i) ? `<div class="unlock"><b>¡Aspecto ${SKIN_TIER[i]} desbloqueado!</b><br>${s.name} · equípalo desde el dossier.</div>` : '')).join('');
   const mi = r.missionId ? MISSIONS.findIndex((x) => x.id === r.missionId) : -1;
   const next = r.mode === 'story' && r.win && MISSIONS[mi + 1];
   $('#end-info').innerHTML = `
@@ -311,6 +366,7 @@ async function endRun(r) {
       <dt>Tiempo</dt><dd>${Math.floor(r.time / 60)}:${String(Math.floor(r.time % 60)).padStart(2, '0')}</dd>
       <dt>Cartas en el mazo</dt><dd>${r.deck}</dd>
       <dt>XP de forajido</dt><dd>+${fmt(r.profileXp)}</dd>
+      <dt>Oro Maldito</dt><dd>+${fmt(r.gold || 0)} ⛀ (total ${fmt(Save.coins)})</dd>
       <dt>${h.short}</dt><dd>NV ${st.level}${gain.levelsGained ? ' (+' + gain.levelsGained + ')' : ''}</dd>
     </dl>
     ${rank >= 0 ? `<p>Tu nombre queda grabado en el Muro de los Condenados: <b>puesto ${rank + 1}</b>.</p>` : ''}
@@ -319,6 +375,7 @@ async function endRun(r) {
       <button class="btn btn-blood" data-end="retry">Otra vez</button>
       ${next ? '<button class="btn" data-end="next">Siguiente caso ▶</button>' : ''}
       <button class="btn" data-end="modes">Modos</button>
+      <button class="btn" data-end="shop">Armería</button>
       ${r.mode === 'survival' ? '<button class="btn" data-end="records">El Muro</button>' : ''}
     </div>`;
   Sfx.play('stamp');
@@ -355,4 +412,4 @@ window.addEventListener('resize', () => { if (current === 'title') drawTitle(); 
 applySettings();
 fonts().then(() => { if (current === 'title') drawTitle(); });
 show('title');
-window.__tinta = { game, Save, HEROES, MISSIONS, CARDS }; // gancho de depuración (pruebas automáticas)
+window.__tinta = { game, Save, HEROES, MISSIONS, CARDS, WEAPONS }; // gancho de depuración (pruebas automáticas)

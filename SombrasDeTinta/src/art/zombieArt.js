@@ -1,6 +1,6 @@
 // La Horda: siluetas asimétricas y encorvadas, hombros desalineados, jirones orgánicos,
 // tinta sucia con sombreado cruzado y paleta fría desaturada (gris carbón, verde cadáver).
-import { INK, poly, blob, ellipse, circle, line, tatter, glow, shade, rgba, beginArt, hatchPoly, flame, skull } from './ink.js';
+import { INK, poly, blob, ellipse, circle, line, tatter, glow, shade, rgba, beginArt, hatchPoly, flame, skull, star } from './ink.js';
 import { limb } from './heroArt.js';
 
 const SKIN = '#7a8a74', SKIN2 = '#5e6a5a', CLOTH = '#3a3e44', CLOTH2 = '#4a4e48', RAG = '#5a5a52', BLOOD = '#4a0e0c';
@@ -276,13 +276,59 @@ function abomination(ctx) {
   ctx.fillStyle = '#0a0a10'; for (const [x, l] of [[-6, 22], [4, 30], [12, 16]]) { ctx.beginPath(); ctx.ellipse(x, -34 + l / 2, 2.6, l / 2, 0, 0, Math.PI * 2); ctx.fill(); }
 }
 
-const DRAW_Z = { walker, runner, bloater, armored, forker, dynamiter, hound, spider, abomination, foreman, faceless, beast };
+// ------------------------------------------------------------------ EL PREDICADOR DE LA PESTE (máscara de pico, incensario)
+function plague(ctx) {
+  glow(ctx, 0, -100, 120, '#7aff4a', 0.18);
+  const robe = [-24, -170, 24, -170, 54, -80, 64, -2];
+  tatter(robe, 64, -2, -64, -2, 12, 16, 37); robe.push(-54, -80);
+  zp(ctx, robe, '#26281e', 3, 6);
+  poly(ctx, [-16, -170, 16, -170, 12, -110, -12, -110], '#3a3a2a', 2.5, 0.4);
+  // estola con cruces invertidas
+  poly(ctx, [-12, -168, -4, -168, -10, -60, -18, -60], '#5a1a10', 2, 0); poly(ctx, [12, -168, 4, -168, 10, -60, 18, -60], '#5a1a10', 2, 0);
+  for (const y of [-130, -100, -76]) { line(ctx, -14, y, -14, y + 10, '#e8dcc0', 1.6); line(ctx, -18, y + 6, -10, y + 6, '#e8dcc0', 1.6); }
+  // brazos: bastón con incensario de humo verde
+  limb(ctx, -22, -160, -54, -120, 6, 5, '#26281e'); limb(ctx, 22, -160, 50, -126, 6, 5, '#26281e');
+  line(ctx, -60, -30, -54, -200, INK, 6); line(ctx, -60, -30, -54, -200, '#4a3a24', 3);
+  line(ctx, 52, -126, 70, -96, '#6a6a60', 1.5); circle(ctx, 72, -92, 8, '#5a5a4a', 2.5);
+  glow(ctx, 72, -92, 26, '#9dff3a', 0.8);
+  clawHand(ctx, -54, -118, -1, '#9aa290'); clawHand(ctx, 50, -126, 1, '#9aa290');
+  // cabeza: máscara de pico de médico de la peste y sombrero de ala ancha
+  blob(ctx, [-14, -170, -12, -196, 12, -196, 14, -170, 6, -162, -6, -162], '#2a2a22', 3, 0.5);
+  poly(ctx, [8, -186, 44, -170, 40, -164, 8, -172], '#d8ccb0', 3, 0.6);
+  for (const x of [-6, 4]) { circle(ctx, x, -184, 5, '#1a2a12', 2); glow(ctx, x, -184, 9, '#9dff3a', 1); }
+  poly(ctx, [-40, -198, 40, -198, 30, -190, -30, -190], '#14140e'); poly(ctx, [-18, -198, -16, -222, 16, -222, 18, -198], '#14140e');
+}
+
+// ------------------------------------------------------------------ EL ENGENDRO DE LA MINA (dinamita en la espalda = punto débil)
+function spawn(ctx) {
+  for (const [x1, x2] of [[-46, -60], [-14, -18], [22, 26], [50, 64]]) limb(ctx, x1, -60, x2, -4, 14, 11, '#3a3630');
+  const mass = [-90, -70, -76, -150, -30, -186, 30, -190, 76, -158, 92, -80, 60, -50, -60, -50];
+  blob(ctx, mass, '#4a4640', 3.5, 0.8);
+  hatchPoly(ctx, mass, 5, 'rgba(0,0,0,0.5)', 1.1, true, 0.4);
+  // vetas de mineral y caras de mineros atrapados
+  for (const [x, y] of [[-40, -120], [10, -150], [40, -100], [-10, -80]]) { star(ctx, x, y, 7, 4, '#c8d0e0', 1.4); glow(ctx, x, y, 12, '#c8d0e0', 0.4); }
+  zhead(ctx, -50, -96, 0.7, -0.4, '#ffd27a', '#6a7462'); zhead(ctx, 54, -128, 0.6, 0.5, '#ffd27a', '#6a7462');
+  // FARDO DE DINAMITA a la espalda (lado izquierdo del sprite: su espalda)
+  for (let i = 0; i < 6; i++) poly(ctx, [-96 + i * 7, -160, -90 + i * 7, -160, -90 + i * 7, -112, -96 + i * 7, -112], '#c4281c', 2, 0.3);
+  poly(ctx, [-100, -146, -50, -146, -50, -138, -100, -138], '#2a2a2a', 2, 0); poly(ctx, [-100, -126, -50, -126, -50, -118, -100, -118], '#2a2a2a', 2, 0);
+  for (let i = 0; i < 6; i++) line(ctx, -93 + i * 7, -160, -91 + i * 7 + (i % 2) * 3, -170, '#d8c6a3', 1.5);
+  glow(ctx, -72, -140, 40, '#ff8a2a', 0.7);
+  // brazos-pico
+  limb(ctx, 70, -150, 110, -110, 15, 12, '#4a4640'); line(ctx, 104, -40, 112, -170, INK, 10); line(ctx, 104, -40, 112, -170, '#5a3a1e', 6);
+  poly(ctx, [86, -172, 118, -184, 150, -170, 124, -160, 110, -164], '#7a7a82', 3, 0.6);
+  // cabeza: casco fundido con dos faroles por ojos
+  blob(ctx, [10, -186, 18, -214, 56, -214, 64, -186, 50, -176, 24, -176], '#5a4a2a', 3, 0.5);
+  for (const x of [28, 46]) { circle(ctx, x, -196, 6, '#ffe08a', 2); glow(ctx, x, -196, 18, '#ffd27a', 1); }
+  poly(ctx, [22, -184, 52, -184, 48, -176, 26, -176], '#1a0a06', 2, 0);
+}
+
+const DRAW_Z = { walker, runner, bloater, armored, forker, dynamiter, hound, spider, abomination, foreman, faceless, beast, plague, spawn };
 
 export const Z_BOX = {
   walker: { w: 200, h: 190, cy: 0.9, s: 0.3 }, runner: { w: 190, h: 170, cy: 0.9, s: 0.3 }, bloater: { w: 200, h: 190, cy: 0.9, s: 0.32 },
   armored: { w: 200, h: 190, cy: 0.9, s: 0.32 }, forker: { w: 240, h: 200, cy: 0.9, s: 0.3 }, dynamiter: { w: 200, h: 190, cy: 0.9, s: 0.3 },
   hound: { w: 230, h: 150, cy: 0.9, s: 0.3 }, spider: { w: 150, h: 90, cy: 0.88, s: 0.28 }, abomination: { w: 200, h: 170, cy: 0.9, s: 0.62 },
-  foreman: { w: 330, h: 270, cy: 0.94, s: 0.52 }, faceless: { w: 240, h: 260, cy: 0.94, s: 0.55 }, beast: { w: 340, h: 200, cy: 0.92, s: 0.58 },
+  foreman: { w: 330, h: 270, cy: 0.94, s: 0.52 }, plague: { w: 260, h: 260, cy: 0.94, s: 0.55 }, spawn: { w: 320, h: 250, cy: 0.94, s: 0.56 }, faceless: { w: 240, h: 260, cy: 0.94, s: 0.55 }, beast: { w: 340, h: 200, cy: 0.92, s: 0.58 },
 };
 
 export function drawZombie(ctx, type, detail = 0, seed = 77) {

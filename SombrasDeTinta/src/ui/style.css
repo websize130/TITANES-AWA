@@ -181,3 +181,48 @@ button { font-family: inherit; }
   .wall-head, .rec { grid-template-columns: 26px 1.5fr 0.6fr 0.7fr 1fr; }
   .wall-head span:nth-child(5), .rec .date { display: none; }
 }
+
+/* ---------- Aspectos (3 por forajido) ---------- */
+.skins { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 6px 0 12px; }
+.skin { display: grid; justify-items: center; gap: 2px; padding: 6px; border: 3px solid var(--ink); background: #1a100a; color: var(--bone); cursor: pointer; font-family: var(--fb); box-shadow: 3px 3px 0 var(--ink); transition: transform .15s; }
+.skin:hover:not(:disabled) { transform: translateY(-3px) rotate(-0.6deg); }
+.skin canvas { width: 100%; max-width: 180px; height: auto; aspect-ratio: 180 / 200; border: 2px solid var(--ink); }
+.skin .tier { font-family: var(--ft); font-size: 12px; letter-spacing: 1px; color: var(--amber); }
+.skin.tier1 .tier { color: #e07a3a; } .skin.tier2 .tier { color: #ff5a2a; text-shadow: 0 0 6px #ff3a0a; }
+.skin .sname { font-size: 12px; text-align: center; }
+.skin .req { font-size: 11px; color: var(--muted); text-align: center; }
+.skin.on { outline: 3px solid var(--amber); background: #2a160a; }
+.skin.locked { cursor: not-allowed; opacity: 0.8; }
+.dmg { display: inline-block; font-family: var(--ft); font-size: 11px; background: var(--blood); color: var(--paper); padding: 1px 6px; border: 2px solid var(--ink); }
+
+/* ---------- Armería del Oeste Oculto ---------- */
+.chip.gold { background: #2a1a08; color: #ffd27a; border-color: #c9a54a; }
+.shop-intro { max-width: 900px; margin: 6px auto; padding: 0 14px; color: var(--bone); }
+#shop-heroes { justify-content: center; margin: 6px 0 14px; }
+#shop { max-width: 1100px; margin: 0 auto; padding: 0 12px 40px; }
+#shop .cat { margin: 18px 0; border-top: 4px solid var(--cat); padding-top: 6px; }
+#shop .cat h3 { font-family: var(--ft); font-weight: normal; color: var(--cat); margin: 4px 0; letter-spacing: 1px; }
+#shop .catdesc { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+.guns { display: grid; gap: 10px; }
+.gun { display: grid; grid-template-columns: 150px 1fr auto; gap: 12px; align-items: center; padding: 8px 12px; color: var(--ink);
+  background: linear-gradient(180deg, #efe0bc, #d8c08c); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+  clip-path: polygon(0 2%, 3% 0, 97% 1%, 100% 4%, 99% 97%, 96% 100%, 2% 99%, 0 95%); }
+.gun canvas { background: #1a100a; border: 2px solid var(--ink); }
+.gun .ginfo { display: grid; gap: 3px; }
+.gun .ginfo b { font-family: var(--ft); font-weight: normal; font-size: 15px; }
+.gun .owner { font-size: 11px; color: var(--blood); letter-spacing: 1px; }
+.gun .desc { font-size: 12px; font-weight: 400; }
+.gun .stats { font-size: 12px; }
+.gun.on { background: linear-gradient(180deg, #f8e6b0, #e0c070); outline: 3px solid var(--blood); }
+.gun.legend { background: linear-gradient(180deg, #2a0e06, #140604); color: var(--bone); border-color: #ff6a2a; box-shadow: 4px 4px 0 #000, 0 0 14px rgba(255, 90, 30, .35); }
+.gun.legend .owner { color: #ffb04a; }
+.gun .eq { font-family: var(--ft); color: var(--blood); font-size: 12px; border: 2px solid var(--blood); padding: 3px 6px; transform: rotate(-4deg); display: inline-block; }
+.gun .na { font-size: 11px; color: var(--muted); }
+.gun .btn:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 640px) {
+  .skins { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .skin .sname, .skin .req { font-size: 10px; }
+  .gun { grid-template-columns: 96px 1fr; }
+  .gun canvas { width: 96px !important; height: 45px !important; }
+  .gun .gact { grid-column: 1 / -1; justify-self: end; }
+}

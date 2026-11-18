@@ -163,12 +163,20 @@ function refuge() {
   for (const x of [-70, 50]) { poly(c, [x, -100, x + 20, -100, x + 20, -60, x, -60], '#1a1410', 2, 0); glow(c, x + 10, -80, 26, '#ffb040', 0.6); }
 }
 
-const PROPS = { gravecross, deadtree, rock, fence, skullpile, post, barrel, crate, wheel, tomb, pew, beam, cart, ore, reeds, stump, bones, gallows, well, beartrap_open, beartrap_closed, lantern_lit, lantern_broken, dynbarrel, refuge };
+// farol verde de la peste: mientras arda, el Predicador resucita a los muertos
+function plaguelamp() {
+  const c = this;
+  line(c, 0, -40, 0, -70, '#3a3a34', 2);
+  poly(c, [-10, -40, 10, -40, 8, -14, -8, -14], '#2a2a22', 2.5, 0); c.fillStyle = '#b8ff6a'; c.fillRect(-6, -36, 12, 18);
+  poly(c, [-13, -40, 13, -40, 0, -50], '#2a2a22', 2, 0); poly(c, [-8, -14, 8, -14, 0, -6], '#2a2a22', 2, 0);
+  glow(c, 0, -27, 26, '#9dff3a', 0.9);
+}
+const PROPS = { plaguelamp, gravecross, deadtree, rock, fence, skullpile, post, barrel, crate, wheel, tomb, pew, beam, cart, ore, reeds, stump, bones, gallows, well, beartrap_open, beartrap_closed, lantern_lit, lantern_broken, dynbarrel, refuge };
 export const PROP_SIZE = {
   gravecross: [44, 60], deadtree: [70, 116], rock: [76, 50], fence: [84, 44], skullpile: [56, 34], post: [110, 86], barrel: [44, 48], crate: [64, 56],
   wheel: [64, 40], tomb: [40, 52], pew: [90, 44], beam: [76, 86], cart: [80, 64], ore: [60, 34], reeds: [56, 66], stump: [40, 32], bones: [52, 26],
   gallows: [150, 190], well: [74, 76], beartrap_open: [48, 22], beartrap_closed: [40, 24], lantern_lit: [40, 120], lantern_broken: [40, 120],
-  dynbarrel: [44, 54], refuge: [240, 240],
+  dynbarrel: [44, 54], refuge: [240, 240], plaguelamp: [40, 76],
 };
 
 export function renderProp(type, res = 2) {

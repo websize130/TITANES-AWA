@@ -33,6 +33,8 @@ export const CARDS = [
   { id: 'halcon', r: 1, t: P, mod: true, range: true, name: 'Ojo de Halcón', icon: '🎯', desc: 'LARGO ALCANCE: +35% de alcance de disparo y de detección.', apply: (g) => { g.st.rangeMult *= 1.35; } },
   { id: 'tambor', r: 1, t: P, mod: true, name: 'Tambor Ampliado', icon: '🥁', desc: '+50% de capacidad del cargador y recarga un 15% más rápida.', apply: (g) => { g.st.magMult *= 1.5; g.st.reloadMult *= 0.85; } },
   { id: 'polvorarea', r: 1, t: P, mod: true, name: 'Pólvora Negra', icon: '💣', desc: 'Disparos en área: cada impacto estalla en un radio pequeño.', apply: (g) => { g.st.splash += 40; } },
+  { id: 'mina', r: 1, t: A, art: true, name: 'Dinamita de Proximidad', icon: '🧨', cd: 8, desc: 'ARTEFACTO: siembra 3 cartuchos que estallan cuando la horda se acerca.' },
+  { id: 'acido', r: 1, t: A, art: true, name: 'Frasco de Ácido', icon: '⚗', cd: 9, desc: 'ARTEFACTO: charco de ácido que corroe corazas. Con fuego: ¡explosión de pólvora!' },
   { id: 'dinamita', r: 1, t: A, name: 'Cartucho de Dinamita', icon: '🧨', cd: 8, desc: 'Lanza dinamita que estalla en un gran radio.' },
   { id: 'cepo', r: 1, t: A, name: 'Cepo de Oso', icon: '🪤', cd: 7, desc: 'Coloca dos cepos que atrapan y desgarran zombis.' },
 
@@ -44,6 +46,8 @@ export const CARDS = [
   { id: 'incendiarias', r: 2, t: P, mod: true, name: 'Plomo Incendiario', icon: '🔥', desc: 'Tus balas prenden fuego: 9 de daño por segundo durante 3 s.', apply: (g) => { g.st.burnOnHit += 9; } },
   { id: 'trampero', r: 2, t: P, name: 'Trampero', icon: '⚙', desc: 'Cada 9 s colocas un cepo automático. Las trampas hacen +50% de daño.', apply: (g) => { g.st.trapper += 1; g.st.trapMult *= 1.5; } },
   { id: 'cuervo', r: 2, t: P, name: 'Cuervo Guardián', icon: '🐦', desc: 'Un cuervo de tinta orbita a tu alrededor y picotea zombis.', apply: (g) => { g.st.crows += 1; } },
+  { id: 'bobina', r: 2, t: A, art: true, name: 'Bobina Tesla', icon: '⚡', cd: 12, desc: 'ARTEFACTO: planta una bobina que lanza arcos eléctricos 12 s. Electrifica la tinta.' },
+  { id: 'explosivas', r: 2, t: P, mod: true, art: true, name: 'Balas Explosivas', icon: '💥', desc: 'ARTEFACTO: cada impacto estalla en un radio medio.', apply: (g) => { g.st.splash += 55; } },
   { id: 'farol', r: 2, t: A, name: 'Farol Arrojadizo', icon: '🏮', cd: 9, desc: 'Lanza un farol de gas que deja el suelo en llamas.' },
   { id: 'aguabendita', r: 2, t: A, name: 'Agua Bendita', icon: '💧', cd: 12, desc: 'Onda sagrada: cura 25 de vida y quema a la horda alrededor.' },
 
@@ -52,6 +56,8 @@ export const CARDS = [
   { id: 'columna', r: 3, t: P, name: 'Columna de Fuego Sagrado', icon: '🕯', desc: 'Cada 18 bajas cae una columna de fuego que arrasa la zona.', apply: (g) => { g.st.holyFire += 1; } },
   { id: 'tren', r: 3, t: P, name: 'Tren Fantasma', icon: '🚂', desc: 'Cada 16 s un tren espectral cruza la pantalla y arrolla a la horda.', apply: (g) => { g.st.ghostTrain += 1; } },
   { id: 'danza', r: 3, t: P, name: 'Danza Macabra', icon: '💀', desc: 'Tus críticos estallan y dañan a los zombis cercanos.', apply: (g) => { g.st.critExplode += 1; } },
+  { id: 'rayo', r: 3, t: A, art: true, name: 'Llamada del Rayo', icon: '🌩', cd: 14, desc: 'ARTEFACTO: seis rayos caen sobre la horda. Sobre charcos de tinta: sobrecarga en cadena.' },
+  { id: 'bobinas', r: 3, t: P, mod: true, art: true, name: 'Balas de Bobina', icon: '🔋', desc: 'ARTEFACTO: 25% de que cada impacto salte en arco a 2 enemigos cercanos.', apply: (g) => { g.st.arc += 0.25; } },
   { id: 'caballeria', r: 3, t: A, name: 'Carga de Caballería Fantasma', icon: '🐎', cd: 18, desc: 'Una carga de jinetes espectrales barre el campo de lado a lado.' },
 
   // ---------------- DIAMANTE: Bendición y Maldición

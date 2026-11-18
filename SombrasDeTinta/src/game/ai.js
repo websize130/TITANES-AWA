@@ -139,9 +139,11 @@ function separate(g) {
 const PAT = {
   foreman: { move: 1.9, list: ['charge', 'dynamite', 'slam', 'summon', 'dynamite', 'charge', 'slam'], summon: ['dynamiter', 3], color: '#ffb040' },
   faceless: { move: 1.6, list: ['pages', 'teleport', 'summon', 'pools', 'pages', 'teleport'], summon: ['walker', 6], color: '#c8b8ff' },
+  plague: { move: 1.6, list: ['raise', 'pages', 'pools', 'raise', 'teleport', 'summon'], summon: ['walker', 4], color: '#9dff3a' },
+  spawn: { move: 2.4, list: ['charge', 'dynamite', 'slam', 'summon', 'dynamite'], summon: ['dynamiter', 3], color: '#ffb040' },
   beast: { move: 1.4, list: ['leap', 'bile', 'swipe', 'charge', 'leap', 'summon'], summon: ['forker', 3], color: '#9dff3a' },
 };
-const DUR = { charge: 1.6, dynamite: 1.8, slam: 1.4, summon: 1.0, pages: 2.8, teleport: 1.1, pools: 1.0, leap: 1.6, bile: 1.5, swipe: 0.9 };
+const DUR = { raise: 1.2, charge: 1.6, dynamite: 1.8, slam: 1.4, summon: 1.0, pages: 2.8, teleport: 1.1, pools: 1.0, leap: 1.6, bile: 1.5, swipe: 0.9 };
 
 function ring(g, e, n, sp, off, col, kind = EK.ORB) {
   for (let i = 0; i < n; i++) g.addEBullet(e.x, e.y - e.r, off + (i / n) * TAU, sp, e.dmg * 0.55, 8, 6, col, kind);
@@ -151,13 +153,22 @@ function updateColossus(g, e, dt) {
   const B = PAT[e.type], p = g.player, col = B.color;
   const hpf = e.hp / e.maxHp, phase = hpf < 0.33 ? 2 : hpf < 0.66 ? 1 : 0;
   if (phase > e.phase) { e.phase = phase; g.cam.shake = 14; Sfx.play('boss'); g.say(e, e.def.taunts, 2.2, true); ring(g, e, 26, 230, 0, col); }
-  e.tauntT -= dt; if (e.tauntT <= 0) { e.tauntT = 9 + Math.random() * 4; g.say(e, e.def.taunts, 2, true); }
+  e.tauntT -= dt; if (e.tauntT <= 0) { e.tauntT = 14 + Math.random() * 6; g.say(e, e.def.taunts, 2, true); }
   dt *= 1 + e.phase * 0.2;
   e.modeT -= dt;
   const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1;
-  e.face = dx > 0 ? 1 : -1;
+  if (e.type === 'spawn') { // gira despacio: rodearlo expone la dinamita de la espalda
+    const target = Math.atan2(dy, dx);
+    let da = target - e.ang; while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
+    const tr = (e.def.turn || 0.8) * dt;
+    e.ang += Math.max(-tr, Math.min(tr, da));
+    e.face = Math.cos(e.ang) >= 0 ? 1 : -1;
+  } else e.face = dx > 0 ? 1 : -1;
   if (e.mode === 'move') {
-    if (d > 120) { e.x += (dx / d) * e.speed * dt; e.y += (dy / d) * e.speed * dt; }
+    if (d > 120) {
+      if (e.type === 'spawn') { e.x += Math.cos(e.ang) * e.speed * dt; e.y += Math.sin(e.ang) * e.speed * dt; }
+      else { e.x += (dx / d) * e.speed * dt; e.y += (dy / d) * e.speed * dt; }
+    }
     if (e.modeT <= 0) { e.mode = B.list[e.patIdx++ % B.list.length]; e.modeT = DUR[e.mode]; e.subT = 0; e.subN = 0; e.state = 0; }
     return;
   }
@@ -178,6 +189,18 @@ function updateColossus(g, e, dt) {
     case 'slam':
       if (e.subN === 0) { e.subN = 1; g.addZone(ZK.SLAM, e.x, e.y, 210, 0.9, e.dmg, col, 0); }
       else if (e.subN === 1 && e.subT >= 0.9) { e.subN = 2; ring(g, e, 22 + e.phase * 6, 250, 0, col); g.cam.shake = 16; }
+      break;
+    case 'raise': // el Predicador de la Peste resucita caminantes mientras su farol arda
+      if (e.subN === 0) {
+        e.subN = 1;
+        if (e.lampOut) { g.addText(e.x, e.y - 130, 'Sin farol no hay milagro…', '#9dff3a', 14, false); break; }
+        for (let i = 0; i < 6 + e.phase * 2; i++) {
+          const a = Math.random() * TAU, r = 80 + Math.random() * 160;
+          const z = g.spawnZombie('walker', e.x + Math.cos(a) * r, e.y + Math.sin(a) * r, g.objective.hpMult || 1, 1);
+          if (z) for (let k = 0; k < 4; k++) g.addPart(z.x, z.y, (Math.random() - 0.5) * 80, -40 - Math.random() * 80, 0.8, 4, '#9dff3a', PT.EMBER, true);
+        }
+        g.ono(e.x, e.y - 130, '¡LEVANTAOS!', '#9dff3a', 28);
+      }
       break;
     case 'summon':
       if (e.subN === 0) {

@@ -1,6 +1,6 @@
 // Disparo por tipo de arma, cartas de acción y efectos pasivos periódicos (cuervos, tormenta de plomo,
 // tren fantasma, columna de fuego, sombras gemelas, trampero).
-import { BK, ZK, PT, HX, HY } from './engine.js';
+import { BK, ZK, PT } from './engine.js';
 import { placeTrap } from './traps.js';
 import { Sfx } from '../core/audio.js';
 import { BARKS } from '../data/heroes.js';
@@ -20,21 +20,54 @@ function shoot(g, x, y, aim, dmgMul) {
     case 'cards':
       for (let i = 0; i < w.count; i++) {
         const b = g.addBullet(x, y, aim + (i - (w.count - 1) / 2) * w.spread + (Math.random() - 0.5) * 0.06, w.speed, w.dmg * dmgMul, 5, pierce, life, pal.card || '#f2e6cc', '#ffffff', BK.CARD, kb);
-        if (b) { b.chain += w.chain || 0; b.homing = w.homing || 0; b.radius = w.explode || 0; }
+        if (b) { b.chain += w.chain || 0; b.homing = w.homing || 0; b.radius = w.explode || 0; if (w.burn) b.burn = Math.max(b.burn, w.burn); if (w.legendary) b.color = w.legendary; }
       }
       Sfx.play('card');
       break;
     case 'shotgun':
-      for (let i = 0; i < w.count; i++) g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed * (0.8 + Math.random() * 0.35), w.dmg * dmgMul, 3.5, pierce, life * (0.8 + Math.random() * 0.25), pal.shot, pal.core, BK.PELLET, kb);
+      for (let i = 0; i < w.count; i++) { const b = g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed * (0.8 + Math.random() * 0.35), w.dmg * dmgMul, 3.5, pierce, life * (0.8 + Math.random() * 0.25), w.legendary || pal.shot, pal.core, BK.PELLET, kb); if (b && w.burn) b.burn = Math.max(b.burn, w.burn); }
       for (let i = 0; i < 3; i++) g.addPart(x + Math.cos(aim) * 14, y + Math.sin(aim) * 14, Math.cos(aim) * 60, Math.sin(aim) * 60 - 20, 0.6, 8, '#8a7a6a', PT.SMOKE, false).grow = 18;
       g.cam.shake = Math.max(g.cam.shake, 3);
       Sfx.play('shotgun');
       break;
-    case 'revolvers': {
-      const side = g.player.alt ? 9 : -9, ca = Math.cos(aim), sa = Math.sin(aim);
-      const b = g.addBullet(x - sa * side, y + ca * side, aim + (Math.random() - 0.5) * w.spread, w.speed, w.dmg * dmgMul, 4, pierce, life, pal.shot, pal.core, BK.BULLET, kb);
+    case 'revolvers': case 'smg': {
+      const side = w.kind === 'smg' ? 0 : g.player.alt ? 9 : -9, ca = Math.cos(aim), sa = Math.sin(aim);
+      const col = w.legendary || pal.shot;
+      const b = g.addBullet(x - sa * side, y + ca * side, aim + (Math.random() - 0.5) * w.spread, w.speed, w.dmg * dmgMul, w.kind === 'smg' ? 3.5 : 4, pierce, life, col, pal.core, BK.BULLET, kb);
       if (b) { b.chain += w.chain || 0; if (w.burn) b.burn = Math.max(b.burn, w.burn); }
-      Sfx.play('shot');
+      if (w.kind === 'smg' && Math.random() < 0.4) g.addPart(x, y, -sa * 80 + (Math.random() - 0.5) * 60, ca * 80 - 50, 0.4, 2.5, '#c9a54a', PT.DEBRIS, false);
+      Sfx.play(w.kind === 'smg' ? 'gatling' : 'shot');
+      break;
+    }
+    case 'laser': { // haz de éter: atraviesa a todos en línea y funde corazas
+      const ca = Math.cos(aim), sa = Math.sin(aim), wd = w.width || 10, col = w.color || '#7fd8ff';
+      const E = g.zombies.items;
+      for (let i = 0; i < g.zombies.n; i++) {
+        const e = E[i];
+        if (e.dead) continue;
+        const ex = e.x - x, ey = e.y - e.r - y, along = ex * ca + ey * sa;
+        if (along < 0 || along > R) continue;
+        const perp = Math.abs(-ex * sa + ey * ca);
+        if (perp > e.r + wd) continue;
+        const crit = g.fx.crit > 0 || Math.random() < st.crit;
+        const dd = w.dmg * dmgMul * st.dmg * g.fx.dmg * (crit ? st.critMult : 1);
+        g.hurtZombie(e, dd, crit, ca, sa, kb, w.burn || 0, 0, 0, w.melt || 2);
+        g.addPart(e.x, e.y - e.r, (Math.random() - 0.5) * 120, -60, 0.3, 4, col, PT.SPARK, true);
+      }
+      const z = g.addZone(ZK.BEAM, x, y, wd, 0.14, 0, col, 1); if (z) { z.ang = aim; z.len = R; }
+      g.lightPulse(x + ca * R * 0.5, y + sa * R * 0.5, R * 0.6, 0.2);
+      g.cam.shake = Math.max(g.cam.shake, 5);
+      Sfx.play('laser');
+      break;
+    }
+    case 'tesla': { // arco en cadena entre varios cuerpos; electrifica charcos de tinta
+      const first = g.nearest(g.player.x, g.player.y, R, 0);
+      if (!first) break;
+      g.addArc(x, y, first.x, first.y - first.r * 1.4, '#cfe8ff');
+      const crit = Math.random() < st.crit;
+      g.chainLightning(first, w.chainN || 3, w.chainR || 160, w.dmg * dmgMul * st.dmg * g.fx.dmg * (crit ? st.critMult : 1), '#cfe8ff', true);
+      if (crit) g.ono(first.x, first.y - 70, '¡ZAP!', '#cfe8ff', 24);
+      Sfx.play('zap');
       break;
     }
     default: break;
@@ -55,7 +88,9 @@ export function fireWeapon(g, dt, has) {
     if (p.burstT <= 0) { p.burstN--; p.burstT = 0.075; emit(g, p); }
     return;
   }
-  p.fireT -= dt * st.rate * g.fx.rate;
+  let spin = 1;
+  if (w.spin) { p.spin = has ? Math.min(1, p.spin + dt / 0.9) : Math.max(0, p.spin - dt); spin = 0.3 + 0.7 * p.spin; }
+  p.fireT -= dt * st.rate * g.fx.rate * spin;
   if (p.fireT > 0) return;
   if (!has) { p.fireT = 0; if (p.ammo < g.magSize()) startReload(g); return; }
   p.fireT += 1 / w.rate; if (p.fireT < 0) p.fireT = 0;
@@ -139,6 +174,32 @@ export function playCard(g, card) {
       if (b) { b.ox = p.x; b.oy = p.y - 10; b.vx = ax; b.vy = ay; b.spin = 0; b.radius = card.id === 'farol' ? 120 : 130; b.burn = card.id === 'farol' ? 26 * st.dmg : 0; b.dmg = 150 * st.dmg; b.color = card.id === 'farol' ? '#ffb040' : '#ff4a1a'; }
       break;
     }
+    case 'mina':
+      for (let i = 0; i < 3; i++) { const a = aim + (i - 1) * 0.8; placeTrap(g, p.x + Math.cos(a) * 110, p.y + Math.sin(a) * 110, 'mine'); }
+      Sfx.play('trap'); g.comicText(p.x, p.y - 96, '¡CLIC!', '#ff8a3a', 22);
+      break;
+    case 'acido': {
+      const b = g.addBullet(p.x, p.y - 26, aim, 0, 0, 6, 0, Math.min(0.9, Math.hypot(ax - p.x, ay - p.y) / 500 + 0.25), '#9dff3a', '#fff', BK.LOB, 0);
+      if (b) { b.ox = p.x; b.oy = p.y - 10; b.vx = ax; b.vy = ay; b.spin = 0; b.radius = 115; b.burn = 0; b.acid = true; }
+      break;
+    }
+    case 'bobina':
+      g.coils.push({ x: p.x + Math.cos(aim) * 60, y: p.y + Math.sin(aim) * 40, life: 12, cd: 0.3 });
+      if (g.coils.length > 3) g.coils.shift();
+      g.comicText(p.x, p.y - 96, '¡BZZZT!', '#cfe8ff', 24); Sfx.play('zap');
+      break;
+    case 'rayo': {
+      const E = g.zombies.items, hw = g.viewW / 2, hh = g.viewH / 2;
+      let n = 0;
+      for (let i = 0; i < g.zombies.n && n < 6; i++) {
+        const e = E[(i * 7 + (Math.random() * g.zombies.n | 0)) % g.zombies.n];
+        if (e.dead || Math.abs(e.x - g.cam.x) > hw || Math.abs(e.y - g.cam.y) > hh) continue;
+        const z = g.addZone(ZK.STRIKE, e.x, e.y, 80, 0.35 + n * 0.12, 95 * st.dmg, '#cfe8ff', 1); if (z) z.elec = true; n++;
+      }
+      for (; n < 6; n++) { const a = Math.random() * TAU, r = 80 + Math.random() * 220; const z = g.addZone(ZK.STRIKE, p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 80, 0.35 + n * 0.12, 95 * st.dmg, '#cfe8ff', 1); if (z) z.elec = true; }
+      g.flash = 0.5;
+      break;
+    }
     case 'aguabendita':
       g.heal(25);
       g.addZone(ZK.RING, p.x, p.y - 10, 280, 0.6, 70 * st.dmg, '#c8e0ff', 1);
@@ -197,6 +258,17 @@ export function updatePassives(g, dt) {
     g.holyKills = 0;
     const t = g.nearest(p.x, p.y, 500, 0);
     g.addZone(ZK.STRIKE, t ? t.x : p.x, t ? t.y : p.y, 130, 0.55, 220 * st.dmg, '#ffe08a', 1);
+  }
+  // bobinas Tesla plantadas
+  for (let i = g.coils.length - 1; i >= 0; i--) {
+    const c = g.coils[i];
+    c.life -= dt; c.cd -= dt;
+    if (c.life <= 0) { g.coils.splice(i, 1); continue; }
+    if (c.cd <= 0) {
+      c.cd = 0.6;
+      let first = g.nearest(c.x, c.y, 230, 0);
+      if (first) { g.addArc(c.x, c.y - 58, first.x, first.y - first.r * 1.4, '#cfe8ff'); g.chainLightning(first, 2, 150, 26 * st.dmg, '#cfe8ff', true); }
+    }
   }
   // cuervos guardianes
   while (g.crows.length < st.crows) g.crows.push({ a: Math.random() * TAU, cd: 0, x: p.x, y: p.y });

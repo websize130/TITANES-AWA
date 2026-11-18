@@ -281,6 +281,8 @@ function bossScene(type, col) {
 SCENES.boss_foreman = bossScene('foreman', '#ffb040');
 SCENES.boss_faceless = bossScene('faceless', '#9a7aff');
 SCENES.boss_beast = bossScene('beast', '#7aff3a');
+SCENES.boss_plague = bossScene('plague', '#9dff3a');
+SCENES.boss_spawn = bossScene('spawn', '#ffb040');
 
 // ------------------------------------------------------------------ maquetación de viñetas
 const LAYOUTS_L = {

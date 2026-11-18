@@ -2,17 +2,58 @@
 // Coordenadas locales: pies en (0,0), altura ≈ 190. Paleta cálida (ocre, carmesí, ámbar) frente a la horda fría.
 import { INK, poly, blob, ellipse, circle, line, tatter, star, glow, shade, rgba, beginArt, flame } from './ink.js';
 
+// ---- capas articuladas: 'all' | 'legL' | 'legR' | 'body' | 'arm'
+let LAYER = 'all';
+let NULLCTX = null;
+function part(ctx, k) {
+  if (LAYER === 'all' || LAYER === k) return ctx;
+  if (!NULLCTX) { const c = document.createElement('canvas'); c.width = c.height = 1; NULLCTX = c.getContext('2d'); }
+  return NULLCTX;
+}
+// Pivotes (coordenadas de arte) y ángulo de reposo del arma de cada forajido.
+export const RIG = {
+  silas: { shoulder: [31, -124], rest: -0.05, hipL: [-11, -84], hipR: [11, -84] },
+  maeve: { shoulder: [28, -124], rest: -0.71, hipL: [-11, -84], hipR: [11, -84] },
+  caleb: { shoulder: [32, -126], rest: -0.5, hipL: [-11, -84], hipR: [11, -84] },
+  barnaby: { shoulder: [36, -126], rest: -0.03, hipL: [-11, -84], hipR: [11, -84] },
+};
+
 export function limb(ctx, x1, y1, x2, y2, w1, w2, fill, lw = 3) {
   const dx = x2 - x1, dy = y2 - y1, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
   poly(ctx, [x1 + nx * w1, y1 + ny * w1, x2 + nx * w2, y2 + ny * w2, x2 - nx * w2, y2 - ny * w2, x1 - nx * w1, y1 - ny * w1], fill, lw);
 }
 
-function boots(ctx, c, spur) {
+function boots(ctx0, c, spur) {
+  let ctx = part(ctx0, 'legL');
   poly(ctx, [-17, -84, -4, -84, -6, -28, -19, -28], c.pants);
-  poly(ctx, [4, -84, 17, -84, 21, -28, 8, -28], c.pants);
   poly(ctx, [-22, -34, -4, -34, -3, -8, 2, -5, 2, 0, -26, 0, -24, -14], c.boots);
+  if (spur) star(ctx, -28, -9, 5, 6, spur, 1.4);
+  if (c.vet) { line(ctx, -20, -60, -6, -58, '#d8ccb0', 3); line(ctx, -20, -54, -6, -52, '#d8ccb0', 3); }
+  ctx = part(ctx0, 'legR');
+  poly(ctx, [4, -84, 17, -84, 21, -28, 8, -28], c.pants);
   poly(ctx, [6, -34, 24, -34, 25, -12, 34, -6, 34, 0, 5, 0, 5, -14], c.boots);
-  if (spur) { star(ctx, -28, -9, 5, 6, spur, 1.4); star(ctx, 36, -10, 5, 6, spur, 1.4); }
+  if (spur) star(ctx, 36, -10, 5, 6, spur, 1.4);
+  if (c.vet) poly(ctx, [8, -70, 20, -70, 20, -58, 8, -58], '#4a3020', 2, 0);
+}
+
+// Detalles tácticos del aspecto Veterano: cartucheras, remiendos y arañazos.
+function veteran(ctx, c) {
+  if (!c.vet) return;
+  for (let i = 0; i < 3; i++) poly(ctx, [-26 + i * 9, -92, -19 + i * 9, -92, -19 + i * 9, -80, -26 + i * 9, -80], '#3a2414', 1.6, 0);
+  poly(ctx, [18, -126, 30, -122, 26, -110, 16, -114], shade(c.coat, 0.18), 1.6, 0);
+  ctx.strokeStyle = 'rgba(232,220,192,0.35)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-30, -70); ctx.lineTo(-22, -60); ctx.moveTo(24, -50); ctx.lineTo(32, -44); ctx.moveTo(-18, -110); ctx.lineTo(-12, -104); ctx.stroke();
+}
+// Aspecto Legendario/Condenado: tinta densa y marcas incandescentes.
+function legend(ctx, c) {
+  if (!c.legend) return;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = rgba(c.rim || c.glow, 0.9); ctx.lineWidth = 1.8; ctx.lineJoin = 'miter';
+  ctx.beginPath();
+  for (const sx of [-1, 1]) { ctx.moveTo(sx * 20, -110); ctx.lineTo(sx * 26, -96); ctx.lineTo(sx * 18, -86); ctx.lineTo(sx * 28, -70); ctx.lineTo(sx * 22, -52); ctx.lineTo(sx * 32, -30); }
+  ctx.stroke();
+  glow(ctx, 0, -100, 46, c.rim || c.glow, 0.22);
+  ctx.restore();
 }
 
 // Gabardina estructurada: paneles rectos, solapas afiladas, bajo limpio con apenas un desgarro.
@@ -50,9 +91,10 @@ function hand(ctx, x, y, r, fill) { blob(ctx, [x - r, y, x - r * 0.4, y - r, x +
 function head(ctx, c, x = 0, y = -150) { blob(ctx, [x - 12, y + 4, x - 9, y - 10, x + 9, y - 10, x + 12, y + 4, x + 9, y + 18, x, y + 22, x - 9, y + 18], c.skin); }
 
 // ------------------------------------------------------------------ SILAS "EL TUERTO"
-function silas(ctx, c) {
+function silas(ctx0, c) {
+  let ctx = part(ctx0, 'body');
   const w = duster(ctx, c, 1.05);
-  boots(ctx, c, c.metal);
+  boots(ctx0, c, c.metal);
   poly(ctx, [-20, -136, 20, -136, 18, -80, -18, -80], c.shirt);
   poly(ctx, [-20, -88, 20, -88, 20, -78, -20, -78], '#1a100a', 2.5, 0);
   circle(ctx, 0, -83, 6, c.metal, 2); star(ctx, 0, -83, 3.6, 5, shade(c.metal, -0.4), 0);
@@ -60,6 +102,8 @@ function silas(ctx, c) {
   dusterFront(ctx, c, w);
   if (c.ember) { glow(ctx, -30, -18, 18, c.glow, 0.5); glow(ctx, 30, -18, 18, c.glow, 0.5); }
   star(ctx, -24, -112, 6, 5, c.metal, 1.8);
+  veteran(ctx, c); legend(ctx, c);
+  ctx = part(ctx0, 'arm');
   // recortada de doble cañón, corta y fea, empuñada a la cadera
   limb(ctx, 31, -124, 44, -100, 8, 7, c.coat);
   limb(ctx, -31, -124, -18, -98, 8, 7, c.coat);
@@ -69,6 +113,9 @@ function silas(ctx, c) {
   line(ctx, 14, -100, 53, -106, 'rgba(220,220,230,0.35)', 1.2);
   ellipse(ctx, 53, -109, 2, 3, '#111', 1.2); ellipse(ctx, 54, -103, 2, 3, '#111', 1.2);
   hand(ctx, -14, -94, 6.5, '#3a2214'); hand(ctx, 44, -104, 6.5, '#3a2214');
+  if (c.vet) line(ctx, 30, -118, 40, -106, '#d8ccb0', 4);
+  if (c.legend) glow(ctx, 54, -106, 12, c.rim, 0.8);
+  ctx = part(ctx0, 'body');
   // cabeza: parche en el ojo, barba de días
   poly(ctx, [-6, -134, 6, -134, 5, -126, -5, -126], c.skin, 2, 0);
   head(ctx, c);
@@ -84,11 +131,12 @@ function silas(ctx, c) {
 }
 
 // ------------------------------------------------------------------ MAEVE "LA SOTA DE PICAS"
-function maeve(ctx, c) {
+function maeve(ctx0, c) {
+  let ctx = part(ctx0, 'body');
   // melena
   blob(ctx, [-18, -164, 20, -164, 28, -128, 24, -100, 12, -116, -12, -116, -26, -100, -28, -132], c.hair, 3, 0.5);
   const w = duster(ctx, c, 0.95, -10);
-  boots(ctx, c, null);
+  boots(ctx0, c, null);
   // corsé
   poly(ctx, [-16, -132, 16, -132, 14, -84, -14, -84], c.corset);
   ctx.strokeStyle = c.metal; ctx.lineWidth = 1.1; ctx.beginPath();
@@ -102,6 +150,8 @@ function maeve(ctx, c) {
   limb(ctx, -34, -94, -38, -74, 6, 5, c.coat);
   poly(ctx, [-44, -74, -36, -74, -36, -60, -44, -60], '#2a2a30', 2, 0);
   hand(ctx, -38, -74, 5.5, c.skin);
+  veteran(ctx, c); legend(ctx, c);
+  ctx = part(ctx0, 'arm');
   // brazo derecho alzado con abanico de naipes
   limb(ctx, 28, -124, 46, -128, 7, 6, c.coat);
   limb(ctx, 46, -128, 56, -146, 6, 5, c.coat);
@@ -113,6 +163,8 @@ function maeve(ctx, c) {
     ctx.restore();
   }
   hand(ctx, 57, -148, 5.5, c.skin);
+  if (c.legend) glow(ctx, 58, -160, 18, c.rim, 0.8);
+  ctx = part(ctx0, 'body');
   // cabeza
   head(ctx, c, 0, -150);
   ctx.fillStyle = 'rgba(8,5,4,0.5)'; ctx.fillRect(-11, -158, 22, 5);
@@ -127,9 +179,10 @@ function maeve(ctx, c) {
 }
 
 // ------------------------------------------------------------------ CALEB BLACKWOOD
-function caleb(ctx, c) {
+function caleb(ctx0, c) {
+  let ctx = part(ctx0, 'body');
   const w = duster(ctx, c, 1.18, -12);
-  boots(ctx, c, null);
+  boots(ctx0, c, null);
   poly(ctx, [-22, -136, 22, -136, 20, -80, -20, -80], c.shirt);
   if (c.plate) { poly(ctx, [-20, -132, 20, -132, 18, -92, 0, -84, -18, -92], c.metal); line(ctx, 0, -130, 0, -88, INK, 2); }
   // bandolera
@@ -141,14 +194,18 @@ function caleb(ctx, c) {
   // cruz colgante y rosario
   ctx.strokeStyle = c.metal; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-8, -134); ctx.quadraticCurveTo(-4, -110, 0, -104); ctx.stroke();
   poly(ctx, [-2, -106, 2, -106, 2, -90, -2, -90], c.metal, 1.5, 0); poly(ctx, [-6, -101, 6, -101, 6, -97, -6, -97], c.metal, 1.5, 0);
-  // rifle monotiro largo de precisión, terciado y con mira de latón
+  veteran(ctx, c); legend(ctx, c);
   limb(ctx, -32, -126, -36, -98, 9, 8, c.coat);
+  ctx = part(ctx0, 'arm');
+  // rifle monotiro largo de precisión, terciado y con mira de latón
   limb(ctx, 32, -126, 30, -104, 9, 8, c.coat);
   line(ctx, -50, -70, 96, -150, INK, 9); line(ctx, -50, -70, 4, -100, '#5a3418', 5.5);
   line(ctx, 2, -99, 96, -150, '#2a2a30', 3.5);
   poly(ctx, [10, -110, 40, -126, 42, -121, 12, -105], c.metal, 2, 0);
   circle(ctx, 12, -108, 3, c.metal, 1.2);
   hand(ctx, -32, -92, 7, '#2a1a10'); hand(ctx, 32, -102, 7, '#2a1a10');
+  if (c.legend) glow(ctx, 96, -150, 14, c.rim, 0.9);
+  ctx = part(ctx0, 'body');
   // cuaderno de versos al cinto
   poly(ctx, [-26, -80, -12, -80, -12, -62, -26, -62], '#3a2414', 2, 0); line(ctx, -24, -76, -14, -76, '#e8dcc0', 1);
   // cabeza y alzacuellos
@@ -163,9 +220,10 @@ function caleb(ctx, c) {
 }
 
 // ------------------------------------------------------------------ BARNABY "TRIPAS" McGOVERN
-function barnaby(ctx, c) {
-  const w = duster(ctx, c, 1.1, -22);
-  boots(ctx, c, null);
+function barnaby(ctx0, c) {
+  let ctx = part(ctx0, 'body');
+  duster(ctx, c, 1.1, -22);
+  boots(ctx0, c, null);
   // barriga y camisa
   blob(ctx, [-30, -134, 30, -134, 38, -104, 32, -76, -32, -76, -38, -104], c.shirt);
   // chaleco abierto
@@ -178,12 +236,18 @@ function barnaby(ctx, c) {
   poly(ctx, [-34, -86, 34, -86, 34, -78, -34, -78], '#2a1a10', 2.5, 0);
   // cuchillo de carnicero al cinto
   poly(ctx, [26, -84, 40, -84, 40, -64, 30, -60], c.metal, 2, 0); poly(ctx, [24, -90, 30, -90, 30, -84, 24, -84], '#3a2414', 1.5, 0);
-  // brazos con dos revólveres
+  veteran(ctx, c); legend(ctx, c);
+  // brazo izquierdo (revólver bajo) forma parte del cuerpo
   limb(ctx, -36, -126, -54, -100, 9, 8, c.shirt); limb(ctx, -54, -100, -62, -84, 8, 7, c.skin);
-  limb(ctx, 36, -126, 56, -110, 9, 8, c.shirt); limb(ctx, 56, -110, 70, -104, 8, 7, c.skin);
   poly(ctx, [-66, -84, -60, -84, -60, -60, -66, -60], '#2a2a30', 2, 0); poly(ctx, [-70, -86, -58, -86, -58, -80, -70, -80], c.metal, 1.5, 0);
+  hand(ctx, -63, -82, 6.5, c.skin);
+  ctx = part(ctx0, 'arm');
+  limb(ctx, 36, -126, 56, -110, 9, 8, c.shirt); limb(ctx, 56, -110, 70, -104, 8, 7, c.skin);
   poly(ctx, [70, -108, 98, -110, 98, -102, 70, -100], c.metal, 2.5, 0.3); poly(ctx, [72, -102, 80, -102, 78, -90, 72, -92], '#5a3a24', 2, 0);
-  hand(ctx, -63, -82, 6.5, c.skin); hand(ctx, 72, -104, 6.5, c.skin);
+  hand(ctx, 72, -104, 6.5, c.skin);
+  if (c.vet) line(ctx, 44, -120, 52, -112, '#d8ccb0', 4);
+  if (c.legend) glow(ctx, 98, -106, 12, c.rim, 0.8);
+  ctx = part(ctx0, 'body');
   // cabeza redonda, bigote de manillar, sonrisa torcida
   head(ctx, c, 0, -150);
   blob(ctx, [-16, -140, -6, -144, 0, -140, 6, -144, 16, -140, 20, -134, 6, -137, 0, -134, -6, -137, -20, -134], c.mustache, 2, 0);
@@ -201,9 +265,11 @@ function barnaby(ctx, c) {
 
 const DRAW_HERO = { silas, maeve, caleb, barnaby };
 
-export function drawHero(ctx, id, pal, detail = 1, seed = 1234) {
+export function drawHero(ctx, id, pal, detail = 1, seed = 1234, layer = 'all') {
   beginArt(seed, detail);
+  LAYER = layer;
   DRAW_HERO[id](ctx, pal);
+  LAYER = 'all';
 }
 
 // Capa animada para cartas/dossier: humo del cañón, brillo de ojos, brasas.

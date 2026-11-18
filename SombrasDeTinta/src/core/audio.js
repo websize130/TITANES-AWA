@@ -71,6 +71,7 @@ export const Sfx = {
       case 'win': [392, 494, 587, 784, 988].forEach((f, i) => tone(f, 0.3, 'triangle', 0.14, 1, i * 0.12)); break;
       case 'lose': [392, 349, 311, 233].forEach((f, i) => tone(f, 0.4, 'sawtooth', 0.1, 0.9, i * 0.22)); break;
       case 'click': tone(700, 0.04, 'square', 0.05); break;
+      case 'zap': if (throttle(name, 90)) { tone(1800, 0.12, 'square', 0.06, 0.25); noise(0.12, 5000, 3, 0.15, 'bandpass', 0.1); } break;
       case 'trap': if (throttle(name, 90)) { tone(900, 0.05, 'square', 0.12, 0.3); noise(0.12, 2600, 2, 0.25, 'bandpass', 0.1); } break;
       case 'card': if (throttle(name, 60)) noise(0.1, 5200, 1.5, 0.12, 'highpass', 0.09); break;
       case 'page': noise(0.25, 3000, 0.6, 0.12, 'bandpass', 0.22); break;
@@ -85,17 +86,76 @@ export const Sfx = {
     }
   },
 
-  // Bajo western de dos notas + redoble suave; ligero, en bucle programado.
+  // ---------------- MÚSICA DINÁMICA POR CAPAS
+  // Guitarra western tensa (siempre) → percusión pesada (horda media) → bajo distorsionado (horda masiva).
+  setIntensity(v) { intensity = intensity + (v - intensity) * 0.05; },
   startMusic() {
     if (!enabled || !musicOn || !ensure() || music) return;
-    const notes = [55, 58.3, 55, 51.9, 55, 65.4, 61.7, 51.9];
-    let step = 0;
+    const L = layers();
+    let step = 0, next = ctx.currentTime + 0.1;
+    const BEAT = 0.3125; // corcheas a 96 ppm
+    const ARP = [110, 164.8, 220, 261.6, 246.9, 220, 164.8, 196, 110, 164.8, 220, 261.6, 293.7, 261.6, 220, 164.8];
+    const BASS = [55, 55, 43.65, 49];
     music = setInterval(() => {
       if (!ctx || ctx.state !== 'running') return;
-      tone(notes[step % notes.length], 0.32, 'triangle', 0.09, 0.98);
-      if (step % 2 === 1) noise(0.05, 5000, 1, 0.03, 'highpass', 0.04);
-      step++;
-    }, 360);
+      const g = [1, Math.max(0, (intensity - 0.25) / 0.45), Math.max(0, (intensity - 0.6) / 0.4)];
+      L.gtr.gain.setTargetAtTime(0.11 * (1 - g[2] * 0.3), ctx.currentTime, 0.4);
+      L.drum.gain.setTargetAtTime(0.55 * Math.min(1, g[1]), ctx.currentTime, 0.4);
+      L.bass.gain.setTargetAtTime(0.16 * Math.min(1, g[2]), ctx.currentTime, 0.6);
+      while (next < ctx.currentTime + 0.25) {
+        const i = step % 16;
+        pluck(L.gtr, ARP[i] * (step % 64 >= 32 ? 1.122 : 1), next);
+        if (i % 4 === 0) kick(L.drum, next);
+        if (i % 8 === 4) snare(L.drum, next);
+        if (i % 2 === 1 && g[1] > 0.6) hiHat(L.drum, next);
+        if (i % 8 === 0) bassNote(L.bass, BASS[(step >> 4) % 4], next, BEAT * 8);
+        step++; next += BEAT / 2;
+      }
+    }, 100);
   },
   stopMusic() { if (music) { clearInterval(music); music = null; } },
 };
+
+let intensity = 0, LAY = null;
+function layers() {
+  if (LAY) return LAY;
+  const mk = () => { const gn = ctx.createGain(); gn.gain.value = 0; gn.connect(master); return gn; };
+  LAY = { gtr: mk(), drum: mk(), bass: mk() };
+  // distorsión del bajo
+  const ws = ctx.createWaveShaper(), n = 1024, curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const x = (i / n) * 2 - 1; curve[i] = Math.tanh(x * 6); }
+  ws.curve = curve; ws.connect(LAY.bass); LAY.bassIn = ws;
+  return LAY;
+}
+function pluck(dest, f, t) {
+  const o = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
+  o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t); lp.type = 'lowpass'; lp.frequency.setValueAtTime(2400, t); lp.frequency.exponentialRampToValueAtTime(400, t + 0.25);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.005); g.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+  o.connect(lp); lp.connect(g); g.connect(dest); o.start(t); o.stop(t + 0.5);
+}
+function kick(dest, t) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.18);
+  g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+  o.connect(g); g.connect(dest); o.start(t); o.stop(t + 0.32);
+}
+function snare(dest, t) {
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+  const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1400;
+  const g = ctx.createGain(); g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+  src.connect(f); f.connect(g); g.connect(dest); src.start(t, Math.random() * 0.5); src.stop(t + 0.22);
+  const o = ctx.createOscillator(), g2 = ctx.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(140, t); g2.gain.setValueAtTime(0.4, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+  o.connect(g2); g2.connect(dest); o.start(t); o.stop(t + 0.16);
+}
+function hiHat(dest, t) {
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+  const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 6000;
+  const g = ctx.createGain(); g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+  src.connect(f); f.connect(g); g.connect(dest); src.start(t, Math.random() * 0.5); src.stop(t + 0.06);
+}
+function bassNote(dest, f, t, dur) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.6, t + 0.04); g.gain.setValueAtTime(0.6, t + dur * 0.8); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(LAY.bassIn); o.start(t); o.stop(t + dur + 0.05);
+}

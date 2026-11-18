@@ -17,6 +17,10 @@ export const COLOSSI = {
     taunts: ['¡A trabajar, carroña!', 'La mina no perdona.', 'Tu pico, tu tumba.'] },
   faceless: { name: 'El Predicador sin Rostro', hp: 2600, speed: 74, r: 34, dmg: 24, xp: 45, soul: 70,
     taunts: ['…', 'No hay rostro que juzgar.', 'Arrodíllate ante el silencio.'] },
+  plague: { name: 'El Predicador de la Peste', hp: 2300, speed: 58, r: 34, dmg: 22, xp: 45, soul: 70, lamp: 170,
+    taunts: ['¡Levantaos, hijos de la *peste*!', 'Mi *farol* nunca se apaga.', 'La fiebre es mi sermón.'] },
+  spawn: { name: 'El Engendro de la Mina', hp: 3300, speed: 52, r: 44, dmg: 30, xp: 55, soul: 85, turn: 0.75,
+    taunts: ['GRRRHHH… *DINAMITA*…', '*KRRRK*', 'HHHUUURRR'] },
   beast: { name: 'La Bestia de la Ciénaga', hp: 3000, speed: 88, r: 44, dmg: 30, xp: 50, soul: 80,
     taunts: ['GRRRAAAAOOOH', '*chapoteo*', 'HHHRRRRK'] },
 };

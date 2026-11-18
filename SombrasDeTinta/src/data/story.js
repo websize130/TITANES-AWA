@@ -26,24 +26,25 @@ export const MISSIONS = [
   },
   {
     id: 'm2', name: 'La Campana de Gallow\'s Rest', map: 'chapel', reward: 220,
-    obj: { type: 'defend', time: 110, hp: 1800, label: 'DEFIENDE A LOS SUPERVIVIENTES' }, spawn: { walker: 6, runner: 3, bloater: 1, spider: 2 }, rate: 1.25,
+    obj: { type: 'defend', time: 110, hp: 1800, label: 'DEFIENDE A LOS SUPERVIVIENTES', miniboss: { type: 'plague', at: 55 } }, spawn: { walker: 6, runner: 3, bloater: 1, spider: 2 }, rate: 1.25,
     intro: [
       { scene: 'chapel', cap: 'La capilla quemada aún humea. Dentro, tres niños y una viuda rezan junto a la campana.' },
       { scene: 'hero', cap: 'Alguien tiene que mantener la puerta cerrada hasta el alba.', say: 'Nadie entra. Nadie sale.' },
       { scene: 'grave', cap: 'Del cementerio llegan rasguños. Primero pocos. Luego cientos.' },
+      { scene: 'boss_plague', cap: 'Y entre las lápidas, un predicador con un farol verde que devuelve la vida a lo que no debería tenerla.', say2: '¡Levantaos!' },
     ],
     win: { scene: 'sunrise', cap: 'La campana sonó al alba. Esta vez, alguien respondió.' },
     lose: { scene: 'chapel', cap: 'La campana dejó de sonar antes del amanecer.' },
   },
   {
-    id: 'm3', name: 'Plata Negra', map: 'mine', reward: 320, boss: 'foreman',
-    obj: { type: 'boss', boss: 'foreman' }, spawn: { walker: 5, runner: 2, armored: 2, dynamiter: 1, spider: 2, abomination: 0.4 }, rate: 1.1,
+    id: 'm3', name: 'Plata Negra', map: 'mine', reward: 320, boss: 'spawn',
+    obj: { type: 'boss', boss: 'spawn' }, spawn: { walker: 5, runner: 2, armored: 2, dynamiter: 1, spider: 2, abomination: 0.4 }, rate: 1.1,
     intro: [
       { scene: 'mine', cap: 'Minas de Plata Negra. Ciento doce mineros murieron en el derrumbe del 76. Ninguno dejó de trabajar.' },
       { scene: 'horde', cap: 'Picos, palas y dinamita. La horda tiene herramientas.' },
-      { scene: 'boss_foreman', cap: 'Y alguien sigue dando órdenes desde el fondo del pozo.', say2: '¡A TRABAJAR, CARROÑA!' },
+      { scene: 'boss_spawn', cap: 'En el fondo del pozo, algo hecho de mineros y mineral se arrastra con un fardo de dinamita en la espalda.', say2: 'GRRRHHH… DINAMITA…' },
     ],
-    win: { scene: 'mine', cap: 'El silbato del turno no volvió a sonar. El Capataz cobró su último jornal.' },
+    win: { scene: 'mine', cap: 'La dinamita de su espalda hizo el resto. El silbato del turno no volvió a sonar.' },
     lose: { scene: 'fallen', cap: 'Ciento trece mineros. La cuadrilla está completa.' },
   },
   {

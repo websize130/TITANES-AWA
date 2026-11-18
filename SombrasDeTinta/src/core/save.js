@@ -1,5 +1,7 @@
-// Persistencia local: niveles por forajido (1–50), desbloqueos por hito, historia, récords y ajustes.
-import { HEROES, MILESTONES, MAX_LEVEL } from '../data/heroes.js';
+// Persistencia local: niveles por forajido (1–50), aspectos desbloqueables, Oro Maldito, armería,
+// historia, récords y ajustes.
+import { HEROES, SKIN_RULES, MAX_LEVEL } from '../data/heroes.js';
+import { WEAPONS, canEquip } from '../data/weapons.js';
 
 const KEY = 'sombrasdetinta.save.v1';
 
@@ -7,9 +9,9 @@ export function xpForLevel(l) { return 50 + l * 20; } // XP para pasar de l a l+
 
 function defaults() {
   const heroes = {};
-  HEROES.forEach((h) => { heroes[h.id] = { level: 1, xp: 0, skin: 0, weapon: 0, kills: 0 }; });
+  HEROES.forEach((h) => { heroes[h.id] = { level: 1, xp: 0, skin: 0, weapon: h.weapon, kills: 0 }; });
   return {
-    v: 1, hero: null, heroes,
+    v: 2, hero: null, heroes, coins: 0, owned: HEROES.map((h) => h.weapon),
     story: {},          // id -> { done, wins }
     records: [],        // { round, kills, hero, skin, date, stamp }
     settings: { sound: true, music: true, aim: 'auto', shake: true },
@@ -27,6 +29,14 @@ class SaveManager {
         Object.assign(base.settings, d.settings || {});
         for (const id of Object.keys(base.heroes)) Object.assign(base.heroes[id], (d.heroes || {})[id] || {});
         base.hero = d.hero || null; base.story = d.story || {}; base.records = Array.isArray(d.records) ? d.records : [];
+        base.coins = d.coins | 0;
+        if (Array.isArray(d.owned)) for (const w of d.owned) if (WEAPONS[w] && !base.owned.includes(w)) base.owned.push(w);
+        // migración v1: arma por índice y 4 aspectos → arma por id y 3 aspectos
+        for (const h of HEROES) {
+          const st = base.heroes[h.id];
+          if (typeof st.weapon !== 'string' || !WEAPONS[st.weapon]) st.weapon = h.weapon;
+          if (st.skin > 2) st.skin = 2;
+        }
         this.data = base;
       }
     } catch (e) { console.warn('Partida guardada ilegible; se empieza de cero.', e); }
@@ -37,15 +47,29 @@ class SaveManager {
   hero(id) { return this.data.heroes[id]; }
   selectHero(id) { this.data.hero = id; this.flush(); }
 
-  // Aspectos/armas desbloqueados según el nivel del forajido.
-  unlocked(id, kind) {
-    const lv = this.data.heroes[id].level;
-    const list = [0];
-    for (const m of MILESTONES) if (m.kind === kind && lv >= m.level) list.push(m.idx);
-    return list;
+  // Aspectos: Base siempre · Veterano (nivel 10 o 3 casos) · Legendario (nivel 30 o ronda 8 del Cruce).
+  skinUnlocked(id, i) {
+    const r = SKIN_RULES[i];
+    if (!r) return true;
+    const h = this.data.heroes[id];
+    if (h.level >= r.level) return true;
+    if (r.cases && Object.values(this.data.story).filter((x) => x.done).length >= r.cases) return true;
+    if (r.round && this.data.records.some((x) => x.hero === id && x.round >= r.round)) return true;
+    return false;
   }
-  setSkin(id, i) { if (this.unlocked(id, 'skin').includes(i)) { this.data.heroes[id].skin = i; this.flush(); } }
-  setWeapon(id, i) { if (this.unlocked(id, 'weapon').includes(i)) { this.data.heroes[id].weapon = i; this.flush(); } }
+  setSkin(id, i) { if (this.skinUnlocked(id, i)) { this.data.heroes[id].skin = i; this.flush(); } }
+
+  // Oro Maldito y armería
+  get coins() { return this.data.coins; }
+  addCoins(n) { this.data.coins = Math.max(0, Math.round(this.data.coins + n)); this.flush(); }
+  owns(wid) { return this.data.owned.includes(wid); }
+  buy(wid) {
+    const w = WEAPONS[wid];
+    if (!w || this.owns(wid) || this.data.coins < w.price) return false;
+    this.data.coins -= w.price; this.data.owned.push(wid); this.flush();
+    return true;
+  }
+  setWeapon(id, wid) { const w = WEAPONS[wid]; if (w && this.owns(wid) && canEquip(w, id)) { this.data.heroes[id].weapon = wid; this.flush(); return true; } return false; }
 
   // Suma XP de perfil y devuelve { levelsGained, unlocks: [milestone] }.
   addXp(id, xp, kills = 0) {
@@ -55,9 +79,7 @@ class SaveManager {
     h.xp += Math.round(xp);
     while (h.level < MAX_LEVEL && h.xp >= xpForLevel(h.level)) { h.xp -= xpForLevel(h.level); h.level++; }
     if (h.level >= MAX_LEVEL) h.xp = 0;
-    const unlocks = MILESTONES.filter((m) => m.level > before && m.level <= h.level);
-    // equipa automáticamente lo recién desbloqueado (alternancia de hitos)
-    for (const m of unlocks) { if (m.kind === 'skin') h.skin = m.idx; else h.weapon = m.idx; }
+    const unlocks = SKIN_RULES.map((r, i) => i).filter((i) => SKIN_RULES[i] && SKIN_RULES[i].level > before && SKIN_RULES[i].level <= h.level);
     this.flush();
     return { levelsGained: h.level - before, unlocks, level: h.level };
   }

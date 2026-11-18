@@ -86,12 +86,18 @@ export function grime(ctx, pts, smooth = false, amount = 1) {
   ctx.save();
   if (smooth) smoothPath(ctx, pts); else path(ctx, pts);
   ctx.clip();
-  // sombra del lado derecho (luz desde la izquierda-arriba)
-  const g = ctx.createLinearGradient(x0 + w * 0.35, y0, x1, y1);
-  g.addColorStop(0, 'rgba(0,0,0,0)');
-  g.addColorStop(1, 'rgba(0,0,0,0.42)');
-  ctx.fillStyle = g;
-  ctx.fillRect(x0, y0, w, h);
+  // sombra ANGULAR de alto contraste (noir): corte diagonal duro en el lado opuesto a la luz
+  ctx.fillStyle = 'rgba(6,3,2,0.46)';
+  ctx.beginPath(); ctx.moveTo(x0 + w * 0.62, y0 - 1); ctx.lineTo(x1 + 1, y0 - 1); ctx.lineTo(x1 + 1, y1 + 1); ctx.lineTo(x0 + w * 0.34, y1 + 1); ctx.closePath(); ctx.fill();
+  // trama de semitono sobre la línea de corte (paso de luz a sombra)
+  if (w > 10 && h > 10) {
+    ctx.fillStyle = 'rgba(6,3,2,0.5)';
+    const step = Math.max(2.4, Math.min(w, h) / 9);
+    for (let yy = y0; yy < y1; yy += step) {
+      const k = (yy - y0) / h, cx = x0 + w * (0.62 - 0.28 * k);
+      for (let i = 1; i <= 3; i++) { ctx.beginPath(); ctx.arc(cx - i * step, yy + (i % 2) * step * 0.5, step * (0.42 - i * 0.11), 0, TAU); ctx.fill(); }
+    }
+  }
   if (Art.detail > 0) {
     const r = Art.rnd;
     const n = Math.min(160, (w * h) / 55 * amount * Art.detail) | 0;

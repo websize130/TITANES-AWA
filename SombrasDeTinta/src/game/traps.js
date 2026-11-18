@@ -44,9 +44,17 @@ export function restoreTraps(g) {
   }
 }
 
-export function placeTrap(g, x, y) {
+export function placeTrap(g, x, y, kind = 'bear') {
   x = Math.max(-HX, Math.min(HX, x)); y = Math.max(-HY, Math.min(HY, y));
-  mk(g, 'bear', x, y, { r: 20, owned: true, life: 30 });
+  if (kind === 'mine') mk(g, 'mine', x, y, { r: 55, owned: true, life: 40 });
+  else mk(g, 'bear', x, y, { r: 20, owned: true, life: 30 });
+}
+
+// Farol verde del Predicador de la Peste: le sigue; mientras arda, resucita a los muertos.
+export function attachPlagueLamp(g, boss) {
+  const t = mk(g, 'plaguelamp', boss.x - 60, boss.y, { r: 16, hp: boss.def.lamp || 170, maxHp: boss.def.lamp || 170, boss, a: 0 });
+  boss.lamp = t; boss.lampOut = false;
+  return t;
 }
 
 function snap(g, t, e) {
@@ -77,6 +85,29 @@ export function updateTraps(g, dt) {
           if (best && Math.hypot(best.x - t.x, best.y - t.y) < t.r + best.r * 0.6) snap(g, t, best);
         }
         break;
+      case 'mine': {
+        t.life -= dt;
+        const e = g.nearest(t.x, t.y, t.r, 0);
+        if (e || t.life <= 0) {
+          g.explode(t.x, t.y - 10, 115, 150 * g.st.dmg * g.st.trapMult, '#ff8a2a', 1, 4, 420, false, true);
+          g.traps.splice(i, 1);
+        }
+        break;
+      }
+      case 'plaguelamp': {
+        const b = t.boss;
+        if (!b || b.dead) { g.traps.splice(i, 1); break; }
+        if (t.dead) break;
+        t.a += dt * 1.4;
+        t.x = b.x + Math.cos(t.a) * 70; t.y = b.y + Math.sin(t.a) * 30 - 10;
+        if (t.hp <= 0) {
+          t.dead = true; b.lampOut = true;
+          g.addZone(ZK.FIRE, t.x, t.y + 20, 90, 5, 24, '#9dff3a', 1);
+          g.ono(t.x, t.y - 80, '¡FAROL ROTO!', '#9dff3a', 30);
+          g.say(b, ['¡Mi *farol*! ¡Mi luz!', '¡NOOO! ¡La *peste* se apaga!'], 0, true, 3);
+        }
+        break;
+      }
       case 'barrel':
         if (t.dead) break;
         if (t.fuse > 0) { t.fuse -= dt; if (t.fuse <= 0) blowBarrel(g, t); }
@@ -117,7 +148,10 @@ export function bulletVsTraps(g, b) {
   for (let i = 0; i < g.traps.length; i++) {
     const t = g.traps[i];
     if (t.dead) continue;
-    if (t.kind === 'lantern') {
+    if (t.kind === 'plaguelamp') {
+      const dx = t.x - b.x, dy = t.y - 30 - b.y;
+      if (dx * dx + dy * dy < 22 * 22) { t.hp -= b.dmg * g.st.dmg; t.flash = 0.1; return true; }
+    } else if (t.kind === 'lantern') {
       const dx = t.x + 21 - b.x, dy = t.y - 88 - b.y;
       if (dx * dx + dy * dy < 196) { breakLantern(g, t); return true; }
     } else if (t.kind === 'barrel') {

@@ -1,6 +1,6 @@
 // Modos de juego: Historia (objetivos por misión) y Supervivencia "El Cruce de los Condenados"
 // (rondas con adaptación 1–3, salto brutal en la 4, colosos desde la 6 y muro infernal desde la 10).
-import { HX, HY } from './engine.js';
+import { HX, HY, zoneAt } from './engine.js';
 import { ZOMBIES } from '../data/enemies.js';
 import { MISSIONS } from '../data/story.js';
 import { restoreTraps } from './traps.js';
@@ -38,6 +38,7 @@ class Base {
 }
 
 // ---------------------------------------------------------------- HISTORIA
+const STORY_GATE = { walker: 0, runner: 15, spider: 20, bloater: 25, hound: 35, forker: 45, armored: 45, dynamiter: 55, abomination: 70 };
 class Story extends Base {
   constructor(g, m) {
     super(g);
@@ -51,24 +52,34 @@ class Story extends Base {
     this.label = this.o.label || { survive: 'SOBREVIVE', kill: 'ABATE A LA HORDA', boss: 'ALGO SE ACERCA…', defend: 'DEFIENDE EL REFUGIO' }[this.o.type];
   }
   assignTarget(e) { if (this.refuge && Math.random() < 0.45) e.target = this.refuge; }
+  // Introducción gradual de amenazas: solo caminantes al principio.
+  gated(t) {
+    const w = this.gw || (this.gw = {});
+    for (const k in w) delete w[k];
+    for (const k in this.m.spawn) if (t >= (STORY_GATE[k] || 0)) w[k] = this.m.spawn[k];
+    if (!Object.keys(w).length) w.walker = 1;
+    return w;
+  }
   onKill() { if (this.o.type === 'kill') this.got++; }
   update(dt) {
     const g = this.g, o = this.o;
     // oleadas continuas
     if (g.time > 2) {
-      let rate = this.m.rate * (1.3 + (g.time / 30) * 0.45);
+      let rate = this.m.rate * (1.3 + (g.time / 30) * 0.45) * (g.time < 20 ? 0.6 : 1);
       if (this.boss && !this.boss.dead) rate *= 0.45;
       this.acc += dt * rate;
       const cap = g.input.isTouch ? 150 : 220;
       while (this.acc >= 1) {
         this.acc -= 1;
         if (g.zombies.n >= cap) { this.acc = 0; break; }
-        const t = pick(this.m.spawn), pt = ringPoint(g, g.map.fog ? -30 : 60);
+        const t = pick(this.gated(g.time)), pt = ringPoint(g, g.map.fog ? -30 : 60);
         const pack = (ZOMBIES[t] || {}).pack, n = pack ? pack[0] + ((Math.random() * (pack[1] - pack[0] + 1)) | 0) : 1;
         for (let k = 0; k < n; k++) g.spawnZombie(t, pt.x + (Math.random() - 0.5) * 70, pt.y + (Math.random() - 0.5) * 70, this.hpMult * (1 + g.time / 300), this.speedMult);
         if (n > 1) this.acc -= (n - 1) * 0.35;
       }
     }
+    if (this.idx >= 1 && !this.weatherDone && g.time >= 40) { this.weatherDone = true; g.startWeather(this.idx % 2 ? 'eclipse' : 'storm'); }
+    if (o.miniboss && !this.miniDone && g.time >= o.miniboss.at) { this.miniDone = true; g.spawnColossus(o.miniboss.type, 0.6); }
     switch (o.type) {
       case 'survive':
         this.timer = Math.max(0, o.time - g.time); this.progress = Math.min(1, g.time / o.time);
@@ -97,10 +108,11 @@ const COLOSSUS_CYCLE = ['foreman', 'faceless', 'beast'];
 export const ROUND_TIME = 120;
 // Curva de intensidad escalonada dentro de cada ronda.
 export const PHASES = [
-  { t: 0, name: 'ACLIMATACIÓN', sub: 'Que no te tiemble el pulso', rate: 1.0, w: { walker: 10, runner: 3, hound: 1.5 } },
-  { t: 30, name: 'PRESIÓN DE ARAÑAS', sub: 'Algo se arrastra bajo las lápidas', rate: 1.55, w: { walker: 5, runner: 3, spider: 9, hound: 3 } },
-  { t: 60, name: 'CLÍMAX: COLOSOS Y HORDA', sub: 'La tierra entera se levanta', rate: 2.4, w: { walker: 8, runner: 5, bloater: 2, armored: 3, forker: 3, dynamiter: 2, hound: 3, spider: 4 }, abom: true },
-  { t: 105, name: 'ÚLTIMO CARTUCHO', sub: 'Quince segundos. Dispáralo todo.', rate: 3.5, w: { walker: 6, runner: 8, hound: 5, spider: 6, dynamiter: 3 }, fever: true },
+  { t: 0, name: 'ACLIMATACIÓN', sub: 'Caminantes lentos. Prueba tu alcance y el terreno.', rate: 0.6, slow: 0.75, w: { walker: 10 } },
+  { t: 25, name: 'ARAÑAS DE CRIPTA', sub: 'Algo se arrastra bajo las lápidas', rate: 1.0, w: { walker: 6, spider: 6 } },
+  { t: 50, name: 'SABUESOS EN ZIG-ZAG', sub: 'Te rodean por los flancos', rate: 1.45, w: { walker: 5, runner: 2, spider: 4, hound: 5 } },
+  { t: 80, name: 'CLÍMAX: COLOSOS Y HORDA', sub: 'Caparazones blindados y la horda entera', rate: 2.4, w: { walker: 8, runner: 5, bloater: 2, armored: 3, forker: 3, dynamiter: 2, hound: 3, spider: 4 }, abom: true },
+  { t: 105, name: 'ÚLTIMO CARTUCHO', sub: 'Quince segundos. Dispáralo todo.', rate: 3.4, w: { walker: 6, runner: 8, hound: 5, spider: 6, dynamiter: 3 }, fever: true },
 ];
 const LATE = ['armored', 'forker', 'dynamiter'];
 
@@ -127,7 +139,7 @@ class Survival extends Base {
     const P = roundParams(this.round);
     this.P = P; this.hpMult = P.hp; this.dmgMult = P.dmg; this.speedMult = P.speed;
     this.label = 'RONDA ' + this.round;
-    this.t = 0; this.acc = 0; this.phase = -1; this.state = 'fight'; this.abomLeft = P.abominations; this.abomT = 0; this.colLeft = P.colossi; this.colT = 0;
+    this.t = 0; this.acc = 0; this.phase = -1; this.state = 'fight'; this.weatherDone = false; this.miniDone = false; this.abomLeft = P.abominations; this.abomT = 0; this.colLeft = P.colossi; this.colT = 0;
     // pesos por tramo (sin armadura ni improvisados en las rondas 1-3)
     this.weights = PHASES.map((ph) => { const w = {}; for (const k in ph.w) if (this.round >= 4 || !LATE.includes(k)) w[k] = ph.w[k]; return w; });
     const sub = this.round === 4 ? 'LA NOCHE SE ESPESA… YA NO HAY PIEDAD' : this.round === 6 ? 'LLEGAN LOS COLOSOS' : this.round === 10 ? 'EL MURO INFERNAL' : this.round > 10 ? 'SOLO PARA LEYENDAS' : 'Dos minutos. Ni uno más.';
@@ -160,7 +172,7 @@ class Survival extends Base {
       const type = pick(this.weights[ph]), pt = ringPoint(g, 50);
       const pack = (ZOMBIES[type] || {}).pack;
       const n = pack ? pack[0] + ((Math.random() * (pack[1] - pack[0] + 1)) | 0) : 1;
-      for (let k = 0; k < n; k++) g.spawnZombie(type, pt.x + (Math.random() - 0.5) * 70, pt.y + (Math.random() - 0.5) * 70, P.hp, P.speed * (PH.fever ? 1.15 : 1));
+      for (let k = 0; k < n; k++) g.spawnZombie(type, pt.x + (Math.random() - 0.5) * 70, pt.y + (Math.random() - 0.5) * 70, P.hp, P.speed * (PH.fever ? 1.15 : PH.slow || 1));
       if (n > 1) this.acc -= (n - 1) * 0.35;
     }
     // clímax: abominaciones y colosos de élite
@@ -168,8 +180,16 @@ class Survival extends Base {
       this.abomT -= dt;
       if (this.abomLeft > 0 && this.abomT <= 0) { this.abomT = 9; this.abomLeft--; const pt = ringPoint(g, 40); g.spawnZombie('abomination', pt.x, pt.y, P.hp, 1); g.showBanner('¡ABOMINACIÓN!', 'Caparazón blindado · escupe bilis de tinta', 1.6); }
       this.colT -= dt;
-      if (this.colLeft > 0 && this.colT <= 0) { this.colT = 12; this.colLeft--; g.spawnColossus(COLOSSUS_CYCLE[(this.round + this.colLeft) % 3], 1 + (this.round - 6) * 0.3 + (this.round >= 10 ? (this.round - 9) * 0.35 : 0)); }
+      if (this.colLeft > 0 && this.colT <= 0) {
+        this.colT = 12; this.colLeft--;
+        const zone = zoneAt(g.player.x), boss = zone === 1 ? 'plague' : zone === 2 ? 'spawn' : COLOSSUS_CYCLE[(this.round + this.colLeft) % 3];
+        g.spawnColossus(boss, 1 + (this.round - 6) * 0.3 + (this.round >= 10 ? (this.round - 9) * 0.35 : 0));
+      }
     }
+    // clima dinámico a mitad de ronda (desde la ronda 2)
+    if (this.round >= 2 && !this.weatherDone && t >= 40) { this.weatherDone = true; g.startWeather(this.round % 2 ? 'storm' : 'eclipse'); }
+    // mini-jefe de zona en la ronda 3 y 5 (cementerio: Predicador de la Peste · mina: Engendro)
+    if ((this.round === 3 || this.round === 5) && !this.miniDone && t >= 70) { this.miniDone = true; const zone = zoneAt(g.player.x); g.spawnColossus(zone === 2 ? 'spawn' : 'plague', 0.45); }
     if (t >= ROUND_TIME) this.endRound();
   }
   endRound() {
@@ -182,7 +202,7 @@ class Survival extends Base {
       for (let k = 0; k < 4; k++) g.addPart(e.x, e.y - e.r, (Math.random() - 0.5) * 120, -Math.random() * 120, 0.8, 4, '#0a0605', 2, false);
     }
     this.state = 'break'; this.breakT = 8; this.fever = false;
-    g.profileXp += 30 * this.round;
+    g.profileXp += 30 * this.round; g.gold += 30 * this.round;
     g.heal(g.player.maxHp * 0.15);
     g.showBanner('RONDA ' + this.round + ' SUPERADA', 'La horda se disuelve en tinta · carta de recompensa', 2.4);
     g.flash = 0.5;

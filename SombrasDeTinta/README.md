@@ -54,7 +54,29 @@ src/ui     index.html · style.css · main.js
 - **Mundo de 3× el viewport** (pueblo, cementerio y mina unidos por un camino), cámara de seguimiento suave con
   anticipación y minimapa. Destructibles: faroles colgantes que incendian el suelo, barricadas con fases (intacta,
   astillada, humeante), lápidas de cobertura, barriles de dinamita y cepos ocultos.
-- **Niveles 1–50 por forajido** con hitos cada 10 (aspectos y armas exclusivas).
+- **Estética de novela gráfica noir de los 90**: doble línea de contorno, sombras angulares de alto contraste, trama
+  de semitono y *rim-light* por forajido (ámbar, cobre o plata). Los forajidos están **articulados por capas**
+  (piernas, torso y brazo del arma): zancada desde la cadera, apuntado desde el hombro y retroceso al disparar.
+- **3 aspectos por forajido**: *Base* (desde el inicio), *Veterano* (nivel 10 o 3 casos cerrados; desgaste y detalles
+  tácticos) y *Legendario/Condenado* (nivel 30 o sobrevivir a la ronda 8; tinta densa, brasas y marcas especiales).
+- **La Armería del Oeste Oculto**: 23 armas ordenadas estrictamente de menor a mayor daño en 4 categorías (Mano y
+  Precisión · Metralletas y Fuego Rápido · Experimentales y Láseres · Únicas/Legendarias ligadas a cada forajido).
+  Los láseres atraviesan hordas y funden la coraza de los colosos. Se paga con **Oro Maldito** que suelta la horda.
+- **Artefactos y sinergias elementales**: balas explosivas, dinamita de proximidad, bobinas Tesla, rayos y frascos de
+  ácido. Tinta/ácido + fuego = **explosión de pólvora** con muro de llamas; charcos de araña + rayo = **sobrecarga
+  eléctrica en cadena**.
+- **Clima dinámico**: *Eclipse de Sangre y Tinta* (oscuridad parcial, halos de luz, recarga potenciada) y *Tormenta de
+  Ceniza y Pólvora* (el viento arrastra y propaga el fuego, más alcance incendiario).
+- **Jefes de zona**: *El Predicador de la Peste* (resucita a los caídos mientras arda su farol: rómpeselo) y *El
+  Engendro de la Mina* (gira despacio; rodéalo y dispara a la dinamita de su espalda para exponer su punto débil).
+- **Diálogos de cómic**: un solo canal sin solapamientos, duración adaptativa de 4,5–6 s, texto que corre como tinta,
+  bocadillo de pergamino (forajido) o tinta oscura (horda), borde a plumilla, rabillo que sigue al personaje y palabras
+  clave resaltadas en color.
+- **Música por capas** (guitarras western tensas → percusión pesada y bajo distorsionado con la horda), onomatopeyas
+  (¡BLAM!, ¡CRACK!, ¡ZAP!, ¡KABOOM!) y **HUD diegético** de hierro oxidado, cuero cosido y pergamino quemado.
+- **Curva de dificultad progresiva**: arranque suave solo con errantes lentos; después arañas, sabuesos y, como clímax,
+  colosos acorazados y hordas masivas.
+- **Niveles 1–50 por forajido**.
 
 ## Controles
 

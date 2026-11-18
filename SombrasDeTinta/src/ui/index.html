@@ -23,6 +23,7 @@
         <p class="tagline">Los muertos caminan. Las balas escasean. La tinta nunca se seca.</p>
         <div class="row center">
           <button class="btn btn-blood big" data-go="select">Elegir forajido</button>
+          <button class="btn" data-go="shop">La Armería del Oeste Oculto</button>
           <button class="btn" data-go="records">El Muro de los Condenados</button>
           <button class="btn icon" data-act="settings" aria-label="Ajustes">⚙</button>
         </div>
@@ -38,7 +39,7 @@
 
     <!-- ======================= MODOS ======================= -->
     <section id="screen-modes" class="screen">
-      <header class="bar"><button class="btn small" data-go="select">◀ Forajidos</button><h2 class="screen-title" id="modes-title">¿Qué caso aceptas?</h2><span class="chip" id="modes-hero"></span></header>
+      <header class="bar"><button class="btn small" data-go="select">◀ Forajidos</button><h2 class="screen-title" id="modes-title">¿Qué caso aceptas?</h2><span class="chip" id="modes-hero"></span><span class="chip gold">⛀ <b data-gold>0</b></span></header>
       <div class="modes">
         <button class="mode-card" data-go="story"><span class="mode-num">I</span><span class="mode-name">Modo Historia</span><span class="mode-desc">Seis casos encadenados. Páginas de cómic, colosos y un predicador sin rostro.</span><span class="mode-meta" id="story-meta"></span></button>
         <button class="mode-card survival" data-act="survival"><span class="mode-num">II</span><span class="mode-name">El Cruce de los Condenados</span><span class="mode-desc">Supervivencia infinita por rondas. Adaptación hasta la 3, infierno desde la 4, colosos desde la 6. La 10 es un muro.</span><span class="mode-meta" id="surv-meta"></span></button>
@@ -53,6 +54,12 @@
     </section>
 
     <!-- ======================= MURO DE LOS CONDENADOS ======================= -->
+    <section id="screen-shop" class="screen">
+      <header class="bar"><button class="btn small" data-back>◀ Volver</button><h2 class="screen-title">La Armería del Oeste Oculto</h2><span class="chip gold">⛀ <b data-gold>0</b></span></header>
+      <p class="shop-intro">Catálogo ordenado de menor a mayor daño. Paga con <b>Oro Maldito</b> (lo sueltan los muertos y los colosos). Equipa para:</p>
+      <div class="row" id="shop-heroes"></div>
+      <div id="shop"></div>
+    </section>
     <section id="screen-records" class="screen">
       <header class="bar"><button class="btn small" data-back>◀ Volver</button><h2 class="screen-title">El Muro de los Condenados</h2><span></span></header>
       <div class="wall-board"><div class="wall-head"><span>#</span><span>Forajido</span><span>Ronda</span><span>Bajas</span><span>Fecha</span><span>Sello</span></div><div id="records"></div></div>
