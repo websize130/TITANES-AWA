@@ -1,0 +1,12 @@
+# Despliegue en Netlify: Base directory = SombrasDeTinta (si el sitio apunta a este repositorio).
+# dist/index.html ya está generado y versionado; el comando solo lo regenera (Node, sin dependencias).
+[build]
+  command = "node tools/build.js"
+  publish = "dist"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Cache-Control = "public, max-age=300, must-revalidate"

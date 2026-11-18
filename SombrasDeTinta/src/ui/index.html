@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0605">
+  <meta name="description" content="Weird West: Sombras de Tinta — acción y supervivencia en un Oeste gótico con estética de cómic de terror de los 90.">
+  <title>Weird West: Sombras de Tinta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Holtwood+One+SC&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230a0605'/%3E%3Ccircle cx='32' cy='30' r='18' fill='%23e8dcb8'/%3E%3Cpath d='M14 58l10-22 8 6 8-6 10 22z' fill='%23000'/%3E%3C/svg%3E">
+  <!--STYLE-->
+</head>
+<body>
+  <div id="app">
+    <!-- ======================= PORTADA ======================= -->
+    <section id="screen-title" class="screen active">
+      <canvas id="title-art" class="title-art" aria-hidden="true"></canvas>
+      <div class="title-block">
+        <p class="kicker">Relatos del Oeste Gótico · Nº 1</p>
+        <h1 class="logo"><span>WEIRD WEST</span><em>Sombras de Tinta</em></h1>
+        <p class="tagline">Los muertos caminan. Las balas escasean. La tinta nunca se seca.</p>
+        <div class="row center">
+          <button class="btn btn-blood big" data-go="select">Elegir forajido</button>
+          <button class="btn" data-go="records">El Muro de los Condenados</button>
+          <button class="btn icon" data-act="settings" aria-label="Ajustes">⚙</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= SELECCIÓN / DOSSIERS ======================= -->
+    <section id="screen-select" class="screen">
+      <header class="bar"><button class="btn small" data-go="title">◀ Portada</button><h2 class="screen-title">Elige a tu forajido</h2><span></span></header>
+      <p class="hint">Cada forajido sube de nivel por separado (máx. 50). Cada 10 niveles desbloquea un aspecto o un arma exclusiva.</p>
+      <div class="dossiers" id="dossiers"></div>
+    </section>
+
+    <!-- ======================= MODOS ======================= -->
+    <section id="screen-modes" class="screen">
+      <header class="bar"><button class="btn small" data-go="select">◀ Forajidos</button><h2 class="screen-title" id="modes-title">¿Qué caso aceptas?</h2><span class="chip" id="modes-hero"></span></header>
+      <div class="modes">
+        <button class="mode-card" data-go="story"><span class="mode-num">I</span><span class="mode-name">Modo Historia</span><span class="mode-desc">Seis casos encadenados. Páginas de cómic, colosos y un predicador sin rostro.</span><span class="mode-meta" id="story-meta"></span></button>
+        <button class="mode-card survival" data-act="survival"><span class="mode-num">II</span><span class="mode-name">El Cruce de los Condenados</span><span class="mode-desc">Supervivencia infinita por rondas. Adaptación hasta la 3, infierno desde la 4, colosos desde la 6. La 10 es un muro.</span><span class="mode-meta" id="surv-meta"></span></button>
+        <button class="mode-card wall" data-go="records"><span class="mode-num">III</span><span class="mode-name">El Muro de los Condenados</span><span class="mode-desc">Récords locales de los que cayeron en el cruce.</span></button>
+      </div>
+    </section>
+
+    <!-- ======================= HISTORIA ======================= -->
+    <section id="screen-story" class="screen">
+      <header class="bar"><button class="btn small" data-go="modes">◀ Modos</button><h2 class="screen-title">Modo Historia</h2><span></span></header>
+      <div class="chapters" id="chapters"></div>
+    </section>
+
+    <!-- ======================= MURO DE LOS CONDENADOS ======================= -->
+    <section id="screen-records" class="screen">
+      <header class="bar"><button class="btn small" data-back>◀ Volver</button><h2 class="screen-title">El Muro de los Condenados</h2><span></span></header>
+      <div class="wall-board"><div class="wall-head"><span>#</span><span>Forajido</span><span>Ronda</span><span>Bajas</span><span>Fecha</span><span>Sello</span></div><div id="records"></div></div>
+    </section>
+
+    <!-- ======================= FIN DE PARTIDA ======================= -->
+    <section id="screen-end" class="screen">
+      <div class="end-wrap"><canvas id="end-art"></canvas><div class="end-info" id="end-info"></div></div>
+    </section>
+
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-box" id="modal-box"></div></div>
+  </div>
+
+  <!-- ======================= PÁGINA DE CÓMIC ======================= -->
+  <div id="comic" class="comic hidden">
+    <canvas id="comic-canvas"></canvas>
+    <div class="comic-actions"><button class="btn small" data-act="comic-skip">Saltar</button><button class="btn btn-blood" data-act="comic-go">¡Al combate!</button></div>
+  </div>
+
+  <!-- ======================= PARTIDA ======================= -->
+  <div id="game-root" class="hidden">
+    <canvas id="game"></canvas>
+    <div id="draft" class="overlay hidden">
+      <div class="overlay-box">
+        <h2 class="overlay-title" id="draft-title">Roba una carta</h2>
+        <p class="overlay-sub">Elige una (teclas 1 · 2 · 3). Las de acción van a tu mano; las pasivas duran toda la partida.</p>
+        <div class="draft-cards" id="draft-cards"></div>
+      </div>
+    </div>
+    <div id="pause" class="overlay hidden">
+      <div class="overlay-box">
+        <h2 class="overlay-title">Pausa</h2>
+        <div class="col">
+          <button class="btn btn-blood big" data-act="resume">Continuar</button>
+          <button class="btn" data-act="toggle-sound">Sonido: <b data-sound>Sí</b></button>
+          <button class="btn" data-act="toggle-aim">Apuntado: <b data-aim>Auto</b></button>
+          <button class="btn" data-act="abandon">Abandonar</button>
+        </div>
+        <p class="overlay-sub small">WASD/flechas mover · disparo automático · 1·2·3 (o Q·E·R) cartas · clic dcho. carta 1 · Esc pausa</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <noscript><p style="color:#fff;padding:2em">Este juego necesita JavaScript.</p></noscript>
+  <!--SCRIPT-->
+</body>
+</html>
