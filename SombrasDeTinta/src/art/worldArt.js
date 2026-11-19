@@ -14,16 +14,18 @@ export function makeGround(mapId, T = MAPS[mapId]) {
       ctx.fillStyle = g; ctx.fillRect(x + ox - rad, y + oy - rad, rad * 2, rad * 2);
     }
   };
-  for (let i = 0; i < 20; i++) blotch(r() * S, r() * S, 40 + r() * 120, r() < 0.5 ? T.g2 : T.g3, 0.55);
-  ctx.strokeStyle = 'rgba(5,4,3,0.6)'; ctx.lineCap = 'round';
+  for (let i = 0; i < 20; i++) blotch(r() * S, r() * S, 40 + r() * 120, r() < 0.6 ? T.g2 : T.g3, 0.42);
+  // charcos de luz cálida del atardecer sobre la tierra
+  for (let i = 0; i < 6; i++) blotch(r() * S, r() * S, 60 + r() * 90, '#c89060', 0.12);
+  ctx.strokeStyle = 'rgba(5,4,3,0.32)'; ctx.lineCap = 'round';
   for (let i = 0; i < 16; i++) {
     let x = r() * S, y = r() * S; ctx.lineWidth = 1 + r() * 2.2;
     ctx.beginPath(); ctx.moveTo(x, y);
     for (let k = 0; k < 6; k++) { x += (r() - 0.5) * 50; y += (r() - 0.5) * 50; ctx.lineTo(x, y); }
     ctx.stroke();
   }
-  for (let i = 0; i < 800; i++) {
-    ctx.fillStyle = r() < 0.65 ? 'rgba(5,4,3,0.4)' : 'rgba(230,220,200,0.06)';
+  for (let i = 0; i < 380; i++) {
+    ctx.fillStyle = r() < 0.55 ? 'rgba(5,4,3,0.18)' : 'rgba(239,226,196,0.1)';
     const s = 0.6 + r() * 2; ctx.fillRect(r() * S, r() * S, s, s);
   }
   if (mapId === 'swamp') {
@@ -34,8 +36,8 @@ export function makeGround(mapId, T = MAPS[mapId]) {
     for (const y of [S * 0.3, S * 0.36]) { ctx.beginPath(); ctx.moveTo(0, y); ctx.bezierCurveTo(S * 0.3, y + 10, S * 0.7, y - 10, S, y); ctx.stroke(); }
   }
   // sombreado cruzado suave en las zonas oscuras (tinta)
-  ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = 1;
-  for (let i = 0; i < 26; i++) {
+  ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 1;
+  for (let i = 0; i < 14; i++) {
     const x = r() * S, y = r() * S, w = 20 + r() * 40;
     ctx.beginPath();
     for (let k = 0; k < w; k += 4) { ctx.moveTo(x + k, y); ctx.lineTo(x + k + 10, y + 10); }

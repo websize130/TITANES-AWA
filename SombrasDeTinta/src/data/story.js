@@ -3,12 +3,12 @@
 // obj.type: survive | kill | defend | boss | escape
 
 export const MAPS = {
-  crossroads: { name: 'El Cruce de los Condenados', ground: '#2a2420', g2: '#3a302a', g3: '#15100c', props: ['gravecross', 'deadtree', 'rock', 'fence', 'skullpile', 'post'], fog: false, zoned: true },
-  town: { name: 'Hollow Creek', ground: '#3a2a20', g2: '#4a3628', g3: '#1a120c', props: ['barrel', 'crate', 'fence', 'wheel', 'post', 'deadtree'], fog: false },
-  chapel: { name: 'Capilla de Gallow\'s Rest', ground: '#2a2228', g2: '#3a2e34', g3: '#140e12', props: ['gravecross', 'tomb', 'deadtree', 'fence', 'pew'], fog: true },
-  mine: { name: 'Minas de Plata Negra', ground: '#2a2622', g2: '#3a342c', g3: '#12100c', props: ['rock', 'beam', 'cart', 'crate', 'ore'], fog: false },
-  swamp: { name: 'Pantano de Saint-Mort', ground: '#1e2620', g2: '#2a3428', g3: '#0c120c', props: ['deadtree', 'reeds', 'rock', 'stump', 'bones'], fog: true },
-  pulpit: { name: 'El Púlpito del Abismo', ground: '#2a1a1a', g2: '#3a2222', g3: '#140808', props: ['gravecross', 'pew', 'rock', 'skullpile', 'tomb'], fog: false },
+  crossroads: { name: 'El Cruce de los Condenados', ground: '#5a4a3a', g2: '#6c5a46', g3: '#3a2e24', props: ['gravecross', 'deadtree', 'rock', 'fence', 'skullpile', 'post'], fog: false, zoned: true },
+  town: { name: 'Hollow Creek', ground: '#6a5038', g2: '#7c6044', g3: '#3e2c1e', props: ['barrel', 'crate', 'fence', 'wheel', 'post', 'deadtree'], fog: false },
+  chapel: { name: 'Capilla de Gallow\'s Rest', ground: '#584a48', g2: '#6a5a56', g3: '#362a2a', props: ['gravecross', 'tomb', 'deadtree', 'fence', 'pew'], fog: true },
+  mine: { name: 'Minas de Plata Negra', ground: '#5a5046', g2: '#6c6252', g3: '#34302a', props: ['rock', 'beam', 'cart', 'crate', 'ore'], fog: false },
+  swamp: { name: 'Pantano de Saint-Mort', ground: '#3e4a3c', g2: '#4e5c48', g3: '#26302a', props: ['deadtree', 'reeds', 'rock', 'stump', 'bones'], fog: true },
+  pulpit: { name: 'El Púlpito del Abismo', ground: '#5a3a34', g2: '#6c4640', g3: '#341e1a', props: ['gravecross', 'pew', 'rock', 'skullpile', 'tomb'], fog: false },
 };
 
 export const MISSIONS = [
@@ -86,7 +86,7 @@ export const SURVIVAL = { id: 'survival', name: 'El Cruce de los Condenados', ma
 
 // Comarca conectada (supervivencia): pueblo al oeste, cementerio en el centro, mina al este.
 export const ZONES = [
-  { id: 'town', name: 'EL PUEBLO', x0: -1, x1: -1 / 3, ground: '#3a2a20', g2: '#4a3628', g3: '#1a120c', props: ['barrel', 'crate', 'fence', 'wheel', 'post', 'deadtree'], mini: '#6a4a30' },
-  { id: 'cemetery', name: 'EL CEMENTERIO', x0: -1 / 3, x1: 1 / 3, ground: '#2a2228', g2: '#3a2e34', g3: '#140e12', props: ['gravecross', 'tomb', 'deadtree', 'skullpile', 'fence', 'gravecross'], mini: '#4a3a4a' },
-  { id: 'mine', name: 'LA MINA', x0: 1 / 3, x1: 1, ground: '#2a2622', g2: '#3a342c', g3: '#12100c', props: ['rock', 'beam', 'cart', 'crate', 'ore', 'rock'], mini: '#4a4238' },
+  { id: 'town', name: 'EL PUEBLO', x0: -1, x1: -1 / 3, ground: '#6a5038', g2: '#7c6044', g3: '#3e2c1e', props: ['barrel', 'crate', 'fence', 'wheel', 'post', 'deadtree'], mini: '#6a4a30' },
+  { id: 'cemetery', name: 'EL CEMENTERIO', x0: -1 / 3, x1: 1 / 3, ground: '#584a48', g2: '#6a5a56', g3: '#362a2a', props: ['gravecross', 'tomb', 'deadtree', 'skullpile', 'fence', 'gravecross'], mini: '#4a3a4a' },
+  { id: 'mine', name: 'LA MINA', x0: 1 / 3, x1: 1, ground: '#5a5046', g2: '#6c6252', g3: '#34302a', props: ['rock', 'beam', 'cart', 'crate', 'ore', 'rock'], mini: '#4a4238' },
 ];

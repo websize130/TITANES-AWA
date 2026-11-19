@@ -4,12 +4,15 @@
 import { Pool, Grid } from './pool.js';
 import { Sprites } from '../art/sprites.js';
 import { makeGround } from '../art/worldArt.js';
+import { Z_ANIM } from '../art/zombieArt.js';
+import { initPet, updatePet, updatePetShots } from './petAI.js';
 import { makeRng, TAU } from '../art/ink.js';
 import { ZOMBIES, COLOSSI } from '../data/enemies.js';
 import { BARKS } from '../data/heroes.js';
 import { WEAPONS } from '../data/weapons.js';
 import { MAPS, ZONES } from '../data/story.js';
 import { RANKS, SUITS, FURIES, evaluateHand } from '../data/poker.js';
+const HAND_RANK = ['PAREJA', 'DOBLE', 'TRIO', 'ESCALERA', 'COLOR', 'FULL', 'POKER'];
 import { CARDS, SIGNATURE, rollRarity } from '../data/cards.js';
 import { Sfx } from '../core/audio.js';
 import { fireWeapon, playCard, updatePassives } from './combat.js';
@@ -31,7 +34,7 @@ const mkZ = () => ({
 const mkB = () => ({ acid: false, x: 0, y: 0, vx: 0, vy: 0, r: 3, dmg: 0, pierce: 0, life: 0, color: '#fff', core: '#fff', kind: 0, kb: 0, crit: false, hits: [], chain: 0, homing: 0, burn: 0, slow: 0, stun: 0, radius: 0, len: 10, spin: 0, ox: 0, oy: 0 });
 const mkE = () => ({ x: 0, y: 0, vx: 0, vy: 0, r: 5, dmg: 0, life: 0, color: '#fff', kind: 0, t: 0, tmax: 0, sx: 0, sy: 0, tx: 0, ty: 0, radius: 0, homing: 0 });
 const mkP = () => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: '#fff', kind: 0, grow: 0, drag: 0, add: true });
-const mkT = () => ({ x: 0, y: 0, vy: 0, life: 0, max: 1, str: '', color: '#fff', size: 14, big: false });
+const mkT = () => ({ x: 0, y: 0, vy: 0, life: 0, max: 1, str: '', color: '#fff', size: 14, big: false, num: 0, rot: 0 });
 const mkI = () => ({ x: 0, y: 0, kind: 0, value: 0, vx: 0, vy: 0, mag: false, t: 0, cr: 0, cs: 0 });
 const mkU = () => ({ on: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: '#000', ink: true });
 const mkZn = () => ({ uid: 0, kind: 0, x: 0, y: 0, r: 0, maxR: 0, life: 0, max: 0, dmg: 0, color: '#fff', tick: 0, owner: 0, ang: 0, len: 0, vx: 0, vy: 0, elec: false, charged: 0, pts: new Float32Array(20), pn: 0 });
@@ -50,16 +53,16 @@ export class Game {
     this.bullets = new Pool(mkB, 600);
     this.ebullets = new Pool(mkE, 400);
     this.parts = new Pool(mkP, 900);
-    this.texts = new Pool(mkT, 60);
+    this.texts = new Pool(mkT, 96); this.numT = 0;
     this.items = new Pool(mkI, 500);
     this.zones = new Pool(mkZn, 120);
     this.dlg = { cur: null, next: null, cool: 0 };
     this.uiParts = []; for (let i = 0; i < 160; i++) this.uiParts.push(mkU());
     this.fx = { dmg: 1, rate: 1, speed: 1, pierce: 0, range: 1, crit: 0, reload: 1, invuln: false, explode: 0 };
     this.grid = new Grid(Math.max(HX, HY) + 200, 80);
-    this.decals = new Float32Array(160 * 4); this.decalN = 0; this.decalI = 0;
+    this.decals = new Float32Array(160 * 4); this.decalT = new Float32Array(160); this.decalN = 0; this.decalI = 0;
     this.traps = []; this.props = []; this.structs = []; this.crows = [];
-    this.lights = new Float32Array(64 * 4); this.lightN = 0;
+    this.lights = new Float32Array(112 * 4); this.lightN = 0; this.ambient = [];
     this.uid = 1; this.running = false; this._raf = 0;
     this._loop = (ts) => this.frame(ts);
     this.player = { x: 0, y: 0, r: 15, hp: 100, maxHp: 100, face: 1, inv: 0, hurt: 0, aim: 0, aimDist: 300, fireT: 0, alt: 0, moving: false, muzzle: 0, rootT: 0, regenT: 0, spin: 0, ammo: 0, reloadT: 0, burstN: 0, burstT: 0, stunT: 0, stunImmune: 0, inkT: 0, vx: 0, vy: 0, jokeT: 8 };
@@ -108,7 +111,7 @@ export class Game {
     for (const P of [this.zombies, this.bullets, this.ebullets, this.parts, this.texts, this.items, this.zones]) P.clear();
     this.dlg.cur = null; this.dlg.next = null; this.dlg.cool = 0;
     for (const u of this.uiParts) u.on = false;
-    this.poker = []; this.furies = []; this.pokerShow = null; this.pokerCount = 0;
+    this.poker = []; this.furies = []; this.pokerShow = null; this.pokerCount = 0; this.pokerPartial = ''; this.bestHand = ''; this.bestHandRank = -1; this.dealt = 0;
     this.gold = 0; this.weather = null; this.coils = []; this.onoT = 0; this.synT = 0; this.zapT = 0; this.weakT = 0; this.fearT2 = 0;
     this.structs.length = 0; this.crows.length = 0; this.decalN = 0; this.decalI = 0;
     this.time = 0; this.realTime = 0; this.kills = 0; this.level = 1; this.souls = 0; this.nextSouls = this.soulsFor(1);
@@ -136,6 +139,7 @@ export class Game {
     this.traps.length = 0;
     buildTraps(this);
     this.objective = createMode(this, mode, mission);
+    this.petKills = 0; initPet(this, hero.id, level);
     this.prewarm();
     this.input.attach();
     this.running = true; this.last = performance.now();
@@ -147,7 +151,9 @@ export class Game {
     this.spr.hero(this.hero.id, this.pal, this.skinIdx, this.hero.rim);
     this.spr.heroLayers(this.hero.id, this.pal, this.skinIdx, this.hero.rim);
     this.spr.prop('plaguelamp');
+    for (let f = 0; f < 4; f++) this.spr.pet(this.pet.def.id, this.pet.tier, f, this.hero.rim);
     for (const t of Object.keys(ZOMBIES)) this.spr.zombie(t);
+    for (const t of Object.keys(Z_ANIM)) for (let f = 1; f < Z_ANIM[t]; f++) this.spr.zombie(t, false, f);
     for (const t of Object.keys(COLOSSI)) this.spr.zombie(t);
     for (const c of [this.pal.shot, this.pal.glow, '#ff8a2a', '#ffd23a', '#ffffff', '#9dff3a', '#c8b8ff', '#7fa8ff', '#ff3a2a', '#d8e8b0', '#ffe08a', '#b8ff6a', '#c8d8ff', '#cfe8ff', '#eaf6ff', '#ff4a3a', '#ff6a3a'])
       this.spr.glow(c);
@@ -174,6 +180,13 @@ export class Game {
     for (let x = -HX; x <= HX; x += 90) { this.props.push({ x, y: -HY - 30, spr: this.spr.prop(edge) }); this.props.push({ x, y: HY + 30, spr: this.spr.prop(edge) }); }
     for (let y = -HY; y <= HY; y += 90) { this.props.push({ x: -HX - 30, y, spr: this.spr.prop(edge) }); this.props.push({ x: HX + 30, y, spr: this.spr.prop(edge) }); }
     this.props.sort((a, b) => a.y - b.y);
+    // puntos de luz cálida ambiental (faroles lejanos, hogueras, ventanas): el mapa nunca queda a ciegas
+    this.ambient.length = 0;
+    for (let i = 0; i < 46; i++) {
+      const x = (r() * 2 - 1) * (HX - 60), y = (r() * 2 - 1) * (HY - 60);
+      this.ambient.push({ x, y, r: 240 + r() * 180, a: 0.5 + r() * 0.3, ph: r() * 6.28, col: r() < 0.7 ? '#ffb060' : '#ff8a3a' });
+    }
+    if (this.zoned) for (let x = -HX + 150; x < HX; x += 420) this.ambient.push({ x, y: this.roadY(x) - 40, r: 300, a: 0.65, ph: x, col: '#ffc070' });
   }
 
   // Camino de tierra que une las zonas (curva suave).
@@ -224,6 +237,7 @@ export class Game {
     this.updateZones(dt);
     updateTraps(this, dt);
     updatePassives(this, dt);
+    updatePet(this, dt); updatePetShots(this, dt);
     this.updateItems(dt);
     this.updateDialogue(dt);
     this.objective.update(dt);
@@ -252,7 +266,8 @@ export class Game {
     c.x += (tx - c.x) * k; c.y += (ty - c.y) * k;
     c.shake = Math.max(0, c.shake - dt * 30);
     const sh = this.settings.shake ? c.shake : 0;
-    c.sx = (Math.random() - 0.5) * sh; c.sy = (Math.random() - 0.5) * sh;
+    this.numT -= dt;
+    c.sx = (Math.random() - 0.5) * sh * 0.65; c.sy = (Math.random() - 0.5) * sh * 0.65; // micro-temblor sutil
   }
 
   // ---------------------------------------------------------------- maldiciones (Diamante)
@@ -311,7 +326,9 @@ export class Game {
     if (!h) return;
     if (h.cd > 0) { this.addText(this.player.x, this.player.y - 76, 'Recargando…', '#a8987a', 12, false); return; }
     h.cd = h.card.cd * this.st.cardCd;
+    Sfx.play('cardthrow');
     playCard(this, h.card);
+    this.dealPoker('carta');
     // partículas de tinta y pólvora al jugar la carta (desde su hueco en el HUD)
     const hb = this.hudCards ? this.hudCards[i] : null;
     this.uiBurst(hb ? hb.x : this.w / 2, hb ? hb.y : this.h - 60, '#ffb347', 30, true);
@@ -347,14 +364,23 @@ export class Game {
   }
 
   // ---------------------------------------------------------------- póker de tinta y furias
+  // Reparte un naipe al póker al encadenar bajas o jugar cartas (además de los que suelta la horda).
+  dealPoker(reason) {
+    this.dealt++;
+    const r = (Math.random() * RANKS.length) | 0, s = (Math.random() * SUITS.length) | 0;
+    this.addText(this.player.x + 30, this.player.y - 70, (reason === 'racha' ? 'RACHA · ' : 'CARTA · ') + RANKS[r] + SUITS[s], '#efe2c4', 12, false);
+    this.addPokerCard(r, s);
+  }
   addPokerCard(r, s) {
     this.poker.push({ r, s });
     this.pokerCount++;
     Sfx.play('card');
+    this.pokerPartial = this.poker.length < 5 ? (evaluateHand(this.poker) || '') : '';
     if (this.poker.length < 5) return;
     const combo = evaluateHand(this.poker);
     this.pokerShow = { hand: this.poker.slice(), combo, t: 2.2 };
-    this.poker.length = 0;
+    this.poker.length = 0; this.pokerPartial = '';
+    if (combo) { const rk = HAND_RANK.indexOf(combo); if (rk > this.bestHandRank) { this.bestHandRank = rk; this.bestHand = FURIES[combo].name; } }
     if (!combo) { this.addText(this.player.x, this.player.y - 90, 'Carta alta… nada', '#a89a82', 14, false); return; }
     const F = FURIES[combo];
     const ex = this.furies.find((f) => f.id === combo);
@@ -504,13 +530,13 @@ export class Game {
       if (e.armor <= 0) { e.armor = 0; this.addText(e.x, e.y - e.r * 3, '¡CORAZA ROTA!', '#c8c8d0', 12, false); for (let i = 0; i < 8; i++) this.addPart(e.x, e.y - 30, (Math.random() - 0.5) * 260, -Math.random() * 200, 0.6, 4, '#8a8a90', PT.DEBRIS, false); }
       else if (Math.random() < 0.3) this.addPart(e.x, e.y - 30, (Math.random() - 0.5) * 160, -Math.random() * 100, 0.3, 3, '#e8e8e8', PT.SPARK, true);
     }
-    e.hp -= d; e.flash = 0.08;
+    e.hp -= d; e.flash = 0.1; // destello blanco al recibir daño
     if (kb > 0) { const m = e.colossus ? 0.06 : 1; e.vx += nx * kb * m; e.vy += ny * kb * m; }
     if (burn > 0) { e.burnT = 3; e.burnDps = Math.max(e.burnDps, burn * (this.weather && this.weather.id === 'storm' ? 1.6 : 1)); }
     if (slow > 0) e.slowT = Math.max(e.slowT, slow);
     if (stun > 0 && !e.colossus) e.stunT = Math.max(e.stunT, stun);
     if (crit && this.onoT <= 0 && Math.random() < 0.35) this.ono(e.x + (Math.random() - 0.5) * 30, e.y - e.r * 3.2 - 34, Math.random() < 0.5 ? '¡BLAM!' : '¡BANG!', '#ffd23a', 24);
-    if (crit || d >= 60) this.addText(e.x + (Math.random() - 0.5) * 16, e.y - e.r * 2.8, crit ? Math.round(d) + '!' : '' + Math.round(d), crit ? '#ffd23a' : '#f2e2c0', crit ? 17 : 13, crit);
+    if (crit || (d >= 6 && this.numT <= 0)) this.dmgNum(e.x + (Math.random() - 0.5) * 18, e.y - e.r * 2.8, d, crit);
     if (e.hp <= 0) { this.killZombie(e); return true; }
     Sfx.play('hit');
     return false;
@@ -518,6 +544,7 @@ export class Game {
 
   killZombie(e) {
     e.dead = true; this.kills++;
+    if (!e.colossus && e.maxHp >= 40) this.cam.shake = Math.max(this.cam.shake, 5); // baja importante: micro-temblor
     this.gold += e.colossus ? 60 : e.type === 'abomination' ? 8 : 1;
     if (e.colossus || (e.hp < -40 && this.onoT <= 0 && Math.random() < 0.3)) this.ono(e.x, e.y - e.r * 2.5, '¡CRACK!', '#e8dcc0', e.colossus ? 44 : 26);
     Sfx.play('kill');
@@ -531,6 +558,7 @@ export class Game {
     if (e.def.puddle) this.addZone(ZK.INK, e.x, e.y, e.def.puddle.r, e.def.puddle.time, 0, '#0a0a12', 0);
     for (let i = 0; i < 7; i++) { const a = Math.random() * TAU, s = 60 + Math.random() * 200; this.addPart(e.x, e.y - e.r, Math.cos(a) * s, Math.sin(a) * s, 0.4 + Math.random() * 0.3, 2 + Math.random() * 3, i % 3 ? '#3a0c0a' : '#0a0806', PT.BLOOD, false); }
     this.addDecal(e.x, e.y, e.r * (0.8 + Math.random() * 0.6), Math.random() < 0.5 ? 1 : 0);
+    this.addDecal(e.x + (Math.random() - 0.5) * 10, e.y + 2, e.r * (1.1 + Math.random() * 0.5), 3); // marca de tinta que se desvanece
     if (e.def.bomb) { this.explode(e.x, e.y, e.def.bomb.r, 90, '#ff8a2a', 1, 0, 300, false); this.explodeHitsPlayer(e.x, e.y, e.def.bomb.r, e.dmg); }
     if (e.def.gas) this.addZone(ZK.GAS, e.x, e.y, e.def.gas.r, e.def.gas.time, e.def.gas.dps, '#9dff3a', 0);
     if (e.colossus) {
@@ -541,6 +569,7 @@ export class Game {
     }
     // racha de bajas → bocadillo
     this.killChain++; this.chainT = 2.5;
+    if (this.killChain % 8 === 0) this.dealPoker('racha');
     if (this.killChain % 30 === 0) this.say(null, BARKS[this.hero.id].streak, 1.6);
     this.holyKills++;
     if (this.objective.onKill) this.objective.onKill(e);
@@ -561,7 +590,7 @@ export class Game {
 
   addDecal(x, y, r, kind) {
     const i = this.decalI * 4;
-    this.decals[i] = x; this.decals[i + 1] = y; this.decals[i + 2] = r; this.decals[i + 3] = kind;
+    this.decals[i] = x; this.decals[i + 1] = y; this.decals[i + 2] = r; this.decals[i + 3] = kind; this.decalT[this.decalI] = this.realTime;
     this.decalI = (this.decalI + 1) % 160; this.decalN = Math.min(160, this.decalN + 1);
   }
 
@@ -1003,7 +1032,6 @@ export class Game {
     const d = this.dlg;
     if (d.cool > 0) d.cool -= dt;
     const l = d.cur;
-    if (this.banner && (!l || l.life < 0.2)) { if (l) l.life = 0; return; } // no pisar los rótulos de ronda/clima
     if (l) {
       l.life += dt;
       if (l.follow && (l.follow.dead || l.follow.uid !== l.uid)) { l.follow = null; if (!l.hero) l.life = Math.max(l.life, l.dur); }
@@ -1026,15 +1054,22 @@ export class Game {
     p.x = x; p.y = y; p.vx = vx; p.vy = vy; p.life = 0; p.max = life; p.size = size; p.color = color; p.kind = kind; p.grow = 0; p.drag = 0; p.add = add;
     return p;
   }
+  // Número de daño estilizado: tipografía de cartel, sombra dura desplazada y salto; críticos en rojo sangre.
+  dmgNum(x, y, d, crit) {
+    const t = this.texts.get(); if (!t) return;
+    if (!crit) this.numT = 0.045;
+    t.x = x; t.y = y; t.vy = crit ? -90 : -70; t.life = 0; t.max = crit ? 0.9 : 0.6; t.str = crit ? Math.round(d) + '!' : '' + Math.round(d);
+    t.color = crit ? '#ff4a2a' : '#efe2c4'; t.size = crit ? 19 : Math.min(15, 10 + d / 25); t.big = false; t.num = crit ? 2 : 1; t.rot = (Math.random() - 0.5) * 0.3;
+  }
   addText(x, y, str, color, size, big) {
     const t = this.texts.get(); if (!t) return;
-    t.x = x; t.y = y; t.vy = -60; t.life = 0; t.max = big ? 1.1 : 0.75; t.str = str; t.color = color; t.size = size; t.big = big;
+    t.x = x; t.y = y; t.vy = -60; t.life = 0; t.max = big ? 1.1 : 0.75; t.str = str; t.color = color; t.size = size; t.big = big; t.num = 0;
   }
   comicText(x, y, str, color, size) {
     const t = this.texts.get(); if (!t) return;
-    t.x = x; t.y = y; t.vy = -30; t.life = 0; t.max = 1.2; t.str = str; t.color = color; t.size = size; t.big = true;
+    t.x = x; t.y = y; t.vy = -30; t.life = 0; t.max = 1.2; t.str = str; t.color = color; t.size = size; t.big = true; t.num = 0;
   }
-  showBanner(title, sub, t) { this.banner = { title, sub, t, max: t }; }
+  showBanner(title, sub, t) { t = Math.max(1.1, t * 0.6); this.banner = { title, sub, t, max: t }; } // corto y discreto
   // Onomatopeya de tinta (limitada para no saturar la pantalla)
   ono(x, y, str, color, size) { if (this.onoT > 0) return; this.onoT = 0.22; this.comicText(x, y, str, color, size); }
 
@@ -1050,6 +1085,7 @@ export class Game {
       mode: this.modeId, win, missionId: this.mission ? this.mission.id : null, round: o.round || 0, kills: this.kills,
       time: this.time, level: this.level, profileXp: Math.round(this.profileXp), deck: this.deck,
       killer: o.killerName ? o.killerName() : '', gold: Math.round(this.gold),
+      petKills: this.petKills || 0, petName: this.pet ? this.pet.def.name : '', petKind: this.pet ? this.pet.def.kind : '', bestHand: this.bestHand || '',
     };
   }
 }

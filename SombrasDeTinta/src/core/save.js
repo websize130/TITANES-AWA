@@ -61,6 +61,7 @@ class SaveManager {
 
   // Oro Maldito y armería
   get coins() { return this.data.coins; }
+  addPetKills(id, n) { const h = this.data.heroes[id]; h.petKills = (h.petKills || 0) + (n | 0); this.flush(); }
   addCoins(n) { this.data.coins = Math.max(0, Math.round(this.data.coins + n)); this.flush(); }
   owns(wid) { return this.data.owned.includes(wid); }
   buy(wid) {

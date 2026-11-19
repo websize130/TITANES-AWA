@@ -1,6 +1,6 @@
 // HUD limpio: barra de salud metálica desgastada, mano/mazo de cartas con recarga, ronda u objetivo,
 // maldiciones activas, barras de colosos, flechas a objetivos, joystick y rótulos de tinta.
-import { INK, TAU, makeCanvas, makeRng, burst } from '../art/ink.js';
+import { INK, TAU, makeCanvas, makeRng } from '../art/ink.js';
 import { miniCard, pokerFace } from '../art/cardArt.js';
 import { HX, HY } from './engine.js';
 import { ZONES } from '../data/story.js';
@@ -84,6 +84,7 @@ function metalBar(ctx, x, y, w, h, k, c1, c2) {
 const BTN = { c0: { id: 'c0', x: 0, y: 0, r: 0 }, c1: { id: 'c1', x: 0, y: 0, r: 0 }, c2: { id: 'c2', x: 0, y: 0, r: 0 }, pause: { id: 'pause', x: 0, y: 0, r: 0 } };
 
 const HUDCARDS = [BTN.c0, BTN.c1, BTN.c2];
+const FAN = [0, 1, 2].map(() => ({ id: '', cd: 0, playT: -9, drawT: -9 }));
 
 export function drawHud(g, ctx, t) {
   const W = g.w, H = g.h, p = g.player, inp = g.input, touch = inp.isTouch, small = W < 640, dpr = g.dpr;
@@ -150,7 +151,7 @@ export function drawHud(g, ctx, t) {
   // ---------------- objetivo / ronda
   const o = g.objective, ow = small ? Math.min(W - 24, 270) : 360, ox = (W - ow) / 2, oy = small ? 140 : 10;
   ctx.drawImage(plate(ow, o.progress >= 0 ? 60 : 48, dpr, 'parchment'), ox, oy, ow, o.progress >= 0 ? 60 : 48);
-  text(ctx, o.headline(), W / 2, oy + 16, small ? 12 : 15, '#5a0a06', 'T', 'center', 0);
+  { const hl = o.headline(); let hs = small ? 12 : 15; ctx.font = f(hs, 'T'); const hw = ctx.measureText(hl).width; if (hw > ow - 24) hs = Math.max(9, Math.floor(hs * (ow - 24) / hw)); text(ctx, hl, W / 2, oy + 16, hs, '#5a0a06', 'T', 'center', 0); }
   if (o.timer >= 0) text(ctx, txt('tm', Math.ceil(o.timer), mmss), W / 2, oy + 36, small ? 15 : 18, o.timer < 10 && o.round === 0 ? '#b3140e' : '#140c08', 'T', 'center', 0);
   else text(ctx, g.map.name, W / 2, oy + 35, 11, '#3a2410', 'B', 'center', 0);
   // clima dinámico: sello lacrado junto al objetivo
@@ -187,43 +188,76 @@ export function drawHud(g, ctx, t) {
     ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-8, -11); ctx.lineTo(-3, 0); ctx.lineTo(-8, 11); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
   }
 
-  // ---------------- mano de cartas (indicador del mazo de habilidad)
-  const size = touch ? 46 : 44, gap = 10;
-  const baseX = touch ? W - (size + gap) * 3 - 6 : W / 2 - ((size + gap) * 3 - gap) / 2, baseY = H - Math.round(size * 1.6) - (touch ? 14 : 12);
+  // ---------------- mano de cartas en ABANICO (naipes que se alzan al jugarse y entran girando al robarse)
+  const size = touch ? 50 : 48, ch = Math.round(size * 1.6);
+  const fanCx = touch ? W - (size * 1.9) - 10 : W / 2, fanBase = H - (touch ? 16 : 14);
   inp.buttons.length = 0; inp.buttons.push(BTN.pause);
   g.hudCards = HUDCARDS;
-  { const ch0 = Math.round(size * 1.6), lw = (size + gap) * 3 + 10; ctx.drawImage(plate(lw, ch0 + 22, dpr, 'leather'), baseX - 10, baseY - 14, lw, ch0 + 22); }
+  const now = g.realTime;
   for (let i = 0; i < 3; i++) {
-    const h = g.hand[i], x = baseX + i * (size + gap), y = baseY, ch = Math.round(size * 1.6);
-    const B = BTN['c' + i]; B.x = x + size / 2; B.y = y + ch / 2; B.r = size * 0.62;
+    const h = g.hand[i], F = FAN[i];
+    // detectar robo (cambia la carta) y jugada (empieza la recarga)
+    const id = h ? h.card.id : '';
+    if (id !== F.id) { F.id = id; if (id) F.drawT = now; }
+    const cdNow = h ? h.cd : 0;
+    if (h && cdNow > F.cd + 0.01) F.playT = now;
+    F.cd = cdNow;
+    const ang = (i - 1) * 0.17, off = (i - 1) * (size * 0.86);
+    const pd = Math.min(1, (now - F.playT) / 0.45), dd = Math.min(1, (now - F.drawT) / 0.4);
+    const lift = pd < 1 ? Math.sin(pd * Math.PI) * 26 : 0, flip = dd < 1 ? Math.abs(Math.cos(dd * Math.PI * 0.5 + Math.PI * 0.5)) : 1;
+    const hover = h && h.cd <= 0 ? 4 + Math.sin(t * 4 + i) * 1.5 : 0;
+    const cx = fanCx + off, cy = fanBase - ch / 2 - Math.abs(i - 1) * 6 - lift - hover + (dd < 1 ? (1 - dd) * 60 : 0);
+    const B = BTN['c' + i]; B.x = cx; B.y = cy; B.r = size * 0.66;
     if (touch) inp.buttons.push(B);
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang + (pd < 1 ? Math.sin(pd * Math.PI) * 0.1 : 0)); ctx.scale(Math.max(0.05, flip), 1);
+    // sombra dura desplazada
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(-size / 2 + 4, -ch / 2 + 5, size, ch);
     if (!h) {
-      ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(232,220,192,0.35)'; ctx.lineWidth = 2; ctx.strokeRect(x, y, size, ch); ctx.setLineDash([]);
-      text(ctx, '' + (i + 1), x + size / 2, y + ch / 2, 14, 'rgba(232,220,192,0.35)', 'T', 'center', 0);
-      continue;
+      ctx.fillStyle = 'rgba(42,22,10,0.6)'; ctx.fillRect(-size / 2, -ch / 2, size, ch);
+      ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(232,220,192,0.4)'; ctx.lineWidth = 2; ctx.strokeRect(-size / 2, -ch / 2, size, ch); ctx.setLineDash([]);
+      text(ctx, '' + (i + 1), 0, 0, 15, 'rgba(232,220,192,0.4)', 'T', 'center', 0);
+      ctx.restore(); continue;
     }
-    ctx.drawImage(miniCard(h.card, size, dpr), x, y, size, ch);
+    ctx.drawImage(miniCard(h.card, size, dpr), -size / 2, -ch / 2, size, ch);
     if (h.cd > 0) {
       const k = h.cd / (h.card.cd * g.st.cardCd);
-      ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(x, y + ch * (1 - k), size, ch * k);
-      text(ctx, '' + Math.ceil(h.cd), x + size / 2, y + ch / 2, 16, '#e8dcc0', 'T', 'center', 3);
+      ctx.fillStyle = 'rgba(10,6,5,0.68)'; ctx.fillRect(-size / 2, -ch / 2 + ch * (1 - k), size, ch * k);
+      text(ctx, '' + Math.ceil(h.cd), 0, 0, 17, '#efe2c4', 'T', 'center', 3);
     } else {
-      ctx.globalAlpha = 0.4 + Math.sin(t * 5 + i) * 0.25; ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 2.5; ctx.strokeRect(x - 2, y - 2, size + 4, ch + 4); ctx.globalAlpha = 1;
+      ctx.globalAlpha = 0.45 + Math.sin(t * 5 + i) * 0.25; ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 2.5; ctx.strokeRect(-size / 2 - 2, -ch / 2 - 2, size + 4, ch + 4); ctx.globalAlpha = 1;
     }
-    if (!touch) { ctx.fillStyle = '#120a06'; ctx.fillRect(x + size / 2 - 9, y - 10, 18, 16); text(ctx, '' + (i + 1), x + size / 2, y - 2, 11, '#f2e2b8', 'T', 'center', 0); }
+    if (pd < 1) { ctx.globalAlpha = 1 - pd; ctx.fillStyle = '#fff4d6'; ctx.fillRect(-size / 2, -ch / 2, size, ch); ctx.globalAlpha = 1; }
+    if (!touch) { ctx.fillStyle = '#120a06'; ctx.fillRect(-9, -ch / 2 - 12, 18, 16); text(ctx, '' + (i + 1), 0, -ch / 2 - 4, 11, '#f2e2b8', 'T', 'center', 0); }
+    ctx.restore();
   }
 
-  // ---------------- mano de póker de tinta (5 naipes)
+  // ---------------- mano de póker de tinta (5 naipes) + contador discreto de la jugada en curso
   const pw3 = touch ? 30 : 34, phh = pw3 * 1.4, px0 = 14, py0 = H - phh - (touch ? 14 : 16);
-  ctx.drawImage(plate(5 * (pw3 + 5) + 12, phh + 30, dpr, 'leather'), px0 - 8, py0 - 22, 5 * (pw3 + 5) + 12, phh + 30);
-  text(ctx, 'PÓKER DE TINTA', px0, py0 - 12, 10, '#e8dcc0', 'T', 'left', 2.5);
+  const ppw = 5 * (pw3 + 5) + (touch ? 12 : 84);
+  ctx.drawImage(plate(ppw, phh + 30, dpr, 'leather'), px0 - 8, py0 - 22, ppw, phh + 30);
+  text(ctx, touch ? 'PÓKER' : 'PÓKER DE TINTA', px0, py0 - 12, 10, '#e8dcc0', 'T', 'left', 2.5);
   const show = g.pokerShow, hand = show ? show.hand : g.poker;
   for (let i = 0; i < 5; i++) {
     const x = px0 + i * (pw3 + 5);
     if (hand[i]) ctx.drawImage(pokerFace(hand[i], pw3, dpr), x, py0 - (show ? Math.sin(Math.min(1, (2.2 - show.t) * 4) * Math.PI) * 8 : 0), pw3, phh);
     else { ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(232,220,192,0.3)'; ctx.lineWidth = 1.5; ctx.strokeRect(x, py0, pw3, phh); ctx.setLineDash([]); }
   }
-  if (show) text(ctx, show.combo ? '¡' + FURIES[show.combo].name.toUpperCase() + '!' : 'Carta alta', px0 + 5 * (pw3 + 5) + 6, py0 + phh / 2, 15, show.combo ? FURIES[show.combo].color : '#a89a82', 'T', 'left', 3);
+  const pxEnd = px0 + 5 * (pw3 + 5) + 8;
+  if (show) text(ctx, show.combo ? '¡' + FURIES[show.combo].name.toUpperCase() + '!' : 'Carta alta', pxEnd, py0 + phh / 2, 11, show.combo ? FURIES[show.combo].color : '#a89a82', 'T', 'left', 3);
+  else if (touch) {
+    // móvil: la jugada parcial va en la cabecera de la placa para no invadir el abanico de cartas
+    const part = g.pokerPartial ? FURIES[g.pokerPartial].name.toUpperCase() : '';
+    if (part) text(ctx, part, px0 + 5 * (pw3 + 5) - 6, py0 - 12, 10, FURIES[g.pokerPartial].color, 'T', 'right', 2.5);
+    const ck = g.killChain % 8;
+    for (let k = 0; k < 8; k++) { ctx.fillStyle = k < ck ? '#c41a12' : 'rgba(232,220,192,0.18)'; ctx.fillRect(px0 + k * 5, py0 + phh + 2, 3, 3); }
+  } else {
+    // jugada parcial y racha de bajas hacia el próximo naipe
+    const part = g.pokerPartial ? FURIES[g.pokerPartial].name.toUpperCase() : '—';
+    text(ctx, 'MANO', pxEnd, py0 + 8, 9, '#a89a82', 'B', 'left', 2);
+    text(ctx, part, pxEnd, py0 + 22, 12, g.pokerPartial ? FURIES[g.pokerPartial].color : '#6a5a4a', 'T', 'left', 2.5);
+    const ck = g.killChain % 8;
+    for (let k = 0; k < 8; k++) { ctx.fillStyle = k < ck ? '#c41a12' : 'rgba(232,220,192,0.18)'; ctx.fillRect(pxEnd + k * 6, py0 + 32, 4, 6); }
+  }
 
   // ---------------- rótulo de zona
   if (g.zoneBanner) {
@@ -250,16 +284,25 @@ export function drawHud(g, ctx, t) {
   ctx.globalAlpha = 1;
 
   // ---------------- rótulo
+  // Aviso rojo discreto: cinta compacta y translúcida en el lateral superior derecho (nunca en el centro)
   const bn = g.banner;
   if (bn) {
-    const k = bn.t / bn.max, a = Math.max(0, Math.min(1, (1 - k) * 6, k * 4));
+    const k = bn.t / bn.max, a = Math.max(0, Math.min(1, (1 - k) * 7, k * 5));
+    const slide = (1 - Math.min(1, (1 - k) * 7)) * 36;
+    ctx.font = f(small ? 12 : 14, 'T');
+    const tw = ctx.measureText(bn.title).width;
+    ctx.font = f(small ? 9 : 10, 'B');
+    const sw = bn.sub ? ctx.measureText(bn.sub).width : 0;
+    const bw = Math.min(W - 24, Math.max(tw, sw) + 44), bh = bn.sub ? (small ? 38 : 42) : (small ? 24 : 28);
+    const bx = W - 12 - bw + slide, by = small ? 206 : 56 + Math.round((small ? 96 : 150) * HY / HX) + 18;
+    ctx.globalAlpha = a * 0.82;
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + 12, by + bh / 2); ctx.closePath();
+    ctx.fillStyle = '#7a0c08'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = INK; ctx.stroke();
+    ctx.globalAlpha = a * 0.6; ctx.strokeStyle = '#efe2c4'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(bx + 6, by + 3); ctx.lineTo(bx + bw - 3, by + 3); ctx.lineTo(bx + bw - 3, by + bh - 3); ctx.lineTo(bx + 6, by + bh - 3); ctx.lineTo(bx + 16, by + bh / 2); ctx.closePath(); ctx.stroke();
     ctx.globalAlpha = a;
-    const cyb = H * 0.34, sz = Math.min(W / (bn.title.length * 0.7 + 2), small ? 28 : 44);
-    ctx.save(); ctx.translate(W / 2, cyb); ctx.rotate(-0.04);
-    burst(ctx, 0, 0, Math.min(W * 0.48, bn.title.length * sz * 0.45 + 40), 22, 'rgba(120,10,8,0.93)', 4, 9);
-    text(ctx, bn.title, 0, -2, sz, '#f2e2b8', 'T', 'center', sz * 0.2);
-    ctx.restore();
-    if (bn.sub) text(ctx, bn.sub, W / 2, cyb + sz * 0.9 + 16, small ? 13 : 16, '#e8dcc0', 'B', 'center', 3);
+    text(ctx, bn.title, bx + 24, by + (bn.sub ? 14 : bh / 2), small ? 12 : 14, '#f2e2b8', 'T', 'left', 2.5);
+    if (bn.sub) text(ctx, bn.sub, bx + 24, by + bh - (small ? 10 : 11), small ? 9 : 10, '#e8c8a8', 'B', 'left', 0);
     ctx.globalAlpha = 1;
   }
 }

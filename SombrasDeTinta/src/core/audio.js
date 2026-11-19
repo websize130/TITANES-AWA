@@ -49,7 +49,7 @@ export const Sfx = {
   play(name) {
     if (!enabled || !ensure() || ctx.state !== 'running') return;
     switch (name) {
-      case 'shot': if (throttle(name, 55)) { noise(0.12, 2400, 0.8, 0.22, 'bandpass', 0.1); tone(180, 0.06, 'square', 0.05, 0.5); } break;
+      case 'shot': if (throttle(name, 55)) { noise(0.12, 2400, 0.8, 0.22, 'bandpass', 0.1); noise(0.16, 260, 0.7, 0.16, 'lowpass', 0.14); tone(180, 0.06, 'square', 0.05, 0.5); } break; // pólvora: chasquido + golpe grave
       case 'shotgun': if (throttle(name, 80)) { noise(0.3, 900, 0.7, 0.45, 'lowpass', 0.28); tone(90, 0.15, 'sawtooth', 0.12, 0.4); } break;
       case 'rifle': if (throttle(name, 80)) { noise(0.25, 1800, 1.2, 0.35, 'bandpass', 0.22); tone(320, 0.1, 'square', 0.06, 0.3); } break;
       case 'gatling': if (throttle(name, 45)) noise(0.06, 3000, 1, 0.12, 'bandpass', 0.05); break;
@@ -70,10 +70,13 @@ export const Sfx = {
       case 'thunder': noise(1.4, 180, 0.4, 0.7, 'lowpass', 1.3); break;
       case 'win': [392, 494, 587, 784, 988].forEach((f, i) => tone(f, 0.3, 'triangle', 0.14, 1, i * 0.12)); break;
       case 'lose': [392, 349, 311, 233].forEach((f, i) => tone(f, 0.4, 'sawtooth', 0.1, 0.9, i * 0.22)); break;
-      case 'click': tone(700, 0.04, 'square', 0.05); break;
+      case 'click': noise(0.05, 900, 1.2, 0.2, 'bandpass', 0.04); tone(1700, 0.02, 'square', 0.035); tone(130, 0.06, 'sine', 0.12, 0.5); break; // clic de imprenta
+      case 'pet': if (throttle(name, 120)) { noise(0.08, 1400, 2, 0.12, 'bandpass', 0.6); tone(320, 0.06, 'triangle', 0.08, 0.5); } break;
+      case 'petshot': if (throttle(name, 120)) { tone(880, 0.09, 'sine', 0.06, 0.4); noise(0.06, 3200, 1.5, 0.06, 'highpass', 0.5); } break;
       case 'zap': if (throttle(name, 90)) { tone(1800, 0.12, 'square', 0.06, 0.25); noise(0.12, 5000, 3, 0.15, 'bandpass', 0.1); } break;
       case 'trap': if (throttle(name, 90)) { tone(900, 0.05, 'square', 0.12, 0.3); noise(0.12, 2600, 2, 0.25, 'bandpass', 0.1); } break;
       case 'card': if (throttle(name, 60)) noise(0.1, 5200, 1.5, 0.12, 'highpass', 0.09); break;
+      case 'cardthrow': if (throttle(name, 70)) { noise(0.14, 3800, 0.9, 0.16, 'bandpass', 0.12); tone(900, 0.08, 'triangle', 0.035, 1.8); } break; // naipe lanzado: silbido de papel
       case 'page': noise(0.25, 3000, 0.6, 0.12, 'bandpass', 0.22); break;
       case 'stamp': tone(80, 0.25, 'sine', 0.4, 0.5); noise(0.15, 400, 1, 0.3); break;
       case 'groan': if (throttle(name, 900)) tone(70 + Math.random() * 30, 0.6, 'sawtooth', 0.05, 0.7); break;

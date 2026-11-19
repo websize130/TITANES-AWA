@@ -76,6 +76,22 @@ src/ui     index.html · style.css · main.js
   (¡BLAM!, ¡CRACK!, ¡ZAP!, ¡KABOOM!) y **HUD diegético** de hierro oxidado, cuero cosido y pergamino quemado.
 - **Curva de dificultad progresiva**: arranque suave solo con errantes lentos; después arañas, sabuesos y, como clímax,
   colosos acorazados y hordas masivas.
+- **Mascotas evolutivas**: Huesos (sabueso espectral, Silas), Medianoche (gato negro, Maeve), Nevermore (cuervo
+  sombrío, Caleb) y Don Carroña (halcón del desierto, Barnaby). Siguen al forajido, atacan solas (embestida, picado o
+  tinta a distancia) con daño equilibrado y crecen con su nivel: *Curtida* en NV 10 y *Leyenda* en NV 30 (más tamaño,
+  aura de tinta y potencia). Sus bajas salen en la crónica final.
+- **Mapa bien iluminado**: suelo más claro y nítido, luces cálidas ambientales, semitono suave, sombras proyectadas,
+  motas de ceniza y manchas de tinta que se desvanecen al abatir enemigos.
+- **Plaga y jefes redibujados**: arañas con cefalotórax, abdomen y 8 patas articuladas animadas; errantes y corredores
+  encorvados con ropa rasgada y zancada animada; jefes góticos con abrigo largo o capa, sombrero o corona, rasgos
+  definidos, arma propia, aura y telegrafía clara de sus ataques.
+- **Selección como naipe gótico** (palo e índice en las esquinas, doble marco, sellos, bloques de Mascota y Pasiva),
+  **mano en abanico** en el HUD con animación al jugar/robar y **contador de mano de póker**: las rachas de 8 bajas y
+  cada carta jugada reparten naipes; al completar 5, la jugada otorga una furia temporal.
+- **Crónica final** al estilo *La Gaceta de Tinta*, avisos rojos compactos en el lateral, micro-temblor de cámara,
+  destello al golpear, números de daño con sombra dura y sonidos sintetizados (naipes, pólvora, mascota, imprenta).
+- **Modo Historia progresivo**: el Caso I es una dificultad media accesible (pocos enemigos a la vez, sube al final);
+  del Caso II en adelante crece la frecuencia, el número simultáneo y llegan oleadas cada vez más exigentes.
 - **Niveles 1–50 por forajido**.
 
 ## Controles

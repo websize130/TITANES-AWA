@@ -270,8 +270,8 @@ function bossScene(type, col) {
     sky(ctx, x, y, w, h, '#0a0606', '#050304');
     glow(ctx, x + w * 0.5, y + h, w * 0.7, col, 0.7);
     halftone(ctx, x, y, w, h, 6, '#000000', 0.5, false);
-    const s = (h * 1.15) / 220;
-    const img = figure((c) => drawZombie(c, type, 1, 9), 360 * s, 260 * s, s, 0.97);
+    const s = (h * 0.8) / 290;
+    const img = figure((c) => drawZombie(c, type, 1, 9), 400 * s, 330 * s, s, 0.97);
     ctx.drawImage(img, x + w * 0.5 - img.width / 2, y + h * 1.04 - img.height);
     const g = ctx.createLinearGradient(0, y, 0, y + h);
     g.addColorStop(0, 'rgba(0,0,0,0.85)'); g.addColorStop(0.5, 'rgba(0,0,0,0.1)'); g.addColorStop(1, 'rgba(0,0,0,0)');

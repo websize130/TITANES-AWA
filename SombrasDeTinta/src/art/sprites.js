@@ -2,6 +2,7 @@
 import { makeCanvas, rgba, glow as glowFx } from './ink.js';
 import { drawHero } from './heroArt.js';
 import { drawZombie, Z_BOX } from './zombieArt.js';
+import { drawPet } from './petArt.js';
 import { renderProp } from './worldArt.js';
 
 function whiteOf(src) {
@@ -75,14 +76,22 @@ export class Sprites {
     return s;
   }
 
-  zombie(type, elite = false) {
-    const key = 'z' + type + (elite ? 'E' : '');
+  // Mascota: 4 fotogramas por nivel de evolución, con la luz de borde del forajido.
+  pet(kind, tier, frame, rim) {
+    const key = 'pet' + kind + tier + frame;
+    let s = this.map.get(key);
+    if (!s) { s = build(78, 54, 39, 48, 0.42, this.res, (c) => drawPet(c, kind, frame, tier), null, rim, 0.8); this.map.set(key, s); }
+    return s;
+  }
+
+  zombie(type, elite = false, frame = 0) {
+    const key = 'z' + type + (elite ? 'E' : '') + frame;
     let s = this.map.get(key);
     if (!s) {
       const b = Z_BOX[type], sc = b.s * (elite ? 1.3 : 1);
       const w = b.w * sc + 16, h = b.h * sc + 12;
       const big = b.s >= 0.5;
-      s = build(w, h, w / 2, h * b.cy, sc, this.res, (c) => drawZombie(c, type, 0, 7), elite ? '#7fa8ff' : null, big ? '#ff5a3a' : '#8a9aa8', big ? 1.2 : 0.8);
+      s = build(w, h, w / 2, h * b.cy, sc, this.res, (c) => drawZombie(c, type, 0, 7, frame), elite ? '#7fa8ff' : null, big ? '#ff5a3a' : '#8a9aa8', big ? 1.2 : 0.8);
       this.map.set(key, s);
     }
     return s;

@@ -22,7 +22,7 @@ function shoot(g, x, y, aim, dmgMul) {
         const b = g.addBullet(x, y, aim + (i - (w.count - 1) / 2) * w.spread + (Math.random() - 0.5) * 0.06, w.speed, w.dmg * dmgMul, 5, pierce, life, pal.card || '#f2e6cc', '#ffffff', BK.CARD, kb);
         if (b) { b.chain += w.chain || 0; b.homing = w.homing || 0; b.radius = w.explode || 0; if (w.burn) b.burn = Math.max(b.burn, w.burn); if (w.legendary) b.color = w.legendary; }
       }
-      Sfx.play('card');
+      Sfx.play('cardthrow');
       break;
     case 'shotgun':
       for (let i = 0; i < w.count; i++) { const b = g.addBullet(x, y, aim + (Math.random() - 0.5) * w.spread, w.speed * (0.8 + Math.random() * 0.35), w.dmg * dmgMul, 3.5, pierce, life * (0.8 + Math.random() * 0.25), w.legendary || pal.shot, pal.core, BK.PELLET, kb); if (b && w.burn) b.burn = Math.max(b.burn, w.burn); }

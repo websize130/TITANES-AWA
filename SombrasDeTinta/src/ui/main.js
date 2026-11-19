@@ -6,6 +6,8 @@ import { Sfx } from '../core/audio.js';
 import { HEROES, MAX_LEVEL, SKIN_RULES, SKIN_TIER } from '../data/heroes.js';
 import { WEAPONS, WEAPON_LIST, CATEGORIES, canEquip } from '../data/weapons.js';
 import { drawWeaponIcon } from '../art/weaponArt.js';
+import { drawPet } from '../art/petArt.js';
+import { petStats, PET_TIER } from '../data/pets.js';
 import { MISSIONS } from '../data/story.js';
 import { SIGNATURE, RARITY, CARDS } from '../data/cards.js';
 import { renderPage, renderPulpCover, paintScene } from '../art/comicPage.js';
@@ -59,7 +61,7 @@ function show(id) {
 
 document.addEventListener('click', (e) => {
   const go = e.target.closest('[data-go]'), act = e.target.closest('[data-act]'), back = e.target.closest('[data-back]');
-  if (go || act || back) { Sfx.unlock(); Sfx.play('click'); }
+  if (go || act || back || e.target.closest('.btn, .naipe button, .mode-card, .chapter')) { Sfx.unlock(); Sfx.play('click'); }
   if (back) show(previous === 'records' ? 'title' : previous);
   if (go) {
     const to = go.dataset.go;
@@ -118,27 +120,54 @@ function drawTitle() {
 // ---------------------------------------------------------------- dossiers
 function heroPal(h) { return h.skins[Save.hero(h.id).skin].pal; }
 
+// Cada forajido es un naipe gótico: palo e índice en las esquinas, doble marco ornamentado y sello.
+const SUIT = { silas: ['K', '♣', false], maeve: ['J', '♠', false], caleb: ['A', '♦', true], barnaby: ['7', '♥', true] };
+function petPreview(cv, h, level) {
+  const S = petStats(h.id, level), d = dprOf(), W = 96, H = 72;
+  cv.width = W * d; cv.height = H * d;
+  const x = cv.getContext('2d'); x.scale(d, d);
+  const gr = x.createRadialGradient(W / 2, H * 0.7, 4, W / 2, H * 0.7, W * 0.6);
+  gr.addColorStop(0, S.tier ? 'rgba(255,180,90,0.35)' : 'rgba(239,226,196,0.15)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = '#1a100a'; x.fillRect(0, 0, W, H); x.fillStyle = gr; x.fillRect(0, 0, W, H);
+  x.save(); x.translate(W / 2, H - 6); const k = 0.42 * (0.85 + (S.size - 1) * 0.6); x.scale(k, k); drawPet(x, S.def.id, 1, S.tier); x.restore();
+}
+function petBlock(h, st) {
+  const S = petStats(h.id, st.level), P = S.def;
+  return `<div class="blk pet"><canvas data-pet="${h.id}"></canvas><div><b>Mascota · ${P.name}</b><small>${P.kind} · ${PET_TIER[S.tier]}</small>
+    <span class="petstats">Daño ${S.dmg} · ${P.attack === 'bolt' ? 'Tinta a distancia' : P.attack === 'swoop' ? 'Picado' : 'Embestida'}${st.petKills ? ' · ☠ ' + fmt(st.petKills) : ''}</span></div></div>`;
+}
+
 function renderDossiers() {
   const box = $('#dossiers');
   box.innerHTML = HEROES.map((h, i) => {
     const st = Save.hero(h.id), pct = st.level >= MAX_LEVEL ? 100 : (st.xp / xpForLevel(st.level)) * 100;
-    return `<article class="dossier ${Save.data.hero === h.id ? 'selected' : ''}" style="--rot:${[-1.2, 0.8, -0.6, 1][i]}deg">
-      <span class="tab">EXPEDIENTE Nº ${['047', '113', '666', '208'][i]}</span>
-      ${st.level >= 50 ? '<span class="stampmark">LEYENDA</span>' : ''}
-      <canvas data-portrait="${h.id}"></canvas>
-      <h3>${h.name}</h3><span class="alias">${h.alias}</span> <span class="alias temper">${h.temper}</span>
-      <p><b>${h.role}</b> · Arma: ${WEAPONS[st.weapon].name} · Aspecto: ${SKIN_TIER[st.skin]}</p>
-      <p class="passive"><b>Pasiva · ${h.passive.name}:</b> ${h.passive.desc}</p>
-      <div class="lvl"><b>NV ${st.level}</b><span class="xpbar"><i style="width:${pct}%"></i></span><span>${st.level >= MAX_LEVEL ? 'MÁX' : fmt(st.xp) + '/' + fmt(xpForLevel(st.level))}</span></div>
-      <div class="row"><button class="btn small" data-dossier="${h.id}">Abrir dossier</button><button class="btn btn-blood" data-pick="${h.id}">Elegir</button></div>
+    const [rank, suit, red] = SUIT[h.id] || ['A', '♠', false];
+    return `<article class="naipe ${red ? 'red' : ''} ${Save.data.hero === h.id ? 'selected' : ''}" style="--rot:${[-1.2, 0.8, -0.6, 1][i]}deg">
+      <div class="naipe-in">
+        <span class="idx tl">${rank}<i>${suit}</i></span><span class="idx br">${rank}<i>${suit}</i></span>
+        <span class="ribbon">EXPEDIENTE Nº ${['047', '113', '666', '208'][i]}</span>
+        ${st.level >= 50 ? '<span class="stampmark">LEYENDA</span>' : ''}
+        <div class="portrait"><canvas data-portrait="${h.id}"></canvas><span class="suit-wm">${suit}</span></div>
+        <h3>${h.name}</h3>
+        <div class="badges"><span class="seal">${h.alias}</span><span class="seal blood">${h.temper}</span><span class="seal gold">${SKIN_TIER[st.skin]}</span></div>
+        <p class="role">${h.role} · <b>${WEAPONS[st.weapon].name}</b></p>
+        <div class="flourish"><span>${suit}</span></div>
+        ${petBlock(h, st)}
+        <div class="blk pas"><b>Pasiva · ${h.passive.name}</b><p>${h.passive.desc}</p></div>
+        <div class="lvl"><b>NV ${st.level}</b><span class="xpbar"><i style="width:${pct}%"></i></span><span>${st.level >= MAX_LEVEL ? 'MÁX' : fmt(st.xp) + '/' + fmt(xpForLevel(st.level))}</span></div>
+        <div class="row"><button class="btn small" data-dossier="${h.id}">Abrir dossier</button><button class="btn btn-blood" data-pick="${h.id}">Elegir</button></div>
+      </div>
     </article>`;
   }).join('');
-  fonts().then(() => $$('canvas[data-portrait]', box).forEach((cv) => {
-    const h = heroById(cv.dataset.portrait), d = dprOf(), W = cv.clientWidth || 300, H = W * 0.75;
-    cv.width = W * d; cv.height = H * d;
-    const x = cv.getContext('2d'); x.scale(d, d);
-    paintScene(x, 'hero', 0, 0, W, H, h, heroPal(h));
-  }));
+  fonts().then(() => {
+    $$('canvas[data-portrait]', box).forEach((cv) => {
+      const h = heroById(cv.dataset.portrait), d = dprOf(), W = cv.clientWidth || 300, H = W * 0.75;
+      cv.width = W * d; cv.height = H * d;
+      const x = cv.getContext('2d'); x.scale(d, d);
+      paintScene(x, 'hero', 0, 0, W, H, h, heroPal(h));
+    });
+    $$('canvas[data-pet]', box).forEach((cv) => petPreview(cv, heroById(cv.dataset.pet), Save.hero(cv.dataset.pet).level));
+  });
   $$('[data-pick]', box).forEach((b) => b.addEventListener('click', () => { Save.selectHero(b.dataset.pick); Sfx.play('stamp'); show('modes'); }));
   $$('[data-dossier]', box).forEach((b) => b.addEventListener('click', () => openDossier(heroById(b.dataset.dossier))));
 }
@@ -155,6 +184,7 @@ function openDossier(h) {
         <p><b>Nivel ${st.level}</b> de ${MAX_LEVEL}.</p>
         <p><b>Arma equipada:</b> ${w.name} <span class="dmg">DAÑO ${w.power}</span><br><span style="font-size:13px">${w.desc}</span></p>
         <div class="row" style="justify-content:flex-start"><button class="btn small" data-armory>Abrir la Armería ⚙</button></div>
+        <div class="naipe-pet">${petBlock(h, st)}<p class="petdesc">${petStats(h.id, st.level).def.desc} Crece con el nivel del forajido: <b>Curtida</b> en NV 10 y <b>Leyenda</b> en NV 30.</p></div>
       </div>
     </div>
     <p><b>Aspectos</b></p>
@@ -169,6 +199,7 @@ function openDossier(h) {
       renderPage(cv, h.panels, h, heroPal(h), { w: W, h: H, title: 'ORIGEN' });
       cv.style.width = '100%'; cv.style.height = 'auto';
       const sc = b.querySelector('#sigcard'), x = sc.getContext('2d'); drawCard(x, SIGNATURE[h.signature], 200, 350, 0, 'Carta de firma: empieza en tu mano.');
+      $$('canvas[data-pet]', b).forEach((cv) => petPreview(cv, h, st.level));
       $$('canvas[data-skinart]', b).forEach((c) => {
         const i = +c.dataset.skinart, x2 = c.getContext('2d');
         const gr = x2.createLinearGradient(0, 0, 0, 200); gr.addColorStop(0, i === 2 ? '#3a0a06' : i === 1 ? '#2a1a10' : '#1a120c'); gr.addColorStop(1, '#0a0605');
@@ -336,6 +367,7 @@ async function endRun(r) {
   const skinsBefore = h.skins.map((_, i) => Save.skinUnlocked(h.id, i));
   const gain = Save.addXp(h.id, r.profileXp, r.kills);
   Save.addCoins(r.gold || 0);
+  Save.addPetKills(h.id, r.petKills || 0);
   let rank = -1;
   if (r.mode === 'story' && r.win) Save.completeStory(r.missionId);
   if (r.mode === 'survival') rank = Save.addRecord({ round: r.round, kills: r.kills, hero: h.id, skin: before, date: new Date().toLocaleDateString('es-ES'), stamp: stampFor(r.round) });
@@ -358,25 +390,45 @@ async function endRun(r) {
   const unl = h.skins.map((s, i) => (!skinsBefore[i] && Save.skinUnlocked(h.id, i) ? `<div class="unlock"><b>¡Aspecto ${SKIN_TIER[i]} desbloqueado!</b><br>${s.name} · equípalo desde el dossier.</div>` : '')).join('');
   const mi = r.missionId ? MISSIONS.findIndex((x) => x.id === r.missionId) : -1;
   const next = r.mode === 'story' && r.win && MISSIONS[mi + 1];
+  const mm = Math.floor(r.time / 60) + ':' + String(Math.floor(r.time % 60)).padStart(2, '0');
+  const head = r.mode === 'survival' ? `${h.short.toUpperCase()} CAE EN LA RONDA ${r.round}` : r.win ? `¡${h.short.toUpperCase()} CIERRA EL CASO!` : `TRAGEDIA PARA ${h.short.toUpperCase()}`;
+  const mName = mi >= 0 ? MISSIONS[mi].name : 'El Cruce de los Condenados';
+  const lede = r.mode === 'survival'
+    ? `El forajido resistió ${mm} en el Cruce y dejó ${fmt(r.kills)} muertos vivientes de vuelta en sus tumbas antes de que la tinta le alcanzara.`
+    : r.win ? `Tras ${mm} de plomo y pólvora, «${mName}» queda resuelto. Los vecinos vuelven a encender los faroles.`
+      : `«${mName}» sigue abierto. El forajido no volvió de la noche, y la horda celebra con un gruñido.`;
   $('#end-info').innerHTML = `
-    <h2>${r.mode === 'survival' ? 'El cruce se cobra su precio' : r.win ? 'Caso cerrado' : 'Final trágico'}</h2>
-    <dl>
-      ${r.mode === 'survival' ? `<dt>Ronda alcanzada</dt><dd>${r.round}</dd>` : ''}
-      <dt>Zombis abatidos</dt><dd>☠ ${fmt(r.kills)}</dd>
-      <dt>Tiempo</dt><dd>${Math.floor(r.time / 60)}:${String(Math.floor(r.time % 60)).padStart(2, '0')}</dd>
-      <dt>Cartas en el mazo</dt><dd>${r.deck}</dd>
-      <dt>XP de forajido</dt><dd>+${fmt(r.profileXp)}</dd>
-      <dt>Oro Maldito</dt><dd>+${fmt(r.gold || 0)} ⛀ (total ${fmt(Save.coins)})</dd>
-      <dt>${h.short}</dt><dd>NV ${st.level}${gain.levelsGained ? ' (+' + gain.levelsGained + ')' : ''}</dd>
-    </dl>
-    ${rank >= 0 ? `<p>Tu nombre queda grabado en el Muro de los Condenados: <b>puesto ${rank + 1}</b>.</p>` : ''}
-    ${unl}
-    <div class="row">
-      <button class="btn btn-blood" data-end="retry">Otra vez</button>
-      ${next ? '<button class="btn" data-end="next">Siguiente caso ▶</button>' : ''}
-      <button class="btn" data-end="modes">Modos</button>
-      <button class="btn" data-end="shop">Armería</button>
-      ${r.mode === 'survival' ? '<button class="btn" data-end="records">El Muro</button>' : ''}
+    <div class="gazette">
+      <div class="g-mast"><span>Año 1879 · Edición nocturna</span><b>LA GACETA DE TINTA</b><span>Precio: un alma</span></div>
+      <div class="g-rule"></div>
+      <h2 class="g-head">${head}</h2>
+      <p class="g-lede"><b>${mName.toUpperCase()}.</b> ${lede}</p>
+      <div class="g-cols">
+        <dl>
+          ${r.mode === 'survival' ? `<dt>Ronda alcanzada</dt><dd>${r.round}</dd>` : ''}
+          <dt>Zombis abatidos</dt><dd>☠ ${fmt(r.kills)}</dd>
+          <dt>Bajas de ${r.petName || 'la mascota'}</dt><dd>🐾 ${fmt(r.petKills || 0)}</dd>
+          <dt>Tiempo</dt><dd>${mm}</dd>
+          <dt>Mejor mano</dt><dd>${r.bestHand || '—'}</dd>
+          <dt>Cartas en el mazo</dt><dd>${r.deck}</dd>
+        </dl>
+        <dl>
+          <dt>XP ganada</dt><dd>+${fmt(r.profileXp)}</dd>
+          <dt>${h.short}</dt><dd>NV ${st.level}${gain.levelsGained ? ' (+' + gain.levelsGained + ')' : ''}</dd>
+          <dt>Oro Maldito</dt><dd>+${fmt(r.gold || 0)} ⛀</dd>
+          <dt>Bolsa total</dt><dd>${fmt(Save.coins)} ⛀</dd>
+        </dl>
+      </div>
+      ${rank >= 0 ? `<p class="g-note">Su nombre queda grabado en el Muro de los Condenados: <b>puesto ${rank + 1}</b>.</p>` : ''}
+      ${unl}
+      <div class="g-rule thin"></div>
+      <div class="row center">
+        <button class="btn btn-blood" data-end="retry">Otra vez</button>
+        ${next ? '<button class="btn" data-end="next">Siguiente caso ▶</button>' : ''}
+        <button class="btn" data-end="modes">Modos</button>
+        <button class="btn" data-end="shop">Armería</button>
+        ${r.mode === 'survival' ? '<button class="btn" data-end="records">El Muro</button>' : ''}
+      </div>
     </div>`;
   Sfx.play('stamp');
   $$('[data-end]', $('#end-info')).forEach((b) => b.addEventListener('click', () => {

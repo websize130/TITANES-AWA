@@ -56,7 +56,8 @@ class Story extends Base {
   gated(t) {
     const w = this.gw || (this.gw = {});
     for (const k in w) delete w[k];
-    for (const k in this.m.spawn) if (t >= (STORY_GATE[k] || 0)) w[k] = this.m.spawn[k];
+    const slow = this.idx === 0 ? 1.6 : 1; // el primer caso presenta las amenazas más despacio
+    for (const k in this.m.spawn) if (t >= (STORY_GATE[k] || 0) * slow) w[k] = this.m.spawn[k];
     if (!Object.keys(w).length) w.walker = 1;
     return w;
   }
@@ -65,10 +66,25 @@ class Story extends Base {
     const g = this.g, o = this.o;
     // oleadas continuas
     if (g.time > 2) {
-      let rate = this.m.rate * (1.3 + (g.time / 30) * 0.45) * (g.time < 20 ? 0.6 : 1);
-      if (this.boss && !this.boss.dead) rate *= 0.45;
+      // Curva de dificultad del Modo Historia:
+      //  · Caso I: dificultad media accesible — pocos enemigos a la vez y ritmo controlado, sube algo al final.
+      //  · Casos II–VI: más frecuencia, más enemigos simultáneos y oleadas cada vez más exigentes.
+      const k = this.idx, prog = Math.min(1, g.time / (o.time || 120));
+      let rate, cap;
+      if (k === 0) { rate = 0.8 + prog * 0.5 + (prog > 0.8 ? 0.35 : 0); cap = Math.round(14 + prog * 14); }
+      else { rate = (0.95 + k * 0.22) * (1 + (g.time / 30) * (0.3 + k * 0.07)); cap = Math.round(26 + k * 16 + g.time / 3); }
+      rate *= this.m.rate * (g.time < 15 ? 0.7 : 1);
+      if (this.boss && !this.boss.dead) rate *= 0.5;
+      cap = Math.min(g.input.isTouch ? 150 : 220, cap);
       this.acc += dt * rate;
-      const cap = g.input.isTouch ? 150 : 220;
+      if (k >= 1) {
+        this.waveT = (this.waveT === undefined ? 24 : this.waveT) - dt;
+        if (this.waveT <= 0) {
+          this.waveT = Math.max(14, 26 - k * 2); this.wave = (this.wave || 0) + 1;
+          this.acc += 3 + k * 2 + this.wave; // oleada: ráfaga extra
+          g.showBanner('OLEADA ' + this.wave, 'La horda aprieta', 1.6); Sfx.play('round');
+        }
+      }
       while (this.acc >= 1) {
         this.acc -= 1;
         if (g.zombies.n >= cap) { this.acc = 0; break; }

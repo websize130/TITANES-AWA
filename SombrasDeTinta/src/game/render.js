@@ -7,8 +7,11 @@ import { pokerFace } from '../art/cardArt.js';
 import { drawHud } from './hud.js';
 import { makeCanvas, INK, TAU, halftonePattern, makeRng, skull as skullArt } from '../art/ink.js';
 import { RIG } from '../art/heroArt.js';
+import { Z_ANIM } from '../art/zombieArt.js';
+const BOSS_AURA = { foreman: '#ffb040', faceless: '#a88aff', plague: '#9dff3a', spawn: '#ff8a2a', beast: '#9dff3a' };
 
-const DARK = { crossroads: 0.8, town: 0.76, chapel: 0.8, mine: 0.86, swamp: 0.79, pulpit: 0.79 };
+// Oscuridad base por mapa (más baja: el Oeste Gótico se ve, la tinta solo enmarca)
+const DARK = { crossroads: 0.54, town: 0.5, chapel: 0.56, mine: 0.6, swamp: 0.56, pulpit: 0.56 };
 const FONTS = [];
 function font(size, face) { const k = (size | 0) * 2 + (face === 'T' ? 0 : 1); return FONTS[k] || (FONTS[k] = face === 'T' ? `${size | 0}px "Holtwood One SC", Georgia, serif` : `bold ${size | 0}px "Courier Prime", "Courier New", monospace`); }
 
@@ -56,7 +59,7 @@ function screenHalftone(g) {
 
 // ---------------------------------------------------------------- luces
 function addLight(g, x, y, r, a) {
-  if (g.lightN >= 64) return;
+  if (g.lightN >= 112) return;
   const k = g.lightN * 4; g.lights[k] = x; g.lights[k + 1] = y; g.lights[k + 2] = r; g.lights[k + 3] = a; g.lightN++;
 }
 
@@ -68,8 +71,9 @@ function lighting(g, ctx, camX, camY) {
     g.darkPattern = null;
   }
   const l = g.lightCtx, sc = g.scale * LS;
-  const A = Math.min(0.96, (DARK[g.mapId] || 0.85) + (g.objective.round >= 10 ? 0.05 : 0) + (g.weather && g.weather.id === 'eclipse' ? 0.1 : 0));
-  if (!g.darkPattern || g.darkA !== A) { g.darkPattern = halftonePattern(l, `rgba(4,3,8,${A})`, 'rgba(0,0,0,1)', 5); g.darkA = A; }
+  const A = Math.min(0.9, (DARK[g.mapId] || 0.55) + (g.objective.round >= 10 ? 0.06 : 0) + (g.weather && g.weather.id === 'eclipse' ? 0.2 : 0));
+  // semitono suave: puntos poco densos y translúcidos para máxima nitidez
+  if (!g.darkPattern || g.darkA !== A) { g.darkPattern = halftonePattern(l, `rgba(6,4,10,${A})`, `rgba(0,0,0,${(A * 0.35).toFixed(2)})`, 7); g.darkA = A; }
   l.globalCompositeOperation = 'source-over'; l.globalAlpha = 1;
   l.clearRect(0, 0, g.lightCanvas.width, g.lightCanvas.height);
   l.fillStyle = g.darkPattern; l.fillRect(0, 0, g.lightCanvas.width, g.lightCanvas.height);
@@ -116,7 +120,7 @@ function penRect(ctx, x, y, w, h, jit) {
 }
 function drawDialogue(g, ctx, camX, camY) {
   const l = g.dlg.cur;
-  if (!l || (g.banner && l.life < 0.2)) return;
+  if (!l) return;
   if (!l.layout) layoutLine(ctx, l, Math.min(300, g.w * 0.62));
   const L = l.layout, W = g.w, H = g.h;
   const sx = (l.x - camX) * g.scale + W / 2, sy = (l.y - camY) * g.scale + H / 2;
@@ -204,17 +208,38 @@ export function renderGame(g, dt) {
     ctx.restore();
   }
 
-  // manchas
-  const D = g.decals;
-  for (let pass = 0; pass < 2; pass++) {
-    ctx.beginPath();
-    for (let i = 0; i < g.decalN; i++) {
-      const k = i * 4, x = D[k], y = D[k + 1], r = D[k + 2];
-      if ((D[k + 3] === 2) !== (pass === 1) || x < vx0 || x > vx1 || y < vy0 || y > vy1) continue;
-      ctx.moveTo(x + r, y); ctx.ellipse(x, y, r, r * 0.5, 0, 0, TAU);
-    }
-    ctx.fillStyle = pass ? 'rgba(8,6,4,0.5)' : 'rgba(60,6,6,0.5)'; ctx.fill();
+  // luz cálida ambiental sobre el suelo
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < g.ambient.length; i++) {
+    const a = g.ambient[i];
+    if (a.x + a.r < vx0 || a.x - a.r > vx1 || a.y + a.r < vy0 || a.y - a.r > vy1) continue;
+    const fl = 0.92 + Math.sin(t * 2.3 + a.ph) * 0.05 + Math.sin(t * 7.1 + a.ph * 2) * 0.03;
+    ctx.globalAlpha = 0.16 * fl; ctx.drawImage(sp.glow(a.col), a.x - a.r * 0.8, a.y - a.r * 0.5, a.r * 1.6, a.r);
+    addLight(g, a.x, a.y, a.r * fl, a.a);
   }
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+
+  // manchas de sangre, quemaduras y marcas de tinta que se desvanecen poco a poco
+  const D = g.decals, DT = g.decalT;
+  for (let i = 0; i < g.decalN; i++) {
+    const k = i * 4, x = D[k], y = D[k + 1], r = D[k + 2], kind = D[k + 3];
+    if (x < vx0 || x > vx1 || y < vy0 || y > vy1) continue;
+    const age = t - DT[i], life = kind === 2 ? 22 : kind === 3 ? 9 : 14;
+    if (age > life) continue;
+    const fa = Math.min(1, (life - age) / (life * 0.45));
+    if (kind === 3) {
+      // salpicadura de tinta: mancha estrellada con gotas
+      ctx.globalAlpha = 0.72 * fa; ctx.fillStyle = '#0a0605';
+      ctx.beginPath();
+      for (let s2 = 0; s2 < 12; s2++) { const an = (s2 / 12) * TAU + x * 0.01, m = s2 % 2 ? 0.55 : 0.9 + ((s2 * 13 + (x | 0)) % 5) * 0.08; const px = x + Math.cos(an) * r * m, py = y + Math.sin(an) * r * m * 0.5; s2 ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+      ctx.closePath(); ctx.fill();
+      for (let s2 = 0; s2 < 4; s2++) { const an = s2 * 1.7 + y * 0.01; ctx.beginPath(); ctx.arc(x + Math.cos(an) * r * 1.35, y + Math.sin(an) * r * 0.65, 1.5 + (s2 % 2) * 1.5, 0, TAU); ctx.fill(); }
+    } else {
+      ctx.globalAlpha = 0.5 * fa; ctx.fillStyle = kind === 2 ? '#080604' : '#4a0606';
+      ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.5, 0, 0, TAU); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
 
   // zonas bajo los personajes
   const Z = g.zones.items;
@@ -351,28 +376,55 @@ export function renderGame(g, dt) {
   // sombras (Maeve no tiene sombra: la perdió con el diablo)
   const E = g.zombies.items, n = g.zombies.n;
   sortByY(E, n);
-  ctx.fillStyle = 'rgba(0,0,0,0.42)'; ctx.beginPath();
-  for (let i = 0; i < n; i++) { const e = E[i]; if (e.dead || e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1) continue; const r = e.r * 1.15; ctx.moveTo(e.x + r, e.y); ctx.ellipse(e.x, e.y, r, r * 0.4, 0, 0, TAU); }
-  if (g.hero.id !== 'maeve') { ctx.moveTo(p.x + 18, p.y); ctx.ellipse(p.x, p.y, 18, 7, 0, 0, TAU); }
-  ctx.fill();
+  for (let pass = 0; pass < 2; pass++) {
+    const grow = pass ? 1 : 1.45;
+    ctx.fillStyle = pass ? 'rgba(0,0,0,0.38)' : 'rgba(0,0,0,0.16)'; ctx.beginPath();
+    for (let i = 0; i < n; i++) { const e = E[i]; if (e.dead || e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1) continue; const r = e.r * 1.15 * grow, ox = e.r * 0.25; ctx.moveTo(e.x + ox + r, e.y + 1); ctx.ellipse(e.x + ox, e.y + 1, r, r * 0.38, 0, 0, TAU); }
+    if (g.hero.id !== 'maeve') { const r = 18 * grow; ctx.moveTo(p.x + 5 + r, p.y + 1); ctx.ellipse(p.x + 5, p.y + 1, r, r * 0.4, 0, 0, TAU); }
+    if (g.pet && g.pet.on) { const r = g.pet.size * 0.55 * grow, py = g.pet.y + 1; ctx.moveTo(g.pet.x + 3 + r, py); ctx.ellipse(g.pet.x + 3, py, r, r * 0.4, 0, 0, TAU); }
+    ctx.fill();
+  }
 
-  // horda + jugador intercalado por Y
-  let drawnP = false;
+  // horda + jugador + mascota de suelo intercalados por Y
+  let drawnP = false, drawnPet = !(g.pet && g.pet.on) || g.pet.fly;
   for (let i = 0; i <= n; i++) {
     const e = i < n ? E[i] : null;
+    if (!drawnPet && (!e || e.y > g.pet.y) && (drawnP || g.pet.y <= p.y)) { drawPetSprite(g, ctx, S, tx, ty, t); drawnPet = true; }
     if (!drawnP && (!e || e.y > p.y)) { drawPlayer(g, ctx, S, tx, ty, t); drawnP = true; }
+    if (!drawnPet && drawnP && (!e || e.y > g.pet.y)) { drawPetSprite(g, ctx, S, tx, ty, t); drawnPet = true; }
     if (!e || e.dead || e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1) continue;
-    const s = e.spr, frozen = e.stunT > 0 || e.rootT > 0;
-    const ph = t * (e.type === 'runner' ? 14 : 7) + e.uid;
+    const frozen = e.stunT > 0 || e.rootT > 0;
+    const ph = t * (e.type === 'runner' ? 14 : e.type === 'spider' ? 18 : 7) + e.uid;
+    const nf = Z_ANIM[e.type];
+    const s = nf ? sp.zombie(e.type, e.elite, frozen ? 0 : ((ph / TAU) * nf | 0) % nf) : e.spr;
     const bob = frozen ? 0 : Math.abs(Math.sin(ph)) * (e.colossus ? 4 : 2.5);
     const rot = frozen ? Math.sin(t * 30) * 0.03 : Math.sin(ph) * (e.colossus ? 0.03 : 0.09) + (e.type === 'walker' ? 0.05 : 0);
     ctx.globalAlpha = e.alpha;
-    spr(ctx, S, tx, ty, s.canvas, s.ox, s.oy, s.w, s.h, e.x, e.y - bob, e.face < 0, rot);
+    if (e.colossus) {
+      // jefe: respiración, y al preparar un ataque se hincha y su aura late (telegrafía clara)
+      const atk = e.mode && e.mode !== 'move', col = BOSS_AURA[e.type] || '#ff5a3a';
+      const pulse = atk ? 0.55 + 0.45 * Math.sin(t * 16) : 0.35 + Math.sin(t * 2) * 0.1;
+      ctx.setTransform(S, 0, 0, S, tx, ty); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pulse * 0.7;
+      const gr = e.r * (atk ? 3.4 : 2.6); ctx.drawImage(sp.glow(col), e.x - gr, e.y - gr * 0.5, gr * 2, gr); ctx.globalCompositeOperation = 'source-over';
+      const br = 1 + Math.sin(t * 2.2 + e.uid) * 0.015 + (atk ? 0.05 * Math.min(1, (e.subT || 0) * 4) : 0);
+      const c = Math.cos(rot) * S, sn = Math.sin(rot) * S, f = e.face < 0 ? -1 : 1;
+      ctx.globalAlpha = e.alpha;
+      ctx.setTransform(c * f * (2 - br), sn * f, -sn * br, c * br, tx + e.x * S, ty + (e.y - bob) * S);
+      ctx.drawImage(s.canvas, -s.ox, -s.oy, s.w, s.h);
+      if (atk) addLight(g, e.x, e.y - e.r * 2, 220, 0.6);
+    } else spr(ctx, S, tx, ty, s.canvas, s.ox, s.oy, s.w, s.h, e.x, e.y - bob, e.face < 0, rot);
     if (e.flash > 0) { ctx.globalAlpha = 0.85; ctx.drawImage(s.flash, -s.ox, -s.oy, s.w, s.h); }
     else if (e.stunT > 0 || e.slowT > 0) { ctx.globalAlpha = 0.2; ctx.drawImage(s.flash, -s.ox, -s.oy, s.w, s.h); }
     if (e.colossus) addLight(g, e.x, e.y - e.r, 150, 0.45);
   }
   ctx.globalAlpha = 1; ctx.setTransform(S, 0, 0, S, tx, ty);
+  if (g.pet && g.pet.on && g.pet.fly) drawPetSprite(g, ctx, S, tx, ty, t); // mascotas voladoras, por encima
+  // proyectiles de tinta de la mascota
+  if (g.petShots) for (const sh of g.petShots) {
+    if (!sh.on) continue;
+    ctx.fillStyle = '#0a0605'; ctx.strokeStyle = g.pal.glow; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(sh.x, sh.y, 6, 4, Math.atan2(sh.vy, sh.vx), 0, TAU); ctx.fill(); ctx.stroke();
+  }
   // corazas
   for (let i = 0; i < n; i++) { const e = E[i]; if (e.dead || e.maxArmor <= 0 || e.armor <= 0 || e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1) continue; ctx.fillStyle = INK; ctx.fillRect(e.x - 15, e.y - e.spr.oy - 6, 30, 5); ctx.fillStyle = '#b8c0c8'; ctx.fillRect(e.x - 14, e.y - e.spr.oy - 5, 28 * (e.armor / e.maxArmor), 3); }
   // horda aterrada por los chistes
@@ -542,12 +594,36 @@ export function renderGame(g, dt) {
       ctx.lineWidth = q.size * 0.3; ctx.strokeStyle = INK; ctx.strokeText(q.str, 0, 0);
       ctx.fillStyle = q.color; ctx.fillText(q.str, 0, 0);
       ctx.setTransform(S, 0, 0, S, tx, ty);
+    } else if (q.num) {
+      const pop = 1 + Math.max(0, 0.18 - q.life) * (q.num === 2 ? 4 : 2.5), c = Math.cos(q.rot) * S * pop, sn = Math.sin(q.rot) * S * pop;
+      ctx.setTransform(c, sn, -sn, c, tx + q.x * S, ty + q.y * S);
+      ctx.font = font(q.size, 'T');
+      ctx.fillStyle = INK; ctx.fillText(q.str, 2, 2); // sombra dura desplazada
+      ctx.lineWidth = q.num === 2 ? 4 : 3; ctx.strokeStyle = INK; ctx.strokeText(q.str, 0, 0);
+      ctx.fillStyle = q.color; ctx.fillText(q.str, 0, 0);
+      if (q.num === 2) { ctx.fillStyle = '#ffd23a'; ctx.fillRect(-ctx.measureText(q.str).width / 2, q.size * 0.42, ctx.measureText(q.str).width, 2); }
+      ctx.setTransform(S, 0, 0, S, tx, ty);
     } else {
       ctx.font = font(q.size, 'B'); ctx.lineWidth = 3.5; ctx.strokeStyle = INK; ctx.strokeText(q.str, q.x, q.y);
       ctx.fillStyle = q.color; ctx.fillText(q.str, q.x, q.y);
     }
   }
   ctx.globalAlpha = 1;
+
+  // motas suaves de ceniza y tinta flotando (sin asignaciones: posiciones deterministas)
+  {
+    const span = 900;
+    for (let i = 0; i < 70; i++) {
+      const sx = ((i * 197.3 + t * (8 + (i % 5) * 3)) % span + span) % span - span / 2;
+      const sy = ((i * 113.7 - t * (12 + (i % 7) * 2)) % span + span) % span - span / 2;
+      const x = camX + sx + Math.sin(t * 0.7 + i) * 14, y = camY + sy * 0.7;
+      const k = i % 3;
+      ctx.globalAlpha = 0.18 + 0.14 * Math.sin(t * 1.3 + i * 2.1) ** 2;
+      ctx.fillStyle = k === 0 ? '#0a0605' : k === 1 ? '#efe2c4' : '#b8a890';
+      ctx.fillRect(x, y, k ? 2.2 : 3, k ? 2.2 : 3);
+    }
+    ctx.globalAlpha = 1;
+  }
 
   // bocadillos de diálogo (espacio de pantalla, sobre la oscuridad)
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -581,7 +657,7 @@ export function renderGame(g, dt) {
     }
   }
   if (g.curses.length) { ctx.fillStyle = `rgba(80,20,120,${(0.08 + Math.sin(t * 3) * 0.04).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
-  ctx.globalAlpha = 0.8; ctx.drawImage(screenHalftone(g), 0, 0, W, H); ctx.globalAlpha = 1;
+  ctx.globalAlpha = 0.38; ctx.drawImage(screenHalftone(g), 0, 0, W, H); ctx.globalAlpha = 1;
   if (p.hurt > 0 || p.hp / p.maxHp < 0.25) {
     const a = Math.min(0.6, p.hurt > 0 ? p.hurt * 1.6 : 0.16 + Math.sin(t * 6) * 0.08);
     ctx.fillStyle = `rgba(140,0,0,${a.toFixed(3)})`;
@@ -589,6 +665,28 @@ export function renderGame(g, dt) {
   }
   if (g.flash > 0) { ctx.fillStyle = `rgba(255,250,235,${(g.flash * 0.5).toFixed(2)})`; ctx.fillRect(0, 0, W, H); }
   drawHud(g, ctx, t);
+}
+
+// Mascota: aura de tinta según su evolución, fotogramas de galope/aleteo y mordisco al atacar.
+function drawPetSprite(g, ctx, S, tx, ty, t) {
+  const P = g.pet;
+  if (!P || !P.on) return;
+  const moving = Math.abs(P.vx) + Math.abs(P.vy) > 30;
+  const frame = P.fly ? ((t * 11) | 0) % 4 : moving ? ((t * 13) | 0) % 4 : 0;
+  const s = g.spr.pet(P.def.id, P.tier, frame, g.hero.rim);
+  const sc = P.size * (P.bite > 0 ? 1.12 : 1), y = P.y - P.lift - (P.fly ? 0 : moving ? Math.abs(Math.sin(t * 13)) * 2 : 0);
+  ctx.setTransform(S, 0, 0, S, tx, ty);
+  if (P.tier > 0) {
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.25 + P.tier * 0.15 + Math.sin(t * 4) * 0.05;
+    const r = 26 * sc * (1 + P.tier * 0.35); ctx.drawImage(g.spr.glow(g.pal.glow), P.x - r, y - 22 * sc - r * 0.7, r * 2, r * 1.4);
+    ctx.globalCompositeOperation = 'source-over';
+    if (P.tier > 1) { ctx.fillStyle = '#0a0605'; for (let k = 0; k < 4; k++) { const a = t * 2 + k * 1.6; ctx.globalAlpha = 0.5; ctx.fillRect(P.x - P.face * (14 + k * 7) + Math.sin(a) * 3, y - 18 * sc + Math.cos(a * 1.3) * 6, 3, 3); } }
+  }
+  ctx.globalAlpha = 1;
+  ctx.setTransform(S * sc * P.face, 0, 0, S * sc, tx + P.x * S, ty + y * S);
+  ctx.drawImage(s.canvas, -s.ox, -s.oy, s.w, s.h);
+  addLight(g, P.x, y - 20, 70 + P.tier * 30, 0.5);
+  ctx.setTransform(S, 0, 0, S, tx, ty);
 }
 
 function drawLayer(ctx, S, tx, ty, Ls, wx, wy, fx, pivot, angle, sc, img) {
