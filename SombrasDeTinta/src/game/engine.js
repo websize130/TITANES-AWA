@@ -4,7 +4,7 @@
 import { Pool, Grid } from './pool.js';
 import { Sprites } from '../art/sprites.js';
 import { makeGround } from '../art/worldArt.js';
-import { Z_ANIM } from '../art/zombieArt.js';
+import { Z_ANIM, Z_ATK } from '../art/zombieArt.js';
 import { initPet, updatePet, updatePetShots } from './petAI.js';
 import { makeRng, TAU } from '../art/ink.js';
 import { ZOMBIES, COLOSSI } from '../data/enemies.js';
@@ -13,7 +13,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { MAPS, ZONES } from '../data/story.js';
 import { RANKS, SUITS, FURIES, evaluateHand } from '../data/poker.js';
 const HAND_RANK = ['PAREJA', 'DOBLE', 'TRIO', 'ESCALERA', 'COLOR', 'FULL', 'POKER'];
-import { CARDS, SIGNATURE, rollRarity } from '../data/cards.js';
+import { CARDS, SIGNATURE, RARITY, rollRarity } from '../data/cards.js';
 import { Sfx } from '../core/audio.js';
 import { fireWeapon, playCard, updatePassives } from './combat.js';
 import { updateZombies } from './ai.js';
@@ -27,7 +27,7 @@ export function zoneAt(x) { const k = x / HX; for (let i = 0; i < ZONES.length; 
 
 const mkZ = () => ({
   uid: 0, type: '', def: null, x: 0, y: 0, vx: 0, vy: 0, r: 10, hp: 1, maxHp: 1, armor: 0, maxArmor: 0, speed: 0, dmg: 0,
-  colossus: false, elite: false, spr: null, flash: 0, burnT: 0, burnDps: 0, burnTick: 0, slowT: 0, stunT: 0, rootT: 0,
+  colossus: false, elite: false, spr: null, flash: 0, atkAnim: 0, burnT: 0, burnDps: 0, burnTick: 0, slowT: 0, stunT: 0, rootT: 0,
   atkT: 0, state: 0, stateT: 0, ax: 0, ay: 0, face: 1, target: null, xp: 1, soul: 1, dead: false, alpha: 1, name: '',
   mode: '', modeT: 0, patIdx: 0, subT: 0, subN: 0, phase: 0, ang: 0, hitBy: 0, tauntT: 0, fearT: 0, flank: 1,
 });
@@ -56,7 +56,7 @@ export class Game {
     this.texts = new Pool(mkT, 96); this.numT = 0;
     this.items = new Pool(mkI, 500);
     this.zones = new Pool(mkZn, 120);
-    this.dlg = { cur: null, next: null, cool: 0 };
+    this.dlg = { cur: null, next: null, cool: 0, lastText: '', lastT: -99 };
     this.uiParts = []; for (let i = 0; i < 160; i++) this.uiParts.push(mkU());
     this.fx = { dmg: 1, rate: 1, speed: 1, pierce: 0, range: 1, crit: 0, reload: 1, invuln: false, explode: 0 };
     this.grid = new Grid(Math.max(HX, HY) + 200, 80);
@@ -109,7 +109,7 @@ export class Game {
     this.groundPatterns = this.zoned ? ZONES.map((z) => this.ctx.createPattern(makeGround(z.id, z), 'repeat')) : [this.ctx.createPattern(makeGround(this.mapId), 'repeat')];
     this.zoneIdx = -1;
     for (const P of [this.zombies, this.bullets, this.ebullets, this.parts, this.texts, this.items, this.zones]) P.clear();
-    this.dlg.cur = null; this.dlg.next = null; this.dlg.cool = 0;
+    this.dlg.cur = null; this.dlg.next = null; this.dlg.cool = 0; this.dlg.lastText = ''; this.dlg.lastT = -99;
     for (const u of this.uiParts) u.on = false;
     this.poker = []; this.furies = []; this.pokerShow = null; this.pokerCount = 0; this.pokerPartial = ''; this.bestHand = ''; this.bestHandRank = -1; this.dealt = 0;
     this.gold = 0; this.weather = null; this.coils = []; this.onoT = 0; this.synT = 0; this.zapT = 0; this.weakT = 0; this.fearT2 = 0;
@@ -133,7 +133,7 @@ export class Game {
     p.x = this.zoned ? 0 : 0; p.y = 120; p.inv = 1.5; p.ammo = this.magSize(); p.reloadT = 0; p.burstN = 0; p.burstT = 0; p.stunT = 0; p.stunImmune = 0; p.inkT = 0; p.vx = 0; p.vy = 0; p.jokeT = 8; p.hurt = 0; p.fireT = 0.3; p.alt = 0; p.muzzle = 0; p.rootT = 0; p.regenT = 0; p.aim = -Math.PI / 2; p.spin = 0;
     this.cam.x = p.x; this.cam.y = p.y; this.cam.shake = 0;
     // mano: carta de firma + 2 huecos
-    this.hand = [{ card: SIGNATURE[hero.signature], cd: 0 }, null, null];
+    this.hand = [{ card: SIGNATURE[hero.signature], cd: 0, lv: 1 }, null, null];
     this.deck = 1;
     this.buildProps();
     this.traps.length = 0;
@@ -151,9 +151,9 @@ export class Game {
     this.spr.hero(this.hero.id, this.pal, this.skinIdx, this.hero.rim);
     this.spr.heroLayers(this.hero.id, this.pal, this.skinIdx, this.hero.rim);
     this.spr.prop('plaguelamp');
-    for (let f = 0; f < 4; f++) this.spr.pet(this.pet.def.id, this.pet.tier, f, this.hero.rim);
+    for (let f = 0; f <= 4; f++) this.spr.pet(this.pet.def.id, this.pet.tier, f, this.hero.rim);
     for (const t of Object.keys(ZOMBIES)) this.spr.zombie(t);
-    for (const t of Object.keys(Z_ANIM)) for (let f = 1; f < Z_ANIM[t]; f++) this.spr.zombie(t, false, f);
+    for (const t of Object.keys(Z_ANIM)) for (let f = 1; f <= Z_ANIM[t]; f++) if (f < Z_ANIM[t] || Z_ATK[t]) this.spr.zombie(t, false, f);
     for (const t of Object.keys(COLOSSI)) this.spr.zombie(t);
     for (const c of [this.pal.shot, this.pal.glow, '#ff8a2a', '#ffd23a', '#ffffff', '#9dff3a', '#c8b8ff', '#7fa8ff', '#ff3a2a', '#d8e8b0', '#ffe08a', '#b8ff6a', '#c8d8ff', '#cfe8ff', '#eaf6ff', '#ff4a3a', '#ff6a3a'])
       this.spr.glow(c);
@@ -196,8 +196,8 @@ export class Game {
 
   pause(v) {
     if (!this.running || this.state === 'over') return;
-    if (v && this.state === 'play') { this.state = 'paused'; this.cb.onPause(true); }
-    else if (!v && this.state === 'paused') { this.state = 'play'; this.last = performance.now(); this.cb.onPause(false); }
+    if (v && this.state === 'play') { this.state = 'paused'; this.input.reset(); this.cb.onPause(true); }
+    else if (!v && this.state === 'paused') { this.state = 'play'; this.input.reset(); this.last = performance.now(); this.cb.onPause(false); }
   }
 
   // ---------------------------------------------------------------- bucle
@@ -232,10 +232,12 @@ export class Game {
     Sfx.setIntensity(Math.min(1, this.zombies.n / 90 + this.colossi.length * 0.35 + (this.objective.fever ? 0.35 : 0)));
     this.updatePlayer(dt);
     updateZombies(this, dt);
+    if (this.state !== 'play') return; // muerte durante el contacto: el resto espera al fin de partida
     this.updateBullets(dt);
     this.updateEBullets(dt);
     this.updateZones(dt);
     updateTraps(this, dt);
+    if (this.state !== 'play') return; // una trampa o un barril pueden acabar la partida en este fotograma
     updatePassives(this, dt);
     updatePet(this, dt); updatePetShots(this, dt);
     this.updateItems(dt);
@@ -321,13 +323,16 @@ export class Game {
     if (p.hp / p.maxHp < 0.3) { this.lowBarkT -= dt; if (this.lowBarkT <= 0) { this.lowBarkT = 20; this.say(null, BARKS[this.hero.id].low, 0, false, 2); } }
   }
 
+  // Potencia de una carta de acción: crece con el nivel de la partida y con las mejoras por duplicado.
+  cardPower(h) { return (1 + (this.level - 1) * 0.04) * (1 + ((h.lv || 1) - 1) * 0.25); }
+
   useHand(i) {
     const h = this.hand[i];
     if (!h) return;
     if (h.cd > 0) { this.addText(this.player.x, this.player.y - 76, 'Recargando…', '#a8987a', 12, false); return; }
-    h.cd = h.card.cd * this.st.cardCd;
+    h.cd = h.card.cd * this.st.cardCd * (1 - 0.15 * ((h.lv || 1) - 1));
     Sfx.play('cardthrow');
-    playCard(this, h.card);
+    playCard(this, h.card, this.cardPower(h));
     this.dealPoker('carta');
     // partículas de tinta y pólvora al jugar la carta (desde su hueco en el HUD)
     const hb = this.hudCards ? this.hudCards[i] : null;
@@ -461,7 +466,11 @@ export class Game {
     if (fromTrap && this.st.trapMaster) return;
     const vulnNoDodge = this.curses.some((c) => c.type === 'vuln');
     if (!vulnNoDodge && Math.random() < this.st.dodge) { p.inv = 0.25; this.addText(p.x, p.y - 70, '¡ESQUIVA!', '#c8b8ff', 13, false); return; }
-    const d = Math.max(1, dmg * this.objective.dmgMult * this.curseVuln - this.st.armor);
+    let d = Math.max(1, dmg * this.objective.dmgMult * this.curseVuln - this.st.armor);
+    if (p.shield > 0) { // escudo «Siete Vidas»
+      const a = Math.min(p.shield, d); p.shield -= a; d -= a; p.inv = 0.3;
+      if (d <= 0) { this.addText(p.x, p.y - 66, 'ABSORBIDO', '#d8ff6a', 12, false); Sfx.play('hit'); return; }
+    }
     p.hp -= d; p.inv = 0.45; p.hurt = 0.3;
     this.cam.shake = Math.max(this.cam.shake, 9);
     this.addText(p.x, p.y - 66, '-' + Math.round(d), '#ff4a3a', 15, false);
@@ -478,7 +487,7 @@ export class Game {
     e.uid = this.uid++; e.type = type; e.def = d; e.x = x; e.y = y; e.vx = 0; e.vy = 0; e.r = d.r;
     e.maxHp = e.hp = Math.round(d.hp * hpMult); e.maxArmor = e.armor = (d.armor || 0) * hpMult;
     e.speed = d.speed * spdMult * (0.88 + Math.random() * 0.24); e.dmg = d.dmg;
-    e.colossus = false; e.elite = false; e.spr = this.spr.zombie(type); e.flash = 0; e.burnT = 0; e.burnDps = 0; e.burnTick = 0;
+    e.colossus = false; e.elite = false; e.spr = this.spr.zombie(type); e.flash = 0; e.atkAnim = 0; e.burnT = 0; e.burnDps = 0; e.burnTick = 0;
     e.slowT = 0; e.stunT = 0; e.rootT = 0; e.atkT = 0.5 + Math.random(); e.state = 0; e.stateT = 0; e.face = 1; e.target = null;
     e.xp = d.xp; e.soul = d.soul; e.dead = false; e.alpha = 1; e.name = ''; e.hitBy = 0; e.fearT = 0; e.flank = Math.random() < 0.5 ? 1 : -1;
     if (this.objective.assignTarget) this.objective.assignTarget(e);
@@ -991,11 +1000,18 @@ export class Game {
   takeCard(card) {
     this.deck++;
     if (card.t === 'action') {
+      const dup = this.hand.findIndex((h) => h && h.card.id === card.id);
+      if (dup !== -1) { // carta repetida: se mejora en vez de ocupar hueco (máx. nivel III)
+        const h = this.hand[dup]; h.lv = Math.min(3, (h.lv || 1) + 1); h.cd = 0;
+        this.comicText(this.player.x, this.player.y - 110, '¡' + card.name.toUpperCase() + ' ' + ['', 'I', 'II', 'III'][h.lv] + '!', RARITY[card.r].glow, 22);
+        this.state = 'play'; this.last = performance.now(); Sfx.play('combo');
+        return;
+      }
       let slot = this.hand.findIndex((h) => !h);
       if (slot === -1) { // sustituye la de menor rareza (nunca la carta de firma del espacio 1)
         slot = 1; if (this.hand[2].card.r < this.hand[1].card.r) slot = 2;
       }
-      this.hand[slot] = { card, cd: 0 };
+      this.hand[slot] = { card, cd: 0, lv: 1 };
     } else {
       card.apply(this);
       if (card.curse) this.addCurse(card.curse, card.name);
@@ -1011,10 +1027,14 @@ export class Game {
     const text = Array.isArray(lines) ? lines[(Math.random() * lines.length) | 0] : lines;
     if (prio < 0) prio = scream ? 3 : entity ? 0 : 1;
     const d = this.dlg;
+    // sin repeticiones: la misma frase en pantalla, en cola o dicha hace menos de 8 s se descarta
+    if ((d.cur && d.cur.text === text) || (d.next && d.next.text === text) || (text === d.lastText && this.realTime - d.lastT < 8)) return;
     const line = { text, follow: entity, uid: entity ? entity.uid : 0, hero: !entity, scream, prio };
     if (d.cur || d.cool > 0) {
       if (prio === 0) return;                                  // los gruñidos no esperan turno
       if (!d.next || prio >= d.next.prio) d.next = line;       // una sola frase en espera (la más importante)
+      // réplica rápida: si la frase actual ya se ha podido leer, se despide enseguida para no bloquear
+      if (d.cur && prio >= d.cur.prio && d.cur.life > d.cur.minRead) d.cur.dur = Math.min(d.cur.dur, d.cur.life + 0.2);
       return;
     }
     this.startLine(line);
@@ -1022,7 +1042,9 @@ export class Game {
   startLine(l) {
     const plain = l.text.replace(/\*/g, '');
     l.plain = plain; l.len = plain.length;
-    l.dur = Math.min(6, Math.max(4.5, 3.6 + plain.length * 0.03));
+    // duración adaptativa: réplicas cortas ágiles (≈3 s), frases largas hasta 6 s; tiempo mínimo de lectura
+    l.dur = Math.min(6, Math.max(2.6, 2.4 + plain.length * 0.045)); l.minRead = Math.min(1.6, 0.6 + plain.length * 0.02);
+    this.dlg.lastText = l.text; this.dlg.lastT = this.realTime;
     l.life = 0; l.layout = null; l.x = this.player.x; l.y = this.player.y - 80;
     this.dlg.cur = l;
     if (l.follow && !l.scream) Sfx.play('groan');
@@ -1037,7 +1059,8 @@ export class Game {
       if (l.follow && (l.follow.dead || l.follow.uid !== l.uid)) { l.follow = null; if (!l.hero) l.life = Math.max(l.life, l.dur); }
       const src = l.follow || (l.hero ? this.player : null);
       if (src) { l.x = src.x; l.y = src.y - (src.spr ? src.spr.oy : 74); }
-      if (l.life >= l.dur + 0.45) { d.cur = null; d.cool = 0.9; }
+      if (d.next && l.life > l.minRead) l.dur = Math.min(l.dur, l.life + 0.2); // hay cola: acelera la salida
+      if (l.life >= l.dur + 0.3) { d.cur = null; d.cool = d.next ? 0.2 : 0.6; }
     } else if (d.next && d.cool <= 0) { const n = d.next; d.next = null; if (!n.follow || !n.follow.dead) this.startLine(n); }
     // gruñidos de la horda solo si el canal está libre
     this.groanT -= dt;
@@ -1062,6 +1085,9 @@ export class Game {
     t.color = crit ? '#ff4a2a' : '#efe2c4'; t.size = crit ? 19 : Math.min(15, 10 + d / 25); t.big = false; t.num = crit ? 2 : 1; t.rot = (Math.random() - 0.5) * 0.3;
   }
   addText(x, y, str, color, size, big) {
+    // mismo texto flotante cerca y aún reciente (p. ej. «Recargando…» repetido): se refresca en vez de apilarse
+    const TX = this.texts.items;
+    for (let i = 0; i < this.texts.n; i++) { const q = TX[i]; if (q.str === str && !q.num && Math.abs(q.x - x) < 60 && Math.abs(q.y - y) < 60 && q.life < q.max * 0.7) { q.life = 0; q.y = Math.min(q.y, y); return; } }
     const t = this.texts.get(); if (!t) return;
     t.x = x; t.y = y; t.vy = -60; t.life = 0; t.max = big ? 1.1 : 0.75; t.str = str; t.color = color; t.size = size; t.big = big; t.num = 0;
   }

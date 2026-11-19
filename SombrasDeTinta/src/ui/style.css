@@ -1,7 +1,7 @@
 /* WEIRD WEST: SOMBRAS DE TINTA — cómic de terror noventero: claroscuro, tinta, semitono, papel viejo. */
 :root {
   --ink: #0a0605; --paper: #efe2c4; --paper2: #d8c8a0; --blood: #9a140e; --blood2: #c41a12; --bone: #e8dcc0;
-  --amber: #ffb347; --steel: #3a3a3e; --muted: #a89a82; --wood: #4a2e1a; --wood2: #6a4428;
+  --amber: #ffb347; --steel: #3a3a3e; --muted: #cdbd9c; --muted-dark: #5a4030; --wood: #4a2e1a; --wood2: #6a4428;
   --ft: 'Holtwood One SC', 'Rockwell Extra Bold', Georgia, serif;
   --fb: 'Courier Prime', 'Courier New', monospace;
 }
@@ -56,25 +56,10 @@ button { font-family: inherit; }
 
 /* ------------------------------------------------ dossiers */
 .dossiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-.alias.temper { background: var(--blood); }
-.dossier {
-  position: relative; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink);
-  padding: 12px 12px 14px; transform: rotate(var(--rot, 0deg)); transition: transform 0.15s;
-  background-image: radial-gradient(rgba(120, 80, 30, 0.12) 1px, transparent 1.5px); background-size: 5px 5px;
-}
-.dossier:hover { transform: rotate(0deg) translateY(-3px); }
-.dossier.selected { outline: 4px solid var(--blood2); outline-offset: 3px; }
-.dossier .tab { position: absolute; top: -16px; left: 16px; background: var(--paper2); border: 3px solid var(--ink); border-bottom: none; padding: 2px 10px; font-size: 11px; letter-spacing: 2px; }
-.dossier canvas { display: block; width: 100%; aspect-ratio: 4 / 3; border: 3px solid var(--ink); background: #000; }
-.dossier h3 { margin: 10px 0 0; font-family: var(--ft); font-weight: normal; font-size: 21px; line-height: 1.05; }
-.dossier .alias { display: inline-block; font-size: 12px; background: var(--ink); color: var(--paper); padding: 2px 8px; margin: 6px 0; letter-spacing: 2px; }
-.dossier p { margin: 6px 0; font-size: 13px; line-height: 1.35; }
-.dossier .passive { border-left: 4px solid var(--blood); padding-left: 8px; }
 .lvl { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 8px 0; }
 .lvl b { font-family: var(--ft); font-weight: normal; font-size: 18px; }
 .xpbar { flex: 1; height: 10px; border: 2px solid var(--ink); background: #c8b890; }
 .xpbar i { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--blood) 0 6px, var(--blood2) 6px 12px); }
-.dossier .row { margin-top: 8px; }
 .stampmark { position: absolute; right: 12px; top: 40px; font-family: var(--ft); color: var(--blood2); border: 3px solid var(--blood2); padding: 2px 8px; transform: rotate(12deg); opacity: 0.85; font-size: 14px; }
 
 /* ------------------------------------------------ modos */
@@ -143,15 +128,6 @@ button { font-family: inherit; }
 .modal-box h3 { margin: 0 0 6px; font-family: var(--ft); font-weight: normal; font-size: 26px; }
 .modal-box p { line-height: 1.45; font-size: 14px; }
 .modal-box canvas.origin { width: 100%; border: 3px solid var(--ink); display: block; margin: 8px 0; }
-.track { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 10px 0; }
-.ms { border: 3px solid var(--ink); padding: 8px 6px; text-align: center; font-size: 11px; background: #f8ecd0; }
-.ms b { display: block; font-family: var(--ft); font-weight: normal; font-size: 16px; }
-.ms.off { filter: grayscale(1); opacity: 0.55; }
-.pick { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 12px; }
-.pick button { font-family: var(--fb); font-weight: 700; font-size: 12px; padding: 8px 10px; border: 3px solid var(--ink); background: #f8ecd0; cursor: pointer; text-align: left; max-width: 260px; }
-.pick button.on { background: var(--ink); color: var(--paper); }
-.pick button:disabled { opacity: 0.45; cursor: not-allowed; }
-.swatch { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--ink); vertical-align: -2px; margin-right: 6px; }
 .setting { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 2px dashed #a89878; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(140px); z-index: 60; padding: 10px 18px; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); font-family: var(--ft); transition: transform 0.3s; pointer-events: none; }
 .toast.show { transform: translateX(-50%) translateY(0); }
@@ -177,7 +153,6 @@ button { font-family: inherit; }
 
 @media (max-width: 720px) {
   .dossiers { grid-template-columns: 1fr; }
-  .track { grid-template-columns: repeat(3, 1fr); }
   .wall-head, .rec { grid-template-columns: 26px 1.5fr 0.6fr 0.7fr 1fr; }
   .wall-head span:nth-child(5), .rec .date { display: none; }
 }
@@ -256,12 +231,12 @@ button { font-family: inherit; }
 }
 .naipe:hover { transform: rotate(0deg) translateY(-5px); box-shadow: 10px 12px 0 var(--ink); }
 .naipe.selected { outline: 4px solid var(--blood2); outline-offset: 4px; }
-.naipe-in { position: relative; border: 2px solid var(--blood); border-radius: 10px; padding: 26px 16px 14px; outline: 1px solid var(--ink); outline-offset: -6px; }
+.naipe-in { position: relative; border: 2px solid var(--blood); border-radius: 10px; padding: 30px 26px 18px; outline: 1px solid var(--ink); outline-offset: -6px; }
 .naipe-in::before, .naipe-in::after { content: '❦'; position: absolute; font-size: 16px; color: var(--blood); }
 .naipe-in::before { top: 4px; right: 34px; } .naipe-in::after { bottom: 4px; left: 34px; transform: rotate(180deg); }
-.naipe .idx { position: absolute; font-family: var(--ft); font-size: 24px; line-height: 0.85; text-align: center; color: var(--ink); z-index: 2; }
-.naipe .idx i { display: block; font-style: normal; font-size: 20px; }
-.naipe .idx.tl { top: 8px; left: 9px; } .naipe .idx.br { bottom: 8px; right: 9px; transform: rotate(180deg); }
+.naipe .idx { position: absolute; font-family: var(--ft); font-size: 20px; line-height: 0.85; text-align: center; color: var(--ink); z-index: 2; }
+.naipe .idx i { display: block; font-style: normal; font-size: 15px; }
+.naipe .idx.tl { top: 6px; left: 7px; } .naipe .idx.br { bottom: 6px; right: 7px; transform: rotate(180deg); }
 .naipe.red .idx, .naipe.red .suit-wm, .naipe.red .flourish span { color: var(--blood2); }
 .naipe .ribbon {
   position: absolute; top: -15px; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 3;
@@ -283,7 +258,11 @@ button { font-family: inherit; }
 .blk b { display: block; font-family: var(--ft); font-weight: normal; font-size: 13px; }
 .blk small { display: block; font-size: 11px; color: #5a3a2a; }
 .blk.pet { display: flex; gap: 9px; align-items: center; }
-.blk.pet canvas { width: 96px; height: 72px; border: 2px solid var(--ink); flex: none; box-shadow: inset 0 0 0 1px #c9a54a; }
+.blk.pet canvas { width: 78px; height: 58px; border: 2px solid var(--ink); flex: none; box-shadow: inset 0 0 0 1px #c9a54a; }
+.blk.pet b { font-size: 12px; overflow-wrap: anywhere; }
+.blk .petpower { display: block; font-size: 11px; line-height: 1.3; margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(10, 6, 5, 0.45); color: #3a1608; }
+.blk .petpower b { display: inline; font-size: 11px; color: var(--blood); }
+.blk .petpower .pcd { font-style: normal; white-space: nowrap; color: var(--muted-dark); }
 .blk .petstats { display: block; font-size: 11px; margin-top: 2px; }
 .blk.pas p { margin: 3px 0 0; font-size: 12px; line-height: 1.3; }
 .naipe .row { justify-content: center; margin-top: 8px; }
@@ -293,9 +272,9 @@ button { font-family: inherit; }
 /* ------------------------------------------------ crónica / periódico del Oeste */
 .end-info { width: min(540px, 100%); padding: 20px 22px; background: linear-gradient(180deg, #f2e4c2, #e0caa0); background-image: radial-gradient(rgba(90, 60, 20, 0.14) 1px, transparent 1.4px), linear-gradient(180deg, #f2e4c2, #dcc496); background-size: 4px 4px, 100% 100%; }
 .gazette { font-family: var(--fb); }
-.g-mast { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 8px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+.g-mast { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 4px 8px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
 .g-mast span:last-child { text-align: right; }
-.g-mast b { font-family: var(--ft); font-weight: normal; font-size: clamp(20px, 5vw, 32px); letter-spacing: 2px; text-align: center; }
+.g-mast b { order: -1; flex-basis: 100%; font-family: var(--ft); font-weight: normal; font-size: clamp(20px, 4.4vw, 30px); letter-spacing: 2px; text-align: center; white-space: nowrap; }
 .g-rule { height: 7px; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); margin: 6px 0 10px; }
 .g-rule.thin { height: 4px; border-top-width: 1px; margin: 12px 0; }
 .g-head { margin: 0 0 8px; font-family: var(--ft); font-weight: normal; font-size: clamp(22px, 4.6vw, 30px); text-align: center; line-height: 1.02; text-transform: uppercase; }
@@ -307,11 +286,26 @@ button { font-family: inherit; }
 .g-cols dd { margin: 0; font-family: var(--ft); text-align: right; }
 .g-note { font-size: 12px; font-style: italic; }
 @media (max-width: 640px) { .g-cols { grid-template-columns: 1fr; } .g-cols dl + dl { border-left: 0; padding-left: 0; border-top: 1px dashed var(--ink); padding-top: 8px; } }
-.naipe-in { padding: 26px 22px 16px; }
-.blk.pet canvas { width: 78px; height: 58px; }
-.blk.pet b { font-size: 12px; overflow-wrap: anywhere; }
-.g-mast { display: flex; flex-wrap: wrap; justify-content: space-between; }
-.g-mast b { order: -1; flex-basis: 100%; text-align: center; white-space: nowrap; font-size: clamp(20px, 4.4vw, 30px); }
-.naipe-in { padding: 30px 26px 18px; }
-.naipe .idx { font-size: 20px; } .naipe .idx i { font-size: 15px; }
-.naipe .idx.tl { top: 6px; left: 7px; } .naipe .idx.br { bottom: 6px; right: 7px; }
+
+/* ------------------------------------------------ legibilidad y ergonomía móvil/tablet */
+/* textos secundarios claros sobre fondo oscuro: más luz + sombra dura para separarlos de la textura */
+.hint, .overlay-sub, .draft-cards .slot, #shop .catdesc, .shop-intro, .skin .req, .mode-meta, .wall-head, .empty { text-shadow: 1px 1px 0 #000, 0 0 6px rgba(0, 0, 0, 0.85); }
+.hint, .overlay-sub { color: var(--muted); font-size: 14px; }
+small, .meta { color: inherit; opacity: 0.92; }
+.draft-cards .slot { color: var(--bone); font-size: 13px; }
+.draft-cards .slot .ctype { display: block; margin-top: 2px; font-size: 11px; letter-spacing: 1px; color: var(--amber); }
+.mode-meta { color: var(--amber); }
+/* sobre papel claro, el texto secundario va en tinta parda (no en gris) */
+.gun .na, .blk small, .naipe .role { color: var(--muted-dark); }
+/* objetivos táctiles cómodos sin añadir botones */
+@media (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .btn.small { min-height: 40px; padding: 8px 14px; }
+  .modal-box { padding: 14px; max-height: 88vh; -webkit-overflow-scrolling: touch; }
+  .naipe .row .btn { flex: 1 1 140px; }
+}
+@media (max-width: 640px) {
+  .screen-title::after { width: 86%; }
+  .naipe h3 { font-size: 18px; }
+  .blk.pas p { font-size: 13px; }
+}

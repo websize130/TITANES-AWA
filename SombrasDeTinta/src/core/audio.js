@@ -71,6 +71,9 @@ export const Sfx = {
       case 'win': [392, 494, 587, 784, 988].forEach((f, i) => tone(f, 0.3, 'triangle', 0.14, 1, i * 0.12)); break;
       case 'lose': [392, 349, 311, 233].forEach((f, i) => tone(f, 0.4, 'sawtooth', 0.1, 0.9, i * 0.22)); break;
       case 'click': noise(0.05, 900, 1.2, 0.2, 'bandpass', 0.04); tone(1700, 0.02, 'square', 0.035); tone(130, 0.06, 'sine', 0.12, 0.5); break; // clic de imprenta
+      case 'howl': tone(320, 0.9, 'sawtooth', 0.06, 1.9); tone(330, 0.9, 'triangle', 0.08, 1.85); noise(0.6, 900, 1, 0.06, 'bandpass', 0.6); break; // aullido
+      case 'ready': if (throttle(name, 150)) { tone(1320, 0.09, 'triangle', 0.045); tone(1980, 0.12, 'sine', 0.03, 1, 0.06); } break; // carta lista
+      case 'power': [660, 990, 1320].forEach((f, i) => tone(f, 0.18, 'triangle', 0.05, 1, i * 0.05)); break; // destello de poder
       case 'pet': if (throttle(name, 120)) { noise(0.08, 1400, 2, 0.12, 'bandpass', 0.6); tone(320, 0.06, 'triangle', 0.08, 0.5); } break;
       case 'petshot': if (throttle(name, 120)) { tone(880, 0.09, 'sine', 0.06, 0.4); noise(0.06, 3200, 1.5, 0.06, 'highpass', 0.5); } break;
       case 'zap': if (throttle(name, 90)) { tone(1800, 0.12, 'square', 0.06, 0.25); noise(0.12, 5000, 3, 0.15, 'bandpass', 0.1); } break;

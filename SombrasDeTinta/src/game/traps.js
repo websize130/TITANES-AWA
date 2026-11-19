@@ -72,6 +72,7 @@ function snap(g, t, e) {
 
 export function updateTraps(g, dt) {
   const p = g.player;
+  g.barrelsThisFrame = 0;
   for (let i = g.traps.length - 1; i >= 0; i--) {
     const t = g.traps[i];
     t.flash = Math.max(0, t.flash - dt);
@@ -128,8 +129,13 @@ export function updateTraps(g, dt) {
   }
 }
 
+// Un barril solo estalla una vez (t.dead se marca ANTES de explotar, así ninguna cadena puede volver a él) y
+// las cadenas se propagan con mecha (fuse) en fotogramas siguientes, con un máximo de 4 estallidos por fotograma.
 function blowBarrel(g, t) {
-  t.dead = true;
+  if (t.dead) return;
+  if (g.barrelsThisFrame >= 4) { t.fuse = 0.05; return; }
+  g.barrelsThisFrame++;
+  t.dead = true; t.fuse = 0;
   g.explode(t.x, t.y - 14, 125, 170 * g.st.trapMult, '#ff8a2a', 1, 5, 420, false, true);
   g.explodeHitsPlayer(t.x, t.y, 125, 30, true);
   g.addZone(ZK.FIRE, t.x, t.y, 70, 3, 18, '#ff6a1a', 1);

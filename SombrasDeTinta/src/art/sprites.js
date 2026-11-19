@@ -80,7 +80,7 @@ export class Sprites {
   pet(kind, tier, frame, rim) {
     const key = 'pet' + kind + tier + frame;
     let s = this.map.get(key);
-    if (!s) { s = build(78, 54, 39, 48, 0.42, this.res, (c) => drawPet(c, kind, frame, tier), null, rim, 0.8); this.map.set(key, s); }
+    if (!s) { s = build(92, 56, 46, 50, 0.42, this.res, (c) => drawPet(c, kind, frame, tier), null, rim, 0.8); this.map.set(key, s); }
     return s;
   }
 

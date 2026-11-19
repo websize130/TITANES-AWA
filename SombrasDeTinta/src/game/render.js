@@ -7,7 +7,7 @@ import { pokerFace } from '../art/cardArt.js';
 import { drawHud } from './hud.js';
 import { makeCanvas, INK, TAU, halftonePattern, makeRng, skull as skullArt } from '../art/ink.js';
 import { RIG } from '../art/heroArt.js';
-import { Z_ANIM } from '../art/zombieArt.js';
+import { Z_ANIM, Z_ATK } from '../art/zombieArt.js';
 const BOSS_AURA = { foreman: '#ffb040', faceless: '#a88aff', plague: '#9dff3a', spawn: '#ff8a2a', beast: '#9dff3a' };
 
 // Oscuridad base por mapa (más baja: el Oeste Gótico se ve, la tinta solo enmarca)
@@ -125,7 +125,7 @@ function drawDialogue(g, ctx, camX, camY) {
   const L = l.layout, W = g.w, H = g.h;
   const sx = (l.x - camX) * g.scale + W / 2, sy = (l.y - camY) * g.scale + H / 2;
   const bx = Math.max(10, Math.min(W - L.w - 10, sx - L.w / 2)), by = Math.max(84, Math.min(H - L.h - 90, sy - L.h - 30));
-  const fade = l.life < l.dur ? Math.min(1, l.life * 6) : Math.max(0, 1 - (l.life - l.dur) / 0.45);
+  const fade = l.life < l.dur ? Math.min(1, l.life * 8) : Math.max(0, 1 - (l.life - l.dur) / 0.3);
   const dark = !l.hero;
   const bg = dark ? '#140c0a' : '#efe2c4', fg = dark ? '#efe2c4' : '#140c08', key = dark ? '#ff6a3a' : (g.pal.rim || g.hero.rim || '#9a140e');
   ctx.save(); ctx.globalAlpha = fade;
@@ -142,7 +142,7 @@ function drawDialogue(g, ctx, camX, camY) {
   const who = l.hero ? g.hero.short.toUpperCase() : (l.follow && l.follow.def && l.follow.def.name ? l.follow.def.name.toUpperCase() : '');
   if (who) { ctx.font = font(10, 'T'); const ww = ctx.measureText(who).width + 12; ctx.fillStyle = '#0a0605'; ctx.fillRect(bx + 8, by - 10, ww, 14); ctx.fillStyle = key; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(who, bx + 14, by - 3); }
   // texto que corre como tinta (typewriter)
-  const shown = Math.floor(Math.min(l.len + 1, l.life * 34));
+  const shown = Math.floor(Math.min(l.len + 1, l.life * 46)); // la tinta corre rápido: réplicas ágiles
   ctx.font = DLG_FONT; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   for (let li = 0; li < L.lines.length; li++) {
     const line = L.lines[li], y = by + 11 + li * DLG_SIZE * 1.3;
@@ -396,9 +396,11 @@ export function renderGame(g, dt) {
     const frozen = e.stunT > 0 || e.rootT > 0;
     const ph = t * (e.type === 'runner' ? 14 : e.type === 'spider' ? 18 : 7) + e.uid;
     const nf = Z_ANIM[e.type];
-    const s = nf ? sp.zombie(e.type, e.elite, frozen ? 0 : ((ph / TAU) * nf | 0) % nf) : e.spr;
+    const fr = e.atkAnim > 0 && Z_ATK[e.type] ? nf : frozen ? 0 : ((ph / TAU) * nf | 0) % nf;
+    const s = nf ? sp.zombie(e.type, e.elite, fr) : e.spr;
     const bob = frozen ? 0 : Math.abs(Math.sin(ph)) * (e.colossus ? 4 : 2.5);
-    const rot = frozen ? Math.sin(t * 30) * 0.03 : Math.sin(ph) * (e.colossus ? 0.03 : 0.09) + (e.type === 'walker' ? 0.05 : 0);
+    // vaivén suave del paso; al recibir un impacto, el cuerpo retrocede (contra la mirada)
+    const rot = frozen ? Math.sin(t * 30) * 0.03 : Math.sin(ph) * (e.colossus ? 0.02 : nf ? 0.03 : 0.09) - (e.flash > 0 ? 0.14 * (e.face < 0 ? -1 : 1) : 0);
     ctx.globalAlpha = e.alpha;
     if (e.colossus) {
       // jefe: respiración, y al preparar un ataque se hincha y su aura late (telegrafía clara)
@@ -425,6 +427,7 @@ export function renderGame(g, dt) {
     ctx.fillStyle = '#0a0605'; ctx.strokeStyle = g.pal.glow; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.ellipse(sh.x, sh.y, 6, 4, Math.atan2(sh.vy, sh.vx), 0, TAU); ctx.fill(); ctx.stroke();
   }
+  drawPetPowerFx(g, ctx, t);
   // corazas
   for (let i = 0; i < n; i++) { const e = E[i]; if (e.dead || e.maxArmor <= 0 || e.armor <= 0 || e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1) continue; ctx.fillStyle = INK; ctx.fillRect(e.x - 15, e.y - e.spr.oy - 6, 30, 5); ctx.fillStyle = '#b8c0c8'; ctx.fillRect(e.x - 14, e.y - e.spr.oy - 5, 28 * (e.armor / e.maxArmor), 3); }
   // horda aterrada por los chistes
@@ -667,12 +670,48 @@ export function renderGame(g, dt) {
   drawHud(g, ctx, t);
 }
 
+// Efecto visual del poder de la mascota (anillo expansivo, pulso, estela o sombra) y escudo activo.
+function drawPetPowerFx(g, ctx, t) {
+  const P = g.pet, p = g.player;
+  if (p.shieldT > 0) { // burbuja de tinta «Siete Vidas»
+    const a = Math.min(1, p.shieldT * 2) * (0.55 + Math.sin(t * 8) * 0.12), k = p.shield / (p.shieldMax || 1);
+    ctx.globalAlpha = a * 0.18; ctx.fillStyle = '#d8ff6a'; ctx.beginPath(); ctx.ellipse(p.x, p.y - 30, 34, 46, 0, 0, TAU); ctx.fill();
+    ctx.globalAlpha = a; ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.stroke();
+    ctx.strokeStyle = '#d8ff6a'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.lineDashOffset = -t * 20; ctx.beginPath(); ctx.ellipse(p.x, p.y - 30, 34, 46, 0, -Math.PI / 2, -Math.PI / 2 + TAU * k); ctx.stroke(); ctx.setLineDash([]);
+    addLight(g, p.x, p.y - 30, 120, 0.4);
+  }
+  if (!P || !P.on || P.fxT <= 0) { ctx.globalAlpha = 1; return; }
+  const k = 1 - P.fxT / P.fxMax, ease = 1 - (1 - k) * (1 - k), fade = 1 - k;
+  const r = P.fxR * (0.25 + 0.75 * ease);
+  if (P.fxKind === 'loot') { // estelas de botín hacia el forajido
+    ctx.globalAlpha = fade; ctx.lineCap = 'round';
+    for (let i = 0; i < P.fxN; i++) {
+      const x0 = P.fxPts[i * 2], y0 = P.fxPts[i * 2 + 1], mx = x0 + (p.x - x0) * ease, my = y0 + (p.y - 30 - y0) * ease;
+      ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(mx, my); ctx.stroke();
+      ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 1.8; ctx.stroke();
+      ctx.fillStyle = '#1a1a24'; ctx.beginPath(); ctx.ellipse(mx, my, 5, 2.4, Math.atan2(p.y - y0, p.x - x0), 0, TAU); ctx.fill();
+    }
+  }
+  if (P.fxKind === 'slow') { // la sombra del halcón cae sobre la horda
+    ctx.globalAlpha = 0.45 * fade; ctx.fillStyle = '#0a0605'; ctx.beginPath(); ctx.ellipse(P.fxX, P.fxY, r, r * 0.55, 0, 0, TAU); ctx.fill();
+  }
+  const col = P.fxKind === 'knock' ? '#cfe8ff' : P.fxKind === 'shield' ? '#d8ff6a' : P.fxKind === 'slow' ? '#ffb347' : '#ffd27a';
+  const cx = P.fxKind === 'slow' ? P.fxX : P.fxKind === 'knock' || P.fxKind === 'shield' ? p.x : P.fxX, cy = P.fxKind === 'slow' ? P.fxY : p.y;
+  ctx.globalAlpha = fade; ctx.strokeStyle = INK; ctx.lineWidth = 9 * fade + 2;
+  ctx.beginPath(); ctx.ellipse(cx, cy, r, r * 0.6, 0, 0, TAU); ctx.stroke();
+  ctx.strokeStyle = col; ctx.lineWidth = 4 * fade + 1; ctx.stroke();
+  ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.5 * fade;
+  ctx.drawImage(g.spr.glow(col), cx - r, cy - r * 0.6, r * 2, r * 1.2);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  addLight(g, cx, cy, r * 1.2, 0.6 * fade);
+}
+
 // Mascota: aura de tinta según su evolución, fotogramas de galope/aleteo y mordisco al atacar.
 function drawPetSprite(g, ctx, S, tx, ty, t) {
   const P = g.pet;
   if (!P || !P.on) return;
   const moving = Math.abs(P.vx) + Math.abs(P.vy) > 30;
-  const frame = P.fly ? ((t * 11) | 0) % 4 : moving ? ((t * 13) | 0) % 4 : 0;
+  const frame = P.bite > 0 ? 4 : P.fly ? ((t * 11) | 0) % 4 : moving ? ((t * 13) | 0) % 4 : 0;
   const s = g.spr.pet(P.def.id, P.tier, frame, g.hero.rim);
   const sc = P.size * (P.bite > 0 ? 1.12 : 1), y = P.y - P.lift - (P.fly ? 0 : moving ? Math.abs(Math.sin(t * 13)) * 2 : 0);
   ctx.setTransform(S, 0, 0, S, tx, ty);

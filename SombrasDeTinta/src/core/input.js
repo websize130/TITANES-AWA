@@ -28,14 +28,20 @@ export class Input {
       this.keys.add(k);
     };
     this._onKeyUp = (e) => this.keys.delete(e.code);
-    this._onBlur = () => { this.keys.clear(); this.joy.active = false; this.joy.id = -1; };
+    this._onBlur = () => { this.keys.clear(); if (this.touches) this.touches.clear(); this._joyEnd(); };
 
+    // Joystick flotante: el primer dedo que toca fuera de los botones lo crea en ese punto exacto. Si el dedo
+    // se arrastra más allá del radio, el centro le sigue (sin acumular desfase). Al soltar se recalibra el centro
+    // y, si queda otro dedo libre en pantalla, ese dedo toma el relevo desde su posición actual.
+    this.touches = new Map(); // pointerId -> { x, y, btn }
+    const local = (e) => { const r = c.getBoundingClientRect(); this._px = e.clientX - r.left; this._py = e.clientY - r.top; };
     this._onPointerDown = (e) => {
-      const r = c.getBoundingClientRect();
-      const x = e.clientX - r.left, y = e.clientY - r.top;
+      local(e);
+      const x = this._px, y = this._py;
       for (const b of this.buttons) {
         if ((x - b.x) ** 2 + (y - b.y) ** 2 <= b.r * b.r) {
           this.pressed[b.id] = true;
+          if (e.pointerType !== 'mouse') this.touches.set(e.pointerId, { x, y, btn: true });
           e.preventDefault();
           return;
         }
@@ -45,34 +51,38 @@ export class Input {
         this.mouse.down = e.button === 0;
         return;
       }
-      if (this.joy.id === -1) {
-        this.joy.id = e.pointerId; this.joy.active = true;
-        this.joy.ox = x; this.joy.oy = y; this.joy.x = x; this.joy.y = y; this.joy.dx = 0; this.joy.dy = 0;
-        try { c.setPointerCapture(e.pointerId); } catch (_) { /* no-op */ }
-      }
+      this.touches.set(e.pointerId, { x, y, btn: false });
+      if (this.joy.id === -1) this._joyStart(e.pointerId, x, y);
+      try { c.setPointerCapture(e.pointerId); } catch (_) { /* no-op */ }
       e.preventDefault();
     };
     this._onPointerMove = (e) => {
-      const r = c.getBoundingClientRect();
-      const x = e.clientX - r.left, y = e.clientY - r.top;
+      local(e);
+      const x = this._px, y = this._py;
       if (e.pointerType === 'mouse') {
         this.mouse.x = x; this.mouse.y = y; this.mouse.active = true; this.mouse.lastMove = performance.now();
         return;
       }
-      if (e.pointerId === this.joy.id) {
-        let dx = x - this.joy.ox, dy = y - this.joy.oy;
-        const d = Math.hypot(dx, dy), R = this.joy.radius;
-        if (d > R) { // el joystick flotante sigue al dedo
-          this.joy.ox += dx * (1 - R / d); this.joy.oy += dy * (1 - R / d);
-          dx = x - this.joy.ox; dy = y - this.joy.oy;
-        }
-        this.joy.x = x; this.joy.y = y;
-        this.joy.dx = dx / R; this.joy.dy = dy / R;
+      const t = this.touches.get(e.pointerId);
+      if (t) { t.x = x; t.y = y; }
+      const j = this.joy;
+      if (e.pointerId !== j.id) return;
+      let dx = x - j.ox, dy = y - j.oy;
+      const d = Math.hypot(dx, dy), R = j.radius;
+      if (d > R) { // el centro sigue al dedo: queda exactamente a R del dedo
+        j.ox = x - (dx / d) * R; j.oy = y - (dy / d) * R;
+        dx = x - j.ox; dy = y - j.oy;
       }
+      j.x = x; j.y = y;
+      j.dx = Math.max(-1, Math.min(1, dx / R)); j.dy = Math.max(-1, Math.min(1, dy / R));
     };
     this._onPointerUp = (e) => {
       if (e.pointerType === 'mouse') { this.mouse.down = false; return; }
-      if (e.pointerId === this.joy.id) { this.joy.id = -1; this.joy.active = false; this.joy.dx = 0; this.joy.dy = 0; }
+      this.touches.delete(e.pointerId);
+      if (e.pointerId !== this.joy.id) return;
+      this._joyEnd();
+      // relevo: otro dedo libre que siga apoyado pasa a mover al forajido
+      for (const [id, t] of this.touches) if (!t.btn) { this._joyStart(id, t.x, t.y); break; }
     };
     this._onContext = (e) => e.preventDefault();
     this._onLeave = () => { this.mouse.active = false; };
@@ -86,6 +96,7 @@ export class Input {
     window.addEventListener('pointermove', this._onPointerMove);
     window.addEventListener('pointerup', this._onPointerUp);
     window.addEventListener('pointercancel', this._onPointerUp);
+    this.canvas.addEventListener('lostpointercapture', this._onPointerUp);
     this.canvas.addEventListener('contextmenu', this._onContext);
     this.canvas.addEventListener('mouseleave', this._onLeave);
     this.reset();
@@ -99,14 +110,25 @@ export class Input {
     window.removeEventListener('pointermove', this._onPointerMove);
     window.removeEventListener('pointerup', this._onPointerUp);
     window.removeEventListener('pointercancel', this._onPointerUp);
+    this.canvas.removeEventListener('lostpointercapture', this._onPointerUp);
     this.canvas.removeEventListener('contextmenu', this._onContext);
     this.canvas.removeEventListener('mouseleave', this._onLeave);
     this.reset();
   }
 
+  _joyStart(id, x, y) {
+    const j = this.joy;
+    j.id = id; j.active = true; j.ox = x; j.oy = y; j.x = x; j.y = y; j.dx = 0; j.dy = 0;
+  }
+  _joyEnd() { // centro recalibrado sobre el último punto: ningún desfase residual para el próximo toque
+    const j = this.joy;
+    j.id = -1; j.active = false; j.dx = 0; j.dy = 0; j.ox = j.x; j.oy = j.y;
+  }
+
   reset() {
     this.keys.clear();
-    this.joy.id = -1; this.joy.active = false; this.joy.dx = 0; this.joy.dy = 0;
+    if (this.touches) this.touches.clear();
+    this._joyEnd();
     this.pressed.c0 = this.pressed.c1 = this.pressed.c2 = this.pressed.pause = false;
   }
 

@@ -20,7 +20,7 @@ export function updateZombies(g, dt) {
       if (e.colossus) { const k = g.colossi.indexOf(e); if (k !== -1) g.colossi.splice(k, 1); }
       g.zombies.kill(i); continue;
     }
-    e.flash -= dt;
+    e.flash -= dt; if (e.atkAnim > 0) e.atkAnim -= dt;
     if (e.burnT > 0) {
       e.burnT -= dt; e.burnTick -= dt;
       if (e.burnTick <= 0) {
@@ -61,7 +61,7 @@ export function updateZombies(g, dt) {
         const S = e.def.spit, d = Math.hypot(tx - e.x, ty - e.y);
         e.atkT -= dt;
         if (e.state === 1) { // apunta y escupe bilis de tinta en cono
-          e.stateT -= dt;
+          e.stateT -= dt; e.atkAnim = 0.15;
           if (e.stateT <= 0) {
             e.state = 0; e.atkT = S.cd;
             for (let k = 0; k < S.count; k++) g.addEBullet(e.x + e.face * 20, e.y - 40, e.ang + (k - (S.count - 1) / 2) * (S.cone / (S.count - 1)), S.speed * (0.85 + Math.random() * 0.3), e.dmg * 0.6, 8, 1.6, '#3a2a6a', EK.INK);
@@ -81,7 +81,7 @@ export function updateZombies(g, dt) {
         break;
       case 'forker':
         e.atkT -= dt;
-        if (e.state === 1) { if (!frozen) { e.x += e.ax * dt; e.y += e.ay * dt; } e.stateT -= dt; if (e.stateT <= 0) e.state = 0; }
+        if (e.state === 1) { e.atkAnim = 0.15; if (!frozen) { e.x += e.ax * dt; e.y += e.ay * dt; } e.stateT -= dt; if (e.stateT <= 0) e.state = 0; }
         else {
           const d = chase(e, tx, ty, sp, dt);
           if (d < 140 && e.atkT <= 0 && !frozen) { e.state = 1; e.stateT = 0.3; e.atkT = 2 + Math.random(); e.ax = ((tx - e.x) / d) * e.speed * 3.4; e.ay = ((ty - e.y) / d) * e.speed * 3.4; }
@@ -89,7 +89,7 @@ export function updateZombies(g, dt) {
         break;
       case 'dynamiter':
         if (e.state === 1) {
-          e.stateT -= dt; e.flash = (g.realTime * 12) % 1 < 0.5 ? 0.05 : 0;
+          e.stateT -= dt; e.atkAnim = 0.15; e.flash = (g.realTime * 12) % 1 < 0.5 ? 0.05 : 0;
           if (e.stateT <= 0) { g.hurtZombie(e, 99999, false, 0, 0, 0, 0, 0, 0); continue; }
         } else {
           const d = chase(e, tx, ty, sp, dt);
@@ -114,6 +114,7 @@ export function updateZombies(g, dt) {
     if (!e.colossus) g.grid.insert(e);
     if (e.stunT <= 0 && e.fearT <= 0) {
       const dx = p.x - e.x, dy = p.y - e.y, rr = e.r + p.r;
+      if (dx * dx + dy * dy < (rr + 26) * (rr + 26)) e.atkAnim = Math.max(e.atkAnim, 0.28); // zarpazo / mordisco visible al llegar
       if (dx * dx + dy * dy < rr * rr) { g.hurtPlayer(e.dmg); if (e.def.stun) g.stunPlayer(e.def.stun); }
     }
   }

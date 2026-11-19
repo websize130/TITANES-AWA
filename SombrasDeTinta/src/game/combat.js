@@ -123,31 +123,32 @@ function startReload(g) {
 }
 
 // ---------------------------------------------------------------- cartas de acción
-export function playCard(g, card) {
+// lv: potencia de la carta = nivel de la partida (+4 %/NV) × mejora por duplicado (+25 % por nivel de carta).
+export function playCard(g, card, lv = 1) {
   const p = g.player, pal = g.pal, st = g.st, aim = p.aim;
   const ax = p.x + Math.cos(aim) * Math.min(380, p.aimDist || 300), ay = p.y + Math.sin(aim) * Math.min(380, p.aimDist || 300);
   switch (card.id) {
     case 'rabia': {
-      for (let i = 0; i < 32; i++) g.addBullet(p.x, p.y - 22, (i / 32) * TAU, 760, 26, 4, 1, 0.34, pal.shot, pal.core, BK.PELLET, 520);
-      g.explode(p.x, p.y - 10, 160, 45 * st.dmg, pal.glow, 1, 0, 620, true);
+      for (let i = 0; i < 32; i++) g.addBullet(p.x, p.y - 22, (i / 32) * TAU, 760, 26 * lv, 4, 1, 0.34, pal.shot, pal.core, BK.PELLET, 520);
+      g.explode(p.x, p.y - 10, 160, 45 * st.dmg * lv, pal.glow, 1, 0, 620, true);
       g.cam.shake = 12; g.comicText(p.x, p.y - 96, '¡¿QUÉ MIRÁIS?!', '#ff6a3a', 28);
       Sfx.play('shotgun');
       break;
     }
     case 'verso': {
       const life = (g.range() * 2) / 1900;
-      const b = g.addBullet(p.x + Math.cos(aim) * 26, p.y - 26 + Math.sin(aim) * 18, aim, 1900, 190, 7, 99, life, '#ffe08a', '#ffffff', BK.HARPOON, 400);
+      const b = g.addBullet(p.x + Math.cos(aim) * 26, p.y - 26 + Math.sin(aim) * 18, aim, 1900, 190 * lv, 7, 99, life, '#ffe08a', '#ffffff', BK.HARPOON, 400);
       if (b) b.crit = true;
       g.cam.shake = 10; g.comicText(p.x, p.y - 96, '«…y la noche calló.»', '#ffd23a', 20);
       Sfx.play('rifle');
       break;
     }
     case 'deadhand':
-      for (let i = 0; i < 5; i++) { const b = g.addBullet(p.x, p.y - 26, aim + (i - 2) * 0.2, 720, 34, 6, 2, 0.6, '#f2e6cc', '#ff4a4a', BK.CARD, 120); if (b) { b.stun = 1.6; b.slow = 2; b.radius = 60; } }
+      for (let i = 0; i < 5; i++) { const b = g.addBullet(p.x, p.y - 26, aim + (i - 2) * 0.2, 720, 34 * lv, 6, 2, 0.6, '#f2e6cc', '#ff4a4a', BK.CARD, 120); if (b) { b.stun = 1.6; b.slow = 2; b.radius = 60; } }
       g.comicText(p.x, p.y - 96, '¡ASES Y OCHOS!', pal.glow, 26);
       break;
     case 'chiste':
-      g.tellJoke(320, 4);
+      g.tellJoke(320 * Math.min(1.5, lv), 4);
       g.comicText(p.x, p.y - 110, '¡JA, JA, JA!', '#ffcf6a', 30);
       break;
     case 'beartrap': case 'cepo': {
@@ -162,7 +163,7 @@ export function playCard(g, card) {
         if (e.dead) return false;
         const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy);
         let da = Math.atan2(dy, dx) - aim; while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
-        if (d < 230 && Math.abs(da) < 0.75) { g.hurtZombie(e, 22 * st.dmg, false, dx / (d || 1), dy / (d || 1), 600, 0, 1.5, 1.2); n++; }
+        if (d < 230 && Math.abs(da) < 0.75) { g.hurtZombie(e, 22 * st.dmg * lv, false, dx / (d || 1), dy / (d || 1), 600, 0, 1.5, 1.2); n++; }
         return false;
       });
       for (let i = 0; i < 30; i++) { const a = aim + (Math.random() - 0.5) * 1.4, s = 200 + Math.random() * 400; g.addPart(p.x, p.y - 24, Math.cos(a) * s, Math.sin(a) * s, 0.5, 3, '#f2f2ea', PT.SPARK, false).drag = 3; }
@@ -171,7 +172,7 @@ export function playCard(g, card) {
     }
     case 'dinamita': case 'farol': {
       const b = g.addBullet(p.x, p.y - 26, aim, 0, 150, 6, 0, Math.min(0.9, Math.hypot(ax - p.x, ay - p.y) / 500 + 0.25), '#ffd23a', '#fff', BK.LOB, 0);
-      if (b) { b.ox = p.x; b.oy = p.y - 10; b.vx = ax; b.vy = ay; b.spin = 0; b.radius = card.id === 'farol' ? 120 : 130; b.burn = card.id === 'farol' ? 26 * st.dmg : 0; b.dmg = 150 * st.dmg; b.color = card.id === 'farol' ? '#ffb040' : '#ff4a1a'; }
+      if (b) { b.ox = p.x; b.oy = p.y - 10; b.vx = ax; b.vy = ay; b.spin = 0; b.radius = card.id === 'farol' ? 120 : 130; b.burn = card.id === 'farol' ? 26 * st.dmg * lv : 0; b.dmg = 150 * st.dmg * lv; b.color = card.id === 'farol' ? '#ffb040' : '#ff4a1a'; }
       break;
     }
     case 'mina':
@@ -194,21 +195,21 @@ export function playCard(g, card) {
       for (let i = 0; i < g.zombies.n && n < 6; i++) {
         const e = E[(i * 7 + (Math.random() * g.zombies.n | 0)) % g.zombies.n];
         if (e.dead || Math.abs(e.x - g.cam.x) > hw || Math.abs(e.y - g.cam.y) > hh) continue;
-        const z = g.addZone(ZK.STRIKE, e.x, e.y, 80, 0.35 + n * 0.12, 95 * st.dmg, '#cfe8ff', 1); if (z) z.elec = true; n++;
+        const z = g.addZone(ZK.STRIKE, e.x, e.y, 80, 0.35 + n * 0.12, 95 * st.dmg * lv, '#cfe8ff', 1); if (z) z.elec = true; n++;
       }
-      for (; n < 6; n++) { const a = Math.random() * TAU, r = 80 + Math.random() * 220; const z = g.addZone(ZK.STRIKE, p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 80, 0.35 + n * 0.12, 95 * st.dmg, '#cfe8ff', 1); if (z) z.elec = true; }
+      for (; n < 6; n++) { const a = Math.random() * TAU, r = 80 + Math.random() * 220; const z = g.addZone(ZK.STRIKE, p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 80, 0.35 + n * 0.12, 95 * st.dmg * lv, '#cfe8ff', 1); if (z) z.elec = true; }
       g.flash = 0.5;
       break;
     }
     case 'aguabendita':
-      g.heal(25);
-      g.addZone(ZK.RING, p.x, p.y - 10, 280, 0.6, 70 * st.dmg, '#c8e0ff', 1);
+      g.heal(25 * lv);
+      g.addZone(ZK.RING, p.x, p.y - 10, 280, 0.6, 70 * st.dmg * lv, '#c8e0ff', 1);
       g.comicText(p.x, p.y - 96, '¡AMÉN!', '#c8e0ff', 28);
       break;
     case 'caballeria':
       for (let i = 0; i < 6; i++) {
         const dir = i % 2 ? 1 : -1, y = p.y - g.viewH * 0.4 + (i / 5) * g.viewH * 0.8;
-        const z = g.addZone(ZK.RIDERS, p.x - dir * (g.viewW / 2 + 120), y, 46, 2.2, 120 * st.dmg, '#9ab8ff', 1);
+        const z = g.addZone(ZK.RIDERS, p.x - dir * (g.viewW / 2 + 120), y, 46, 2.2, 120 * st.dmg * lv, '#9ab8ff', 1);
         if (z) z.vx = dir * 900;
       }
       g.comicText(p.x, p.y - 96, '¡A LA CARGA!', '#9ab8ff', 30);

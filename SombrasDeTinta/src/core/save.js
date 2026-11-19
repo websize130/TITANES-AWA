@@ -9,7 +9,7 @@ export function xpForLevel(l) { return 50 + l * 20; } // XP para pasar de l a l+
 
 function defaults() {
   const heroes = {};
-  HEROES.forEach((h) => { heroes[h.id] = { level: 1, xp: 0, skin: 0, weapon: h.weapon, kills: 0 }; });
+  HEROES.forEach((h) => { heroes[h.id] = { level: 1, xp: 0, skin: 0, weapon: h.weapon, kills: 0, petKills: 0 }; });
   return {
     v: 2, hero: null, heroes, coins: 0, owned: HEROES.map((h) => h.weapon),
     story: {},          // id -> { done, wins }
@@ -36,6 +36,7 @@ class SaveManager {
           const st = base.heroes[h.id];
           if (typeof st.weapon !== 'string' || !WEAPONS[st.weapon]) st.weapon = h.weapon;
           if (st.skin > 2) st.skin = 2;
+          st.petKills = st.petKills | 0;
         }
         this.data = base;
       }

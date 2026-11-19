@@ -1,7 +1,7 @@
 // Páginas de cómic procedurales: viñetas asimétricas con escenas en claroscuro, cartelas de máquina de
 // escribir, bocadillos, sellos de tinta finales y portadas pulp de "Game Over".
 import {
-  INK, TAU, makeCanvas, makeRng, rgba, shade, glow, halftone, inkText, wrapText, stamp, FT, FB, poly, ellipse, circle, line, skull, flame, star,
+  INK, TAU, makeCanvas, makeRng, rgba, shade, glow, halftone, inkText, wrapText, stamp, FT, FB, poly, ellipse, circle, line, skull, flame, star, grainPattern,
 } from './ink.js';
 import { drawHero } from './heroArt.js';
 import { drawZombie } from './zombieArt.js';
@@ -356,7 +356,7 @@ export function renderPage(canvas, panels, hero, pal, opts = {}) {
   const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   // papel envejecido
   ctx.fillStyle = '#efe2c4'; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = 'rgba(120,80,30,0.08)'; for (let i = 0; i < 600; i++) ctx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+  ctx.fillStyle = grainPattern(ctx, 'rgba(120,80,30,0.08)', 14); ctx.fillRect(0, 0, W, H); // grano cacheado
   const m = Math.max(10, W * 0.02), gut = Math.max(5, W * 0.008);
   const portrait = H > W * 1.05;
   const lay = portrait ? layoutPortrait(panels.length) : LAYOUTS_L[Math.min(4, panels.length)];
@@ -444,7 +444,7 @@ export function renderPulpCover(canvas, d, W, H) {
   });
   if (d.stamp) stamp(ctx, d.stamp, W * 0.74, H * 0.86, Math.min(W, H) * 0.06, '#f2d23a', -0.2);
   // desgaste del papel
-  ctx.fillStyle = 'rgba(240,220,180,0.08)'; for (let i = 0; i < 500; i++) ctx.fillRect(r() * W, r() * H, 2, 2);
+  ctx.fillStyle = grainPattern(ctx, 'rgba(240,220,180,0.08)', 28); ctx.fillRect(0, 0, W, H); // grano cacheado
   ctx.lineWidth = 6; ctx.strokeStyle = '#120a06'; ctx.strokeRect(3, 3, W - 6, H - 6);
 }
 

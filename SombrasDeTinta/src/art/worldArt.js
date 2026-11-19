@@ -2,7 +2,12 @@
 import { INK, poly, blob, ellipse, circle, line, star, skull, glow, shade, rgba, makeRng, makeCanvas, beginArt, hatch, hatchPoly, TAU } from './ink.js';
 import { MAPS } from '../data/story.js';
 
+// Los suelos se generan una sola vez por mapa/zona y se reutilizan en cada partida (caché).
+const GROUND_CACHE = new Map();
 export function makeGround(mapId, T = MAPS[mapId]) {
+  const gk = mapId + '|' + T.ground + T.g2 + T.g3;
+  const cached = GROUND_CACHE.get(gk);
+  if (cached) return cached;
   const S = 512;
   const c = makeCanvas(S, S), ctx = c.getContext('2d');
   const r = makeRng(mapId.length * 977 + 31);
@@ -43,6 +48,7 @@ export function makeGround(mapId, T = MAPS[mapId]) {
     for (let k = 0; k < w; k += 4) { ctx.moveTo(x + k, y); ctx.lineTo(x + k + 10, y + 10); }
     ctx.stroke();
   }
+  GROUND_CACHE.set(gk, c);
   return c;
 }
 

@@ -2,7 +2,7 @@
 // tinta sucia con sombreado cruzado y paleta fría desaturada (gris carbón, verde cadáver).
 import { INK, TAU, poly, blob, ellipse, circle, line, tatter, glow, shade, rgba, beginArt, hatchPoly, flame, skull, star } from './ink.js';
 
-let ZF = 0; // fotograma de animación activo (errantes, corredores y arañas)
+let ZF = 0; // fotograma activo: 0–3 paso, 4 ataque
 import { limb } from './heroArt.js';
 
 const SKIN = '#7a8a74', SKIN2 = '#5e6a5a', CLOTH = '#3a3e44', CLOTH2 = '#4a4e48', RAG = '#5a5a52', BLOOD = '#4a0e0c';
@@ -44,168 +44,389 @@ function zhead(ctx, x, y, s = 1, tilt = 0.3, eye = '#d8e8b0', skin = SKIN) {
   ctx.restore();
 }
 
-function legsZ(ctx, cloth, lean = 0) {
-  limb(ctx, -10 + lean, -76, -16, -6, 8, 6, cloth);
-  limb(ctx, 10 + lean, -74, 14, -10, 8, 6, cloth);
-  poly(ctx, [-26, -8, -8, -8, -8, 0, -28, 0], '#2a2a2a', 2.5, 0);
-  poly(ctx, [6, -12, 22, -12, 26, 0, 6, 0], '#2a2a2a', 2.5, 0);
+
+// ================================================================== RIG ANATÓMICO 2D (cel-shading de cómic)
+// Siluetas claras: extremidades en cápsulas de tinta con articulaciones limpias, sombra plana en el lado
+// izquierdo/inferior (luz desde arriba a la derecha) y contorno negro uniforme. Mirando a la derecha.
+// Fotogramas: 0–3 paso · 4 ataque. El impacto lo resuelve el render (destello blanco + retroceso).
+function rgPath(ctx, pts) {
+  ctx.beginPath();
+  for (let i = 0; i < pts.length; i += 2) i ? ctx.lineTo(pts[i], pts[i + 1]) : ctx.moveTo(pts[i], pts[i + 1]);
+  ctx.closePath();
+}
+// Polígono con sombra plana recortada y contorno de tinta limpio.
+export function cel(ctx, pts, fill, lw = 2.6, cut = 0.4) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (let i = 0; i < pts.length; i += 2) { const x = pts[i], y = pts[i + 1]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  rgPath(ctx, pts); ctx.fillStyle = fill; ctx.fill();
+  if (cut > 0) {
+    ctx.save(); ctx.clip();
+    const h = y1 - y0, cx = x0 + (x1 - x0) * cut;
+    ctx.fillStyle = shade(fill, -0.3);
+    ctx.beginPath(); ctx.moveTo(x0 - 4, y0 - 4); ctx.lineTo(cx + h * 0.22, y0 - 4); ctx.lineTo(cx - h * 0.22, y1 + 4); ctx.lineTo(x0 - 4, y1 + 4); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,248,230,0.16)'; // brillo del borde iluminado
+    ctx.beginPath(); ctx.moveTo(x1 + 4, y0 - 4); ctx.lineTo(x1 - (x1 - x0) * 0.12, y0 - 4); ctx.lineTo(x1 - (x1 - x0) * 0.12 - h * 0.1, y1 + 4); ctx.lineTo(x1 + 4, y1 + 4); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    rgPath(ctx, pts);
+  }
+  ctx.lineJoin = 'round'; ctx.lineWidth = lw; ctx.strokeStyle = INK; ctx.stroke();
+}
+// Cadena de cápsulas (muslo+espinilla, brazo+antebrazo): articulaciones redondas sin costuras.
+function chainP(ctx, P) { ctx.beginPath(); ctx.moveTo(P[0], P[1]); for (let i = 2; i < P.length; i += 2) ctx.lineTo(P[i], P[i + 1]); }
+export function capsule(ctx, P, w, fill) {
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  chainP(ctx, P); ctx.strokeStyle = INK; ctx.lineWidth = w * 2 + 5; ctx.stroke();
+  ctx.strokeStyle = fill; ctx.lineWidth = w * 2; ctx.stroke();
+  ctx.save(); ctx.translate(-w * 0.4, w * 0.32); chainP(ctx, P); ctx.strokeStyle = shade(fill, -0.3); ctx.lineWidth = w * 0.9; ctx.stroke(); ctx.restore();
+}
+function claws(ctx, x, y, a, skin) { // mano con tres garras orientadas según el antebrazo
+  const ca = Math.cos(a), sa = Math.sin(a);
+  ctx.lineCap = 'round';
+  for (let k = -1; k <= 1; k++) {
+    const ex = x + ca * 11 - sa * k * 5, ey = y + sa * 11 + ca * k * 5;
+    ctx.strokeStyle = INK; ctx.lineWidth = 4.4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.strokeStyle = skin; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+  }
+  ctx.fillStyle = skin; ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 5, 0, TAU); ctx.fill(); ctx.stroke();
+}
+function shoe(ctx, x, y, bare, skin) {
+  if (bare) cel(ctx, [x - 7, y - 7, x + 9, y - 6, x + 13, y - 1, x + 13, y, x - 7, y], skin, 2.2, 0.5);
+  else cel(ctx, [x - 8, y - 9, x + 6, y - 9, x + 14, y - 3, x + 14, y, x - 8, y], '#241c18', 2.2, 0.5);
+}
+// Cráneo de no-muerto con mandíbula articulada (open 0–1), cuenca brillante y rasgos marcados.
+function zSkull(ctx, x, y, s, tilt, o) {
+  const skin = o.skin, open = o.open || 0;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(tilt); ctx.scale(s, s);
+  // boca oscura detrás de la mandíbula
+  if (open > 0) cel(ctx, [-2, 2, 14, 0, 14, 6 + open * 8, 0, 8 + open * 6], '#1a0606', 1.8, 0);
+  // mandíbula inferior (bisagra en la oreja)
+  ctx.save(); ctx.translate(-3, 3); ctx.rotate(open * 0.55);
+  cel(ctx, [0, 0, 16, -1, 15, 5, 8, 9, 1, 7], shade(skin, -0.12), 2.2, 0.3);
+  ctx.fillStyle = '#d8ccb0'; for (let i = 0; i < 4; i++) ctx.fillRect(4 + i * 3, -1, 2, 2.4);
+  ctx.restore();
+  // cráneo: nuca, bóveda, ceja marcada, nariz, maxilar
+  cel(ctx, [-12, 2, -12, -10, -6, -17, 5, -18, 12, -12, 14, -6, 16, -1, 13, 2, 4, 4, -4, 5], skin, 2.6, 0.42);
+  ctx.fillStyle = '#d8ccb0'; for (let i = 0; i < 4; i++) ctx.fillRect(5 + i * 2.6, 1.5, 1.8, 2.6); // dientes superiores
+  // cuenca y pupila brillante
+  ctx.fillStyle = '#0a0605'; ctx.beginPath(); ctx.ellipse(7, -7, 4.2, 3.4, -0.2, 0, TAU); ctx.fill();
+  glow(ctx, 8, -7, 8, o.eye, 0.95); ctx.fillStyle = o.eye; ctx.fillRect(7, -8, 2.6, 2.2);
+  ctx.strokeStyle = INK; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(1, -12); ctx.lineTo(13, -10); ctx.stroke(); // ceja
+  ctx.fillStyle = '#0a0605'; ctx.beginPath(); ctx.moveTo(14, -4); ctx.lineTo(16, -1); ctx.lineTo(12.5, -1); ctx.fill(); // fosa nasal
+  cel(ctx, [-6, -6, -1, -8, 0, -2, -4, 0], shade(skin, -0.08), 1.6, 0); // oreja
+  if (o.hair) { ctx.strokeStyle = o.hair; ctx.lineWidth = 1.6; ctx.beginPath(); for (let i = 0; i < 4; i++) { ctx.moveTo(-8 + i * 4, -15 - (i % 2)); ctx.quadraticCurveTo(-12 + i * 3, -24, -16 + i * 3, -18 - i); } ctx.stroke(); }
+  if (o.scar) { ctx.strokeStyle = '#5a1a12'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-2, -15); ctx.lineTo(4, -4); for (let k = 0; k < 3; k++) { ctx.moveTo(-1 + k * 2, -12 + k * 3); ctx.lineTo(3 + k * 2, -13 + k * 3); } ctx.stroke(); }
+  if (o.hat) o.hat(ctx);
+  ctx.restore();
 }
 
-// ------------------------------------------------------------------ ERRANTE (encorvado, ropa rasgada, brazos adelantados)
-// 4 fotogramas de zancada: piernas alternas y brazos que se balancean al tantear el aire.
-const ZSKIN = '#a6b496', ZSKIN2 = '#74826a', ZSHIRT = '#9a8c72', ZVEST = '#2e2a2c', ZPANTS = '#3e3c48';
-function zLeg(ctx, hx, hy, kx, ky, fx, fy, cloth, bare) {
-  limb(ctx, hx, hy, kx, ky, 8, 7, cloth);
-  // pernera rasgada a la altura de la rodilla: espinilla al aire
-  limb(ctx, kx, ky, fx, fy - 6, 6, 5, bare ? ZSKIN2 : cloth);
-  const p = [kx - 8, ky - 2, kx + 8, ky - 2];
-  tatter(p, kx + 8, ky + 6, kx - 8, ky + 6, 3, 6, (kx * 7) | 0);
-  poly(ctx, p, cloth, 2, 0);
-  if (bare) blob(ctx, [fx - 10, fy - 6, fx + 10, fy - 7, fx + 14, fy, fx - 10, fy], ZSKIN2, 2.2, 0);
-  else poly(ctx, [fx - 12, fy - 9, fx + 6, fy - 9, fx + 14, fy - 2, fx + 14, fy, fx - 12, fy], '#221c18', 2.4, 0);
-}
-function walker(ctx) {
-  const ph = (ZF / 4) * TAU, st = Math.sin(ph), sw = Math.cos(ph);
-  // piernas: la trasera primero
-  zLeg(ctx, -6, -80, -12 - st * 8, -42, -18 - st * 15, 0, ZPANTS, false);
-  zLeg(ctx, 6, -80, 10 + st * 8, -42, 14 + st * 15, 0, shade(ZPANTS, 0.12), true);
-  ctx.save(); ctx.translate(0, -80); ctx.rotate(0.34); // torso encorvado hacia delante
-  // brazo trasero (más oscuro), adelantado
-  limb(ctx, -8, -56, 26, -50 + sw * 4, 7, 6, shade(ZSHIRT, -0.25));
-  limb(ctx, 26, -50 + sw * 4, 52, -50 + sw * 6, 6, 5, ZSKIN2); clawHand(ctx, 56, -50 + sw * 6, 1, ZSKIN2);
-  // torso: camisa sucia, chaleco abierto y desgarrado, costillas a la vista
-  const torso = [-20, -66, 18, -64, 22, -34, 16, -2, -16, -2, -22, -36];
-  zp(ctx, torso, ZSHIRT, 3, 0);
-  hatchPoly(ctx, [-20, -66, -4, -66, -6, -2, -16, -2, -22, -36], 4, 'rgba(10,8,6,0.45)', 1, true, 0.4);
-  zp(ctx, [-22, -64, -6, -66, -10, -28, -14, -2, -20, -6, -24, -36], ZVEST, 2.6, 3);
-  zp(ctx, [8, -66, 20, -62, 22, -36, 14, -2, 6, -6, 10, -34], ZVEST, 2.6, 3);
-  blob(ctx, [-4, -50, 8, -52, 10, -30, -2, -28], ZSKIN2, 2, 0); // desgarrón
-  ctx.strokeStyle = '#3a4234'; ctx.lineWidth = 1.6; ctx.beginPath();
-  for (let i = 0; i < 3; i++) { ctx.moveTo(-2, -46 + i * 6); ctx.quadraticCurveTo(4, -48 + i * 6, 9, -45 + i * 6); } ctx.stroke();
-  ctx.fillStyle = '#6a0e0c'; ctx.fillRect(10, -40, 4, 9); ctx.fillRect(-12, -20, 6, 4);
-  rags(ctx, -18, -4, 18, -4, 5, 10, ZSHIRT, 3);
-  // cuello y cabeza adelantada, mandíbula caída
-  limb(ctx, 2, -64, 10, -74, 6, 5, ZSKIN2);
-  zhead(ctx, 14, -82, 1, 0.55, '#f2ffb0', ZSKIN);
-  ctx.fillStyle = '#2a2a26'; ctx.fillRect(4, -96, 3, 6); ctx.fillRect(10, -98, 2, 5); // mechones ralos
-  // brazo delantero extendido hacia la presa
-  limb(ctx, 14, -60, 38, -58 - sw * 4, 7, 6, ZSHIRT);
-  rags(ctx, 30, -64, 40, -52, 2, 6, ZSHIRT, 5);
-  limb(ctx, 38, -58 - sw * 4, 62, -60 - sw * 6, 6, 5, ZSKIN); clawHand(ctx, 66, -60 - sw * 6, 1, ZSKIN);
+// Humanoide no-muerto parametrizable (errante, corredor, hinchado, acorazado, horquero, dinamitero).
+function zHuman(ctx, o) {
+  const f = ZF, atk = f === 4, ph = (f / 4) * TAU;
+  const hipY = o.hipY, th = o.thigh, sh = o.shin, lw = o.legW;
+  // --- piernas: cinemática simple (ángulo del muslo + flexión de rodilla al levantar)
+  const legPose = (front) => {
+    let a, bend;
+    if (atk) { a = front ? 0.42 : -0.5; bend = front ? 0.35 : 0.1; }
+    else { const phi = ph + (front ? 0 : Math.PI); a = Math.sin(phi) * o.stride; bend = 0.15 + 0.6 * Math.max(0, Math.cos(phi)); }
+    const kx = Math.sin(a) * th, ky = -hipY + Math.cos(a) * th;
+    const fx = kx + Math.sin(a - bend) * sh, fy = ky + Math.cos(a - bend) * sh;
+    return [front ? 4 : -4, -hipY, kx + (front ? 4 : -4), ky, fx + (front ? 4 : -4), Math.min(0, fy) - 6]; // termina en el tobillo
+  };
+  const LB = legPose(false), LF = legPose(true);
+  const lean = o.lean + (atk ? 0.18 : 0), tl = o.torso, cw = o.chest, ww = o.waist;
+  const sway = atk ? 0 : Math.cos(ph);
+  // pierna trasera (más oscura)
+  capsule(ctx, LB, lw, shade(o.pants, -0.18)); shoe(ctx, LB[4], LB[5] + 6, o.bareB, o.skin2);
+  if (o.backItem) o.backItem(ctx, lean);
+  // marco del torso
+  ctx.save(); ctx.translate(0, -hipY); ctx.rotate(lean);
+  // brazo lejano (detrás del torso)
+  const armFar = o.arms(ctx, false, atk, sway, tl, cw);
   ctx.restore();
+  capsule(ctx, LF, lw, o.pants); shoe(ctx, LF[4], LF[5] + 6, o.bareF, o.skin);
+  if (o.legRags) { const p = [LF[2] - 8, LF[3] - 2, LF[2] + 8, LF[3] - 2]; tatter(p, LF[2] + 8, LF[3] + 7, LF[2] - 8, LF[3] + 7, 3, 6, 5); cel(ctx, p, o.pants, 2, 0); }
+  ctx.save(); ctx.translate(0, -hipY); ctx.rotate(lean);
+  // torso con pecho y cintura definidos
+  const tor = [-ww, 6, ww, 6, cw + 2, -tl * 0.5, cw - 2, -tl, -cw + 2, -tl - 2, -cw - 2, -tl * 0.5];
+  cel(ctx, tor, o.shirt, 2.8, 0.42);
+  if (o.torsoFx) o.torsoFx(ctx, tl, cw, ww, atk);
+  // cuello y cráneo (la cara mira al frente aunque el cuerpo vaya encorvado)
+  const hx = cw * 0.45 + 4, hy = -tl - 10 * o.head;
+  capsule(ctx, [2, -tl + 2, hx - 4, hy + 6], 3.6, o.skin2);
+  zSkull(ctx, hx, hy, o.head, -lean * 0.7 + (o.tilt || 0) + (atk ? -0.15 : 0), { skin: o.skin, eye: o.eye, open: atk ? 1 : (o.jaw || 0.15), hair: o.hair, scar: o.scar, hat: o.hat });
+  // brazo cercano (delante)
+  o.arms(ctx, true, atk, sway, tl, cw);
+  ctx.restore();
+}
+// Poses de brazos (en el marco rotado del torso; y negativo = arriba)
+function armsReach(skinN, skinF, sleeve) { // brazos adelantados tanteando el aire
+  return (ctx, near, atk, sway, tl, cw) => {
+    const sx = near ? cw * 0.35 : -cw * 0.3, sy = -tl + 6;
+    const sw = near ? sway : -sway, up = atk ? -0.55 : -0.05 + sw * 0.08, L = atk ? 1.18 : 1;
+    const ex = sx + Math.cos(up) * 24 * L, ey = sy + Math.sin(up) * 24 * L + 6;
+    const hx = ex + Math.cos(up - 0.1) * 24 * L, hy = ey + Math.sin(up - 0.1) * 24 * L;
+    capsule(ctx, [sx, sy, ex, ey], 5.4, near ? sleeve : shade(sleeve, -0.2));
+    capsule(ctx, [ex, ey, hx, hy], 4.6, near ? skinN : skinF);
+    claws(ctx, hx, hy, up - 0.1, near ? skinN : skinF);
+  };
+}
+function armsSwing(skinN, skinF) { // carrera: brazos que barren adelante y atrás
+  return (ctx, near, atk, sway, tl, cw) => {
+    const sx = near ? cw * 0.3 : -cw * 0.25, sy = -tl + 6;
+    const a = atk ? (near ? -0.9 : -0.6) : (near ? 1 : -1) * sway * 0.9;
+    const ex = sx + Math.sin(a + 0.3) * 22, ey = sy + Math.cos(a + 0.3) * 22;
+    const hx = ex + Math.sin(a + 1.5) * 20, hy = ey + Math.cos(a + 1.5) * 20 * (atk ? -0.3 : 1);
+    capsule(ctx, [sx, sy, ex, ey, hx, hy], 4.4, near ? skinN : skinF);
+    claws(ctx, hx, hy, Math.atan2(hy - ey, hx - ex), near ? skinN : skinF);
+  };
+}
+
+const ZPAL = {
+  walker: { skin: '#a6b496', skin2: '#7e8c70', shirt: '#9a8c72', pants: '#3e3c48', eye: '#f2ffb0', hair: '#2a2a26' },
+  runner: { skin: '#b8b090', skin2: '#8a8466', shirt: '#8a8466', pants: '#46404a', eye: '#ffe0a0', hair: '#3a2a1a' },
+  bloater: { skin: '#94a672', skin2: '#6e7e52', shirt: '#7a7a5a', pants: '#3a3a30', eye: '#d8ff6a' },
+  armored: { skin: '#9c9c8c', skin2: '#76766a', shirt: '#4a4640', pants: '#33333a', eye: '#ffd27a' },
+  forker: { skin: '#aa9678', skin2: '#86735a', shirt: '#8a6a4a', pants: '#3a4a5e', eye: '#ffb070' },
+  dynamiter: { skin: '#9aa092', skin2: '#76806e', shirt: '#5a4a3a', pants: '#3a3430', eye: '#ffd27a' },
+};
+
+// ------------------------------------------------------------------ ERRANTE (encorvado, ropa rasgada, brazos adelantados)
+function walker(ctx) {
+  const P = ZPAL.walker;
+  zHuman(ctx, {
+    ...P, hipY: 70, thigh: 34, shin: 34, legW: 6.2, stride: 0.42, lean: 0.32, torso: 50, chest: 17, waist: 13, head: 1, bareF: true, legRags: true, jaw: 0.25, scar: true,
+    arms: armsReach(P.skin, P.skin2, P.shirt),
+    torsoFx(c, tl, cw) { // chaleco abierto, desgarrón con costillas y sangre seca
+      cel(c, [-cw - 1, -tl * 0.5, -cw + 2, -tl - 1, -4, -tl - 1, -6, 4, -13, 4], '#2e2a2c', 2.2, 0);
+      cel(c, [cw - 6, -tl, cw + 1, -tl * 0.5, 13, 4, 7, 4], '#2e2a2c', 2.2, 0);
+      cel(c, [-1, -tl * 0.75, 8, -tl * 0.78, 9, -tl * 0.35, 0, -tl * 0.32], P.skin2, 1.8, 0);
+      c.strokeStyle = '#3a4234'; c.lineWidth = 1.4; c.beginPath(); for (let i = 0; i < 3; i++) { c.moveTo(1, -tl * 0.7 + i * 6); c.lineTo(8, -tl * 0.72 + i * 6); } c.stroke();
+      c.fillStyle = '#6a0e0c'; c.fillRect(9, -tl * 0.4, 4, 8);
+      const r = [-13, 2, 13, 2]; tatter(r, 13, 12, -13, 12, 5, 7, 3); cel(c, r, P.shirt, 2, 0);
+    },
+  });
 }
 
 // ------------------------------------------------------------------ CORREDOR (delgado, muy inclinado, zancada larga)
 function runner(ctx) {
-  const ph = (ZF / 4) * TAU, st = Math.sin(ph), sw = Math.cos(ph);
-  zLeg(ctx, -4, -70, -14 - st * 12, -38 + Math.max(0, st) * 6, -26 - st * 22, 0, ZPANTS, true);
-  zLeg(ctx, 4, -70, 14 + st * 12, -38 + Math.max(0, -st) * 6, 22 + st * 22, 0, shade(ZPANTS, 0.12), false);
-  ctx.save(); ctx.translate(0, -70); ctx.rotate(0.62);
-  limb(ctx, -6, -48, -26 - sw * 10, -24, 5, 4, ZSKIN2); clawHand(ctx, -30 - sw * 10, -20, -1, ZSKIN2);
-  const torso = [-12, -56, 13, -54, 12, -6, -10, -2];
-  zp(ctx, torso, ZSKIN2, 3, 3);
-  ctx.strokeStyle = '#2e3628'; ctx.lineWidth = 1.5; ctx.beginPath();
-  for (let i = 0; i < 4; i++) { ctx.moveTo(-8, -44 + i * 7); ctx.quadraticCurveTo(0, -47 + i * 7, 10, -43 + i * 7); } ctx.stroke();
-  // camisa hecha jirones colgando de un hombro
-  const shirt = [-14, -58, 6, -56, 2, -40];
-  tatter(shirt, 2, -40, -14, -18, 4, 7, 11); zp(ctx, shirt, ZSHIRT, 2.4, 0);
-  rags(ctx, -12, -4, 12, -6, 4, 9, ZPANTS, 9);
-  zhead(ctx, 8, -66, 0.92, 0.95, '#ffe0a0', ZSKIN);
-  poly(ctx, [12, -60, 22, -56, 16, -50], '#1a0806', 1.5, 0); // boca abierta en un alarido
-  limb(ctx, 8, -48, 32, -34 + sw * 8, 5, 4, ZSKIN); clawHand(ctx, 36, -32 + sw * 8, 1, ZSKIN);
+  const P = ZPAL.runner;
+  zHuman(ctx, {
+    ...P, hipY: 76, thigh: 38, shin: 38, legW: 5.4, stride: 0.8, lean: 0.62, torso: 46, chest: 13, waist: 10, head: 0.92, bareB: true, legRags: true, jaw: 0.6,
+    arms: armsSwing(P.skin, P.skin2),
+    torsoFx(c, tl, cw) { // torso descarnado con costillas y camisa colgando de un hombro
+      c.strokeStyle = '#4a4630'; c.lineWidth = 1.5; c.beginPath(); for (let i = 0; i < 4; i++) { c.moveTo(-cw + 3, -tl * 0.85 + i * 7); c.quadraticCurveTo(0, -tl * 0.9 + i * 7, cw - 2, -tl * 0.82 + i * 7); } c.stroke();
+      const s = [-cw - 2, -tl, 4, -tl - 1, -2, -tl * 0.55]; tatter(s, -2, -tl * 0.55, -cw - 3, -tl * 0.15, 3, 6, 11); cel(c, s, '#6a5a44', 2, 0);
+    },
+  });
+}
+
+// ------------------------------------------------------------------ HINCHADO (vientre de gas, piernas cortas)
+function bloater(ctx) {
+  const P = ZPAL.bloater;
+  zHuman(ctx, {
+    ...P, hipY: 54, thigh: 26, shin: 26, legW: 7.4, stride: 0.3, lean: 0.06, torso: 64, chest: 22, waist: 20, head: 0.82, jaw: 0.1,
+    arms: (c, near, atk, sway, tl, cw) => {
+      const sx = near ? cw * 0.5 : -cw * 0.4, sy = -tl + 8, up = atk ? -0.3 : 0.6 + (near ? sway : -sway) * 0.12;
+      const hx = sx + Math.cos(up) * 26, hy = sy + Math.sin(up) * 26;
+      capsule(c, [sx, sy, hx, hy], 5.6, near ? P.skin : P.skin2); claws(c, hx, hy, up, near ? P.skin : P.skin2);
+    },
+    torsoFx(c, tl, cw) { // panza que revienta la camisa, pústulas de gas
+      const bx = 8, by = -tl * 0.42;
+      c.save(); c.beginPath(); c.ellipse(bx, by, 34, 30, 0, 0, TAU); c.fillStyle = P.skin; c.fill(); c.clip();
+      c.fillStyle = shade(P.skin, -0.3); c.beginPath(); c.ellipse(bx - 18, by + 10, 30, 30, 0, 0, TAU); c.fill();
+      c.fillStyle = 'rgba(255,255,230,0.2)'; c.beginPath(); c.ellipse(bx + 14, by - 14, 10, 6, -0.5, 0, TAU); c.fill(); c.restore();
+      c.strokeStyle = INK; c.lineWidth = 2.8; c.beginPath(); c.ellipse(bx, by, 34, 30, 0, 0, TAU); c.stroke();
+      c.strokeStyle = '#5a6a3a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(bx - 6, by - 26); c.quadraticCurveTo(bx + 4, by - 6, bx - 4, by + 24); c.moveTo(bx + 10, by - 24); c.quadraticCurveTo(bx + 18, by, bx + 12, by + 22); c.stroke();
+      for (const [x, y, r] of [[bx - 10, by - 6, 4], [bx + 14, by + 8, 5], [bx + 2, by + 18, 3.4]]) { glow(c, x, y, r * 4, '#9dff3a', 0.65); circle(c, x, y, r, '#c8ff6a', 1.4); }
+      cel(c, [-cw, -tl, cw, -tl, cw - 6, -tl * 0.7, -cw + 4, -tl * 0.72], P.shirt, 2.2, 0.3); // jirón de camisa sobre los hombros
+    },
+  });
+}
+
+// ------------------------------------------------------------------ ACORAZADO (peto de hierro, olla por casco, puerta de horno por escudo)
+function armored(ctx) {
+  const P = ZPAL.armored;
+  zHuman(ctx, {
+    ...P, hipY: 68, thigh: 33, shin: 33, legW: 7.4, stride: 0.32, lean: 0.14, torso: 54, chest: 22, waist: 17, head: 1,
+    arms: (c, near, atk, sway, tl, cw) => {
+      const sx = near ? cw * 0.4 : -cw * 0.3, sy = -tl + 8;
+      if (near) { // sostiene la puerta de horno delante
+        const ex = sx + 14, ey = sy + 18, hx = ex + 14 + (atk ? 10 : 0), hy = ey - 4;
+        capsule(c, [sx, sy, ex, ey, hx, hy], 6, P.skin);
+        cel(c, [hx - 2, hy - 30, hx + 14, hy - 32, hx + 16, hy + 26, hx, hy + 28], '#4a4640', 2.8, 0.3);
+        for (const yy of [-20, 0, 18]) circle(c, hx + 7, hy + yy, 2.2, '#8a8478', 1);
+        c.fillStyle = 'rgba(150,70,30,0.45)'; c.fillRect(hx + 3, hy - 10, 8, 6);
+      } else { const up = atk ? -0.5 : 0.1 - sway * 0.08; const ex = sx + Math.cos(up) * 24, ey = sy + Math.sin(up) * 24 + 4; capsule(c, [sx, sy, ex, ey, ex + 22, ey - 2], 6, P.skin2); claws(c, ex + 22, ey - 2, 0, P.skin2); }
+    },
+    torsoFx(c, tl, cw) {
+      cel(c, [-cw + 2, -tl + 2, cw - 1, -tl + 4, cw + 1, -tl * 0.32, -cw, -tl * 0.3], '#6a665e', 2.6, 0.35); // peto
+      for (const [x, y] of [[-cw + 6, -tl + 8], [cw - 6, -tl + 8], [-cw + 6, -tl * 0.4], [cw - 6, -tl * 0.4]]) circle(c, x, y, 2.4, '#9a958a', 1);
+      c.fillStyle = 'rgba(140,60,24,0.4)'; c.fillRect(-6, -tl * 0.7, 12, 5);
+    },
+    hat(c) { cel(c, [-14, -10, 14, -12, 16, -2, -14, 0], '#4a4640', 2.4, 0.4); line(c, 14, -10, 26, -14, INK, 4); line(c, 14, -10, 26, -14, '#6a665e', 2); },
+  });
+}
+
+// ------------------------------------------------------------------ HORQUERO (granjero con horca: estocada al atacar)
+function forker(ctx) {
+  const P = ZPAL.forker;
+  zHuman(ctx, {
+    ...P, hipY: 72, thigh: 35, shin: 35, legW: 6.4, stride: 0.4, lean: 0.24, torso: 50, chest: 17, waist: 14, head: 1, legRags: true, jaw: 0.2,
+    arms: (c, near, atk, sway, tl, cw) => {
+      const thrust = atk ? 22 : sway * 2;
+      const hNear = [36 + thrust, -tl * 0.45], hFar = [10 + thrust, -tl * 0.5];
+      const sx = near ? cw * 0.35 : -cw * 0.3, sy = -tl + 6, h = near ? hNear : hFar;
+      if (!near) { // la horca va entre los dos brazos
+        c.lineCap = 'round'; const x0 = -30 + thrust, y0 = -tl * 0.2, x1 = 78 + thrust, y1 = -tl * 0.72;
+        c.strokeStyle = INK; c.lineWidth = 7; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+        c.strokeStyle = '#7a5430'; c.lineWidth = 3.6; c.stroke();
+        for (let k = -1; k <= 1; k++) { c.strokeStyle = INK; c.lineWidth = 4; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x1 + 18, y1 - 4 + k * 7); c.stroke(); c.strokeStyle = '#a8a8a0'; c.lineWidth = 1.8; c.stroke(); }
+      }
+      const ex = (sx + h[0]) / 2 - 2, ey = (sy + h[1]) / 2 + 10;
+      capsule(c, [sx, sy, ex, ey], 5.4, near ? P.shirt : shade(P.shirt, -0.2));
+      capsule(c, [ex, ey, h[0], h[1]], 4.6, near ? P.skin : P.skin2);
+      c.fillStyle = near ? P.skin : P.skin2; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.arc(h[0], h[1], 5.2, 0, TAU); c.fill(); c.stroke();
+    },
+    torsoFx(c, tl, cw) { // peto vaquero con tirantes
+      cel(c, [-cw + 3, -tl * 0.62, cw - 2, -tl * 0.6, cw, 6, -cw + 1, 6], P.pants, 2.2, 0.35);
+      line(c, -cw + 5, -tl * 0.6, -cw + 8, -tl, INK, 3.6); line(c, -cw + 5, -tl * 0.6, -cw + 8, -tl, P.pants, 2);
+      line(c, cw - 4, -tl * 0.6, cw - 6, -tl, INK, 3.6); line(c, cw - 4, -tl * 0.6, cw - 6, -tl, P.pants, 2);
+      circle(c, -cw + 5, -tl * 0.6, 1.8, '#c9a54a', 1); circle(c, cw - 4, -tl * 0.6, 1.8, '#c9a54a', 1);
+    },
+    hat(c) { // sombrero de paja roto
+      cel(c, [-20, -12, 22, -14, 18, -10, -18, -8], '#b89a5a', 2.2, 0.3);
+      const cr = [-10, -12, -8, -24, 8, -26, 12, -14]; cel(c, cr, '#a88a4a', 2.2, 0.35);
+      c.strokeStyle = 'rgba(60,40,10,0.6)'; c.lineWidth = 1; c.beginPath(); for (let i = 0; i < 4; i++) { c.moveTo(-6 + i * 4, -24); c.lineTo(-7 + i * 4, -14); } c.stroke();
+    },
+  });
+}
+
+// ------------------------------------------------------------------ DINAMITERO (minero con cartucho encendido en alto)
+function dynamiter(ctx) {
+  const P = ZPAL.dynamiter;
+  zHuman(ctx, {
+    ...P, hipY: 70, thigh: 34, shin: 34, legW: 6.2, stride: 0.5, lean: 0.2, torso: 50, chest: 17, waist: 13, head: 0.96, jaw: 0.35,
+    arms: (c, near, atk, sway, tl, cw) => {
+      const sx = near ? cw * 0.35 : -cw * 0.3, sy = -tl + 6;
+      if (near) { // brazo alzado con el cartucho
+        const ex = sx + 12, ey = sy - 18 - (atk ? 8 : 0), hx = ex + 6, hy = ey - 20 - (atk ? 8 : 0);
+        capsule(c, [sx, sy, ex, ey, hx, hy], 4.8, P.skin);
+        cel(c, [hx - 3, hy - 22, hx + 4, hy - 22, hx + 4, hy + 2, hx - 3, hy + 2], '#c4281c', 2, 0.3);
+        line(c, hx, hy - 22, hx + 3, hy - 30, '#d8c6a3', 1.6);
+        glow(c, hx + 3, hy - 31, atk ? 26 : 16, '#ffb02a', 1); star(c, hx + 3, hy - 31, atk ? 6 : 4, 6, '#ffe08a', 1);
+        c.fillStyle = P.skin; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.arc(hx, hy, 5, 0, TAU); c.fill(); c.stroke();
+      } else { const up = atk ? -0.4 : 0.15 - sway * 0.1, ex = sx + Math.cos(up) * 22, ey = sy + Math.sin(up) * 22 + 6; capsule(c, [sx, sy, ex, ey, ex + 20, ey], 4.6, P.skin2); claws(c, ex + 20, ey, 0, P.skin2); }
+    },
+    torsoFx(c, tl, cw) { // bandolera de cartuchos
+      c.save(); c.translate(0, -tl * 0.5); c.rotate(-0.7);
+      cel(c, [-tl * 0.6, -4, tl * 0.6, -4, tl * 0.6, 4, -tl * 0.6, 4], '#2a2420', 1.8, 0);
+      for (let i = -3; i <= 3; i++) cel(c, [i * 7 - 2.5, -6, i * 7 + 2.5, -6, i * 7 + 2.5, 6, i * 7 - 2.5, 6], '#a8281c', 1.4, 0);
+      c.restore();
+    },
+    hat(c) { // casco de minero con vela
+      cel(c, [-12, -12, -10, -22, 8, -24, 14, -14], '#5a4a2a', 2.4, 0.4);
+      cel(c, [-16, -12, 18, -14, 16, -10, -14, -9], '#4a3a20', 2, 0);
+      line(c, 6, -24, 6, -32, '#e8dcc0', 3); glow(c, 6, -34, 12, '#ffd27a', 1);
+    },
+  });
+}
+
+// ------------------------------------------------------------------ CUADRÚPEDOS (sabueso de tinta, mascotas perro/gato)
+// Anatomía lateral: pecho profundo, cintura recogida, cruz y grupa, patas delanteras (codo/muñeca) y traseras
+// (rodilla/corvejón), cuello, cráneo con hocico y mandíbula articulada. 4 fotogramas de galope + ataque.
+function quadLeg(ctx, x, y, phi, hind, far, len, w, fill, atk, front) {
+  let a = Math.sin(phi) * 0.55, lift = Math.max(0, Math.cos(phi));
+  if (atk) { a = front ? 0.95 : -0.75; lift = front ? 0.6 : 0; }
+  const c = far ? shade(fill, -0.22) : fill;
+  if (hind) {
+    const kx = x + Math.sin(a + 0.35) * len * 0.42, ky = y + Math.cos(a + 0.35) * len * 0.42;
+    const hx = kx + Math.sin(a - 0.75 - lift * 0.4) * len * 0.38, hy = ky + Math.cos(a - 0.75 - lift * 0.4) * len * 0.38;
+    const px = hx + Math.sin(a + 0.25) * len * 0.3, py = Math.min(0, hy + Math.cos(a + 0.25) * len * 0.3);
+    capsule(ctx, [x, y, kx, ky, hx, hy, px, py], w, c);
+    cel(ctx, [px - 3, py - 4, px + 8, py - 4, px + 9, py, px - 3, py], shade(c, -0.1), 1.8, 0);
+  } else {
+    const ex = x + Math.sin(a) * len * 0.45, ey = y + Math.cos(a) * len * 0.45;
+    const wx = ex + Math.sin(a - lift * 0.9) * len * 0.45, wy = ey + Math.cos(a - lift * 0.9) * len * 0.45;
+    const px = wx + 3, py = Math.min(0, wy + len * 0.08);
+    capsule(ctx, [x, y, ex, ey, wx, wy, px, py], w, c);
+    cel(ctx, [px - 3, py - 4, px + 8, py - 4, px + 9, py, px - 3, py], shade(c, -0.1), 1.8, 0);
+  }
+}
+export function quadRig(ctx, f, o) {
+  const atk = f === 4, ph = (f / 4) * TAU, L = o.len || 1, H = o.height || 1;
+  const bob = atk ? -3 : -Math.abs(Math.sin(ph)) * 2.5;
+  ctx.save(); ctx.translate(0, bob); if (atk) ctx.rotate(0.08);
+  const sx = 24 * L, sy = -46 * H, hx = -30 * L, hy = -50 * H, legLen = 48 * H;
+  // patas lejanas
+  quadLeg(ctx, hx, hy, ph + Math.PI + 0.6, true, true, legLen, o.legW, o.body, atk, false);
+  quadLeg(ctx, sx, sy, ph + 0.6, false, true, legLen, o.legW, o.body, atk, true);
+  // cola
+  if (o.tail) o.tail(ctx, ph, L, H, atk);
+  // cuerpo: cruz, lomo, grupa, muslo, vientre recogido, pecho profundo
+  const body = [44 * L, -66 * H, 18 * L, -70 * H, -12 * L, -64 * H, -40 * L, -64 * H, -50 * L, -54 * H, -42 * L, -40 * H, -16 * L, -44 * H, 10 * L, -38 * H, 32 * L, -36 * H, 46 * L, -50 * H];
+  cel(ctx, body, o.body, 2.8, 0.45);
+  if (o.bodyFx) o.bodyFx(ctx, L, H);
+  // patas cercanas
+  quadLeg(ctx, hx + 4, hy + 2, ph + Math.PI, true, false, legLen, o.legW, o.body, atk, false);
+  quadLeg(ctx, sx + 4, sy + 2, ph, false, false, legLen, o.legW, o.body, atk, true);
+  // cuello y cabeza
+  const nx = 46 * L, ny = -64 * H, hdx = (atk ? 64 : 58) * L, hdy = (atk ? -66 : -76) * H;
+  cel(ctx, [nx - 10, ny + 12, nx - 4, ny - 6, hdx - 4, hdy - 8, hdx + 2, hdy + 6, nx + 6, ny + 14], o.body, 2.6, 0.4);
+  ctx.save(); ctx.translate(hdx, hdy);
+  const open = atk ? 1 : 0.1, mz = o.muzzle;
+  if (open > 0.2) cel(ctx, [4, 2, 6 + mz, 2, 6 + mz, 6 + open * 8, 4, 8], '#1a0606', 1.6, 0);
+  ctx.save(); ctx.translate(4, 4); ctx.rotate(open * 0.5); cel(ctx, [0, -2, mz + 2, -1, mz, 4, 2, 6], shade(o.head || o.body, -0.15), 2, 0.3);
+  if (o.fangs) { ctx.fillStyle = '#efe2c4'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(6 + i * 6, -1); ctx.lineTo(8 + i * 6, -6); ctx.lineTo(10 + i * 6, -1); ctx.fill(); } }
+  ctx.restore();
+  cel(ctx, [-8, 2, -8, -10, 0, -16, 10, -15, 14, -8, 14 + mz, -6, 16 + mz, -1, 10 + mz * 0.4, 4, 2, 6], o.head || o.body, 2.6, 0.42); // cráneo + hocico
+  if (o.fangs) { ctx.fillStyle = '#efe2c4'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(10 + i * 6, 3); ctx.lineTo(12 + i * 6, 9); ctx.lineTo(14 + i * 6, 3); ctx.fill(); } }
+  ctx.fillStyle = INK; ctx.beginPath(); ctx.ellipse(14 + mz, -3.5, 2.2, 1.8, 0, 0, TAU); ctx.fill(); // trufa
+  o.ears(ctx);
+  ctx.fillStyle = '#0a0605'; ctx.beginPath(); ctx.ellipse(6, -8, 3.4, 2.8, 0, 0, TAU); ctx.fill();
+  glow(ctx, 7, -8, 9, o.eye, 1); ctx.fillStyle = o.eye; ctx.fillRect(6, -9.5, 3, 2.4);
+  if (o.whiskers) { ctx.strokeStyle = 'rgba(239,226,196,0.75)'; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(12 + mz, -2); ctx.lineTo(26 + mz, -5); ctx.moveTo(12 + mz, 0); ctx.lineTo(26 + mz, 1); ctx.stroke(); }
+  ctx.restore();
+  if (o.front) o.front(ctx, hdx, hdy, L, H);
   ctx.restore();
 }
 
-// ------------------------------------------------------------------ HINCHADO (vientre de gas)
-function bloater(ctx) {
-  legsZ(ctx, CLOTH, 0);
-  const belly = [-36, -110, -10, -132, 26, -128, 44, -96, 40, -64, 10, -52, -26, -58, -42, -80];
-  blob(ctx, belly, '#6a7a5a', 3, 0.8);
-  hatchPoly(ctx, belly, 5, 'rgba(8,10,12,0.4)', 1, false, 0.5);
-  for (const [x, y] of [[-10, -96], [16, -80], [2, -70]]) { glow(ctx, x, y, 16, '#9dff3a', 0.6); circle(ctx, x, y, 4, '#b8ff6a', 1.5); }
-  ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.beginPath();
-  for (let i = 0; i < 6; i++) { ctx.moveTo(-20 + i * 8, -60); ctx.lineTo(-16 + i * 8, -54); }
-  ctx.moveTo(-22, -57); ctx.lineTo(24, -57); ctx.stroke();
-  limb(ctx, -34, -104, -48, -76, 7, 6, SKIN); clawHand(ctx, -50, -72, -1);
-  limb(ctx, 36, -106, 54, -86, 7, 6, SKIN); clawHand(ctx, 56, -82, 1);
-  zhead(ctx, 0, -140, 0.95, -0.2);
-}
-
-// ------------------------------------------------------------------ ACORAZADO (placas de hierro, olla por casco)
-function armored(ctx) {
-  legsZ(ctx, CLOTH, 2);
-  const torso = [-26, -126, 22, -122, 28, -94, 22, -70, -20, -72, -30, -98];
-  zp(ctx, torso, CLOTH2);
-  poly(ctx, [-22, -120, 18, -116, 20, -84, -20, -86], '#5a5650', 3, 0.8);
-  for (const [x, y] of [[-16, -114], [12, -112], [-16, -90], [14, -88]]) circle(ctx, x, y, 2.4, '#8a8478', 1);
-  ctx.fillStyle = 'rgba(120,60,30,0.5)'; ctx.fillRect(-10, -106, 14, 6);
-  rags(ctx, -20, -72, 24, -70, 5, 10, RAG, 13);
-  limb(ctx, -26, -120, -40, -84, 8, 7, SKIN); clawHand(ctx, -42, -80, -1);
-  limb(ctx, 22, -118, 46, -100, 8, 7, SKIN); clawHand(ctx, 50, -98, 1);
-  poly(ctx, [-50, -84, -40, -84, -40, -36, -50, -36], '#4a4640', 2.5, 0.5); // escudo de puerta de horno
-  zhead(ctx, 4, -136, 1, 0.2);
-  poly(ctx, [-14, -146, 20, -150, 22, -138, -14, -134], '#4a4640'); // olla-casco
-  line(ctx, 20, -146, 32, -150, INK, 4);
-}
-
-// ------------------------------------------------------------------ HORQUERO (horca improvisada)
-function forker(ctx) {
-  legsZ(ctx, CLOTH, -2);
-  const torso = [-22, -124, 20, -120, 24, -94, 18, -70, -18, -70, -26, -98];
-  zp(ctx, torso, '#46403a');
-  poly(ctx, [-10, -124, 10, -124, 4, -96, -4, -96], '#5a4a3a', 2, 0);
-  rags(ctx, -18, -70, 20, -70, 5, 12, RAG, 17);
-  // horca
-  line(ctx, -40, -40, 70, -140, INK, 7); line(ctx, -40, -40, 70, -140, '#6a4a2a', 3.5);
-  ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.beginPath();
-  for (let i = -1; i <= 1; i++) { ctx.moveTo(66 + i * 6, -136 - i * 2); ctx.lineTo(80 + i * 8, -156 - i * 4); }
-  ctx.stroke(); ctx.strokeStyle = '#8a8a82'; ctx.lineWidth = 2; ctx.stroke();
-  limb(ctx, -20, -118, -6, -90, 7, 6, SKIN); clawHand(ctx, -4, -86, 1);
-  limb(ctx, 18, -118, 36, -104, 7, 6, SKIN); clawHand(ctx, 38, -102, 1);
-  zhead(ctx, -2, -136, 1, -0.35);
-  poly(ctx, [-20, -146, 16, -150, 10, -158, -12, -156], '#5a4a2a', 2.5, 0.5); // sombrero de paja roto
-}
-
-// ------------------------------------------------------------------ DINAMITERO (mecha encendida)
-function dynamiter(ctx) {
-  legsZ(ctx, CLOTH, 6);
-  const torso = [-20, -124, 22, -118, 26, -92, 20, -70, -16, -72, -24, -100];
-  zp(ctx, torso, CLOTH2);
-  for (let i = 0; i < 4; i++) poly(ctx, [-14 + i * 7, -116, -8 + i * 7, -116, -8 + i * 7, -88, -14 + i * 7, -88], '#a8281c', 2, 0.3);
-  poly(ctx, [-18, -104, 20, -104, 20, -98, -18, -98], '#2a2a2a', 0, 0);
-  line(ctx, 0, -116, 6, -128, '#c8b890', 1.5);
-  glow(ctx, 6, -130, 16, '#ffb02a', 1);
-  rags(ctx, -16, -72, 22, -70, 5, 10, RAG, 19);
-  limb(ctx, -20, -118, -44, -110, 6, 5, SKIN); clawHand(ctx, -48, -108, -1);
-  limb(ctx, 20, -116, 46, -126, 6, 5, SKIN); clawHand(ctx, 50, -128, 1);
-  zhead(ctx, 10, -134, 0.95, 0.6, '#ffd27a');
-}
-
-
-// ------------------------------------------------------------------ SABUESO DE TINTA (vista lateral, flaco y veloz)
+// ------------------------------------------------------------------ SABUESO DE TINTA (zig-zag, mordisco)
 function hound(ctx) {
-  const ink = '#1a1c22', ink2 = '#2a2e36';
-  limb(ctx, -40, -46, -58, -4, 6, 4, ink); limb(ctx, 22, -48, 16, -4, 6, 4, ink);
-  const body = [-62, -54, -36, -80, 10, -86, 44, -76, 54, -58, 32, -40, -24, -40, -54, -44];
-  blob(ctx, body, ink2, 3, 0.6);
-  hatchPoly(ctx, body, 4, 'rgba(0,0,0,0.55)', 1, true, 0.3);
-  // costillas al aire
-  ctx.strokeStyle = '#8a8e96'; ctx.lineWidth = 1.6; ctx.beginPath();
-  for (let i = 0; i < 5; i++) { const x = -20 + i * 9; ctx.moveTo(x, -78); ctx.quadraticCurveTo(x + 5, -62, x, -46); } ctx.stroke();
-  // lomo erizado de tinta
-  const sp = [];
-  for (let i = 0; i <= 10; i++) { const t = i / 10, x = -60 + t * 104, y = -58 - Math.sin(t * Math.PI) * 28; sp.push(x, y + 6, x + 4, y - 12 - (i % 2) * 7); }
-  sp.push(46, -64, -58, -54);
-  poly(ctx, sp, '#101216', 2.5, 0);
-  limb(ctx, -30, -44, -38, -4, 7, 5, ink2); limb(ctx, 34, -48, 44, -4, 7, 5, ink2);
-  // cabeza alargada con fauces y goteo de tinta
-  blob(ctx, [40, -96, 58, -108, 86, -100, 104, -88, 96, -78, 70, -76, 50, -70], ink2, 3, 0.6);
-  poly(ctx, [54, -106, 50, -124, 62, -110], '#101216', 2.5, 0); poly(ctx, [66, -106, 68, -122, 74, -104], '#101216', 2.5, 0);
-  poly(ctx, [70, -80, 100, -82, 96, -70, 72, -68], '#050506', 2, 0);
-  ctx.fillStyle = '#d8d8d0'; for (let i = 0; i < 5; i++) { const x = 73 + i * 5; ctx.beginPath(); ctx.moveTo(x, -80); ctx.lineTo(x + 2, -74); ctx.lineTo(x + 4, -80); ctx.fill(); }
-  glow(ctx, 70, -96, 12, '#7fa8ff', 1); ctx.fillStyle = '#d8e8ff'; ctx.fillRect(67, -98, 6, 3);
-  ctx.fillStyle = '#050506'; for (const [x, l] of [[80, 16], [90, 10]]) { ctx.beginPath(); ctx.ellipse(x, -64 + l / 2, 2.2, l / 2, 0, 0, Math.PI * 2); ctx.fill(); }
-  poly(ctx, [-58, -56, -88, -74, -94, -66, -64, -46], '#101216', 2.5, 0);
+  quadRig(ctx, ZF, {
+    body: '#2c3038', head: '#343842', eye: '#9ac8ff', legW: 4.4, muzzle: 18, fangs: true, len: 1.05,
+    ears(c) { cel(c, [-4, -12, -2, -28, 6, -14], '#1e2026', 2, 0); },
+    tail(c, ph, L, H) { capsule(c, [-48 * L, -58 * H, -66 * L, -70 * H + Math.sin(ph) * 6, -86 * L, -66 * H + Math.sin(ph) * 8], 3, '#2c3038'); },
+    bodyFx(c, L, H) { // costillas al aire y lomo erizado
+      c.strokeStyle = '#8a8e96'; c.lineWidth = 1.6; c.beginPath(); for (let i = 0; i < 4; i++) { const x = (-2 + i * 8) * L; c.moveTo(x, -64 * H); c.quadraticCurveTo(x + 5, -52 * H, x, -40 * H); } c.stroke();
+      c.fillStyle = '#101216'; c.beginPath(); for (let i = 0; i <= 8; i++) { const x = (-40 + i * 10) * L, y = -64 * H - Math.sin((i / 8) * Math.PI) * 6; c.moveTo(x - 3, y + 2); c.lineTo(x + 1, y - 9 - (i % 2) * 4); c.lineTo(x + 4, y + 2); } c.fill();
+    },
+    front(c, hx, hy) { c.fillStyle = '#0a0605'; for (const [x, l] of [[hx + 10, 12], [hx + 18, 8]]) { c.beginPath(); c.ellipse(x, hy + 10 + l / 2, 1.8, l / 2, 0, 0, TAU); c.fill(); } }, // goteo de tinta
+  });
+}
+
+// ------------------------------------------------------------------ ABOMINACIÓN (caparazón blindado, cuatro patas, escupe bilis)
+function abomination(ctx) {
+  const atk = ZF === 4, ph = (ZF / 4) * TAU;
+  for (const [x, o, far] of [[-56, 0, 1], [26, Math.PI, 1], [-40, Math.PI, 0], [42, 0, 0]]) {
+    const a = atk ? 0 : Math.sin(ph + o) * 0.4, kx = x + Math.sin(a) * 16 - 10, ky = -26, fx = x + Math.sin(a) * 26, fy = 0;
+    capsule(ctx, [x, -44, kx, ky, fx, fy - 4], 7.5, far ? '#22261f' : '#2e342c');
+    cel(ctx, [fx - 10, -8, fx + 10, -8, fx + 12, 0, fx - 12, 0], '#1a1c1a', 2, 0);
+  }
+  const shell = [-84, -50, -70, -110, -30, -140, 30, -142, 72, -112, 88, -52, 50, -36, -50, -36];
+  cel(ctx, shell, '#4a4e48', 3.2, 0.45);
+  ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.beginPath();
+  ctx.moveTo(-60, -116); ctx.quadraticCurveTo(0, -90, 62, -118); ctx.moveTo(-76, -76); ctx.quadraticCurveTo(0, -56, 80, -78); ctx.moveTo(0, -142); ctx.lineTo(0, -40); ctx.stroke();
+  for (const [x, y] of [[-40, -120], [36, -122], [-56, -84], [56, -86], [-20, -66], [22, -66]]) circle(ctx, x, y, 3.2, '#9a9e96', 1.2);
+  // cabeza baja con fauces (se abren al escupir)
+  ctx.save(); ctx.translate(58, -54);
+  if (atk) cel(ctx, [-6, 2, 30, -2, 32, 22, -4, 18], '#120606', 2, 0);
+  cel(ctx, [-12, -20, 10, -26, 30, -16, 34, -4, 20, 2, -8, 4], '#5a6058', 3, 0.4);
+  ctx.save(); ctx.translate(-4, 4); ctx.rotate(atk ? 0.45 : 0.05); cel(ctx, [0, 0, 32, -2, 30, 10, 4, 12], '#4a5048', 2.6, 0.3); ctx.restore();
+  ctx.fillStyle = '#d8d0b8'; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(i * 6, 2); ctx.lineTo(i * 6 + 3, 8); ctx.lineTo(i * 6 + 6, 2); ctx.fill(); }
+  for (const x of [6, 18]) { glow(ctx, x, -12, 10, '#b89aff', 1); ctx.fillStyle = '#e8dcff'; ctx.fillRect(x - 3, -14, 6, 3); }
+  if (atk) { glow(ctx, 34, 8, 24, '#7a5aff', 0.9); }
+  ctx.fillStyle = '#0a0a10'; for (const [x, l] of [[8, 18], [20, 12]]) { ctx.beginPath(); ctx.ellipse(x, 12 + l / 2, 2.4, l / 2, 0, 0, TAU); ctx.fill(); }
+  ctx.restore();
 }
 
 // ------------------------------------------------------------------ ARAÑA DE CRIPTA (enjambre)
@@ -257,24 +478,6 @@ function spider(ctx) {
       for (const [x, y] of [[22, -44], [24, -38], [30, -46], [35, -45], [26, -34], [32, -34]]) { ctx.fillStyle = '#ff4a3a'; ctx.beginPath(); ctx.arc(x, y, 1.6, 0, TAU); ctx.fill(); }
     }
   }
-}
-
-// ------------------------------------------------------------------ ABOMINACIÓN (caparazón blindado, escupe bilis de tinta)
-function abomination(ctx) {
-  for (const [x1, x2] of [[-60, -78], [-30, -36], [30, 34], [60, 76]]) { limb(ctx, x1, -40, x2, -2, 10, 7, '#2a2e2a'); poly(ctx, [x2 - 8, -6, x2 + 8, -6, x2 + 10, 2, x2 - 10, 2], '#1a1c1a', 2, 0); }
-  const shell = [-84, -50, -70, -110, -30, -140, 30, -142, 72, -112, 88, -52, 50, -36, -50, -36];
-  blob(ctx, shell, '#3a3e3a', 3.5, 0.8);
-  hatchPoly(ctx, shell, 5, 'rgba(0,0,0,0.5)', 1.1, true, 0.4);
-  // placas del caparazón con remaches
-  ctx.strokeStyle = INK; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(-60, -116); ctx.quadraticCurveTo(0, -90, 62, -118); ctx.moveTo(-76, -76); ctx.quadraticCurveTo(0, -56, 80, -78); ctx.moveTo(0, -142); ctx.lineTo(0, -40); ctx.stroke();
-  for (const [x, y] of [[-40, -120], [36, -122], [-56, -84], [56, -86], [-20, -66], [22, -66]]) circle(ctx, x, y, 3.2, '#8a8e86', 1.2);
-  // cabeza baja con fauces abiertas goteando tinta
-  blob(ctx, [-30, -54, -20, -74, 20, -74, 30, -54, 18, -30, -18, -30], '#4a5048', 3, 0.6);
-  poly(ctx, [-18, -50, 18, -50, 14, -34, -14, -34], '#050506', 2, 0);
-  ctx.fillStyle = '#d0ccb8'; for (let i = -14; i <= 10; i += 6) { ctx.beginPath(); ctx.moveTo(i, -50); ctx.lineTo(i + 3, -42); ctx.lineTo(i + 6, -50); ctx.fill(); }
-  for (const x of [-10, 10]) { glow(ctx, x, -64, 10, '#9a7aff', 1); ctx.fillStyle = '#e0d0ff'; ctx.fillRect(x - 3, -66, 6, 3); }
-  ctx.fillStyle = '#0a0a10'; for (const [x, l] of [[-6, 22], [4, 30], [12, 16]]) { ctx.beginPath(); ctx.ellipse(x, -34 + l / 2, 2.6, l / 2, 0, 0, Math.PI * 2); ctx.fill(); }
 }
 
 // ------------------------------------------------------------------ JEFES DEL OESTE GÓTICO
@@ -517,14 +720,16 @@ function beast(ctx) {
 const DRAW_Z = { walker, runner, bloater, armored, forker, dynamiter, hound, spider, abomination, foreman, faceless, beast, plague, spawn };
 
 export const Z_BOX = {
-  walker: { w: 210, h: 190, cy: 0.9, s: 0.31 }, runner: { w: 200, h: 170, cy: 0.9, s: 0.31 }, bloater: { w: 200, h: 190, cy: 0.9, s: 0.32 },
-  armored: { w: 200, h: 190, cy: 0.9, s: 0.32 }, forker: { w: 240, h: 200, cy: 0.9, s: 0.3 }, dynamiter: { w: 200, h: 190, cy: 0.9, s: 0.3 },
+  walker: { w: 210, h: 190, cy: 0.9, s: 0.31 }, runner: { w: 200, h: 170, cy: 0.9, s: 0.31 }, bloater: { w: 220, h: 190, cy: 0.9, s: 0.32 },
+  armored: { w: 200, h: 190, cy: 0.9, s: 0.32 }, forker: { w: 260, h: 200, cy: 0.9, s: 0.3 }, dynamiter: { w: 210, h: 210, cy: 0.9, s: 0.3 },
   hound: { w: 230, h: 150, cy: 0.9, s: 0.3 }, spider: { w: 180, h: 110, cy: 0.86, s: 0.31 }, abomination: { w: 200, h: 170, cy: 0.9, s: 0.62 },
   foreman: { w: 300, h: 330, cy: 0.94, s: 0.56 }, plague: { w: 280, h: 300, cy: 0.94, s: 0.56 }, spawn: { w: 360, h: 300, cy: 0.94, s: 0.58 },
   faceless: { w: 300, h: 320, cy: 0.94, s: 0.58 }, beast: { w: 300, h: 340, cy: 0.94, s: 0.56 },
 };
 // tipos con fotogramas de animación (marcha)
-export const Z_ANIM = { walker: 4, runner: 4, spider: 4 };
+export const Z_ANIM = { walker: 4, runner: 4, bloater: 4, armored: 4, forker: 4, dynamiter: 4, hound: 4, spider: 4, abomination: 4 };
+// tipos con fotograma de ataque (índice 4): zarpazo, mordisco, estocada, mecha o escupitajo
+export const Z_ATK = { walker: 1, runner: 1, bloater: 1, armored: 1, forker: 1, dynamiter: 1, hound: 1, abomination: 1 };
 
 export function drawZombie(ctx, type, detail = 0, seed = 77, frame = 0) {
   beginArt(seed, detail);

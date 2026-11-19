@@ -14,7 +14,7 @@
 /* WEIRD WEST: SOMBRAS DE TINTA — cómic de terror noventero: claroscuro, tinta, semitono, papel viejo. */
 :root {
   --ink: #0a0605; --paper: #efe2c4; --paper2: #d8c8a0; --blood: #9a140e; --blood2: #c41a12; --bone: #e8dcc0;
-  --amber: #ffb347; --steel: #3a3a3e; --muted: #a89a82; --wood: #4a2e1a; --wood2: #6a4428;
+  --amber: #ffb347; --steel: #3a3a3e; --muted: #cdbd9c; --muted-dark: #5a4030; --wood: #4a2e1a; --wood2: #6a4428;
   --ft: 'Holtwood One SC', 'Rockwell Extra Bold', Georgia, serif;
   --fb: 'Courier Prime', 'Courier New', monospace;
 }
@@ -69,25 +69,10 @@ button { font-family: inherit; }
 
 /* ------------------------------------------------ dossiers */
 .dossiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-.alias.temper { background: var(--blood); }
-.dossier {
-  position: relative; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink);
-  padding: 12px 12px 14px; transform: rotate(var(--rot, 0deg)); transition: transform 0.15s;
-  background-image: radial-gradient(rgba(120, 80, 30, 0.12) 1px, transparent 1.5px); background-size: 5px 5px;
-}
-.dossier:hover { transform: rotate(0deg) translateY(-3px); }
-.dossier.selected { outline: 4px solid var(--blood2); outline-offset: 3px; }
-.dossier .tab { position: absolute; top: -16px; left: 16px; background: var(--paper2); border: 3px solid var(--ink); border-bottom: none; padding: 2px 10px; font-size: 11px; letter-spacing: 2px; }
-.dossier canvas { display: block; width: 100%; aspect-ratio: 4 / 3; border: 3px solid var(--ink); background: #000; }
-.dossier h3 { margin: 10px 0 0; font-family: var(--ft); font-weight: normal; font-size: 21px; line-height: 1.05; }
-.dossier .alias { display: inline-block; font-size: 12px; background: var(--ink); color: var(--paper); padding: 2px 8px; margin: 6px 0; letter-spacing: 2px; }
-.dossier p { margin: 6px 0; font-size: 13px; line-height: 1.35; }
-.dossier .passive { border-left: 4px solid var(--blood); padding-left: 8px; }
 .lvl { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 8px 0; }
 .lvl b { font-family: var(--ft); font-weight: normal; font-size: 18px; }
 .xpbar { flex: 1; height: 10px; border: 2px solid var(--ink); background: #c8b890; }
 .xpbar i { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--blood) 0 6px, var(--blood2) 6px 12px); }
-.dossier .row { margin-top: 8px; }
 .stampmark { position: absolute; right: 12px; top: 40px; font-family: var(--ft); color: var(--blood2); border: 3px solid var(--blood2); padding: 2px 8px; transform: rotate(12deg); opacity: 0.85; font-size: 14px; }
 
 /* ------------------------------------------------ modos */
@@ -156,15 +141,6 @@ button { font-family: inherit; }
 .modal-box h3 { margin: 0 0 6px; font-family: var(--ft); font-weight: normal; font-size: 26px; }
 .modal-box p { line-height: 1.45; font-size: 14px; }
 .modal-box canvas.origin { width: 100%; border: 3px solid var(--ink); display: block; margin: 8px 0; }
-.track { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 10px 0; }
-.ms { border: 3px solid var(--ink); padding: 8px 6px; text-align: center; font-size: 11px; background: #f8ecd0; }
-.ms b { display: block; font-family: var(--ft); font-weight: normal; font-size: 16px; }
-.ms.off { filter: grayscale(1); opacity: 0.55; }
-.pick { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 12px; }
-.pick button { font-family: var(--fb); font-weight: 700; font-size: 12px; padding: 8px 10px; border: 3px solid var(--ink); background: #f8ecd0; cursor: pointer; text-align: left; max-width: 260px; }
-.pick button.on { background: var(--ink); color: var(--paper); }
-.pick button:disabled { opacity: 0.45; cursor: not-allowed; }
-.swatch { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--ink); vertical-align: -2px; margin-right: 6px; }
 .setting { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 2px dashed #a89878; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(140px); z-index: 60; padding: 10px 18px; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); font-family: var(--ft); transition: transform 0.3s; pointer-events: none; }
 .toast.show { transform: translateX(-50%) translateY(0); }
@@ -190,7 +166,6 @@ button { font-family: inherit; }
 
 @media (max-width: 720px) {
   .dossiers { grid-template-columns: 1fr; }
-  .track { grid-template-columns: repeat(3, 1fr); }
   .wall-head, .rec { grid-template-columns: 26px 1.5fr 0.6fr 0.7fr 1fr; }
   .wall-head span:nth-child(5), .rec .date { display: none; }
 }
@@ -269,12 +244,12 @@ button { font-family: inherit; }
 }
 .naipe:hover { transform: rotate(0deg) translateY(-5px); box-shadow: 10px 12px 0 var(--ink); }
 .naipe.selected { outline: 4px solid var(--blood2); outline-offset: 4px; }
-.naipe-in { position: relative; border: 2px solid var(--blood); border-radius: 10px; padding: 26px 16px 14px; outline: 1px solid var(--ink); outline-offset: -6px; }
+.naipe-in { position: relative; border: 2px solid var(--blood); border-radius: 10px; padding: 30px 26px 18px; outline: 1px solid var(--ink); outline-offset: -6px; }
 .naipe-in::before, .naipe-in::after { content: '❦'; position: absolute; font-size: 16px; color: var(--blood); }
 .naipe-in::before { top: 4px; right: 34px; } .naipe-in::after { bottom: 4px; left: 34px; transform: rotate(180deg); }
-.naipe .idx { position: absolute; font-family: var(--ft); font-size: 24px; line-height: 0.85; text-align: center; color: var(--ink); z-index: 2; }
-.naipe .idx i { display: block; font-style: normal; font-size: 20px; }
-.naipe .idx.tl { top: 8px; left: 9px; } .naipe .idx.br { bottom: 8px; right: 9px; transform: rotate(180deg); }
+.naipe .idx { position: absolute; font-family: var(--ft); font-size: 20px; line-height: 0.85; text-align: center; color: var(--ink); z-index: 2; }
+.naipe .idx i { display: block; font-style: normal; font-size: 15px; }
+.naipe .idx.tl { top: 6px; left: 7px; } .naipe .idx.br { bottom: 6px; right: 7px; transform: rotate(180deg); }
 .naipe.red .idx, .naipe.red .suit-wm, .naipe.red .flourish span { color: var(--blood2); }
 .naipe .ribbon {
   position: absolute; top: -15px; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 3;
@@ -296,7 +271,11 @@ button { font-family: inherit; }
 .blk b { display: block; font-family: var(--ft); font-weight: normal; font-size: 13px; }
 .blk small { display: block; font-size: 11px; color: #5a3a2a; }
 .blk.pet { display: flex; gap: 9px; align-items: center; }
-.blk.pet canvas { width: 96px; height: 72px; border: 2px solid var(--ink); flex: none; box-shadow: inset 0 0 0 1px #c9a54a; }
+.blk.pet canvas { width: 78px; height: 58px; border: 2px solid var(--ink); flex: none; box-shadow: inset 0 0 0 1px #c9a54a; }
+.blk.pet b { font-size: 12px; overflow-wrap: anywhere; }
+.blk .petpower { display: block; font-size: 11px; line-height: 1.3; margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(10, 6, 5, 0.45); color: #3a1608; }
+.blk .petpower b { display: inline; font-size: 11px; color: var(--blood); }
+.blk .petpower .pcd { font-style: normal; white-space: nowrap; color: var(--muted-dark); }
 .blk .petstats { display: block; font-size: 11px; margin-top: 2px; }
 .blk.pas p { margin: 3px 0 0; font-size: 12px; line-height: 1.3; }
 .naipe .row { justify-content: center; margin-top: 8px; }
@@ -306,9 +285,9 @@ button { font-family: inherit; }
 /* ------------------------------------------------ crónica / periódico del Oeste */
 .end-info { width: min(540px, 100%); padding: 20px 22px; background: linear-gradient(180deg, #f2e4c2, #e0caa0); background-image: radial-gradient(rgba(90, 60, 20, 0.14) 1px, transparent 1.4px), linear-gradient(180deg, #f2e4c2, #dcc496); background-size: 4px 4px, 100% 100%; }
 .gazette { font-family: var(--fb); }
-.g-mast { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 8px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+.g-mast { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 4px 8px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
 .g-mast span:last-child { text-align: right; }
-.g-mast b { font-family: var(--ft); font-weight: normal; font-size: clamp(20px, 5vw, 32px); letter-spacing: 2px; text-align: center; }
+.g-mast b { order: -1; flex-basis: 100%; font-family: var(--ft); font-weight: normal; font-size: clamp(20px, 4.4vw, 30px); letter-spacing: 2px; text-align: center; white-space: nowrap; }
 .g-rule { height: 7px; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); margin: 6px 0 10px; }
 .g-rule.thin { height: 4px; border-top-width: 1px; margin: 12px 0; }
 .g-head { margin: 0 0 8px; font-family: var(--ft); font-weight: normal; font-size: clamp(22px, 4.6vw, 30px); text-align: center; line-height: 1.02; text-transform: uppercase; }
@@ -320,14 +299,29 @@ button { font-family: inherit; }
 .g-cols dd { margin: 0; font-family: var(--ft); text-align: right; }
 .g-note { font-size: 12px; font-style: italic; }
 @media (max-width: 640px) { .g-cols { grid-template-columns: 1fr; } .g-cols dl + dl { border-left: 0; padding-left: 0; border-top: 1px dashed var(--ink); padding-top: 8px; } }
-.naipe-in { padding: 26px 22px 16px; }
-.blk.pet canvas { width: 78px; height: 58px; }
-.blk.pet b { font-size: 12px; overflow-wrap: anywhere; }
-.g-mast { display: flex; flex-wrap: wrap; justify-content: space-between; }
-.g-mast b { order: -1; flex-basis: 100%; text-align: center; white-space: nowrap; font-size: clamp(20px, 4.4vw, 30px); }
-.naipe-in { padding: 30px 26px 18px; }
-.naipe .idx { font-size: 20px; } .naipe .idx i { font-size: 15px; }
-.naipe .idx.tl { top: 6px; left: 7px; } .naipe .idx.br { bottom: 6px; right: 7px; }
+
+/* ------------------------------------------------ legibilidad y ergonomía móvil/tablet */
+/* textos secundarios claros sobre fondo oscuro: más luz + sombra dura para separarlos de la textura */
+.hint, .overlay-sub, .draft-cards .slot, #shop .catdesc, .shop-intro, .skin .req, .mode-meta, .wall-head, .empty { text-shadow: 1px 1px 0 #000, 0 0 6px rgba(0, 0, 0, 0.85); }
+.hint, .overlay-sub { color: var(--muted); font-size: 14px; }
+small, .meta { color: inherit; opacity: 0.92; }
+.draft-cards .slot { color: var(--bone); font-size: 13px; }
+.draft-cards .slot .ctype { display: block; margin-top: 2px; font-size: 11px; letter-spacing: 1px; color: var(--amber); }
+.mode-meta { color: var(--amber); }
+/* sobre papel claro, el texto secundario va en tinta parda (no en gris) */
+.gun .na, .blk small, .naipe .role { color: var(--muted-dark); }
+/* objetivos táctiles cómodos sin añadir botones */
+@media (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .btn.small { min-height: 40px; padding: 8px 14px; }
+  .modal-box { padding: 14px; max-height: 88vh; -webkit-overflow-scrolling: touch; }
+  .naipe .row .btn { flex: 1 1 140px; }
+}
+@media (max-width: 640px) {
+  .screen-title::after { width: 86%; }
+  .naipe h3 { font-size: 18px; }
+  .blk.pas p { font-size: 13px; }
+}
 
 </style>
 </head>
@@ -372,13 +366,15 @@ button { font-family: inherit; }
       <div class="chapters" id="chapters"></div>
     </section>
 
-    <!-- ======================= MURO DE LOS CONDENADOS ======================= -->
+    <!-- ======================= LA ARMERÍA DEL OESTE OCULTO ======================= -->
     <section id="screen-shop" class="screen">
       <header class="bar"><button class="btn small" data-back>◀ Volver</button><h2 class="screen-title">La Armería del Oeste Oculto</h2><span class="chip gold">⛀ <b data-gold>0</b></span></header>
       <p class="shop-intro">Catálogo ordenado de menor a mayor daño. Paga con <b>Oro Maldito</b> (lo sueltan los muertos y los colosos). Equipa para:</p>
       <div class="row" id="shop-heroes"></div>
       <div id="shop"></div>
     </section>
+
+    <!-- ======================= MURO DE LOS CONDENADOS ======================= -->
     <section id="screen-records" class="screen">
       <header class="bar"><button class="btn small" data-back>◀ Volver</button><h2 class="screen-title">El Muro de los Condenados</h2><span></span></header>
       <div class="wall-board"><div class="wall-head"><span>#</span><span>Forajido</span><span>Ronda</span><span>Bajas</span><span>Fecha</span><span>Sello</span></div><div id="records"></div></div>
@@ -417,7 +413,7 @@ button { font-family: inherit; }
           <button class="btn" data-act="toggle-aim">Apuntado: <b data-aim>Auto</b></button>
           <button class="btn" data-act="abandon">Abandonar</button>
         </div>
-        <p class="overlay-sub small">WASD/flechas mover · disparo automático · 1·2·3 (o Q·E·R) cartas · clic dcho. carta 1 · Esc pausa</p>
+        <p class="overlay-sub small" id="pause-help">WASD/flechas mover · disparo automático · 1·2·3 (o Q·E·R) cartas · clic dcho. carta 1 · Esc pausa</p>
       </div>
     </div>
   </div>
@@ -427,9 +423,13 @@ button { font-family: inherit; }
   <script>
 (function () {
 'use strict';
-// ---- src/data/heroes.js
+
+// ====================================================================================================
+// DATOS
+// ====================================================================================================
+// ---- src/data/heroes.js  ·  HEROES · forajidos, aspectos y frases
 // La Cuadrilla de los 4 Condenados: dossier, personalidad (frases), pasiva, carta de firma, armas y aspectos.
-// Hitos cada 10 niveles alternando: 10 aspecto · 20 arma · 30 aspecto · 40 arma · 50 aspecto legendario.
+// Aspectos: Base (inicio) · Veterano (NV 10 o 3 casos) · Legendario (NV 30 o ronda 8). Armas en la Armería (data/weapons.js).
 
 const MAX_LEVEL = 50;
 // 3 aspectos por forajido: Base · Veterano · Legendario/Condenado.
@@ -570,7 +570,7 @@ const BARKS = {
   scared: ['¡¿…?!', '¡Hhhiii!', '…no…', '¡¡GRK!!'],
 };
 
-// ---- src/data/weapons.js
+// ---- src/data/weapons.js  ·  WEAPONS · armería
 // Armería del Oeste Oculto. Todas las armas tienen cargador, recarga y ALCANCE corto/medio
 // (anillo de tinta en el suelo). `power` es el DAÑO base de la tienda: el catálogo se ordena de menor a mayor.
 // kind: revolvers | shotgun | cards | rifle | harpoon | smg | laser | tesla
@@ -618,6 +618,312 @@ const WEAPON_LIST = W;
 const WEAPONS = Object.fromEntries(W.map((w) => [w.id, w]));
 const canEquip = (w, heroId) => !w.owner || w.owner === heroId;
 
+// ---- src/data/pets.js  ·  PETS · mascotas y poderes
+// Mascotas evolutivas: cada forajido tiene la suya. Crecen con el nivel (NV) del forajido:
+// más tamaño, aura de tinta y potencia. Apoyan sin pasarse el nivel solas.
+// attack: lunge (embestida a ras de suelo) · swoop (picotazo en picado) · bolt (proyectil de tinta)
+// power: poder secundario automático con su propio enfriamiento (powerCd, s), independiente del ataque.
+//   knock (empuje en área) · shield (escudo temporal) · loot (atrae botín) · slow (ralentiza en área)
+const PETS = {
+  silas: {
+    id: 'hound', name: 'Huesos', kind: 'Sabueso espectral', fly: false, attack: 'lunge',
+    dmg: 11, cd: 1.25, speed: 460, range: 230,
+    power: { id: 'knock', name: 'Aullido de Ultratumba', desc: 'Empuja y aturde a la horda que rodea a Silas.', radius: 170 }, powerCd: 9,
+    desc: 'Un perro que murió en Boot Hill con su amo y volvió con él. Embiste a los muertos que se acercan demasiado.',
+  },
+  maeve: {
+    id: 'cat', name: 'Medianoche', kind: 'Gato negro de la Sota', fly: false, attack: 'bolt',
+    dmg: 8.5, cd: 1.05, speed: 520, range: 280,
+    power: { id: 'shield', name: 'Siete Vidas', desc: 'Escudo de tinta que absorbe daño durante 6 s.', time: 6 }, powerCd: 16,
+    desc: 'Gato negro con un naipe de picas en el collar. Escupe gotas de tinta maldita a lo que mira mal a Maeve.',
+  },
+  caleb: {
+    id: 'crow', name: 'Nevermore', kind: 'Cuervo sombrío', fly: true, attack: 'swoop',
+    dmg: 7.5, cd: 0.85, speed: 560, range: 260,
+    power: { id: 'loot', name: 'Rapiña del Cuervo', desc: 'Trae almas, naipes y botín lejanos; cada pieza suma oro.', radius: 520 }, powerCd: 7,
+    desc: 'Le recita sus versos al oído. Cae en picado sobre ojos y gargantas, y vuelve al hombro del poeta.',
+  },
+  barnaby: {
+    id: 'hawk', name: 'Don Carroña', kind: 'Halcón del desierto', fly: true, attack: 'bolt',
+    dmg: 9, cd: 1.1, speed: 600, range: 300,
+    power: { id: 'slow', name: 'Sombra del Halcón', desc: 'Su sombra cae sobre la horda y la ralentiza 3 s.', radius: 160 }, powerCd: 10,
+    desc: 'Halcón de cetrería que solo ríe los chistes de Barnaby. Lanza plumas de tinta afiladas como cuchillas.',
+  },
+};
+
+const PET_TIER = ['Cría', 'Curtida', 'Leyenda'];
+function petTier(level) { return level >= 30 ? 2 : level >= 10 ? 1 : 0; }
+// Potencia por nivel del forajido: daño +2 %/NV, tamaño hasta ×1,38, recarga algo más rápida.
+function petStats(heroId, level) {
+  const P = PETS[heroId], L = Math.max(1, level | 0), tier = petTier(L);
+  return {
+    def: P, tier, level: L,
+    dmg: Math.round(P.dmg * (1 + (L - 1) * 0.02) * 10) / 10,
+    cd: P.cd * (1 - Math.min(0.3, (L - 1) * 0.006)),
+    size: 1 + Math.min(0.38, (L - 1) * 0.008),
+    powerCd: P.powerCd * (1 - tier * 0.1), // cada evolución acorta un 10 % el poder
+    shield: Math.round(18 + L * 0.9),
+  };
+}
+
+// ---- src/data/story.js  ·  MISSIONS · capítulos, mapas y zonas
+// Modo Historia: cada misión abre con una página de cómic, se combate con bocadillos y cierra con
+// una viñeta final ("CASO CERRADO" o "FINAL TRÁGICO").
+// obj.type: survive | kill | defend | boss | escape
+
+const MAPS = {
+  crossroads: { name: 'El Cruce de los Condenados', ground: '#5a4a3a', g2: '#6c5a46', g3: '#3a2e24', props: ['gravecross', 'deadtree', 'rock', 'fence', 'skullpile', 'post'], fog: false, zoned: true },
+  town: { name: 'Hollow Creek', ground: '#6a5038', g2: '#7c6044', g3: '#3e2c1e', props: ['barrel', 'crate', 'fence', 'wheel', 'post', 'deadtree'], fog: false },
+  chapel: { name: 'Capilla de Gallow\'s Rest', ground: '#584a48', g2: '#6a5a56', g3: '#362a2a', props: ['gravecross', 'tomb', 'deadtree', 'fence', 'pew'], fog: true },
+  mine: { name: 'Minas de Plata Negra', ground: '#5a5046', g2: '#6c6252', g3: '#34302a', props: ['rock', 'beam', 'cart', 'crate', 'ore'], fog: false },
+  swamp: { name: 'Pantano de Saint-Mort', ground: '#3e4a3c', g2: '#4e5c48', g3: '#26302a', props: ['deadtree', 'reeds', 'rock', 'stump', 'bones'], fog: true },
+  pulpit: { name: 'El Púlpito del Abismo', ground: '#5a3a34', g2: '#6c4640', g3: '#341e1a', props: ['gravecross', 'pew', 'rock', 'skullpile', 'tomb'], fog: false },
+};
+
+const MISSIONS = [
+  {
+    id: 'm1', name: 'Polvo en la Tumba', map: 'town', reward: 150,
+    obj: { type: 'survive', time: 100 }, spawn: { walker: 8, runner: 2, hound: 1 }, rate: 1.1,
+    intro: [
+      { scene: 'town', cap: 'Hollow Creek, Territorio de Arizona. El reloj de la iglesia se paró a las 3:15. Nadie lo ha vuelto a dar cuerda.' },
+      { scene: 'hero', cap: 'El telegrama decía "trabajo fácil". Los telegramas siempre mienten.', say: 'Huele a cementerio removido.' },
+      { scene: 'horde', cap: 'Al caer el sol, el pueblo entero salió a recibirle.', say2: 'Grrrhhh…' },
+      { scene: 'trap', cap: 'CONSEJO: dispara a faroles y barriles. Los cepos muerden a quien los pise.' },
+    ],
+    win: { scene: 'sunrise', cap: 'Amaneció sobre Hollow Creek. Los muertos volvieron a callar… por ahora.' },
+    lose: { scene: 'fallen', cap: 'El reloj de la iglesia marcó las 3:15. Otra vez.' },
+  },
+  {
+    id: 'm2', name: 'La Campana de Gallow\'s Rest', map: 'chapel', reward: 220,
+    obj: { type: 'defend', time: 110, hp: 1800, label: 'DEFIENDE A LOS SUPERVIVIENTES', miniboss: { type: 'plague', at: 55 } }, spawn: { walker: 6, runner: 3, bloater: 1, spider: 2 }, rate: 1.25,
+    intro: [
+      { scene: 'chapel', cap: 'La capilla quemada aún humea. Dentro, tres niños y una viuda rezan junto a la campana.' },
+      { scene: 'hero', cap: 'Alguien tiene que mantener la puerta cerrada hasta el alba.', say: 'Nadie entra. Nadie sale.' },
+      { scene: 'grave', cap: 'Del cementerio llegan rasguños. Primero pocos. Luego cientos.' },
+      { scene: 'boss_plague', cap: 'Y entre las lápidas, un predicador con un farol verde que devuelve la vida a lo que no debería tenerla.', say2: '¡Levantaos!' },
+    ],
+    win: { scene: 'sunrise', cap: 'La campana sonó al alba. Esta vez, alguien respondió.' },
+    lose: { scene: 'chapel', cap: 'La campana dejó de sonar antes del amanecer.' },
+  },
+  {
+    id: 'm3', name: 'Plata Negra', map: 'mine', reward: 320, boss: 'spawn',
+    obj: { type: 'boss', boss: 'spawn' }, spawn: { walker: 5, runner: 2, armored: 2, dynamiter: 1, spider: 2, abomination: 0.4 }, rate: 1.1,
+    intro: [
+      { scene: 'mine', cap: 'Minas de Plata Negra. Ciento doce mineros murieron en el derrumbe del 76. Ninguno dejó de trabajar.' },
+      { scene: 'horde', cap: 'Picos, palas y dinamita. La horda tiene herramientas.' },
+      { scene: 'boss_spawn', cap: 'En el fondo del pozo, algo hecho de mineros y mineral se arrastra con un fardo de dinamita en la espalda.', say2: 'GRRRHHH… DINAMITA…' },
+    ],
+    win: { scene: 'mine', cap: 'La dinamita de su espalda hizo el resto. El silbato del turno no volvió a sonar.' },
+    lose: { scene: 'fallen', cap: 'Ciento trece mineros. La cuadrilla está completa.' },
+  },
+  {
+    id: 'm4', name: 'Aguas de Saint-Mort', map: 'swamp', reward: 420,
+    obj: { type: 'kill', count: 140, label: 'PURGA LA CIÉNAGA' }, spawn: { walker: 5, runner: 3, bloater: 2, forker: 2, hound: 2, spider: 2 }, rate: 1.5,
+    intro: [
+      { scene: 'swamp', cap: 'Pantano de Saint-Mort. Los cajún dicen que el agua tiene memoria… y hambre.' },
+      { scene: 'hero', cap: 'La niebla traga los disparos. Hay que vaciar la ciénaga uno a uno.', say: 'Que salgan del barro.' },
+      { scene: 'eyes', cap: 'Algo enorme observa desde los juncos. Paciente.' },
+    ],
+    win: { scene: 'swamp', cap: 'Ciento cuarenta cuerpos devueltos al fango. El agua se quedó quieta.' },
+    lose: { scene: 'fallen', cap: 'El pantano siempre se cobra su diezmo.' },
+  },
+  {
+    id: 'm5', name: 'La Bestia de la Ciénaga', map: 'swamp', reward: 520, boss: 'beast',
+    obj: { type: 'boss', boss: 'beast' }, spawn: { walker: 4, runner: 3, forker: 2, bloater: 1, hound: 2, abomination: 0.4 }, rate: 1.1,
+    intro: [
+      { scene: 'eyes', cap: 'Lo que observaba desde los juncos ha perdido la paciencia.' },
+      { scene: 'boss_beast', cap: 'Mitad caimán, mitad pesadilla. Se tragó una diligencia entera en el 81.', say2: 'GRRRAAAAOOOH' },
+      { scene: 'hero', cap: 'No hay bala lo bastante grande. Habrá que disparar muchas.', say: 'Ven a por mí, lagarto.' },
+    ],
+    win: { scene: 'swamp', cap: 'La Bestia se hundió por última vez. Las ranas volvieron a cantar.' },
+    lose: { scene: 'fallen', cap: 'En Saint-Mort hay una nueva leyenda. No es la tuya.' },
+  },
+  {
+    id: 'm6', name: 'El Último Sermón', map: 'pulpit', reward: 800, boss: 'faceless',
+    obj: { type: 'boss', boss: 'faceless' }, spawn: { walker: 4, runner: 3, armored: 2, dynamiter: 1, bloater: 1, hound: 2, spider: 2, abomination: 0.5 }, rate: 1.25,
+    intro: [
+      { scene: 'pulpit', cap: 'Todas las huellas llevan al mismo sitio: una iglesia que no aparece en ningún mapa.' },
+      { scene: 'boss_faceless', cap: 'En el púlpito, un predicador sin rostro recita un sermón sin palabras. Y los muertos escuchan.' },
+      { scene: 'hero', cap: 'Se acabaron los sermones.', say: 'Amén, hijo de perra.' },
+    ],
+    win: { scene: 'sunrise', cap: 'El púlpito ardió hasta los cimientos. Por primera vez en años, el Oeste durmió de un tirón.' },
+    lose: { scene: 'pulpit', cap: 'El sermón continúa. Ahora con un feligrés más.' },
+  },
+];
+
+const SURVIVAL = { id: 'survival', name: 'El Cruce de los Condenados', map: 'crossroads' };
+
+// Comarca conectada (supervivencia): pueblo al oeste, cementerio en el centro, mina al este.
+const ZONES = [
+  { id: 'town', name: 'EL PUEBLO', x0: -1, x1: -1 / 3, ground: '#6a5038', g2: '#7c6044', g3: '#3e2c1e', props: ['barrel', 'crate', 'fence', 'wheel', 'post', 'deadtree'], mini: '#6a4a30' },
+  { id: 'cemetery', name: 'EL CEMENTERIO', x0: -1 / 3, x1: 1 / 3, ground: '#584a48', g2: '#6a5a56', g3: '#362a2a', props: ['gravecross', 'tomb', 'deadtree', 'skullpile', 'fence', 'gravecross'], mini: '#4a3a4a' },
+  { id: 'mine', name: 'LA MINA', x0: 1 / 3, x1: 1, ground: '#5a5046', g2: '#6c6252', g3: '#34302a', props: ['rock', 'beam', 'cart', 'crate', 'ore', 'rock'], mini: '#4a4238' },
+];
+
+// ---- src/data/cards.js  ·  CARDS · mazo y rarezas
+// Mazo de cartas de la partida. Rarezas: Bronce → Plata → Oro → Platino → Diamante.
+// Pasivas: efecto permanente en la partida. Acción: entran en la mano (máx. 3) y se juegan con 1·2·3.
+// Diamante: Bendición + Maldición (penalización temporal de velocidad o vulnerabilidad).
+
+const RARITY = [
+  { id: 0, name: 'Bronce', label: 'COMÚN', frame: '#7a4a2a', edge: '#3a1e0e', glow: '#b06a3a', text: '#e8c8a8', weight: 52 },
+  { id: 1, name: 'Plata', label: 'POCO COMÚN', frame: '#a8a8a0', edge: '#4a4a46', glow: '#d8d8d0', text: '#f2f2ea', weight: 27 },
+  { id: 2, name: 'Oro', label: 'RARA', frame: '#b8862e', edge: '#5a3a0a', glow: '#ffb347', text: '#ffe6a8', weight: 13 },
+  { id: 3, name: 'Platino', label: 'ÉPICA', frame: '#8a96a8', edge: '#2a3040', glow: '#c8e0ff', text: '#e8f2ff', weight: 6 },
+  { id: 4, name: 'Diamante', label: 'LEGENDARIA', frame: '#4a3a6a', edge: '#120a24', glow: '#d0a8ff', text: '#f4e8ff', weight: 2 },
+];
+
+const P = 'passive', A = 'action';
+
+const CARDS = [
+  // ---------------- BRONCE: efecto básico
+  { id: 'polvora', r: 0, t: P, name: 'Pólvora Barata', icon: '💥', desc: '+12% de daño.', apply: (g) => { g.st.dmg *= 1.12; } },
+  { id: 'gatillo', r: 0, t: P, mod: true, name: 'Gatillo Ligero', icon: '🔫', desc: '+12% de cadencia.', apply: (g) => { g.st.rate *= 1.12; } },
+  { id: 'botas', r: 0, t: P, name: 'Botas Gastadas', icon: '👢', desc: '+8% de velocidad.', apply: (g) => { g.st.speed *= 1.08; } },
+  { id: 'cuero', r: 0, t: P, name: 'Cuero Curtido', icon: '🛡', desc: '+20 de vida máxima.', apply: (g) => { g.addMaxHp(20); } },
+  { id: 'whisky', r: 0, t: P, name: 'Whisky Aguado', icon: '🥃', desc: 'Cura el 30% de la vida.', heal: true, apply: (g) => { g.heal(g.player.maxHp * 0.3); } },
+  { id: 'bolsillos', r: 0, t: P, name: 'Bolsillos Hondos', icon: '👝', desc: '+35% de radio de recogida.', apply: (g) => { g.st.pickup *= 1.35; } },
+  { id: 'puntas', r: 0, t: P, mod: true, name: 'Puntas de Acero', icon: '🔩', desc: 'Munición perforante: +1 cuerpo atravesado por bala.', apply: (g) => { g.st.pierce += 1; } },
+  { id: 'cargador', r: 0, t: P, mod: true, name: 'Cargador Engrasado', icon: '🛢', desc: 'Recarga un 25% más rápida.', apply: (g) => { g.st.reloadMult *= 0.75; } },
+  { id: 'sal', r: 0, t: A, name: 'Puñado de Sal', icon: '🧂', cd: 6, desc: 'Cono de sal gruesa que repele y aturde a la horda cercana.' },
+
+  // ---------------- PLATA: doble beneficio
+  { id: 'plata', r: 1, t: P, mod: true, name: 'Munición de Plata', icon: '🌙', desc: '+15% de daño y +1 perforación.', apply: (g) => { g.st.dmg *= 1.15; g.st.pierce += 1; } },
+  { id: 'cartuchera', r: 1, t: P, mod: true, name: 'Doble Cartuchera', icon: '🎒', desc: '+15% de cadencia y recarga un 15% más rápida.', apply: (g) => { g.st.rate *= 1.15; g.st.reloadMult *= 0.85; } },
+  { id: 'espuelas', r: 1, t: P, name: 'Espuelas del Muerto', icon: '⭐', desc: '+12% de velocidad y +6% de esquiva.', apply: (g) => { g.st.speed *= 1.12; g.st.dodge += 0.06; } },
+  { id: 'biblia', r: 1, t: P, name: 'Biblia de Bolsillo', icon: '📖', desc: '+25 de vida máxima y regeneras 1 vida/s.', heal: true, apply: (g) => { g.addMaxHp(25); g.st.regen += 1; } },
+  { id: 'buitre', r: 1, t: P, name: 'Mirada de Buitre', icon: '🦅', desc: '+8% de crítico y +25% de daño crítico.', apply: (g) => { g.st.crit += 0.08; g.st.critMult += 0.25; } },
+  { id: 'halcon', r: 1, t: P, mod: true, range: true, name: 'Ojo de Halcón', icon: '🎯', desc: 'LARGO ALCANCE: +35% de alcance de disparo y de detección.', apply: (g) => { g.st.rangeMult *= 1.35; } },
+  { id: 'tambor', r: 1, t: P, mod: true, name: 'Tambor Ampliado', icon: '🥁', desc: '+50% de capacidad del cargador y recarga un 15% más rápida.', apply: (g) => { g.st.magMult *= 1.5; g.st.reloadMult *= 0.85; } },
+  { id: 'polvorarea', r: 1, t: P, mod: true, name: 'Pólvora Negra', icon: '💣', desc: 'Disparos en área: cada impacto estalla en un radio pequeño.', apply: (g) => { g.st.splash += 40; } },
+  { id: 'mina', r: 1, t: A, art: true, name: 'Dinamita de Proximidad', icon: '🧨', cd: 8, desc: 'ARTEFACTO: siembra 3 cartuchos que estallan cuando la horda se acerca.' },
+  { id: 'acido', r: 1, t: A, art: true, name: 'Frasco de Ácido', icon: '⚗', cd: 9, desc: 'ARTEFACTO: charco de ácido que corroe corazas. Con fuego: ¡explosión de pólvora!' },
+  { id: 'dinamita', r: 1, t: A, name: 'Cartucho de Dinamita', icon: '🧨', cd: 8, desc: 'Lanza dinamita que estalla en un gran radio.' },
+  { id: 'cepo', r: 1, t: A, name: 'Cepo de Oso', icon: '🪤', cd: 7, desc: 'Coloca dos cepos que atrapan y desgarran zombis.' },
+
+  // ---------------- ORO: impacto táctico
+  { id: 'metralla', r: 2, t: P, mod: true, name: 'Metralla', icon: '✴', desc: 'Cada impacto revienta en 4 esquirlas que hieren a la horda cercana.', apply: (g) => { g.st.shrapnel += 4; } },
+  { id: 'catalejo', r: 2, t: P, mod: true, range: true, name: 'Catalejo de Latón', icon: '🔭', desc: 'LARGO ALCANCE: +60% de alcance y +6% de crítico.', apply: (g) => { g.st.rangeMult *= 1.6; g.st.crit += 0.06; } },
+  { id: 'cadena', r: 2, t: P, mod: true, name: 'Balas Encadenadas', icon: '⛓', desc: 'Cada impacto rebota a otro zombi cercano.', apply: (g) => { g.st.chain += 1; } },
+  { id: 'salbendita', r: 2, t: P, mod: true, name: 'Sal Bendita', icon: '✝', desc: 'Tus disparos ralentizan un 35% a la horda.', apply: (g) => { g.st.slowOnHit = Math.max(g.st.slowOnHit, 1.2); } },
+  { id: 'incendiarias', r: 2, t: P, mod: true, name: 'Plomo Incendiario', icon: '🔥', desc: 'Tus balas prenden fuego: 9 de daño por segundo durante 3 s.', apply: (g) => { g.st.burnOnHit += 9; } },
+  { id: 'trampero', r: 2, t: P, name: 'Trampero', icon: '⚙', desc: 'Cada 9 s colocas un cepo automático. Las trampas hacen +50% de daño.', apply: (g) => { g.st.trapper += 1; g.st.trapMult *= 1.5; } },
+  { id: 'cuervo', r: 2, t: P, name: 'Cuervo Guardián', icon: '🐦', desc: 'Un cuervo de tinta orbita a tu alrededor y picotea zombis.', apply: (g) => { g.st.crows += 1; } },
+  { id: 'bobina', r: 2, t: A, art: true, name: 'Bobina Tesla', icon: '⚡', cd: 12, desc: 'ARTEFACTO: planta una bobina que lanza arcos eléctricos 12 s. Electrifica la tinta.' },
+  { id: 'explosivas', r: 2, t: P, mod: true, art: true, name: 'Balas Explosivas', icon: '💥', desc: 'ARTEFACTO: cada impacto estalla en un radio medio.', apply: (g) => { g.st.splash += 55; } },
+  { id: 'farol', r: 2, t: A, name: 'Farol Arrojadizo', icon: '🏮', cd: 9, desc: 'Lanza un farol de gas que deja el suelo en llamas.' },
+  { id: 'aguabendita', r: 2, t: A, name: 'Agua Bendita', icon: '💧', cd: 12, desc: 'Onda sagrada: cura 25 de vida y quema a la horda alrededor.' },
+
+  // ---------------- PLATINO: efectos cinemáticos devastadores
+  { id: 'tormenta', r: 3, t: P, name: 'Tormenta de Plomo', icon: '🌀', desc: 'Cada 7 s disparas una corona de 28 balas.', apply: (g) => { g.st.leadStorm += 1; } },
+  { id: 'columna', r: 3, t: P, name: 'Columna de Fuego Sagrado', icon: '🕯', desc: 'Cada 18 bajas cae una columna de fuego que arrasa la zona.', apply: (g) => { g.st.holyFire += 1; } },
+  { id: 'tren', r: 3, t: P, name: 'Tren Fantasma', icon: '🚂', desc: 'Cada 16 s un tren espectral cruza la pantalla y arrolla a la horda.', apply: (g) => { g.st.ghostTrain += 1; } },
+  { id: 'danza', r: 3, t: P, name: 'Danza Macabra', icon: '💀', desc: 'Tus críticos estallan y dañan a los zombis cercanos.', apply: (g) => { g.st.critExplode += 1; } },
+  { id: 'rayo', r: 3, t: A, art: true, name: 'Llamada del Rayo', icon: '🌩', cd: 14, desc: 'ARTEFACTO: seis rayos caen sobre la horda. Sobre charcos de tinta: sobrecarga en cadena.' },
+  { id: 'bobinas', r: 3, t: P, mod: true, art: true, name: 'Balas de Bobina', icon: '🔋', desc: 'ARTEFACTO: 25% de que cada impacto salte en arco a 2 enemigos cercanos.', apply: (g) => { g.st.arc += 0.25; } },
+  { id: 'caballeria', r: 3, t: A, name: 'Carga de Caballería Fantasma', icon: '🐎', cd: 18, desc: 'Una carga de jinetes espectrales barre el campo de lado a lado.' },
+
+  // ---------------- DIAMANTE: Bendición y Maldición
+  { id: 'pacto', r: 4, t: P, name: 'Pacto en la Encrucijada', icon: '🩸', desc: 'BENDICIÓN: daño x2 el resto de la partida.', curse: { type: 'slow', amount: 0.35, time: 25, text: 'MALDICIÓN: -35% de velocidad durante 25 s.' }, apply: (g) => { g.st.dmg *= 2; } },
+  { id: 'corazon', r: 4, t: P, name: 'Corazón del Diablo', icon: '❤', desc: 'BENDICIÓN: +100 de vida máxima y regeneras 3 vida/s.', heal: true, curse: { type: 'vuln', amount: 0.5, time: 30, text: 'MALDICIÓN: recibes +50% de daño durante 30 s.' }, apply: (g) => { g.addMaxHp(100); g.st.regen += 3; } },
+  { id: 'ases', r: 4, t: P, name: 'Ases y Ochos', icon: '🂡', desc: 'BENDICIÓN: +35% de crítico y los críticos hacen x3.', curse: { type: 'vuln', amount: 0.4, time: 25, text: 'MALDICIÓN: +40% de daño recibido y sin esquiva 25 s.' }, apply: (g) => { g.st.crit += 0.35; g.st.critMult = Math.max(g.st.critMult, 3); } },
+  { id: 'sombra', r: 4, t: P, name: 'Sombra Vendida', icon: '👤', desc: 'BENDICIÓN: dos sombras gemelas disparan contigo.', curse: { type: 'slow', amount: 0.5, time: 20, text: 'MALDICIÓN: -50% de velocidad durante 20 s.' }, apply: (g) => { g.st.shadows += 2; } },
+  { id: 'ciclope', r: 4, t: P, mod: true, range: true, name: 'Ojo del Cíclope', icon: '👁', desc: 'BENDICIÓN: alcance x2 y +20% de crítico.', curse: { type: 'slow', amount: 0.4, time: 25, text: 'MALDICIÓN: -40% de velocidad durante 25 s.' }, apply: (g) => { g.st.rangeMult *= 2; g.st.crit += 0.2; } },
+  { id: 'ahorcado', r: 4, t: P, mod: true, name: 'Bala del Ahorcado', icon: '🪢', desc: 'BENDICIÓN: todos tus disparos atraviesan cualquier cuerpo.', curse: { type: 'slow', amount: 0.3, time: 30, text: 'MALDICIÓN: -30% de velocidad durante 30 s.' }, apply: (g) => { g.st.pierce += 99; } },
+  { id: 'trompeta', r: 4, t: A, name: 'Trompeta del Juicio', icon: '📯', cd: 40, desc: 'BENDICIÓN: aniquila a toda la horda visible (los colosos sufren un golpe brutal).', curse: { type: 'vuln', amount: 0.6, time: 12, text: 'MALDICIÓN al tocarla: +60% de daño recibido 12 s.' } },
+];
+
+// Cartas de firma (no salen en el sorteo; empiezan en la mano).
+const SIGNATURE = {
+  rabia: { id: 'rabia', r: 2, t: A, name: 'Arrebato de Mal Genio', icon: '💢', cd: 7, desc: 'Silas revienta: corona de perdigones en 360° con empuje brutal.' },
+  deadhand: { id: 'deadhand', r: 2, t: A, name: 'Mano de Muerto', icon: '🂡', cd: 7, desc: 'Abanico de cinco naipes explosivos que aturden y hechizan.' },
+  verso: { id: 'verso', r: 2, t: A, name: 'Último Verso', icon: '✒', cd: 6, desc: 'Disparo de precisión que lo atraviesa todo con crítico garantizado y alcance doble.' },
+  chiste: { id: 'chiste', r: 2, t: A, name: 'Chiste de Carnicero', icon: '🔪', cd: 9, desc: 'Un chiste tan macabro que la horda cercana huye aterrada 4 s.' },
+};
+
+const cardById = (id) => CARDS.find((c) => c.id === id) || SIGNATURE[id];
+
+// Sorteo de rareza: la suerte (Maeve, nivel de partida, rondas) desplaza el peso hacia arriba.
+function rollRarity(luck, rnd = Math.random) {
+  const w = RARITY.map((r, i) => r.weight * Math.pow(1 + luck * 0.55, i));
+  let tot = 0;
+  for (const x of w) tot += x;
+  let v = rnd() * tot;
+  for (let i = 0; i < w.length; i++) { v -= w[i]; if (v <= 0) return i; }
+  return 0;
+}
+
+// ---- src/data/poker.js  ·  POKER · naipes y furias
+// Naipes de tinta: la horda los suelta al morir. Al reunir 5 se evalúa la mano de póker y la jugada
+// desata una "ráfaga de furia" pasiva y temporal. Baraja corta (8 a As) para que las jugadas sean alcanzables.
+
+const RANKS = ['8', '9', '10', 'J', 'Q', 'K', 'A'];
+const SUITS = ['♠', '♥', '♦', '♣'];
+const RED = [false, true, true, false];
+
+// Efectos multiplicativos/aditivos de cada furia.
+const FURIES = {
+  PAREJA: { name: 'Pareja', label: 'FURIA DE LA PAREJA', time: 8, rate: 1.25, color: '#e8dcc0', desc: '+25% cadencia' },
+  DOBLE: { name: 'Doble Pareja', label: 'DOBLE FURIA', time: 10, rate: 1.25, dmg: 1.2, color: '#c8d8ff', desc: '+25% cadencia · +20% daño' },
+  TRIO: { name: 'Trío', label: 'FURIA DEL TRÍO', time: 10, dmg: 1.45, speed: 1.15, color: '#ffcf6a', desc: '+45% daño · +15% velocidad' },
+  ESCALERA: { name: 'Escalera', label: 'FURIA DE LA ESCALERA', time: 12, pierce: 3, range: 1.3, speed: 1.25, color: '#9dff6a', desc: '+3 perforación · +30% alcance · +25% velocidad' },
+  COLOR: { name: 'Color', label: 'FURIA DEL COLOR', time: 8, crit: 1, color: '#ff6a8a', desc: 'Todos los disparos son críticos' },
+  FULL: { name: 'Full', label: '¡FULL! FURIA TOTAL', time: 12, dmg: 1.5, rate: 1.4, reload: 0, color: '#ffb347', desc: '+50% daño · +40% cadencia · recarga instantánea' },
+  POKER: { name: 'Póker', label: '¡PÓKER DE MUERTOS!', time: 8, dmg: 2, invuln: true, explode: 70, color: '#d0a8ff', desc: 'Daño x2 · invulnerable · balas explosivas' },
+};
+
+function evaluateHand(hand) {
+  const counts = new Array(RANKS.length).fill(0), suits = new Array(4).fill(0);
+  for (const c of hand) { counts[c.r]++; suits[c.s]++; }
+  const groups = counts.filter((n) => n > 0).sort((a, b) => b - a);
+  const flush = hand.length === 5 && suits.some((n) => n === 5);
+  let straight = false;
+  if (hand.length === 5 && groups.length === 5) {
+    const rs = hand.map((c) => c.r).sort((a, b) => a - b);
+    straight = rs[4] - rs[0] === 4;
+  }
+  if (groups[0] === 4) return 'POKER';
+  if (groups[0] === 3 && groups[1] === 2) return 'FULL';
+  if (flush) return 'COLOR';
+  if (straight) return 'ESCALERA';
+  if (groups[0] === 3) return 'TRIO';
+  if (groups[0] === 2 && groups[1] === 2) return 'DOBLE';
+  if (groups[0] === 2) return 'PAREJA';
+  return null;
+}
+
+// ---- src/data/enemies.js  ·  ZOMBIES / COLOSSI · bestiario
+// La Plaga: siluetas asimétricas, paleta fría y desaturada. Colosos de élite desde la Ronda 6.
+const ZOMBIES = {
+  walker: { name: 'Errante', hp: 22, speed: 62, r: 14, dmg: 9, xp: 1, soul: 1 },
+  runner: { name: 'Corredor', hp: 15, speed: 150, r: 12, dmg: 7, xp: 1, soul: 1 },
+  bloater: { name: 'Hinchado', hp: 55, speed: 48, r: 20, dmg: 12, xp: 2, soul: 2, gas: { r: 90, dps: 10, time: 5 } },
+  armored: { name: 'Acorazado', hp: 40, armor: 90, speed: 66, r: 16, dmg: 13, xp: 3, soul: 3 },
+  forker: { name: 'Horquero', hp: 38, speed: 92, r: 14, dmg: 14, xp: 2, soul: 2, lunge: true },
+  dynamiter: { name: 'Dinamitero', hp: 26, speed: 118, r: 14, dmg: 30, xp: 2, soul: 2, bomb: { r: 95 } },
+  // ---- bestiario ampliado
+  hound: { name: 'Sabueso de Tinta', hp: 18, speed: 178, r: 12, dmg: 6, xp: 1, soul: 1, pack: [3, 5], stun: 1 },
+  spider: { name: 'Araña de Cripta', hp: 8, speed: 118, r: 9, dmg: 4, xp: 1, soul: 1, pack: [7, 11], puddle: { r: 62, slow: 0.45, time: 5 } },
+  abomination: { name: 'Abominación', hp: 240, armor: 220, speed: 40, r: 30, dmg: 18, xp: 8, soul: 10, spit: { range: 330, cd: 3.4, count: 7, cone: 0.7, speed: 260 } },
+};
+
+const COLOSSI = {
+  foreman: { name: 'El Capataz de la Mina', hp: 2200, speed: 62, r: 40, dmg: 26, xp: 40, soul: 60,
+    taunts: ['¡A trabajar, carroña!', 'La mina no perdona.', 'Tu pico, tu tumba.'] },
+  faceless: { name: 'El Predicador sin Rostro', hp: 2600, speed: 74, r: 34, dmg: 24, xp: 45, soul: 70,
+    taunts: ['…', 'No hay rostro que juzgar.', 'Arrodíllate ante el silencio.'] },
+  plague: { name: 'El Predicador de la Peste', hp: 2300, speed: 58, r: 34, dmg: 22, xp: 45, soul: 70, lamp: 170,
+    taunts: ['¡Levantaos, hijos de la *peste*!', 'Mi *farol* nunca se apaga.', 'La fiebre es mi sermón.'] },
+  spawn: { name: 'El Engendro de la Mina', hp: 3300, speed: 52, r: 44, dmg: 30, xp: 55, soul: 85, turn: 0.75,
+    taunts: ['GRRRHHH… *DINAMITA*…', '*KRRRK*', 'HHHUUURRR'] },
+  beast: { name: 'La Bestia de la Ciénaga', hp: 3000, speed: 88, r: 44, dmg: 30, xp: 50, soul: 80,
+    taunts: ['GRRRAAAAOOOH', '*chapoteo*', 'HHHRRRRK'] },
+};
+
+
+// ====================================================================================================
+// NÚCLEO (guardado, audio, entrada)
+// ====================================================================================================
 // ---- src/core/save.js
 // Persistencia local: niveles por forajido (1–50), aspectos desbloqueables, Oro Maldito, armería,
 // historia, récords y ajustes.
@@ -630,7 +936,7 @@ function xpForLevel(l) { return 50 + l * 20; } // XP para pasar de l a l+1
 
 function defaults() {
   const heroes = {};
-  HEROES.forEach((h) => { heroes[h.id] = { level: 1, xp: 0, skin: 0, weapon: h.weapon, kills: 0 }; });
+  HEROES.forEach((h) => { heroes[h.id] = { level: 1, xp: 0, skin: 0, weapon: h.weapon, kills: 0, petKills: 0 }; });
   return {
     v: 2, hero: null, heroes, coins: 0, owned: HEROES.map((h) => h.weapon),
     story: {},          // id -> { done, wins }
@@ -657,6 +963,7 @@ class SaveManager {
           const st = base.heroes[h.id];
           if (typeof st.weapon !== 'string' || !WEAPONS[st.weapon]) st.weapon = h.weapon;
           if (st.skin > 2) st.skin = 2;
+          st.petKills = st.petKills | 0;
         }
         this.data = base;
       }
@@ -756,14 +1063,20 @@ class Input {
       this.keys.add(k);
     };
     this._onKeyUp = (e) => this.keys.delete(e.code);
-    this._onBlur = () => { this.keys.clear(); this.joy.active = false; this.joy.id = -1; };
+    this._onBlur = () => { this.keys.clear(); if (this.touches) this.touches.clear(); this._joyEnd(); };
 
+    // Joystick flotante: el primer dedo que toca fuera de los botones lo crea en ese punto exacto. Si el dedo
+    // se arrastra más allá del radio, el centro le sigue (sin acumular desfase). Al soltar se recalibra el centro
+    // y, si queda otro dedo libre en pantalla, ese dedo toma el relevo desde su posición actual.
+    this.touches = new Map(); // pointerId -> { x, y, btn }
+    const local = (e) => { const r = c.getBoundingClientRect(); this._px = e.clientX - r.left; this._py = e.clientY - r.top; };
     this._onPointerDown = (e) => {
-      const r = c.getBoundingClientRect();
-      const x = e.clientX - r.left, y = e.clientY - r.top;
+      local(e);
+      const x = this._px, y = this._py;
       for (const b of this.buttons) {
         if ((x - b.x) ** 2 + (y - b.y) ** 2 <= b.r * b.r) {
           this.pressed[b.id] = true;
+          if (e.pointerType !== 'mouse') this.touches.set(e.pointerId, { x, y, btn: true });
           e.preventDefault();
           return;
         }
@@ -773,34 +1086,38 @@ class Input {
         this.mouse.down = e.button === 0;
         return;
       }
-      if (this.joy.id === -1) {
-        this.joy.id = e.pointerId; this.joy.active = true;
-        this.joy.ox = x; this.joy.oy = y; this.joy.x = x; this.joy.y = y; this.joy.dx = 0; this.joy.dy = 0;
-        try { c.setPointerCapture(e.pointerId); } catch (_) { /* no-op */ }
-      }
+      this.touches.set(e.pointerId, { x, y, btn: false });
+      if (this.joy.id === -1) this._joyStart(e.pointerId, x, y);
+      try { c.setPointerCapture(e.pointerId); } catch (_) { /* no-op */ }
       e.preventDefault();
     };
     this._onPointerMove = (e) => {
-      const r = c.getBoundingClientRect();
-      const x = e.clientX - r.left, y = e.clientY - r.top;
+      local(e);
+      const x = this._px, y = this._py;
       if (e.pointerType === 'mouse') {
         this.mouse.x = x; this.mouse.y = y; this.mouse.active = true; this.mouse.lastMove = performance.now();
         return;
       }
-      if (e.pointerId === this.joy.id) {
-        let dx = x - this.joy.ox, dy = y - this.joy.oy;
-        const d = Math.hypot(dx, dy), R = this.joy.radius;
-        if (d > R) { // el joystick flotante sigue al dedo
-          this.joy.ox += dx * (1 - R / d); this.joy.oy += dy * (1 - R / d);
-          dx = x - this.joy.ox; dy = y - this.joy.oy;
-        }
-        this.joy.x = x; this.joy.y = y;
-        this.joy.dx = dx / R; this.joy.dy = dy / R;
+      const t = this.touches.get(e.pointerId);
+      if (t) { t.x = x; t.y = y; }
+      const j = this.joy;
+      if (e.pointerId !== j.id) return;
+      let dx = x - j.ox, dy = y - j.oy;
+      const d = Math.hypot(dx, dy), R = j.radius;
+      if (d > R) { // el centro sigue al dedo: queda exactamente a R del dedo
+        j.ox = x - (dx / d) * R; j.oy = y - (dy / d) * R;
+        dx = x - j.ox; dy = y - j.oy;
       }
+      j.x = x; j.y = y;
+      j.dx = Math.max(-1, Math.min(1, dx / R)); j.dy = Math.max(-1, Math.min(1, dy / R));
     };
     this._onPointerUp = (e) => {
       if (e.pointerType === 'mouse') { this.mouse.down = false; return; }
-      if (e.pointerId === this.joy.id) { this.joy.id = -1; this.joy.active = false; this.joy.dx = 0; this.joy.dy = 0; }
+      this.touches.delete(e.pointerId);
+      if (e.pointerId !== this.joy.id) return;
+      this._joyEnd();
+      // relevo: otro dedo libre que siga apoyado pasa a mover al forajido
+      for (const [id, t] of this.touches) if (!t.btn) { this._joyStart(id, t.x, t.y); break; }
     };
     this._onContext = (e) => e.preventDefault();
     this._onLeave = () => { this.mouse.active = false; };
@@ -814,6 +1131,7 @@ class Input {
     window.addEventListener('pointermove', this._onPointerMove);
     window.addEventListener('pointerup', this._onPointerUp);
     window.addEventListener('pointercancel', this._onPointerUp);
+    this.canvas.addEventListener('lostpointercapture', this._onPointerUp);
     this.canvas.addEventListener('contextmenu', this._onContext);
     this.canvas.addEventListener('mouseleave', this._onLeave);
     this.reset();
@@ -827,14 +1145,25 @@ class Input {
     window.removeEventListener('pointermove', this._onPointerMove);
     window.removeEventListener('pointerup', this._onPointerUp);
     window.removeEventListener('pointercancel', this._onPointerUp);
+    this.canvas.removeEventListener('lostpointercapture', this._onPointerUp);
     this.canvas.removeEventListener('contextmenu', this._onContext);
     this.canvas.removeEventListener('mouseleave', this._onLeave);
     this.reset();
   }
 
+  _joyStart(id, x, y) {
+    const j = this.joy;
+    j.id = id; j.active = true; j.ox = x; j.oy = y; j.x = x; j.y = y; j.dx = 0; j.dy = 0;
+  }
+  _joyEnd() { // centro recalibrado sobre el último punto: ningún desfase residual para el próximo toque
+    const j = this.joy;
+    j.id = -1; j.active = false; j.dx = 0; j.dy = 0; j.ox = j.x; j.oy = j.y;
+  }
+
   reset() {
     this.keys.clear();
-    this.joy.id = -1; this.joy.active = false; this.joy.dx = 0; this.joy.dy = 0;
+    if (this.touches) this.touches.clear();
+    this._joyEnd();
     this.pressed.c0 = this.pressed.c1 = this.pressed.c2 = this.pressed.pause = false;
   }
 
@@ -931,6 +1260,9 @@ const Sfx = {
       case 'win': [392, 494, 587, 784, 988].forEach((f, i) => tone(f, 0.3, 'triangle', 0.14, 1, i * 0.12)); break;
       case 'lose': [392, 349, 311, 233].forEach((f, i) => tone(f, 0.4, 'sawtooth', 0.1, 0.9, i * 0.22)); break;
       case 'click': noise(0.05, 900, 1.2, 0.2, 'bandpass', 0.04); tone(1700, 0.02, 'square', 0.035); tone(130, 0.06, 'sine', 0.12, 0.5); break; // clic de imprenta
+      case 'howl': tone(320, 0.9, 'sawtooth', 0.06, 1.9); tone(330, 0.9, 'triangle', 0.08, 1.85); noise(0.6, 900, 1, 0.06, 'bandpass', 0.6); break; // aullido
+      case 'ready': if (throttle(name, 150)) { tone(1320, 0.09, 'triangle', 0.045); tone(1980, 0.12, 'sine', 0.03, 1, 0.06); } break; // carta lista
+      case 'power': [660, 990, 1320].forEach((f, i) => tone(f, 0.18, 'triangle', 0.05, 1, i * 0.05)); break; // destello de poder
       case 'pet': if (throttle(name, 120)) { noise(0.08, 1400, 2, 0.12, 'bandpass', 0.6); tone(320, 0.06, 'triangle', 0.08, 0.5); } break;
       case 'petshot': if (throttle(name, 120)) { tone(880, 0.09, 'sine', 0.06, 0.4); noise(0.06, 3200, 1.5, 0.06, 'highpass', 0.5); } break;
       case 'zap': if (throttle(name, 90)) { tone(1800, 0.12, 'square', 0.06, 0.25); noise(0.12, 5000, 3, 0.15, 'bandpass', 0.1); } break;
@@ -1023,6 +1355,10 @@ function bassNote(dest, f, t, dur) {
   o.connect(g); g.connect(LAY.bassIn); o.start(t); o.stop(t + dur + 0.05);
 }
 
+
+// ====================================================================================================
+// ARTE PROCEDURAL
+// ====================================================================================================
 // ---- src/art/ink.js
 // Primitivas de tinta (cómic de terror noventero): contornos gruesos, sombreado lateral, mugre,
 // semitono, sombreado cruzado y sellos. Lo costoso se usa al pre-renderizar, nunca por entidad y frame.
@@ -1301,20 +1637,48 @@ function smoke(ctx, x, y, s, color, alpha, t, seed = 0) {
   ctx.restore();
 }
 
-// Trama de semitono: puntos cuyo radio crece hacia `dir` (gradiente comic).
-function halftone(ctx, x, y, w, h, spacing, color, alpha, fromTop = false) {
-  ctx.save();
-  ctx.fillStyle = rgba(color, alpha);
+// Trama de semitono: puntos cuyo radio crece hacia abajo (o hacia arriba con fromTop), gradiente de cómic.
+// Rendimiento: en vez de cientos de arc() celda a celda, se pinta UNA VEZ una tira vertical de un periodo
+// horizontal (todas las filas) a la resolución del lienzo, se cachea y se rellena el área como patrón repetido.
+const HT_STRIPS = new Map();
+function halftoneStrip(spacing, color, alpha, fromTop, h, sc) {
+  const key = spacing + '|' + color + '|' + alpha + '|' + (fromTop ? 1 : 0) + '|' + h + '|' + sc;
+  let c = HT_STRIPS.get(key);
+  if (c) return c;
+  if (HT_STRIPS.size > 96) HT_STRIPS.clear();
+  const cw = Math.max(2, Math.round(spacing * sc)), ch = Math.max(1, Math.ceil(h * sc));
+  c = makeCanvas(cw, ch);
+  const x = c.getContext('2d'); x.fillStyle = rgba(color, alpha);
   for (let yy = 0; yy < h; yy += spacing) {
-    const row = Math.round(yy / spacing);
-    const f = fromTop ? 1 - yy / h : yy / h;
-    const r = spacing * 0.48 * f;
-    if (r < 0.3) continue;
-    for (let xx = (row % 2) * spacing / 2; xx < w; xx += spacing) {
-      ctx.beginPath(); ctx.arc(x + xx, y + yy, r, 0, TAU); ctx.fill();
-    }
+    const row = Math.round(yy / spacing), f = fromTop ? 1 - yy / h : yy / h, r = spacing * 0.48 * f * sc;
+    if (r < 0.3 * sc) continue;
+    x.beginPath();
+    if (row % 2) x.arc(cw / 2, yy * sc, r, 0, TAU);
+    else { x.arc(0, yy * sc, r, 0, TAU); x.moveTo(cw + r, yy * sc); x.arc(cw, yy * sc, r, 0, TAU); }
+    x.fill();
   }
-  ctx.restore();
+  HT_STRIPS.set(key, c);
+  return c;
+}
+function halftone(ctx, x, y, w, h, spacing, color, alpha, fromTop = false) {
+  const tr = ctx.getTransform(), sc = Math.max(1, Math.round(Math.hypot(tr.a, tr.b) * 2) / 2);
+  const hh = Math.max(1, Math.round(h)), strip = halftoneStrip(spacing, color, alpha, fromTop, hh, sc);
+  const pat = ctx.createPattern(strip, 'repeat-x');
+  if (pat.setTransform) pat.setTransform(new DOMMatrix([1 / sc, 0, 0, 1 / sc, 0, 0]));
+  ctx.save(); ctx.translate(x, y); ctx.fillStyle = pat; ctx.fillRect(0, 0, w, hh); ctx.restore();
+}
+
+// Grano de papel precalculado (motas de tinta): una tesela de 128 px que se repite como patrón.
+const GRAIN = new Map();
+function grainPattern(ctx, color, perTile = 14, size = 2) {
+  const key = color + '|' + perTile + '|' + size;
+  let c = GRAIN.get(key);
+  if (!c) {
+    c = makeCanvas(128, 128); const x = c.getContext('2d'), r = makeRng(perTile * 977 + size);
+    x.fillStyle = color; for (let i = 0; i < perTile; i++) x.fillRect(r() * 128, r() * 128, size, size);
+    GRAIN.set(key, c);
+  }
+  return ctx.createPattern(c, 'repeat');
 }
 
 function hatch(ctx, x, y, w, h, spacing, color, lw = 1, angle = 0.8) {
@@ -1799,341 +2163,12 @@ function drawHeroFx(ctx, id, c, t) {
   if (id === 'barnaby') glow(ctx, 98, -106, 14, c.glow, 0.3 + Math.sin(t * 6) * 0.15);
 }
 
-// ---- src/art/petArt.js
-// Mascotas en tinta: sabueso espectral, gato negro, cuervo sombrío y halcón del desierto.
-// Mirando a la derecha, suelo en y = 0. 4 fotogramas (galope / aleteo). tier 0–2 añade detalles.
-
-
-
-function pet_eye(ctx, x, y, r, col) { glow(ctx, x, y, r * 3, col, 0.9); ellipse(ctx, x, y, r, r * 0.8, col, 1.2); ctx.fillStyle = INK; ctx.fillRect(x - 0.6, y - r * 0.7, 1.2, r * 1.4); }
-
-function pet_hound(ctx, f, tier) {
-  const ph = (f / 4) * TAU, s = Math.sin(ph), c = Math.cos(ph);
-  const body = '#b8cce0', dark = '#7890aa';
-  glow(ctx, 0, -40, 70, '#9ac8ff', 0.35);
-  // cola de jirones espectrales
-  const tail = [-44, -50, -40, -42];
-  tatter(tail, -40, -42, -86, -48 + s * 6, 4, 8, 3); tail.push(-84, -60 + s * 4);
-  poly(ctx, tail, pet_rgbaHex(body, 0.7), 2, 0);
-  // patas traseras y delanteras (galope)
-  limb(ctx, -30, -40, -40 - s * 12, -4, 7, 4, dark); limb(ctx, 28, -42, 36 + s * 12, -4, 7, 4, dark);
-  const bd = [-46, -46, -30, -66, 10, -70, 36, -62, 44, -44, 26, -32, -24, -30];
-  blob(ctx, bd, body, 3, 0.5);
-  hatchPoly(ctx, bd, 4, 'rgba(20,30,60,0.35)', 1, true, 0.42);
-  ctx.strokeStyle = dark; ctx.lineWidth = 1.5; ctx.beginPath(); for (let i = 0; i < 4; i++) { const x = -10 + i * 8; ctx.moveTo(x, -64); ctx.quadraticCurveTo(x + 4, -50, x, -36); } ctx.stroke();
-  limb(ctx, -24, -38, -28 + s * 12, -4, 7, 4, body); limb(ctx, 32, -40, 44 - s * 12, -4, 7, 4, body);
-  // cabeza
-  blob(ctx, [32, -64, 46, -82, 66, -80, 82, -70, 80, -60, 58, -56, 40, -50], body, 3, 0.5);
-  poly(ctx, [44, -80, 42, -98, 54, -82], dark, 2, 0);
-  poly(ctx, [62, -62, 82, -64, 78, -56, 62, -56], '#1a2030', 1.6, 0);
-  pet_eye(ctx, 58, -72, 3, '#d8f0ff');
-  if (tier >= 1) poly(ctx, [36, -60, 44, -52, 30, -48], '#9a140e', 1.6, 0); // pañuelo rojo de Silas
-  if (tier >= 2) for (let i = 0; i < 3; i++) glow(ctx, -20 + i * 22, -70 - i * 4, 14, '#ffb347', 0.5);
-}
-
-function pet_cat(ctx, f, tier) {
-  const ph = (f / 4) * TAU, s = Math.sin(ph);
-  const fur = '#1c1a22', fur2 = '#2c2a36';
-  // cola en signo de interrogación
-  ctx.lineCap = 'round'; ctx.strokeStyle = INK; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(-34, -40); ctx.quadraticCurveTo(-64, -50 + s * 4, -56, -84); ctx.quadraticCurveTo(-52, -96, -40, -90); ctx.stroke();
-  ctx.strokeStyle = fur2; ctx.lineWidth = 5; ctx.stroke();
-  limb(ctx, -26, -36, -32 - s * 9, -3, 6, 4, fur); limb(ctx, 22, -38, 28 + s * 9, -3, 6, 4, fur);
-  const bd = [-38, -38, -26, -62, 6, -64, 30, -56, 34, -38, 18, -28, -24, -28]; // lomo arqueado
-  blob(ctx, bd, fur2, 3, 0.5);
-  ctx.fillStyle = 'rgba(200,190,255,0.16)'; ctx.beginPath(); ctx.ellipse(-4, -58, 18, 4, -0.1, 0, TAU); ctx.fill();
-  limb(ctx, -18, -34, -20 + s * 9, -3, 6, 4, fur2); limb(ctx, 28, -36, 36 - s * 9, -3, 6, 4, fur2);
-  // cabeza con orejas puntiagudas
-  blob(ctx, [24, -58, 30, -78, 52, -80, 60, -66, 54, -52, 34, -50], fur2, 3, 0.4);
-  poly(ctx, [30, -74, 30, -96, 42, -78], fur, 2.4, 0); poly(ctx, [46, -78, 56, -96, 58, -72], fur, 2.4, 0);
-  poly(ctx, [33, -78, 33, -90, 39, -80], '#7a2a3a', 0, 0);
-  pet_eye(ctx, 40, -68, 3.2, '#d8ff6a'); pet_eye(ctx, 52, -68, 3.2, '#d8ff6a');
-  line(ctx, 58, -60, 72, -62, 'rgba(232,220,192,0.7)', 1); line(ctx, 58, -58, 72, -56, 'rgba(232,220,192,0.7)', 1);
-  // collar con naipe de picas (Maeve)
-  line(ctx, 30, -54, 50, -52, '#9a140e', 3);
-  poly(ctx, [36, -52, 44, -52, 44, -40, 36, -40], '#efe2c4', 1.4, 0);
-  ctx.fillStyle = INK; ctx.font = 'bold 9px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('♠', 40, -46);
-  if (tier >= 2) { glow(ctx, 40, -86, 18, '#e07a3a', 0.6); poly(ctx, [32, -84, 36, -94, 40, -86, 44, -94, 48, -84], '#ffd27a', 1.4, 0); } // coronita de reina
-}
-
-function pet_wings(ctx, f, col, col2, span) {
-  // 0 arriba · 1 medio · 2 abajo · 3 medio
-  const up = [1, 0.25, -0.7, 0.25][f];
-  for (const side of [-1, 1]) {
-    const far = side < 0, c = far ? shade(col, -0.25) : col;
-    const tipY = -60 - up * 46 + (far ? -6 : 0), tipX = -8 + side * 4;
-    const w = [-6, -52, 18, -54, tipX + span * 0.5, tipY + 10, tipX, tipY, tipX - span * 0.4, tipY + 18, -22, -48];
-    poly(ctx, w, c, 2.6, 0.4);
-    ctx.strokeStyle = col2; ctx.lineWidth = 1.2; ctx.beginPath();
-    for (let k = 1; k < 4; k++) { ctx.moveTo(-4 + k * 3, -52); ctx.lineTo(tipX - span * 0.3 + k * 9, tipY + 16 - k * 2); } ctx.stroke();
-    if (far) continue;
-  }
-}
-function pet_crow(ctx, f, tier) {
-  const bodyC = '#14141c';
-  pet_wings(ctx, f, '#1c1c26', 'rgba(140,150,190,0.35)', 70);
-  const bd = [-40, -50, -20, -64, 14, -64, 30, -54, 20, -40, -10, -38];
-  blob(ctx, bd, bodyC, 3, 0.4);
-  poly(ctx, [-40, -50, -62, -58, -58, -44, -40, -44], bodyC, 2.4, 0); // cola
-  blob(ctx, [16, -60, 26, -72, 40, -70, 44, -58, 32, -52], bodyC, 3, 0.4);
-  poly(ctx, [42, -66, 60, -62, 42, -58], '#3a3a40', 2, 0);
-  pet_eye(ctx, 32, -64, 2.6, '#ff4a3a');
-  line(ctx, -2, -40, -4, -30, INK, 2); line(ctx, 8, -40, 8, -30, INK, 2);
-  if (tier >= 1) { line(ctx, 18, -54, 28, -46, '#c8a24a', 1.6); circle(ctx, 28, -44, 2.4, '#c8a24a', 1); } // relicario del poeta
-  if (tier >= 2) glow(ctx, 0, -54, 40, '#cfd8e6', 0.45);
-}
-function pet_hawk(ctx, f, tier) {
-  pet_wings(ctx, f, '#8a5a30', 'rgba(40,20,10,0.6)', 84);
-  const bd = [-36, -50, -16, -66, 14, -66, 30, -56, 22, -40, -8, -38];
-  blob(ctx, bd, '#a87444', 3, 0.4);
-  ctx.strokeStyle = 'rgba(40,20,10,0.6)'; ctx.lineWidth = 1.4; ctx.beginPath(); for (let i = 0; i < 4; i++) { ctx.moveTo(-14 + i * 8, -60); ctx.lineTo(-10 + i * 8, -44); } ctx.stroke(); // plumas barradas
-  poly(ctx, [-36, -50, -62, -60, -64, -46, -36, -44], '#7a4a24', 2.4, 0);
-  ctx.fillStyle = '#e8d8b0'; ctx.beginPath(); ctx.ellipse(10, -50, 10, 7, 0, 0, TAU); ctx.fill();
-  blob(ctx, [16, -62, 24, -76, 40, -74, 44, -60, 30, -54], '#c89058', 3, 0.4);
-  poly(ctx, [40, -70, 54, -64, 48, -56, 42, -60], '#e8c040', 2, 0); // pico curvo
-  poly(ctx, [24, -70, 40, -72, 38, -66, 26, -64], '#3a2010', 0, 0); // máscara
-  pet_eye(ctx, 34, -68, 2.6, '#ffd23a');
-  line(ctx, -2, -40, -4, -30, '#e8c040', 2.4); line(ctx, 8, -40, 8, -30, '#e8c040', 2.4);
-  if (tier >= 1) poly(ctx, [-2, -66, 6, -66, 4, -58, 0, -58], '#9a140e', 1, 0); // capucha de cetrería
-  if (tier >= 2) glow(ctx, 0, -54, 44, '#ff8a3a', 0.45);
-}
-
-function pet_rgbaHex(h, a) { const n = parseInt(h.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; }
-const PET_DRAW = { hound: pet_hound, cat: pet_cat, crow: pet_crow, hawk: pet_hawk };
-function drawPet(ctx, kind, frame = 0, tier = 0) { PET_DRAW[kind](ctx, frame, tier); }
-
-// ---- src/data/pets.js
-// Mascotas evolutivas: cada forajido tiene la suya. Crecen con el nivel (NV) del forajido:
-// más tamaño, aura de tinta y potencia. Apoyan sin pasarse el nivel solas.
-// attack: lunge (embestida a ras de suelo) · swoop (picotazo en picado) · bolt (proyectil de tinta)
-const PETS = {
-  silas: {
-    id: 'hound', name: 'Huesos', kind: 'Sabueso espectral', fly: false, attack: 'lunge',
-    dmg: 11, cd: 1.25, speed: 460, range: 230,
-    desc: 'Un perro que murió en Boot Hill con su amo y volvió con él. Embiste a los muertos que se acercan demasiado.',
-  },
-  maeve: {
-    id: 'cat', name: 'Medianoche', kind: 'Gato negro de la Sota', fly: false, attack: 'bolt',
-    dmg: 8.5, cd: 1.05, speed: 520, range: 280,
-    desc: 'Gato negro con un naipe de picas en el collar. Escupe gotas de tinta maldita a lo que mira mal a Maeve.',
-  },
-  caleb: {
-    id: 'crow', name: 'Nevermore', kind: 'Cuervo sombrío', fly: true, attack: 'swoop',
-    dmg: 7.5, cd: 0.85, speed: 560, range: 260,
-    desc: 'Le recita sus versos al oído. Cae en picado sobre ojos y gargantas, y vuelve al hombro del poeta.',
-  },
-  barnaby: {
-    id: 'hawk', name: 'Don Carroña', kind: 'Halcón del desierto', fly: true, attack: 'bolt',
-    dmg: 9, cd: 1.1, speed: 600, range: 300,
-    desc: 'Halcón de cetrería que solo ríe los chistes de Barnaby. Lanza plumas de tinta afiladas como cuchillas.',
-  },
-};
-
-const PET_TIER = ['Cría', 'Curtida', 'Leyenda'];
-function petTier(level) { return level >= 30 ? 2 : level >= 10 ? 1 : 0; }
-// Potencia por nivel del forajido: daño +2 %/NV, tamaño hasta ×1,38, recarga algo más rápida.
-function petStats(heroId, level) {
-  const P = PETS[heroId], L = Math.max(1, level | 0), tier = petTier(L);
-  return {
-    def: P, tier, level: L,
-    dmg: Math.round(P.dmg * (1 + (L - 1) * 0.02) * 10) / 10,
-    cd: P.cd * (1 - Math.min(0.3, (L - 1) * 0.006)),
-    size: 1 + Math.min(0.38, (L - 1) * 0.008),
-  };
-}
-
-// ---- src/data/story.js
-// Modo Historia: cada misión abre con una página de cómic, se combate con bocadillos y cierra con
-// una viñeta final ("CASO CERRADO" o "FINAL TRÁGICO").
-// obj.type: survive | kill | defend | boss | escape
-
-const MAPS = {
-  crossroads: { name: 'El Cruce de los Condenados', ground: '#5a4a3a', g2: '#6c5a46', g3: '#3a2e24', props: ['gravecross', 'deadtree', 'rock', 'fence', 'skullpile', 'post'], fog: false, zoned: true },
-  town: { name: 'Hollow Creek', ground: '#6a5038', g2: '#7c6044', g3: '#3e2c1e', props: ['barrel', 'crate', 'fence', 'wheel', 'post', 'deadtree'], fog: false },
-  chapel: { name: 'Capilla de Gallow\'s Rest', ground: '#584a48', g2: '#6a5a56', g3: '#362a2a', props: ['gravecross', 'tomb', 'deadtree', 'fence', 'pew'], fog: true },
-  mine: { name: 'Minas de Plata Negra', ground: '#5a5046', g2: '#6c6252', g3: '#34302a', props: ['rock', 'beam', 'cart', 'crate', 'ore'], fog: false },
-  swamp: { name: 'Pantano de Saint-Mort', ground: '#3e4a3c', g2: '#4e5c48', g3: '#26302a', props: ['deadtree', 'reeds', 'rock', 'stump', 'bones'], fog: true },
-  pulpit: { name: 'El Púlpito del Abismo', ground: '#5a3a34', g2: '#6c4640', g3: '#341e1a', props: ['gravecross', 'pew', 'rock', 'skullpile', 'tomb'], fog: false },
-};
-
-const MISSIONS = [
-  {
-    id: 'm1', name: 'Polvo en la Tumba', map: 'town', reward: 150,
-    obj: { type: 'survive', time: 100 }, spawn: { walker: 8, runner: 2, hound: 1 }, rate: 1.1,
-    intro: [
-      { scene: 'town', cap: 'Hollow Creek, Territorio de Arizona. El reloj de la iglesia se paró a las 3:15. Nadie lo ha vuelto a dar cuerda.' },
-      { scene: 'hero', cap: 'El telegrama decía "trabajo fácil". Los telegramas siempre mienten.', say: 'Huele a cementerio removido.' },
-      { scene: 'horde', cap: 'Al caer el sol, el pueblo entero salió a recibirle.', say2: 'Grrrhhh…' },
-      { scene: 'trap', cap: 'CONSEJO: dispara a faroles y barriles. Los cepos muerden a quien los pise.' },
-    ],
-    win: { scene: 'sunrise', cap: 'Amaneció sobre Hollow Creek. Los muertos volvieron a callar… por ahora.' },
-    lose: { scene: 'fallen', cap: 'El reloj de la iglesia marcó las 3:15. Otra vez.' },
-  },
-  {
-    id: 'm2', name: 'La Campana de Gallow\'s Rest', map: 'chapel', reward: 220,
-    obj: { type: 'defend', time: 110, hp: 1800, label: 'DEFIENDE A LOS SUPERVIVIENTES', miniboss: { type: 'plague', at: 55 } }, spawn: { walker: 6, runner: 3, bloater: 1, spider: 2 }, rate: 1.25,
-    intro: [
-      { scene: 'chapel', cap: 'La capilla quemada aún humea. Dentro, tres niños y una viuda rezan junto a la campana.' },
-      { scene: 'hero', cap: 'Alguien tiene que mantener la puerta cerrada hasta el alba.', say: 'Nadie entra. Nadie sale.' },
-      { scene: 'grave', cap: 'Del cementerio llegan rasguños. Primero pocos. Luego cientos.' },
-      { scene: 'boss_plague', cap: 'Y entre las lápidas, un predicador con un farol verde que devuelve la vida a lo que no debería tenerla.', say2: '¡Levantaos!' },
-    ],
-    win: { scene: 'sunrise', cap: 'La campana sonó al alba. Esta vez, alguien respondió.' },
-    lose: { scene: 'chapel', cap: 'La campana dejó de sonar antes del amanecer.' },
-  },
-  {
-    id: 'm3', name: 'Plata Negra', map: 'mine', reward: 320, boss: 'spawn',
-    obj: { type: 'boss', boss: 'spawn' }, spawn: { walker: 5, runner: 2, armored: 2, dynamiter: 1, spider: 2, abomination: 0.4 }, rate: 1.1,
-    intro: [
-      { scene: 'mine', cap: 'Minas de Plata Negra. Ciento doce mineros murieron en el derrumbe del 76. Ninguno dejó de trabajar.' },
-      { scene: 'horde', cap: 'Picos, palas y dinamita. La horda tiene herramientas.' },
-      { scene: 'boss_spawn', cap: 'En el fondo del pozo, algo hecho de mineros y mineral se arrastra con un fardo de dinamita en la espalda.', say2: 'GRRRHHH… DINAMITA…' },
-    ],
-    win: { scene: 'mine', cap: 'La dinamita de su espalda hizo el resto. El silbato del turno no volvió a sonar.' },
-    lose: { scene: 'fallen', cap: 'Ciento trece mineros. La cuadrilla está completa.' },
-  },
-  {
-    id: 'm4', name: 'Aguas de Saint-Mort', map: 'swamp', reward: 420,
-    obj: { type: 'kill', count: 140, label: 'PURGA LA CIÉNAGA' }, spawn: { walker: 5, runner: 3, bloater: 2, forker: 2, hound: 2, spider: 2 }, rate: 1.5,
-    intro: [
-      { scene: 'swamp', cap: 'Pantano de Saint-Mort. Los cajún dicen que el agua tiene memoria… y hambre.' },
-      { scene: 'hero', cap: 'La niebla traga los disparos. Hay que vaciar la ciénaga uno a uno.', say: 'Que salgan del barro.' },
-      { scene: 'eyes', cap: 'Algo enorme observa desde los juncos. Paciente.' },
-    ],
-    win: { scene: 'swamp', cap: 'Ciento cuarenta cuerpos devueltos al fango. El agua se quedó quieta.' },
-    lose: { scene: 'fallen', cap: 'El pantano siempre se cobra su diezmo.' },
-  },
-  {
-    id: 'm5', name: 'La Bestia de la Ciénaga', map: 'swamp', reward: 520, boss: 'beast',
-    obj: { type: 'boss', boss: 'beast' }, spawn: { walker: 4, runner: 3, forker: 2, bloater: 1, hound: 2, abomination: 0.4 }, rate: 1.1,
-    intro: [
-      { scene: 'eyes', cap: 'Lo que observaba desde los juncos ha perdido la paciencia.' },
-      { scene: 'boss_beast', cap: 'Mitad caimán, mitad pesadilla. Se tragó una diligencia entera en el 81.', say2: 'GRRRAAAAOOOH' },
-      { scene: 'hero', cap: 'No hay bala lo bastante grande. Habrá que disparar muchas.', say: 'Ven a por mí, lagarto.' },
-    ],
-    win: { scene: 'swamp', cap: 'La Bestia se hundió por última vez. Las ranas volvieron a cantar.' },
-    lose: { scene: 'fallen', cap: 'En Saint-Mort hay una nueva leyenda. No es la tuya.' },
-  },
-  {
-    id: 'm6', name: 'El Último Sermón', map: 'pulpit', reward: 800, boss: 'faceless',
-    obj: { type: 'boss', boss: 'faceless' }, spawn: { walker: 4, runner: 3, armored: 2, dynamiter: 1, bloater: 1, hound: 2, spider: 2, abomination: 0.5 }, rate: 1.25,
-    intro: [
-      { scene: 'pulpit', cap: 'Todas las huellas llevan al mismo sitio: una iglesia que no aparece en ningún mapa.' },
-      { scene: 'boss_faceless', cap: 'En el púlpito, un predicador sin rostro recita un sermón sin palabras. Y los muertos escuchan.' },
-      { scene: 'hero', cap: 'Se acabaron los sermones.', say: 'Amén, hijo de perra.' },
-    ],
-    win: { scene: 'sunrise', cap: 'El púlpito ardió hasta los cimientos. Por primera vez en años, el Oeste durmió de un tirón.' },
-    lose: { scene: 'pulpit', cap: 'El sermón continúa. Ahora con un feligrés más.' },
-  },
-];
-
-const SURVIVAL = { id: 'survival', name: 'El Cruce de los Condenados', map: 'crossroads' };
-
-// Comarca conectada (supervivencia): pueblo al oeste, cementerio en el centro, mina al este.
-const ZONES = [
-  { id: 'town', name: 'EL PUEBLO', x0: -1, x1: -1 / 3, ground: '#6a5038', g2: '#7c6044', g3: '#3e2c1e', props: ['barrel', 'crate', 'fence', 'wheel', 'post', 'deadtree'], mini: '#6a4a30' },
-  { id: 'cemetery', name: 'EL CEMENTERIO', x0: -1 / 3, x1: 1 / 3, ground: '#584a48', g2: '#6a5a56', g3: '#362a2a', props: ['gravecross', 'tomb', 'deadtree', 'skullpile', 'fence', 'gravecross'], mini: '#4a3a4a' },
-  { id: 'mine', name: 'LA MINA', x0: 1 / 3, x1: 1, ground: '#5a5046', g2: '#6c6252', g3: '#34302a', props: ['rock', 'beam', 'cart', 'crate', 'ore', 'rock'], mini: '#4a4238' },
-];
-
-// ---- src/data/cards.js
-// Mazo de cartas de la partida. Rarezas: Bronce → Plata → Oro → Platino → Diamante.
-// Pasivas: efecto permanente en la partida. Acción: entran en la mano (máx. 3) y se juegan con 1·2·3.
-// Diamante: Bendición + Maldición (penalización temporal de velocidad o vulnerabilidad).
-
-const RARITY = [
-  { id: 0, name: 'Bronce', label: 'COMÚN', frame: '#7a4a2a', edge: '#3a1e0e', glow: '#b06a3a', text: '#e8c8a8', weight: 52 },
-  { id: 1, name: 'Plata', label: 'POCO COMÚN', frame: '#a8a8a0', edge: '#4a4a46', glow: '#d8d8d0', text: '#f2f2ea', weight: 27 },
-  { id: 2, name: 'Oro', label: 'RARA', frame: '#b8862e', edge: '#5a3a0a', glow: '#ffb347', text: '#ffe6a8', weight: 13 },
-  { id: 3, name: 'Platino', label: 'ÉPICA', frame: '#8a96a8', edge: '#2a3040', glow: '#c8e0ff', text: '#e8f2ff', weight: 6 },
-  { id: 4, name: 'Diamante', label: 'LEGENDARIA', frame: '#4a3a6a', edge: '#120a24', glow: '#d0a8ff', text: '#f4e8ff', weight: 2 },
-];
-
-const P = 'passive', A = 'action';
-
-const CARDS = [
-  // ---------------- BRONCE: efecto básico
-  { id: 'polvora', r: 0, t: P, name: 'Pólvora Barata', icon: '💥', desc: '+12% de daño.', apply: (g) => { g.st.dmg *= 1.12; } },
-  { id: 'gatillo', r: 0, t: P, mod: true, name: 'Gatillo Ligero', icon: '🔫', desc: '+12% de cadencia.', apply: (g) => { g.st.rate *= 1.12; } },
-  { id: 'botas', r: 0, t: P, name: 'Botas Gastadas', icon: '👢', desc: '+8% de velocidad.', apply: (g) => { g.st.speed *= 1.08; } },
-  { id: 'cuero', r: 0, t: P, name: 'Cuero Curtido', icon: '🛡', desc: '+20 de vida máxima.', apply: (g) => { g.addMaxHp(20); } },
-  { id: 'whisky', r: 0, t: P, name: 'Whisky Aguado', icon: '🥃', desc: 'Cura el 30% de la vida.', heal: true, apply: (g) => { g.heal(g.player.maxHp * 0.3); } },
-  { id: 'bolsillos', r: 0, t: P, name: 'Bolsillos Hondos', icon: '👝', desc: '+35% de radio de recogida.', apply: (g) => { g.st.pickup *= 1.35; } },
-  { id: 'puntas', r: 0, t: P, mod: true, name: 'Puntas de Acero', icon: '🔩', desc: 'Munición perforante: +1 cuerpo atravesado por bala.', apply: (g) => { g.st.pierce += 1; } },
-  { id: 'cargador', r: 0, t: P, mod: true, name: 'Cargador Engrasado', icon: '🛢', desc: 'Recarga un 25% más rápida.', apply: (g) => { g.st.reloadMult *= 0.75; } },
-  { id: 'sal', r: 0, t: A, name: 'Puñado de Sal', icon: '🧂', cd: 6, desc: 'Cono de sal gruesa que repele y aturde a la horda cercana.' },
-
-  // ---------------- PLATA: doble beneficio
-  { id: 'plata', r: 1, t: P, mod: true, name: 'Munición de Plata', icon: '🌙', desc: '+15% de daño y +1 perforación.', apply: (g) => { g.st.dmg *= 1.15; g.st.pierce += 1; } },
-  { id: 'cartuchera', r: 1, t: P, mod: true, name: 'Doble Cartuchera', icon: '🎒', desc: '+15% de cadencia y recarga un 15% más rápida.', apply: (g) => { g.st.rate *= 1.15; g.st.reloadMult *= 0.85; } },
-  { id: 'espuelas', r: 1, t: P, name: 'Espuelas del Muerto', icon: '⭐', desc: '+12% de velocidad y +6% de esquiva.', apply: (g) => { g.st.speed *= 1.12; g.st.dodge += 0.06; } },
-  { id: 'biblia', r: 1, t: P, name: 'Biblia de Bolsillo', icon: '📖', desc: '+25 de vida máxima y regeneras 1 vida/s.', heal: true, apply: (g) => { g.addMaxHp(25); g.st.regen += 1; } },
-  { id: 'buitre', r: 1, t: P, name: 'Mirada de Buitre', icon: '🦅', desc: '+8% de crítico y +25% de daño crítico.', apply: (g) => { g.st.crit += 0.08; g.st.critMult += 0.25; } },
-  { id: 'halcon', r: 1, t: P, mod: true, range: true, name: 'Ojo de Halcón', icon: '🎯', desc: 'LARGO ALCANCE: +35% de alcance de disparo y de detección.', apply: (g) => { g.st.rangeMult *= 1.35; } },
-  { id: 'tambor', r: 1, t: P, mod: true, name: 'Tambor Ampliado', icon: '🥁', desc: '+50% de capacidad del cargador y recarga un 15% más rápida.', apply: (g) => { g.st.magMult *= 1.5; g.st.reloadMult *= 0.85; } },
-  { id: 'polvorarea', r: 1, t: P, mod: true, name: 'Pólvora Negra', icon: '💣', desc: 'Disparos en área: cada impacto estalla en un radio pequeño.', apply: (g) => { g.st.splash += 40; } },
-  { id: 'mina', r: 1, t: A, art: true, name: 'Dinamita de Proximidad', icon: '🧨', cd: 8, desc: 'ARTEFACTO: siembra 3 cartuchos que estallan cuando la horda se acerca.' },
-  { id: 'acido', r: 1, t: A, art: true, name: 'Frasco de Ácido', icon: '⚗', cd: 9, desc: 'ARTEFACTO: charco de ácido que corroe corazas. Con fuego: ¡explosión de pólvora!' },
-  { id: 'dinamita', r: 1, t: A, name: 'Cartucho de Dinamita', icon: '🧨', cd: 8, desc: 'Lanza dinamita que estalla en un gran radio.' },
-  { id: 'cepo', r: 1, t: A, name: 'Cepo de Oso', icon: '🪤', cd: 7, desc: 'Coloca dos cepos que atrapan y desgarran zombis.' },
-
-  // ---------------- ORO: impacto táctico
-  { id: 'metralla', r: 2, t: P, mod: true, name: 'Metralla', icon: '✴', desc: 'Cada impacto revienta en 4 esquirlas que hieren a la horda cercana.', apply: (g) => { g.st.shrapnel += 4; } },
-  { id: 'catalejo', r: 2, t: P, mod: true, range: true, name: 'Catalejo de Latón', icon: '🔭', desc: 'LARGO ALCANCE: +60% de alcance y +6% de crítico.', apply: (g) => { g.st.rangeMult *= 1.6; g.st.crit += 0.06; } },
-  { id: 'cadena', r: 2, t: P, mod: true, name: 'Balas Encadenadas', icon: '⛓', desc: 'Cada impacto rebota a otro zombi cercano.', apply: (g) => { g.st.chain += 1; } },
-  { id: 'salbendita', r: 2, t: P, mod: true, name: 'Sal Bendita', icon: '✝', desc: 'Tus disparos ralentizan un 35% a la horda.', apply: (g) => { g.st.slowOnHit = Math.max(g.st.slowOnHit, 1.2); } },
-  { id: 'incendiarias', r: 2, t: P, mod: true, name: 'Plomo Incendiario', icon: '🔥', desc: 'Tus balas prenden fuego: 9 de daño por segundo durante 3 s.', apply: (g) => { g.st.burnOnHit += 9; } },
-  { id: 'trampero', r: 2, t: P, name: 'Trampero', icon: '⚙', desc: 'Cada 9 s colocas un cepo automático. Las trampas hacen +50% de daño.', apply: (g) => { g.st.trapper += 1; g.st.trapMult *= 1.5; } },
-  { id: 'cuervo', r: 2, t: P, name: 'Cuervo Guardián', icon: '🐦', desc: 'Un cuervo de tinta orbita a tu alrededor y picotea zombis.', apply: (g) => { g.st.crows += 1; } },
-  { id: 'bobina', r: 2, t: A, art: true, name: 'Bobina Tesla', icon: '⚡', cd: 12, desc: 'ARTEFACTO: planta una bobina que lanza arcos eléctricos 12 s. Electrifica la tinta.' },
-  { id: 'explosivas', r: 2, t: P, mod: true, art: true, name: 'Balas Explosivas', icon: '💥', desc: 'ARTEFACTO: cada impacto estalla en un radio medio.', apply: (g) => { g.st.splash += 55; } },
-  { id: 'farol', r: 2, t: A, name: 'Farol Arrojadizo', icon: '🏮', cd: 9, desc: 'Lanza un farol de gas que deja el suelo en llamas.' },
-  { id: 'aguabendita', r: 2, t: A, name: 'Agua Bendita', icon: '💧', cd: 12, desc: 'Onda sagrada: cura 25 de vida y quema a la horda alrededor.' },
-
-  // ---------------- PLATINO: efectos cinemáticos devastadores
-  { id: 'tormenta', r: 3, t: P, name: 'Tormenta de Plomo', icon: '🌀', desc: 'Cada 7 s disparas una corona de 28 balas.', apply: (g) => { g.st.leadStorm += 1; } },
-  { id: 'columna', r: 3, t: P, name: 'Columna de Fuego Sagrado', icon: '🕯', desc: 'Cada 18 bajas cae una columna de fuego que arrasa la zona.', apply: (g) => { g.st.holyFire += 1; } },
-  { id: 'tren', r: 3, t: P, name: 'Tren Fantasma', icon: '🚂', desc: 'Cada 16 s un tren espectral cruza la pantalla y arrolla a la horda.', apply: (g) => { g.st.ghostTrain += 1; } },
-  { id: 'danza', r: 3, t: P, name: 'Danza Macabra', icon: '💀', desc: 'Tus críticos estallan y dañan a los zombis cercanos.', apply: (g) => { g.st.critExplode += 1; } },
-  { id: 'rayo', r: 3, t: A, art: true, name: 'Llamada del Rayo', icon: '🌩', cd: 14, desc: 'ARTEFACTO: seis rayos caen sobre la horda. Sobre charcos de tinta: sobrecarga en cadena.' },
-  { id: 'bobinas', r: 3, t: P, mod: true, art: true, name: 'Balas de Bobina', icon: '🔋', desc: 'ARTEFACTO: 25% de que cada impacto salte en arco a 2 enemigos cercanos.', apply: (g) => { g.st.arc += 0.25; } },
-  { id: 'caballeria', r: 3, t: A, name: 'Carga de Caballería Fantasma', icon: '🐎', cd: 18, desc: 'Una carga de jinetes espectrales barre el campo de lado a lado.' },
-
-  // ---------------- DIAMANTE: Bendición y Maldición
-  { id: 'pacto', r: 4, t: P, name: 'Pacto en la Encrucijada', icon: '🩸', desc: 'BENDICIÓN: daño x2 el resto de la partida.', curse: { type: 'slow', amount: 0.35, time: 25, text: 'MALDICIÓN: -35% de velocidad durante 25 s.' }, apply: (g) => { g.st.dmg *= 2; } },
-  { id: 'corazon', r: 4, t: P, name: 'Corazón del Diablo', icon: '❤', desc: 'BENDICIÓN: +100 de vida máxima y regeneras 3 vida/s.', heal: true, curse: { type: 'vuln', amount: 0.5, time: 30, text: 'MALDICIÓN: recibes +50% de daño durante 30 s.' }, apply: (g) => { g.addMaxHp(100); g.st.regen += 3; } },
-  { id: 'ases', r: 4, t: P, name: 'Ases y Ochos', icon: '🂡', desc: 'BENDICIÓN: +35% de crítico y los críticos hacen x3.', curse: { type: 'vuln', amount: 0.4, time: 25, text: 'MALDICIÓN: +40% de daño recibido y sin esquiva 25 s.' }, apply: (g) => { g.st.crit += 0.35; g.st.critMult = Math.max(g.st.critMult, 3); } },
-  { id: 'sombra', r: 4, t: P, name: 'Sombra Vendida', icon: '👤', desc: 'BENDICIÓN: dos sombras gemelas disparan contigo.', curse: { type: 'slow', amount: 0.5, time: 20, text: 'MALDICIÓN: -50% de velocidad durante 20 s.' }, apply: (g) => { g.st.shadows += 2; } },
-  { id: 'ciclope', r: 4, t: P, mod: true, range: true, name: 'Ojo del Cíclope', icon: '👁', desc: 'BENDICIÓN: alcance x2 y +20% de crítico.', curse: { type: 'slow', amount: 0.4, time: 25, text: 'MALDICIÓN: -40% de velocidad durante 25 s.' }, apply: (g) => { g.st.rangeMult *= 2; g.st.crit += 0.2; } },
-  { id: 'ahorcado', r: 4, t: P, mod: true, name: 'Bala del Ahorcado', icon: '🪢', desc: 'BENDICIÓN: todos tus disparos atraviesan cualquier cuerpo.', curse: { type: 'slow', amount: 0.3, time: 30, text: 'MALDICIÓN: -30% de velocidad durante 30 s.' }, apply: (g) => { g.st.pierce += 99; } },
-  { id: 'trompeta', r: 4, t: A, name: 'Trompeta del Juicio', icon: '📯', cd: 40, desc: 'BENDICIÓN: aniquila a toda la horda visible (los colosos sufren un golpe brutal).', curse: { type: 'vuln', amount: 0.6, time: 12, text: 'MALDICIÓN al tocarla: +60% de daño recibido 12 s.' } },
-];
-
-// Cartas de firma (no salen en el sorteo; empiezan en la mano).
-const SIGNATURE = {
-  rabia: { id: 'rabia', r: 2, t: A, name: 'Arrebato de Mal Genio', icon: '💢', cd: 7, desc: 'Silas revienta: corona de perdigones en 360° con empuje brutal.' },
-  deadhand: { id: 'deadhand', r: 2, t: A, name: 'Mano de Muerto', icon: '🂡', cd: 7, desc: 'Abanico de cinco naipes explosivos que aturden y hechizan.' },
-  verso: { id: 'verso', r: 2, t: A, name: 'Último Verso', icon: '✒', cd: 6, desc: 'Disparo de precisión que lo atraviesa todo con crítico garantizado y alcance doble.' },
-  chiste: { id: 'chiste', r: 2, t: A, name: 'Chiste de Carnicero', icon: '🔪', cd: 9, desc: 'Un chiste tan macabro que la horda cercana huye aterrada 4 s.' },
-};
-
-const cardById = (id) => CARDS.find((c) => c.id === id) || SIGNATURE[id];
-
-// Sorteo de rareza: la suerte (Maeve, nivel de partida, rondas) desplaza el peso hacia arriba.
-function rollRarity(luck, rnd = Math.random) {
-  const w = RARITY.map((r, i) => r.weight * Math.pow(1 + luck * 0.55, i));
-  let tot = 0;
-  for (const x of w) tot += x;
-  let v = rnd() * tot;
-  for (let i = 0; i < w.length; i++) { v -= w[i]; if (v <= 0) return i; }
-  return 0;
-}
-
 // ---- src/art/zombieArt.js
 // La Horda: siluetas asimétricas y encorvadas, hombros desalineados, jirones orgánicos,
 // tinta sucia con sombreado cruzado y paleta fría desaturada (gris carbón, verde cadáver).
 
 
-let ZF = 0; // fotograma de animación activo (errantes, corredores y arañas)
+let ZF = 0; // fotograma activo: 0–3 paso, 4 ataque
 
 
 const SKIN = '#7a8a74', SKIN2 = '#5e6a5a', CLOTH = '#3a3e44', CLOTH2 = '#4a4e48', RAG = '#5a5a52', BLOOD = '#4a0e0c';
@@ -2175,168 +2210,389 @@ function zhead(ctx, x, y, s = 1, tilt = 0.3, eye = '#d8e8b0', skin = SKIN) {
   ctx.restore();
 }
 
-function legsZ(ctx, cloth, lean = 0) {
-  limb(ctx, -10 + lean, -76, -16, -6, 8, 6, cloth);
-  limb(ctx, 10 + lean, -74, 14, -10, 8, 6, cloth);
-  poly(ctx, [-26, -8, -8, -8, -8, 0, -28, 0], '#2a2a2a', 2.5, 0);
-  poly(ctx, [6, -12, 22, -12, 26, 0, 6, 0], '#2a2a2a', 2.5, 0);
+
+// ================================================================== RIG ANATÓMICO 2D (cel-shading de cómic)
+// Siluetas claras: extremidades en cápsulas de tinta con articulaciones limpias, sombra plana en el lado
+// izquierdo/inferior (luz desde arriba a la derecha) y contorno negro uniforme. Mirando a la derecha.
+// Fotogramas: 0–3 paso · 4 ataque. El impacto lo resuelve el render (destello blanco + retroceso).
+function rgPath(ctx, pts) {
+  ctx.beginPath();
+  for (let i = 0; i < pts.length; i += 2) i ? ctx.lineTo(pts[i], pts[i + 1]) : ctx.moveTo(pts[i], pts[i + 1]);
+  ctx.closePath();
+}
+// Polígono con sombra plana recortada y contorno de tinta limpio.
+function cel(ctx, pts, fill, lw = 2.6, cut = 0.4) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (let i = 0; i < pts.length; i += 2) { const x = pts[i], y = pts[i + 1]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  rgPath(ctx, pts); ctx.fillStyle = fill; ctx.fill();
+  if (cut > 0) {
+    ctx.save(); ctx.clip();
+    const h = y1 - y0, cx = x0 + (x1 - x0) * cut;
+    ctx.fillStyle = shade(fill, -0.3);
+    ctx.beginPath(); ctx.moveTo(x0 - 4, y0 - 4); ctx.lineTo(cx + h * 0.22, y0 - 4); ctx.lineTo(cx - h * 0.22, y1 + 4); ctx.lineTo(x0 - 4, y1 + 4); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,248,230,0.16)'; // brillo del borde iluminado
+    ctx.beginPath(); ctx.moveTo(x1 + 4, y0 - 4); ctx.lineTo(x1 - (x1 - x0) * 0.12, y0 - 4); ctx.lineTo(x1 - (x1 - x0) * 0.12 - h * 0.1, y1 + 4); ctx.lineTo(x1 + 4, y1 + 4); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    rgPath(ctx, pts);
+  }
+  ctx.lineJoin = 'round'; ctx.lineWidth = lw; ctx.strokeStyle = INK; ctx.stroke();
+}
+// Cadena de cápsulas (muslo+espinilla, brazo+antebrazo): articulaciones redondas sin costuras.
+function chainP(ctx, P) { ctx.beginPath(); ctx.moveTo(P[0], P[1]); for (let i = 2; i < P.length; i += 2) ctx.lineTo(P[i], P[i + 1]); }
+function capsule(ctx, P, w, fill) {
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  chainP(ctx, P); ctx.strokeStyle = INK; ctx.lineWidth = w * 2 + 5; ctx.stroke();
+  ctx.strokeStyle = fill; ctx.lineWidth = w * 2; ctx.stroke();
+  ctx.save(); ctx.translate(-w * 0.4, w * 0.32); chainP(ctx, P); ctx.strokeStyle = shade(fill, -0.3); ctx.lineWidth = w * 0.9; ctx.stroke(); ctx.restore();
+}
+function claws(ctx, x, y, a, skin) { // mano con tres garras orientadas según el antebrazo
+  const ca = Math.cos(a), sa = Math.sin(a);
+  ctx.lineCap = 'round';
+  for (let k = -1; k <= 1; k++) {
+    const ex = x + ca * 11 - sa * k * 5, ey = y + sa * 11 + ca * k * 5;
+    ctx.strokeStyle = INK; ctx.lineWidth = 4.4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.strokeStyle = skin; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+  }
+  ctx.fillStyle = skin; ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 5, 0, TAU); ctx.fill(); ctx.stroke();
+}
+function shoe(ctx, x, y, bare, skin) {
+  if (bare) cel(ctx, [x - 7, y - 7, x + 9, y - 6, x + 13, y - 1, x + 13, y, x - 7, y], skin, 2.2, 0.5);
+  else cel(ctx, [x - 8, y - 9, x + 6, y - 9, x + 14, y - 3, x + 14, y, x - 8, y], '#241c18', 2.2, 0.5);
+}
+// Cráneo de no-muerto con mandíbula articulada (open 0–1), cuenca brillante y rasgos marcados.
+function zSkull(ctx, x, y, s, tilt, o) {
+  const skin = o.skin, open = o.open || 0;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(tilt); ctx.scale(s, s);
+  // boca oscura detrás de la mandíbula
+  if (open > 0) cel(ctx, [-2, 2, 14, 0, 14, 6 + open * 8, 0, 8 + open * 6], '#1a0606', 1.8, 0);
+  // mandíbula inferior (bisagra en la oreja)
+  ctx.save(); ctx.translate(-3, 3); ctx.rotate(open * 0.55);
+  cel(ctx, [0, 0, 16, -1, 15, 5, 8, 9, 1, 7], shade(skin, -0.12), 2.2, 0.3);
+  ctx.fillStyle = '#d8ccb0'; for (let i = 0; i < 4; i++) ctx.fillRect(4 + i * 3, -1, 2, 2.4);
+  ctx.restore();
+  // cráneo: nuca, bóveda, ceja marcada, nariz, maxilar
+  cel(ctx, [-12, 2, -12, -10, -6, -17, 5, -18, 12, -12, 14, -6, 16, -1, 13, 2, 4, 4, -4, 5], skin, 2.6, 0.42);
+  ctx.fillStyle = '#d8ccb0'; for (let i = 0; i < 4; i++) ctx.fillRect(5 + i * 2.6, 1.5, 1.8, 2.6); // dientes superiores
+  // cuenca y pupila brillante
+  ctx.fillStyle = '#0a0605'; ctx.beginPath(); ctx.ellipse(7, -7, 4.2, 3.4, -0.2, 0, TAU); ctx.fill();
+  glow(ctx, 8, -7, 8, o.eye, 0.95); ctx.fillStyle = o.eye; ctx.fillRect(7, -8, 2.6, 2.2);
+  ctx.strokeStyle = INK; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(1, -12); ctx.lineTo(13, -10); ctx.stroke(); // ceja
+  ctx.fillStyle = '#0a0605'; ctx.beginPath(); ctx.moveTo(14, -4); ctx.lineTo(16, -1); ctx.lineTo(12.5, -1); ctx.fill(); // fosa nasal
+  cel(ctx, [-6, -6, -1, -8, 0, -2, -4, 0], shade(skin, -0.08), 1.6, 0); // oreja
+  if (o.hair) { ctx.strokeStyle = o.hair; ctx.lineWidth = 1.6; ctx.beginPath(); for (let i = 0; i < 4; i++) { ctx.moveTo(-8 + i * 4, -15 - (i % 2)); ctx.quadraticCurveTo(-12 + i * 3, -24, -16 + i * 3, -18 - i); } ctx.stroke(); }
+  if (o.scar) { ctx.strokeStyle = '#5a1a12'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-2, -15); ctx.lineTo(4, -4); for (let k = 0; k < 3; k++) { ctx.moveTo(-1 + k * 2, -12 + k * 3); ctx.lineTo(3 + k * 2, -13 + k * 3); } ctx.stroke(); }
+  if (o.hat) o.hat(ctx);
+  ctx.restore();
 }
 
-// ------------------------------------------------------------------ ERRANTE (encorvado, ropa rasgada, brazos adelantados)
-// 4 fotogramas de zancada: piernas alternas y brazos que se balancean al tantear el aire.
-const ZSKIN = '#a6b496', ZSKIN2 = '#74826a', ZSHIRT = '#9a8c72', ZVEST = '#2e2a2c', ZPANTS = '#3e3c48';
-function zLeg(ctx, hx, hy, kx, ky, fx, fy, cloth, bare) {
-  limb(ctx, hx, hy, kx, ky, 8, 7, cloth);
-  // pernera rasgada a la altura de la rodilla: espinilla al aire
-  limb(ctx, kx, ky, fx, fy - 6, 6, 5, bare ? ZSKIN2 : cloth);
-  const p = [kx - 8, ky - 2, kx + 8, ky - 2];
-  tatter(p, kx + 8, ky + 6, kx - 8, ky + 6, 3, 6, (kx * 7) | 0);
-  poly(ctx, p, cloth, 2, 0);
-  if (bare) blob(ctx, [fx - 10, fy - 6, fx + 10, fy - 7, fx + 14, fy, fx - 10, fy], ZSKIN2, 2.2, 0);
-  else poly(ctx, [fx - 12, fy - 9, fx + 6, fy - 9, fx + 14, fy - 2, fx + 14, fy, fx - 12, fy], '#221c18', 2.4, 0);
-}
-function walker(ctx) {
-  const ph = (ZF / 4) * TAU, st = Math.sin(ph), sw = Math.cos(ph);
-  // piernas: la trasera primero
-  zLeg(ctx, -6, -80, -12 - st * 8, -42, -18 - st * 15, 0, ZPANTS, false);
-  zLeg(ctx, 6, -80, 10 + st * 8, -42, 14 + st * 15, 0, shade(ZPANTS, 0.12), true);
-  ctx.save(); ctx.translate(0, -80); ctx.rotate(0.34); // torso encorvado hacia delante
-  // brazo trasero (más oscuro), adelantado
-  limb(ctx, -8, -56, 26, -50 + sw * 4, 7, 6, shade(ZSHIRT, -0.25));
-  limb(ctx, 26, -50 + sw * 4, 52, -50 + sw * 6, 6, 5, ZSKIN2); clawHand(ctx, 56, -50 + sw * 6, 1, ZSKIN2);
-  // torso: camisa sucia, chaleco abierto y desgarrado, costillas a la vista
-  const torso = [-20, -66, 18, -64, 22, -34, 16, -2, -16, -2, -22, -36];
-  zp(ctx, torso, ZSHIRT, 3, 0);
-  hatchPoly(ctx, [-20, -66, -4, -66, -6, -2, -16, -2, -22, -36], 4, 'rgba(10,8,6,0.45)', 1, true, 0.4);
-  zp(ctx, [-22, -64, -6, -66, -10, -28, -14, -2, -20, -6, -24, -36], ZVEST, 2.6, 3);
-  zp(ctx, [8, -66, 20, -62, 22, -36, 14, -2, 6, -6, 10, -34], ZVEST, 2.6, 3);
-  blob(ctx, [-4, -50, 8, -52, 10, -30, -2, -28], ZSKIN2, 2, 0); // desgarrón
-  ctx.strokeStyle = '#3a4234'; ctx.lineWidth = 1.6; ctx.beginPath();
-  for (let i = 0; i < 3; i++) { ctx.moveTo(-2, -46 + i * 6); ctx.quadraticCurveTo(4, -48 + i * 6, 9, -45 + i * 6); } ctx.stroke();
-  ctx.fillStyle = '#6a0e0c'; ctx.fillRect(10, -40, 4, 9); ctx.fillRect(-12, -20, 6, 4);
-  rags(ctx, -18, -4, 18, -4, 5, 10, ZSHIRT, 3);
-  // cuello y cabeza adelantada, mandíbula caída
-  limb(ctx, 2, -64, 10, -74, 6, 5, ZSKIN2);
-  zhead(ctx, 14, -82, 1, 0.55, '#f2ffb0', ZSKIN);
-  ctx.fillStyle = '#2a2a26'; ctx.fillRect(4, -96, 3, 6); ctx.fillRect(10, -98, 2, 5); // mechones ralos
-  // brazo delantero extendido hacia la presa
-  limb(ctx, 14, -60, 38, -58 - sw * 4, 7, 6, ZSHIRT);
-  rags(ctx, 30, -64, 40, -52, 2, 6, ZSHIRT, 5);
-  limb(ctx, 38, -58 - sw * 4, 62, -60 - sw * 6, 6, 5, ZSKIN); clawHand(ctx, 66, -60 - sw * 6, 1, ZSKIN);
+// Humanoide no-muerto parametrizable (errante, corredor, hinchado, acorazado, horquero, dinamitero).
+function zHuman(ctx, o) {
+  const f = ZF, atk = f === 4, ph = (f / 4) * TAU;
+  const hipY = o.hipY, th = o.thigh, sh = o.shin, lw = o.legW;
+  // --- piernas: cinemática simple (ángulo del muslo + flexión de rodilla al levantar)
+  const legPose = (front) => {
+    let a, bend;
+    if (atk) { a = front ? 0.42 : -0.5; bend = front ? 0.35 : 0.1; }
+    else { const phi = ph + (front ? 0 : Math.PI); a = Math.sin(phi) * o.stride; bend = 0.15 + 0.6 * Math.max(0, Math.cos(phi)); }
+    const kx = Math.sin(a) * th, ky = -hipY + Math.cos(a) * th;
+    const fx = kx + Math.sin(a - bend) * sh, fy = ky + Math.cos(a - bend) * sh;
+    return [front ? 4 : -4, -hipY, kx + (front ? 4 : -4), ky, fx + (front ? 4 : -4), Math.min(0, fy) - 6]; // termina en el tobillo
+  };
+  const LB = legPose(false), LF = legPose(true);
+  const lean = o.lean + (atk ? 0.18 : 0), tl = o.torso, cw = o.chest, ww = o.waist;
+  const sway = atk ? 0 : Math.cos(ph);
+  // pierna trasera (más oscura)
+  capsule(ctx, LB, lw, shade(o.pants, -0.18)); shoe(ctx, LB[4], LB[5] + 6, o.bareB, o.skin2);
+  if (o.backItem) o.backItem(ctx, lean);
+  // marco del torso
+  ctx.save(); ctx.translate(0, -hipY); ctx.rotate(lean);
+  // brazo lejano (detrás del torso)
+  const armFar = o.arms(ctx, false, atk, sway, tl, cw);
   ctx.restore();
+  capsule(ctx, LF, lw, o.pants); shoe(ctx, LF[4], LF[5] + 6, o.bareF, o.skin);
+  if (o.legRags) { const p = [LF[2] - 8, LF[3] - 2, LF[2] + 8, LF[3] - 2]; tatter(p, LF[2] + 8, LF[3] + 7, LF[2] - 8, LF[3] + 7, 3, 6, 5); cel(ctx, p, o.pants, 2, 0); }
+  ctx.save(); ctx.translate(0, -hipY); ctx.rotate(lean);
+  // torso con pecho y cintura definidos
+  const tor = [-ww, 6, ww, 6, cw + 2, -tl * 0.5, cw - 2, -tl, -cw + 2, -tl - 2, -cw - 2, -tl * 0.5];
+  cel(ctx, tor, o.shirt, 2.8, 0.42);
+  if (o.torsoFx) o.torsoFx(ctx, tl, cw, ww, atk);
+  // cuello y cráneo (la cara mira al frente aunque el cuerpo vaya encorvado)
+  const hx = cw * 0.45 + 4, hy = -tl - 10 * o.head;
+  capsule(ctx, [2, -tl + 2, hx - 4, hy + 6], 3.6, o.skin2);
+  zSkull(ctx, hx, hy, o.head, -lean * 0.7 + (o.tilt || 0) + (atk ? -0.15 : 0), { skin: o.skin, eye: o.eye, open: atk ? 1 : (o.jaw || 0.15), hair: o.hair, scar: o.scar, hat: o.hat });
+  // brazo cercano (delante)
+  o.arms(ctx, true, atk, sway, tl, cw);
+  ctx.restore();
+}
+// Poses de brazos (en el marco rotado del torso; y negativo = arriba)
+function armsReach(skinN, skinF, sleeve) { // brazos adelantados tanteando el aire
+  return (ctx, near, atk, sway, tl, cw) => {
+    const sx = near ? cw * 0.35 : -cw * 0.3, sy = -tl + 6;
+    const sw = near ? sway : -sway, up = atk ? -0.55 : -0.05 + sw * 0.08, L = atk ? 1.18 : 1;
+    const ex = sx + Math.cos(up) * 24 * L, ey = sy + Math.sin(up) * 24 * L + 6;
+    const hx = ex + Math.cos(up - 0.1) * 24 * L, hy = ey + Math.sin(up - 0.1) * 24 * L;
+    capsule(ctx, [sx, sy, ex, ey], 5.4, near ? sleeve : shade(sleeve, -0.2));
+    capsule(ctx, [ex, ey, hx, hy], 4.6, near ? skinN : skinF);
+    claws(ctx, hx, hy, up - 0.1, near ? skinN : skinF);
+  };
+}
+function armsSwing(skinN, skinF) { // carrera: brazos que barren adelante y atrás
+  return (ctx, near, atk, sway, tl, cw) => {
+    const sx = near ? cw * 0.3 : -cw * 0.25, sy = -tl + 6;
+    const a = atk ? (near ? -0.9 : -0.6) : (near ? 1 : -1) * sway * 0.9;
+    const ex = sx + Math.sin(a + 0.3) * 22, ey = sy + Math.cos(a + 0.3) * 22;
+    const hx = ex + Math.sin(a + 1.5) * 20, hy = ey + Math.cos(a + 1.5) * 20 * (atk ? -0.3 : 1);
+    capsule(ctx, [sx, sy, ex, ey, hx, hy], 4.4, near ? skinN : skinF);
+    claws(ctx, hx, hy, Math.atan2(hy - ey, hx - ex), near ? skinN : skinF);
+  };
+}
+
+const ZPAL = {
+  walker: { skin: '#a6b496', skin2: '#7e8c70', shirt: '#9a8c72', pants: '#3e3c48', eye: '#f2ffb0', hair: '#2a2a26' },
+  runner: { skin: '#b8b090', skin2: '#8a8466', shirt: '#8a8466', pants: '#46404a', eye: '#ffe0a0', hair: '#3a2a1a' },
+  bloater: { skin: '#94a672', skin2: '#6e7e52', shirt: '#7a7a5a', pants: '#3a3a30', eye: '#d8ff6a' },
+  armored: { skin: '#9c9c8c', skin2: '#76766a', shirt: '#4a4640', pants: '#33333a', eye: '#ffd27a' },
+  forker: { skin: '#aa9678', skin2: '#86735a', shirt: '#8a6a4a', pants: '#3a4a5e', eye: '#ffb070' },
+  dynamiter: { skin: '#9aa092', skin2: '#76806e', shirt: '#5a4a3a', pants: '#3a3430', eye: '#ffd27a' },
+};
+
+// ------------------------------------------------------------------ ERRANTE (encorvado, ropa rasgada, brazos adelantados)
+function walker(ctx) {
+  const P = ZPAL.walker;
+  zHuman(ctx, {
+    ...P, hipY: 70, thigh: 34, shin: 34, legW: 6.2, stride: 0.42, lean: 0.32, torso: 50, chest: 17, waist: 13, head: 1, bareF: true, legRags: true, jaw: 0.25, scar: true,
+    arms: armsReach(P.skin, P.skin2, P.shirt),
+    torsoFx(c, tl, cw) { // chaleco abierto, desgarrón con costillas y sangre seca
+      cel(c, [-cw - 1, -tl * 0.5, -cw + 2, -tl - 1, -4, -tl - 1, -6, 4, -13, 4], '#2e2a2c', 2.2, 0);
+      cel(c, [cw - 6, -tl, cw + 1, -tl * 0.5, 13, 4, 7, 4], '#2e2a2c', 2.2, 0);
+      cel(c, [-1, -tl * 0.75, 8, -tl * 0.78, 9, -tl * 0.35, 0, -tl * 0.32], P.skin2, 1.8, 0);
+      c.strokeStyle = '#3a4234'; c.lineWidth = 1.4; c.beginPath(); for (let i = 0; i < 3; i++) { c.moveTo(1, -tl * 0.7 + i * 6); c.lineTo(8, -tl * 0.72 + i * 6); } c.stroke();
+      c.fillStyle = '#6a0e0c'; c.fillRect(9, -tl * 0.4, 4, 8);
+      const r = [-13, 2, 13, 2]; tatter(r, 13, 12, -13, 12, 5, 7, 3); cel(c, r, P.shirt, 2, 0);
+    },
+  });
 }
 
 // ------------------------------------------------------------------ CORREDOR (delgado, muy inclinado, zancada larga)
 function runner(ctx) {
-  const ph = (ZF / 4) * TAU, st = Math.sin(ph), sw = Math.cos(ph);
-  zLeg(ctx, -4, -70, -14 - st * 12, -38 + Math.max(0, st) * 6, -26 - st * 22, 0, ZPANTS, true);
-  zLeg(ctx, 4, -70, 14 + st * 12, -38 + Math.max(0, -st) * 6, 22 + st * 22, 0, shade(ZPANTS, 0.12), false);
-  ctx.save(); ctx.translate(0, -70); ctx.rotate(0.62);
-  limb(ctx, -6, -48, -26 - sw * 10, -24, 5, 4, ZSKIN2); clawHand(ctx, -30 - sw * 10, -20, -1, ZSKIN2);
-  const torso = [-12, -56, 13, -54, 12, -6, -10, -2];
-  zp(ctx, torso, ZSKIN2, 3, 3);
-  ctx.strokeStyle = '#2e3628'; ctx.lineWidth = 1.5; ctx.beginPath();
-  for (let i = 0; i < 4; i++) { ctx.moveTo(-8, -44 + i * 7); ctx.quadraticCurveTo(0, -47 + i * 7, 10, -43 + i * 7); } ctx.stroke();
-  // camisa hecha jirones colgando de un hombro
-  const shirt = [-14, -58, 6, -56, 2, -40];
-  tatter(shirt, 2, -40, -14, -18, 4, 7, 11); zp(ctx, shirt, ZSHIRT, 2.4, 0);
-  rags(ctx, -12, -4, 12, -6, 4, 9, ZPANTS, 9);
-  zhead(ctx, 8, -66, 0.92, 0.95, '#ffe0a0', ZSKIN);
-  poly(ctx, [12, -60, 22, -56, 16, -50], '#1a0806', 1.5, 0); // boca abierta en un alarido
-  limb(ctx, 8, -48, 32, -34 + sw * 8, 5, 4, ZSKIN); clawHand(ctx, 36, -32 + sw * 8, 1, ZSKIN);
+  const P = ZPAL.runner;
+  zHuman(ctx, {
+    ...P, hipY: 76, thigh: 38, shin: 38, legW: 5.4, stride: 0.8, lean: 0.62, torso: 46, chest: 13, waist: 10, head: 0.92, bareB: true, legRags: true, jaw: 0.6,
+    arms: armsSwing(P.skin, P.skin2),
+    torsoFx(c, tl, cw) { // torso descarnado con costillas y camisa colgando de un hombro
+      c.strokeStyle = '#4a4630'; c.lineWidth = 1.5; c.beginPath(); for (let i = 0; i < 4; i++) { c.moveTo(-cw + 3, -tl * 0.85 + i * 7); c.quadraticCurveTo(0, -tl * 0.9 + i * 7, cw - 2, -tl * 0.82 + i * 7); } c.stroke();
+      const s = [-cw - 2, -tl, 4, -tl - 1, -2, -tl * 0.55]; tatter(s, -2, -tl * 0.55, -cw - 3, -tl * 0.15, 3, 6, 11); cel(c, s, '#6a5a44', 2, 0);
+    },
+  });
+}
+
+// ------------------------------------------------------------------ HINCHADO (vientre de gas, piernas cortas)
+function bloater(ctx) {
+  const P = ZPAL.bloater;
+  zHuman(ctx, {
+    ...P, hipY: 54, thigh: 26, shin: 26, legW: 7.4, stride: 0.3, lean: 0.06, torso: 64, chest: 22, waist: 20, head: 0.82, jaw: 0.1,
+    arms: (c, near, atk, sway, tl, cw) => {
+      const sx = near ? cw * 0.5 : -cw * 0.4, sy = -tl + 8, up = atk ? -0.3 : 0.6 + (near ? sway : -sway) * 0.12;
+      const hx = sx + Math.cos(up) * 26, hy = sy + Math.sin(up) * 26;
+      capsule(c, [sx, sy, hx, hy], 5.6, near ? P.skin : P.skin2); claws(c, hx, hy, up, near ? P.skin : P.skin2);
+    },
+    torsoFx(c, tl, cw) { // panza que revienta la camisa, pústulas de gas
+      const bx = 8, by = -tl * 0.42;
+      c.save(); c.beginPath(); c.ellipse(bx, by, 34, 30, 0, 0, TAU); c.fillStyle = P.skin; c.fill(); c.clip();
+      c.fillStyle = shade(P.skin, -0.3); c.beginPath(); c.ellipse(bx - 18, by + 10, 30, 30, 0, 0, TAU); c.fill();
+      c.fillStyle = 'rgba(255,255,230,0.2)'; c.beginPath(); c.ellipse(bx + 14, by - 14, 10, 6, -0.5, 0, TAU); c.fill(); c.restore();
+      c.strokeStyle = INK; c.lineWidth = 2.8; c.beginPath(); c.ellipse(bx, by, 34, 30, 0, 0, TAU); c.stroke();
+      c.strokeStyle = '#5a6a3a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(bx - 6, by - 26); c.quadraticCurveTo(bx + 4, by - 6, bx - 4, by + 24); c.moveTo(bx + 10, by - 24); c.quadraticCurveTo(bx + 18, by, bx + 12, by + 22); c.stroke();
+      for (const [x, y, r] of [[bx - 10, by - 6, 4], [bx + 14, by + 8, 5], [bx + 2, by + 18, 3.4]]) { glow(c, x, y, r * 4, '#9dff3a', 0.65); circle(c, x, y, r, '#c8ff6a', 1.4); }
+      cel(c, [-cw, -tl, cw, -tl, cw - 6, -tl * 0.7, -cw + 4, -tl * 0.72], P.shirt, 2.2, 0.3); // jirón de camisa sobre los hombros
+    },
+  });
+}
+
+// ------------------------------------------------------------------ ACORAZADO (peto de hierro, olla por casco, puerta de horno por escudo)
+function armored(ctx) {
+  const P = ZPAL.armored;
+  zHuman(ctx, {
+    ...P, hipY: 68, thigh: 33, shin: 33, legW: 7.4, stride: 0.32, lean: 0.14, torso: 54, chest: 22, waist: 17, head: 1,
+    arms: (c, near, atk, sway, tl, cw) => {
+      const sx = near ? cw * 0.4 : -cw * 0.3, sy = -tl + 8;
+      if (near) { // sostiene la puerta de horno delante
+        const ex = sx + 14, ey = sy + 18, hx = ex + 14 + (atk ? 10 : 0), hy = ey - 4;
+        capsule(c, [sx, sy, ex, ey, hx, hy], 6, P.skin);
+        cel(c, [hx - 2, hy - 30, hx + 14, hy - 32, hx + 16, hy + 26, hx, hy + 28], '#4a4640', 2.8, 0.3);
+        for (const yy of [-20, 0, 18]) circle(c, hx + 7, hy + yy, 2.2, '#8a8478', 1);
+        c.fillStyle = 'rgba(150,70,30,0.45)'; c.fillRect(hx + 3, hy - 10, 8, 6);
+      } else { const up = atk ? -0.5 : 0.1 - sway * 0.08; const ex = sx + Math.cos(up) * 24, ey = sy + Math.sin(up) * 24 + 4; capsule(c, [sx, sy, ex, ey, ex + 22, ey - 2], 6, P.skin2); claws(c, ex + 22, ey - 2, 0, P.skin2); }
+    },
+    torsoFx(c, tl, cw) {
+      cel(c, [-cw + 2, -tl + 2, cw - 1, -tl + 4, cw + 1, -tl * 0.32, -cw, -tl * 0.3], '#6a665e', 2.6, 0.35); // peto
+      for (const [x, y] of [[-cw + 6, -tl + 8], [cw - 6, -tl + 8], [-cw + 6, -tl * 0.4], [cw - 6, -tl * 0.4]]) circle(c, x, y, 2.4, '#9a958a', 1);
+      c.fillStyle = 'rgba(140,60,24,0.4)'; c.fillRect(-6, -tl * 0.7, 12, 5);
+    },
+    hat(c) { cel(c, [-14, -10, 14, -12, 16, -2, -14, 0], '#4a4640', 2.4, 0.4); line(c, 14, -10, 26, -14, INK, 4); line(c, 14, -10, 26, -14, '#6a665e', 2); },
+  });
+}
+
+// ------------------------------------------------------------------ HORQUERO (granjero con horca: estocada al atacar)
+function forker(ctx) {
+  const P = ZPAL.forker;
+  zHuman(ctx, {
+    ...P, hipY: 72, thigh: 35, shin: 35, legW: 6.4, stride: 0.4, lean: 0.24, torso: 50, chest: 17, waist: 14, head: 1, legRags: true, jaw: 0.2,
+    arms: (c, near, atk, sway, tl, cw) => {
+      const thrust = atk ? 22 : sway * 2;
+      const hNear = [36 + thrust, -tl * 0.45], hFar = [10 + thrust, -tl * 0.5];
+      const sx = near ? cw * 0.35 : -cw * 0.3, sy = -tl + 6, h = near ? hNear : hFar;
+      if (!near) { // la horca va entre los dos brazos
+        c.lineCap = 'round'; const x0 = -30 + thrust, y0 = -tl * 0.2, x1 = 78 + thrust, y1 = -tl * 0.72;
+        c.strokeStyle = INK; c.lineWidth = 7; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+        c.strokeStyle = '#7a5430'; c.lineWidth = 3.6; c.stroke();
+        for (let k = -1; k <= 1; k++) { c.strokeStyle = INK; c.lineWidth = 4; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x1 + 18, y1 - 4 + k * 7); c.stroke(); c.strokeStyle = '#a8a8a0'; c.lineWidth = 1.8; c.stroke(); }
+      }
+      const ex = (sx + h[0]) / 2 - 2, ey = (sy + h[1]) / 2 + 10;
+      capsule(c, [sx, sy, ex, ey], 5.4, near ? P.shirt : shade(P.shirt, -0.2));
+      capsule(c, [ex, ey, h[0], h[1]], 4.6, near ? P.skin : P.skin2);
+      c.fillStyle = near ? P.skin : P.skin2; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.arc(h[0], h[1], 5.2, 0, TAU); c.fill(); c.stroke();
+    },
+    torsoFx(c, tl, cw) { // peto vaquero con tirantes
+      cel(c, [-cw + 3, -tl * 0.62, cw - 2, -tl * 0.6, cw, 6, -cw + 1, 6], P.pants, 2.2, 0.35);
+      line(c, -cw + 5, -tl * 0.6, -cw + 8, -tl, INK, 3.6); line(c, -cw + 5, -tl * 0.6, -cw + 8, -tl, P.pants, 2);
+      line(c, cw - 4, -tl * 0.6, cw - 6, -tl, INK, 3.6); line(c, cw - 4, -tl * 0.6, cw - 6, -tl, P.pants, 2);
+      circle(c, -cw + 5, -tl * 0.6, 1.8, '#c9a54a', 1); circle(c, cw - 4, -tl * 0.6, 1.8, '#c9a54a', 1);
+    },
+    hat(c) { // sombrero de paja roto
+      cel(c, [-20, -12, 22, -14, 18, -10, -18, -8], '#b89a5a', 2.2, 0.3);
+      const cr = [-10, -12, -8, -24, 8, -26, 12, -14]; cel(c, cr, '#a88a4a', 2.2, 0.35);
+      c.strokeStyle = 'rgba(60,40,10,0.6)'; c.lineWidth = 1; c.beginPath(); for (let i = 0; i < 4; i++) { c.moveTo(-6 + i * 4, -24); c.lineTo(-7 + i * 4, -14); } c.stroke();
+    },
+  });
+}
+
+// ------------------------------------------------------------------ DINAMITERO (minero con cartucho encendido en alto)
+function dynamiter(ctx) {
+  const P = ZPAL.dynamiter;
+  zHuman(ctx, {
+    ...P, hipY: 70, thigh: 34, shin: 34, legW: 6.2, stride: 0.5, lean: 0.2, torso: 50, chest: 17, waist: 13, head: 0.96, jaw: 0.35,
+    arms: (c, near, atk, sway, tl, cw) => {
+      const sx = near ? cw * 0.35 : -cw * 0.3, sy = -tl + 6;
+      if (near) { // brazo alzado con el cartucho
+        const ex = sx + 12, ey = sy - 18 - (atk ? 8 : 0), hx = ex + 6, hy = ey - 20 - (atk ? 8 : 0);
+        capsule(c, [sx, sy, ex, ey, hx, hy], 4.8, P.skin);
+        cel(c, [hx - 3, hy - 22, hx + 4, hy - 22, hx + 4, hy + 2, hx - 3, hy + 2], '#c4281c', 2, 0.3);
+        line(c, hx, hy - 22, hx + 3, hy - 30, '#d8c6a3', 1.6);
+        glow(c, hx + 3, hy - 31, atk ? 26 : 16, '#ffb02a', 1); star(c, hx + 3, hy - 31, atk ? 6 : 4, 6, '#ffe08a', 1);
+        c.fillStyle = P.skin; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.arc(hx, hy, 5, 0, TAU); c.fill(); c.stroke();
+      } else { const up = atk ? -0.4 : 0.15 - sway * 0.1, ex = sx + Math.cos(up) * 22, ey = sy + Math.sin(up) * 22 + 6; capsule(c, [sx, sy, ex, ey, ex + 20, ey], 4.6, P.skin2); claws(c, ex + 20, ey, 0, P.skin2); }
+    },
+    torsoFx(c, tl, cw) { // bandolera de cartuchos
+      c.save(); c.translate(0, -tl * 0.5); c.rotate(-0.7);
+      cel(c, [-tl * 0.6, -4, tl * 0.6, -4, tl * 0.6, 4, -tl * 0.6, 4], '#2a2420', 1.8, 0);
+      for (let i = -3; i <= 3; i++) cel(c, [i * 7 - 2.5, -6, i * 7 + 2.5, -6, i * 7 + 2.5, 6, i * 7 - 2.5, 6], '#a8281c', 1.4, 0);
+      c.restore();
+    },
+    hat(c) { // casco de minero con vela
+      cel(c, [-12, -12, -10, -22, 8, -24, 14, -14], '#5a4a2a', 2.4, 0.4);
+      cel(c, [-16, -12, 18, -14, 16, -10, -14, -9], '#4a3a20', 2, 0);
+      line(c, 6, -24, 6, -32, '#e8dcc0', 3); glow(c, 6, -34, 12, '#ffd27a', 1);
+    },
+  });
+}
+
+// ------------------------------------------------------------------ CUADRÚPEDOS (sabueso de tinta, mascotas perro/gato)
+// Anatomía lateral: pecho profundo, cintura recogida, cruz y grupa, patas delanteras (codo/muñeca) y traseras
+// (rodilla/corvejón), cuello, cráneo con hocico y mandíbula articulada. 4 fotogramas de galope + ataque.
+function quadLeg(ctx, x, y, phi, hind, far, len, w, fill, atk, front) {
+  let a = Math.sin(phi) * 0.55, lift = Math.max(0, Math.cos(phi));
+  if (atk) { a = front ? 0.95 : -0.75; lift = front ? 0.6 : 0; }
+  const c = far ? shade(fill, -0.22) : fill;
+  if (hind) {
+    const kx = x + Math.sin(a + 0.35) * len * 0.42, ky = y + Math.cos(a + 0.35) * len * 0.42;
+    const hx = kx + Math.sin(a - 0.75 - lift * 0.4) * len * 0.38, hy = ky + Math.cos(a - 0.75 - lift * 0.4) * len * 0.38;
+    const px = hx + Math.sin(a + 0.25) * len * 0.3, py = Math.min(0, hy + Math.cos(a + 0.25) * len * 0.3);
+    capsule(ctx, [x, y, kx, ky, hx, hy, px, py], w, c);
+    cel(ctx, [px - 3, py - 4, px + 8, py - 4, px + 9, py, px - 3, py], shade(c, -0.1), 1.8, 0);
+  } else {
+    const ex = x + Math.sin(a) * len * 0.45, ey = y + Math.cos(a) * len * 0.45;
+    const wx = ex + Math.sin(a - lift * 0.9) * len * 0.45, wy = ey + Math.cos(a - lift * 0.9) * len * 0.45;
+    const px = wx + 3, py = Math.min(0, wy + len * 0.08);
+    capsule(ctx, [x, y, ex, ey, wx, wy, px, py], w, c);
+    cel(ctx, [px - 3, py - 4, px + 8, py - 4, px + 9, py, px - 3, py], shade(c, -0.1), 1.8, 0);
+  }
+}
+function quadRig(ctx, f, o) {
+  const atk = f === 4, ph = (f / 4) * TAU, L = o.len || 1, H = o.height || 1;
+  const bob = atk ? -3 : -Math.abs(Math.sin(ph)) * 2.5;
+  ctx.save(); ctx.translate(0, bob); if (atk) ctx.rotate(0.08);
+  const sx = 24 * L, sy = -46 * H, hx = -30 * L, hy = -50 * H, legLen = 48 * H;
+  // patas lejanas
+  quadLeg(ctx, hx, hy, ph + Math.PI + 0.6, true, true, legLen, o.legW, o.body, atk, false);
+  quadLeg(ctx, sx, sy, ph + 0.6, false, true, legLen, o.legW, o.body, atk, true);
+  // cola
+  if (o.tail) o.tail(ctx, ph, L, H, atk);
+  // cuerpo: cruz, lomo, grupa, muslo, vientre recogido, pecho profundo
+  const body = [44 * L, -66 * H, 18 * L, -70 * H, -12 * L, -64 * H, -40 * L, -64 * H, -50 * L, -54 * H, -42 * L, -40 * H, -16 * L, -44 * H, 10 * L, -38 * H, 32 * L, -36 * H, 46 * L, -50 * H];
+  cel(ctx, body, o.body, 2.8, 0.45);
+  if (o.bodyFx) o.bodyFx(ctx, L, H);
+  // patas cercanas
+  quadLeg(ctx, hx + 4, hy + 2, ph + Math.PI, true, false, legLen, o.legW, o.body, atk, false);
+  quadLeg(ctx, sx + 4, sy + 2, ph, false, false, legLen, o.legW, o.body, atk, true);
+  // cuello y cabeza
+  const nx = 46 * L, ny = -64 * H, hdx = (atk ? 64 : 58) * L, hdy = (atk ? -66 : -76) * H;
+  cel(ctx, [nx - 10, ny + 12, nx - 4, ny - 6, hdx - 4, hdy - 8, hdx + 2, hdy + 6, nx + 6, ny + 14], o.body, 2.6, 0.4);
+  ctx.save(); ctx.translate(hdx, hdy);
+  const open = atk ? 1 : 0.1, mz = o.muzzle;
+  if (open > 0.2) cel(ctx, [4, 2, 6 + mz, 2, 6 + mz, 6 + open * 8, 4, 8], '#1a0606', 1.6, 0);
+  ctx.save(); ctx.translate(4, 4); ctx.rotate(open * 0.5); cel(ctx, [0, -2, mz + 2, -1, mz, 4, 2, 6], shade(o.head || o.body, -0.15), 2, 0.3);
+  if (o.fangs) { ctx.fillStyle = '#efe2c4'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(6 + i * 6, -1); ctx.lineTo(8 + i * 6, -6); ctx.lineTo(10 + i * 6, -1); ctx.fill(); } }
+  ctx.restore();
+  cel(ctx, [-8, 2, -8, -10, 0, -16, 10, -15, 14, -8, 14 + mz, -6, 16 + mz, -1, 10 + mz * 0.4, 4, 2, 6], o.head || o.body, 2.6, 0.42); // cráneo + hocico
+  if (o.fangs) { ctx.fillStyle = '#efe2c4'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(10 + i * 6, 3); ctx.lineTo(12 + i * 6, 9); ctx.lineTo(14 + i * 6, 3); ctx.fill(); } }
+  ctx.fillStyle = INK; ctx.beginPath(); ctx.ellipse(14 + mz, -3.5, 2.2, 1.8, 0, 0, TAU); ctx.fill(); // trufa
+  o.ears(ctx);
+  ctx.fillStyle = '#0a0605'; ctx.beginPath(); ctx.ellipse(6, -8, 3.4, 2.8, 0, 0, TAU); ctx.fill();
+  glow(ctx, 7, -8, 9, o.eye, 1); ctx.fillStyle = o.eye; ctx.fillRect(6, -9.5, 3, 2.4);
+  if (o.whiskers) { ctx.strokeStyle = 'rgba(239,226,196,0.75)'; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(12 + mz, -2); ctx.lineTo(26 + mz, -5); ctx.moveTo(12 + mz, 0); ctx.lineTo(26 + mz, 1); ctx.stroke(); }
+  ctx.restore();
+  if (o.front) o.front(ctx, hdx, hdy, L, H);
   ctx.restore();
 }
 
-// ------------------------------------------------------------------ HINCHADO (vientre de gas)
-function bloater(ctx) {
-  legsZ(ctx, CLOTH, 0);
-  const belly = [-36, -110, -10, -132, 26, -128, 44, -96, 40, -64, 10, -52, -26, -58, -42, -80];
-  blob(ctx, belly, '#6a7a5a', 3, 0.8);
-  hatchPoly(ctx, belly, 5, 'rgba(8,10,12,0.4)', 1, false, 0.5);
-  for (const [x, y] of [[-10, -96], [16, -80], [2, -70]]) { glow(ctx, x, y, 16, '#9dff3a', 0.6); circle(ctx, x, y, 4, '#b8ff6a', 1.5); }
-  ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.beginPath();
-  for (let i = 0; i < 6; i++) { ctx.moveTo(-20 + i * 8, -60); ctx.lineTo(-16 + i * 8, -54); }
-  ctx.moveTo(-22, -57); ctx.lineTo(24, -57); ctx.stroke();
-  limb(ctx, -34, -104, -48, -76, 7, 6, SKIN); clawHand(ctx, -50, -72, -1);
-  limb(ctx, 36, -106, 54, -86, 7, 6, SKIN); clawHand(ctx, 56, -82, 1);
-  zhead(ctx, 0, -140, 0.95, -0.2);
-}
-
-// ------------------------------------------------------------------ ACORAZADO (placas de hierro, olla por casco)
-function armored(ctx) {
-  legsZ(ctx, CLOTH, 2);
-  const torso = [-26, -126, 22, -122, 28, -94, 22, -70, -20, -72, -30, -98];
-  zp(ctx, torso, CLOTH2);
-  poly(ctx, [-22, -120, 18, -116, 20, -84, -20, -86], '#5a5650', 3, 0.8);
-  for (const [x, y] of [[-16, -114], [12, -112], [-16, -90], [14, -88]]) circle(ctx, x, y, 2.4, '#8a8478', 1);
-  ctx.fillStyle = 'rgba(120,60,30,0.5)'; ctx.fillRect(-10, -106, 14, 6);
-  rags(ctx, -20, -72, 24, -70, 5, 10, RAG, 13);
-  limb(ctx, -26, -120, -40, -84, 8, 7, SKIN); clawHand(ctx, -42, -80, -1);
-  limb(ctx, 22, -118, 46, -100, 8, 7, SKIN); clawHand(ctx, 50, -98, 1);
-  poly(ctx, [-50, -84, -40, -84, -40, -36, -50, -36], '#4a4640', 2.5, 0.5); // escudo de puerta de horno
-  zhead(ctx, 4, -136, 1, 0.2);
-  poly(ctx, [-14, -146, 20, -150, 22, -138, -14, -134], '#4a4640'); // olla-casco
-  line(ctx, 20, -146, 32, -150, INK, 4);
-}
-
-// ------------------------------------------------------------------ HORQUERO (horca improvisada)
-function forker(ctx) {
-  legsZ(ctx, CLOTH, -2);
-  const torso = [-22, -124, 20, -120, 24, -94, 18, -70, -18, -70, -26, -98];
-  zp(ctx, torso, '#46403a');
-  poly(ctx, [-10, -124, 10, -124, 4, -96, -4, -96], '#5a4a3a', 2, 0);
-  rags(ctx, -18, -70, 20, -70, 5, 12, RAG, 17);
-  // horca
-  line(ctx, -40, -40, 70, -140, INK, 7); line(ctx, -40, -40, 70, -140, '#6a4a2a', 3.5);
-  ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.beginPath();
-  for (let i = -1; i <= 1; i++) { ctx.moveTo(66 + i * 6, -136 - i * 2); ctx.lineTo(80 + i * 8, -156 - i * 4); }
-  ctx.stroke(); ctx.strokeStyle = '#8a8a82'; ctx.lineWidth = 2; ctx.stroke();
-  limb(ctx, -20, -118, -6, -90, 7, 6, SKIN); clawHand(ctx, -4, -86, 1);
-  limb(ctx, 18, -118, 36, -104, 7, 6, SKIN); clawHand(ctx, 38, -102, 1);
-  zhead(ctx, -2, -136, 1, -0.35);
-  poly(ctx, [-20, -146, 16, -150, 10, -158, -12, -156], '#5a4a2a', 2.5, 0.5); // sombrero de paja roto
-}
-
-// ------------------------------------------------------------------ DINAMITERO (mecha encendida)
-function dynamiter(ctx) {
-  legsZ(ctx, CLOTH, 6);
-  const torso = [-20, -124, 22, -118, 26, -92, 20, -70, -16, -72, -24, -100];
-  zp(ctx, torso, CLOTH2);
-  for (let i = 0; i < 4; i++) poly(ctx, [-14 + i * 7, -116, -8 + i * 7, -116, -8 + i * 7, -88, -14 + i * 7, -88], '#a8281c', 2, 0.3);
-  poly(ctx, [-18, -104, 20, -104, 20, -98, -18, -98], '#2a2a2a', 0, 0);
-  line(ctx, 0, -116, 6, -128, '#c8b890', 1.5);
-  glow(ctx, 6, -130, 16, '#ffb02a', 1);
-  rags(ctx, -16, -72, 22, -70, 5, 10, RAG, 19);
-  limb(ctx, -20, -118, -44, -110, 6, 5, SKIN); clawHand(ctx, -48, -108, -1);
-  limb(ctx, 20, -116, 46, -126, 6, 5, SKIN); clawHand(ctx, 50, -128, 1);
-  zhead(ctx, 10, -134, 0.95, 0.6, '#ffd27a');
-}
-
-
-// ------------------------------------------------------------------ SABUESO DE TINTA (vista lateral, flaco y veloz)
+// ------------------------------------------------------------------ SABUESO DE TINTA (zig-zag, mordisco)
 function hound(ctx) {
-  const ink = '#1a1c22', ink2 = '#2a2e36';
-  limb(ctx, -40, -46, -58, -4, 6, 4, ink); limb(ctx, 22, -48, 16, -4, 6, 4, ink);
-  const body = [-62, -54, -36, -80, 10, -86, 44, -76, 54, -58, 32, -40, -24, -40, -54, -44];
-  blob(ctx, body, ink2, 3, 0.6);
-  hatchPoly(ctx, body, 4, 'rgba(0,0,0,0.55)', 1, true, 0.3);
-  // costillas al aire
-  ctx.strokeStyle = '#8a8e96'; ctx.lineWidth = 1.6; ctx.beginPath();
-  for (let i = 0; i < 5; i++) { const x = -20 + i * 9; ctx.moveTo(x, -78); ctx.quadraticCurveTo(x + 5, -62, x, -46); } ctx.stroke();
-  // lomo erizado de tinta
-  const sp = [];
-  for (let i = 0; i <= 10; i++) { const t = i / 10, x = -60 + t * 104, y = -58 - Math.sin(t * Math.PI) * 28; sp.push(x, y + 6, x + 4, y - 12 - (i % 2) * 7); }
-  sp.push(46, -64, -58, -54);
-  poly(ctx, sp, '#101216', 2.5, 0);
-  limb(ctx, -30, -44, -38, -4, 7, 5, ink2); limb(ctx, 34, -48, 44, -4, 7, 5, ink2);
-  // cabeza alargada con fauces y goteo de tinta
-  blob(ctx, [40, -96, 58, -108, 86, -100, 104, -88, 96, -78, 70, -76, 50, -70], ink2, 3, 0.6);
-  poly(ctx, [54, -106, 50, -124, 62, -110], '#101216', 2.5, 0); poly(ctx, [66, -106, 68, -122, 74, -104], '#101216', 2.5, 0);
-  poly(ctx, [70, -80, 100, -82, 96, -70, 72, -68], '#050506', 2, 0);
-  ctx.fillStyle = '#d8d8d0'; for (let i = 0; i < 5; i++) { const x = 73 + i * 5; ctx.beginPath(); ctx.moveTo(x, -80); ctx.lineTo(x + 2, -74); ctx.lineTo(x + 4, -80); ctx.fill(); }
-  glow(ctx, 70, -96, 12, '#7fa8ff', 1); ctx.fillStyle = '#d8e8ff'; ctx.fillRect(67, -98, 6, 3);
-  ctx.fillStyle = '#050506'; for (const [x, l] of [[80, 16], [90, 10]]) { ctx.beginPath(); ctx.ellipse(x, -64 + l / 2, 2.2, l / 2, 0, 0, Math.PI * 2); ctx.fill(); }
-  poly(ctx, [-58, -56, -88, -74, -94, -66, -64, -46], '#101216', 2.5, 0);
+  quadRig(ctx, ZF, {
+    body: '#2c3038', head: '#343842', eye: '#9ac8ff', legW: 4.4, muzzle: 18, fangs: true, len: 1.05,
+    ears(c) { cel(c, [-4, -12, -2, -28, 6, -14], '#1e2026', 2, 0); },
+    tail(c, ph, L, H) { capsule(c, [-48 * L, -58 * H, -66 * L, -70 * H + Math.sin(ph) * 6, -86 * L, -66 * H + Math.sin(ph) * 8], 3, '#2c3038'); },
+    bodyFx(c, L, H) { // costillas al aire y lomo erizado
+      c.strokeStyle = '#8a8e96'; c.lineWidth = 1.6; c.beginPath(); for (let i = 0; i < 4; i++) { const x = (-2 + i * 8) * L; c.moveTo(x, -64 * H); c.quadraticCurveTo(x + 5, -52 * H, x, -40 * H); } c.stroke();
+      c.fillStyle = '#101216'; c.beginPath(); for (let i = 0; i <= 8; i++) { const x = (-40 + i * 10) * L, y = -64 * H - Math.sin((i / 8) * Math.PI) * 6; c.moveTo(x - 3, y + 2); c.lineTo(x + 1, y - 9 - (i % 2) * 4); c.lineTo(x + 4, y + 2); } c.fill();
+    },
+    front(c, hx, hy) { c.fillStyle = '#0a0605'; for (const [x, l] of [[hx + 10, 12], [hx + 18, 8]]) { c.beginPath(); c.ellipse(x, hy + 10 + l / 2, 1.8, l / 2, 0, 0, TAU); c.fill(); } }, // goteo de tinta
+  });
+}
+
+// ------------------------------------------------------------------ ABOMINACIÓN (caparazón blindado, cuatro patas, escupe bilis)
+function abomination(ctx) {
+  const atk = ZF === 4, ph = (ZF / 4) * TAU;
+  for (const [x, o, far] of [[-56, 0, 1], [26, Math.PI, 1], [-40, Math.PI, 0], [42, 0, 0]]) {
+    const a = atk ? 0 : Math.sin(ph + o) * 0.4, kx = x + Math.sin(a) * 16 - 10, ky = -26, fx = x + Math.sin(a) * 26, fy = 0;
+    capsule(ctx, [x, -44, kx, ky, fx, fy - 4], 7.5, far ? '#22261f' : '#2e342c');
+    cel(ctx, [fx - 10, -8, fx + 10, -8, fx + 12, 0, fx - 12, 0], '#1a1c1a', 2, 0);
+  }
+  const shell = [-84, -50, -70, -110, -30, -140, 30, -142, 72, -112, 88, -52, 50, -36, -50, -36];
+  cel(ctx, shell, '#4a4e48', 3.2, 0.45);
+  ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.beginPath();
+  ctx.moveTo(-60, -116); ctx.quadraticCurveTo(0, -90, 62, -118); ctx.moveTo(-76, -76); ctx.quadraticCurveTo(0, -56, 80, -78); ctx.moveTo(0, -142); ctx.lineTo(0, -40); ctx.stroke();
+  for (const [x, y] of [[-40, -120], [36, -122], [-56, -84], [56, -86], [-20, -66], [22, -66]]) circle(ctx, x, y, 3.2, '#9a9e96', 1.2);
+  // cabeza baja con fauces (se abren al escupir)
+  ctx.save(); ctx.translate(58, -54);
+  if (atk) cel(ctx, [-6, 2, 30, -2, 32, 22, -4, 18], '#120606', 2, 0);
+  cel(ctx, [-12, -20, 10, -26, 30, -16, 34, -4, 20, 2, -8, 4], '#5a6058', 3, 0.4);
+  ctx.save(); ctx.translate(-4, 4); ctx.rotate(atk ? 0.45 : 0.05); cel(ctx, [0, 0, 32, -2, 30, 10, 4, 12], '#4a5048', 2.6, 0.3); ctx.restore();
+  ctx.fillStyle = '#d8d0b8'; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(i * 6, 2); ctx.lineTo(i * 6 + 3, 8); ctx.lineTo(i * 6 + 6, 2); ctx.fill(); }
+  for (const x of [6, 18]) { glow(ctx, x, -12, 10, '#b89aff', 1); ctx.fillStyle = '#e8dcff'; ctx.fillRect(x - 3, -14, 6, 3); }
+  if (atk) { glow(ctx, 34, 8, 24, '#7a5aff', 0.9); }
+  ctx.fillStyle = '#0a0a10'; for (const [x, l] of [[8, 18], [20, 12]]) { ctx.beginPath(); ctx.ellipse(x, 12 + l / 2, 2.4, l / 2, 0, 0, TAU); ctx.fill(); }
+  ctx.restore();
 }
 
 // ------------------------------------------------------------------ ARAÑA DE CRIPTA (enjambre)
@@ -2388,24 +2644,6 @@ function spider(ctx) {
       for (const [x, y] of [[22, -44], [24, -38], [30, -46], [35, -45], [26, -34], [32, -34]]) { ctx.fillStyle = '#ff4a3a'; ctx.beginPath(); ctx.arc(x, y, 1.6, 0, TAU); ctx.fill(); }
     }
   }
-}
-
-// ------------------------------------------------------------------ ABOMINACIÓN (caparazón blindado, escupe bilis de tinta)
-function abomination(ctx) {
-  for (const [x1, x2] of [[-60, -78], [-30, -36], [30, 34], [60, 76]]) { limb(ctx, x1, -40, x2, -2, 10, 7, '#2a2e2a'); poly(ctx, [x2 - 8, -6, x2 + 8, -6, x2 + 10, 2, x2 - 10, 2], '#1a1c1a', 2, 0); }
-  const shell = [-84, -50, -70, -110, -30, -140, 30, -142, 72, -112, 88, -52, 50, -36, -50, -36];
-  blob(ctx, shell, '#3a3e3a', 3.5, 0.8);
-  hatchPoly(ctx, shell, 5, 'rgba(0,0,0,0.5)', 1.1, true, 0.4);
-  // placas del caparazón con remaches
-  ctx.strokeStyle = INK; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(-60, -116); ctx.quadraticCurveTo(0, -90, 62, -118); ctx.moveTo(-76, -76); ctx.quadraticCurveTo(0, -56, 80, -78); ctx.moveTo(0, -142); ctx.lineTo(0, -40); ctx.stroke();
-  for (const [x, y] of [[-40, -120], [36, -122], [-56, -84], [56, -86], [-20, -66], [22, -66]]) circle(ctx, x, y, 3.2, '#8a8e86', 1.2);
-  // cabeza baja con fauces abiertas goteando tinta
-  blob(ctx, [-30, -54, -20, -74, 20, -74, 30, -54, 18, -30, -18, -30], '#4a5048', 3, 0.6);
-  poly(ctx, [-18, -50, 18, -50, 14, -34, -14, -34], '#050506', 2, 0);
-  ctx.fillStyle = '#d0ccb8'; for (let i = -14; i <= 10; i += 6) { ctx.beginPath(); ctx.moveTo(i, -50); ctx.lineTo(i + 3, -42); ctx.lineTo(i + 6, -50); ctx.fill(); }
-  for (const x of [-10, 10]) { glow(ctx, x, -64, 10, '#9a7aff', 1); ctx.fillStyle = '#e0d0ff'; ctx.fillRect(x - 3, -66, 6, 3); }
-  ctx.fillStyle = '#0a0a10'; for (const [x, l] of [[-6, 22], [4, 30], [12, 16]]) { ctx.beginPath(); ctx.ellipse(x, -34 + l / 2, 2.6, l / 2, 0, 0, Math.PI * 2); ctx.fill(); }
 }
 
 // ------------------------------------------------------------------ JEFES DEL OESTE GÓTICO
@@ -2648,14 +2886,16 @@ function beast(ctx) {
 const DRAW_Z = { walker, runner, bloater, armored, forker, dynamiter, hound, spider, abomination, foreman, faceless, beast, plague, spawn };
 
 const Z_BOX = {
-  walker: { w: 210, h: 190, cy: 0.9, s: 0.31 }, runner: { w: 200, h: 170, cy: 0.9, s: 0.31 }, bloater: { w: 200, h: 190, cy: 0.9, s: 0.32 },
-  armored: { w: 200, h: 190, cy: 0.9, s: 0.32 }, forker: { w: 240, h: 200, cy: 0.9, s: 0.3 }, dynamiter: { w: 200, h: 190, cy: 0.9, s: 0.3 },
+  walker: { w: 210, h: 190, cy: 0.9, s: 0.31 }, runner: { w: 200, h: 170, cy: 0.9, s: 0.31 }, bloater: { w: 220, h: 190, cy: 0.9, s: 0.32 },
+  armored: { w: 200, h: 190, cy: 0.9, s: 0.32 }, forker: { w: 260, h: 200, cy: 0.9, s: 0.3 }, dynamiter: { w: 210, h: 210, cy: 0.9, s: 0.3 },
   hound: { w: 230, h: 150, cy: 0.9, s: 0.3 }, spider: { w: 180, h: 110, cy: 0.86, s: 0.31 }, abomination: { w: 200, h: 170, cy: 0.9, s: 0.62 },
   foreman: { w: 300, h: 330, cy: 0.94, s: 0.56 }, plague: { w: 280, h: 300, cy: 0.94, s: 0.56 }, spawn: { w: 360, h: 300, cy: 0.94, s: 0.58 },
   faceless: { w: 300, h: 320, cy: 0.94, s: 0.58 }, beast: { w: 300, h: 340, cy: 0.94, s: 0.56 },
 };
 // tipos con fotogramas de animación (marcha)
-const Z_ANIM = { walker: 4, runner: 4, spider: 4 };
+const Z_ANIM = { walker: 4, runner: 4, bloater: 4, armored: 4, forker: 4, dynamiter: 4, hound: 4, spider: 4, abomination: 4 };
+// tipos con fotograma de ataque (índice 4): zarpazo, mordisco, estocada, mecha o escupitajo
+const Z_ATK = { walker: 1, runner: 1, bloater: 1, armored: 1, forker: 1, dynamiter: 1, hound: 1, abomination: 1 };
 
 function drawZombie(ctx, type, detail = 0, seed = 77, frame = 0) {
   beginArt(seed, detail);
@@ -2664,12 +2904,114 @@ function drawZombie(ctx, type, detail = 0, seed = 77, frame = 0) {
   ZF = 0;
 }
 
+// ---- src/art/petArt.js
+// Mascotas en tinta con anatomía 2D legible: sabueso espectral y gato negro (rig cuadrúpedo compartido con la
+// horda) y cuervo/halcón (rig de ave). Mirando a la derecha, suelo en y = 0.
+// Fotogramas: 0–3 galope/aleteo · 4 ataque (mordisco, zarpazo o picado). tier 0–2 añade detalles.
+
+
+
+function petHound(ctx, f, tier) {
+  glow(ctx, 0, -46, 64, '#9ac8ff', 0.3);
+  quadRig(ctx, f, {
+    body: '#b4c8de', head: '#c4d6ea', eye: '#e8f6ff', legW: 4.8, muzzle: 15, fangs: f === 4, len: 0.95, height: 0.86,
+    ears(c) { cel(c, [-6, -12, -4, -26, 4, -14], '#8aa2bc', 2, 0); },
+    tail(c, ph, L, H) { // cola de jirones espectrales
+      c.globalAlpha = 0.75; capsule(c, [-48 * L, -58 * H, -64 * L, -66 * H + Math.sin(ph) * 6, -80 * L, -60 * H + Math.sin(ph) * 8], 3.4, '#a8c0d8'); c.globalAlpha = 1;
+    },
+    bodyFx(c, L, H) {
+      c.strokeStyle = 'rgba(40,60,90,0.45)'; c.lineWidth = 1.3; c.beginPath(); for (let i = 0; i < 3; i++) { const x = (-4 + i * 9) * L; c.moveTo(x, -64 * H); c.quadraticCurveTo(x + 4, -52 * H, x, -42 * H); } c.stroke();
+      if (tier >= 1) cel(c, [36 * L, -62 * H, 46 * L, -52 * H, 30 * L, -46 * H], '#9a140e', 1.6, 0); // pañuelo de Silas
+    },
+    front(c, hx, hy) { if (tier >= 2) for (let i = 0; i < 3; i++) glow(c, -30 + i * 24, -74 - i * 3, 12, '#ffb347', 0.5); },
+  });
+}
+
+function petCat(ctx, f, tier) {
+  quadRig(ctx, f, {
+    body: '#24222c', head: '#2c2a36', eye: '#d8ff6a', legW: 3.6, muzzle: 6, fangs: f === 4, len: 0.72, height: 0.72, whiskers: true,
+    ears(c) { cel(c, [-6, -12, -6, -26, 3, -15], '#1c1a22', 2, 0); cel(c, [4, -15, 10, -27, 12, -13], '#1c1a22', 2, 0); c.fillStyle = '#7a2a3a'; c.beginPath(); c.moveTo(-4, -14); c.lineTo(-4, -22); c.lineTo(0, -15); c.fill(); },
+    tail(c, ph, L, H, atk) { // cola alzada en signo de interrogación
+      capsule(c, [-48 * L, -56 * H, -62 * L, -72 * H, -60 * L, -96 * H + Math.sin(ph) * 3, -48 * L, -102 * H], 3, '#24222c');
+    },
+    bodyFx(c, L, H) {
+      c.fillStyle = 'rgba(200,190,255,0.16)'; c.beginPath(); c.ellipse(-6 * L, -64 * H, 18 * L, 3, -0.05, 0, TAU); c.fill();
+      // collar con naipe de picas (Maeve)
+      c.strokeStyle = '#9a140e'; c.lineWidth = 3; c.beginPath(); c.moveTo(40 * L, -66 * H); c.lineTo(46 * L, -48 * H); c.stroke();
+      cel(c, [42 * L, -50 * H, 50 * L, -50 * H, 50 * L, -38 * H, 42 * L, -38 * H], '#efe2c4', 1.4, 0);
+      c.fillStyle = INK; c.font = 'bold 8px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('♠', 46 * L, -44 * H);
+    },
+    front(c, hx, hy) { if (tier >= 2) { glow(c, hx + 2, hy - 22, 16, '#e07a3a', 0.6); star(c, hx + 2, hy - 22, 6, 5, '#ffd27a', 1.2); } },
+  });
+}
+
+// ------------------------------------------------------------------ AVES (cuervo y halcón)
+// Cuerpo en gota, cabeza con pico propio, alas con primarias separadas y cola en abanico.
+// Aleteo: arriba · medio · abajo · medio. Ataque: picado con alas plegadas y garras adelante.
+function petWing(ctx, rot, fill, far, span) {
+  ctx.save(); ctx.translate(2, -58); ctx.rotate(rot); ctx.scale(span, span);
+  const w = [0, 0, 8, -8, 6, -26, -2, -44, -8, -46, -10, -38, -16, -40, -17, -32, -22, -32, -21, -22, -24, -18, -18, -8, -10, -2];
+  cel(ctx, w, far ? shade(fill, -0.25) : fill, 2.4, 0.35);
+  ctx.strokeStyle = 'rgba(10,6,5,0.55)'; ctx.lineWidth = 1.1; ctx.beginPath();
+  ctx.moveTo(2, -6); ctx.lineTo(-6, -40); ctx.moveTo(0, -4); ctx.lineTo(-14, -34); ctx.moveTo(-2, -2); ctx.lineTo(-19, -24); ctx.stroke();
+  ctx.restore();
+}
+function birdRig(ctx, f, o) {
+  const atk = f === 4, rot = atk ? 1.45 : [-0.35, 0.55, 1.5, 0.55][f];
+  ctx.save(); if (atk) { ctx.translate(6, 8); ctx.rotate(0.35); }
+  petWing(ctx, rot - 0.25, o.wing, true, o.span);
+  cel(ctx, [-30, -52, -50, -60, -54, -50, -50, -44, -30, -46], o.tail, 2.2, 0.3); // cola en abanico
+  cel(ctx, [-32, -50, -16, -62, 8, -64, 22, -58, 24, -48, 10, -40, -12, -40], o.body, 2.6, 0.45);
+  if (o.chest) { ctx.save(); ctx.beginPath(); ctx.ellipse(10, -48, 12, 7, 0, 0, TAU); ctx.fillStyle = o.chest; ctx.fill(); ctx.restore(); if (o.bars) { ctx.strokeStyle = 'rgba(60,30,10,0.55)'; ctx.lineWidth = 1.2; ctx.beginPath(); for (let i = 0; i < 4; i++) { ctx.moveTo(2 + i * 4, -54); ctx.lineTo(1 + i * 4, -44); } ctx.stroke(); } }
+  // garras: recogidas en vuelo, extendidas al atacar
+  const lx = atk ? 26 : 2, ly = atk ? -34 : -36;
+  capsule(ctx, [0, -42, lx, ly], 1.6, o.feet); capsule(ctx, [8, -42, lx + 8, ly + 2], 1.6, o.feet);
+  if (atk) for (const x of [lx, lx + 8]) { ctx.strokeStyle = INK; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x, ly); ctx.lineTo(x + 5, ly + 4); ctx.moveTo(x, ly); ctx.lineTo(x + 2, ly + 6); ctx.stroke(); }
+  // cabeza y pico
+  cel(ctx, [16, -60, 20, -72, 32, -74, 40, -66, 36, -56, 24, -54], o.head, 2.4, 0.4);
+  if (o.mask) cel(ctx, [24, -68, 38, -70, 37, -64, 25, -62], o.mask, 0, 0);
+  cel(ctx, o.beak, o.beakCol, 2, 0.3);
+  ctx.fillStyle = '#0a0605'; ctx.beginPath(); ctx.arc(31, -67, 2.6, 0, TAU); ctx.fill();
+  glow(ctx, 31, -67, 7, o.eye, 1); ctx.fillStyle = o.eye; ctx.fillRect(30.5, -68.5, 2, 2);
+  petWing(ctx, rot, o.wing, false, o.span);
+  if (o.extra) o.extra(ctx);
+  ctx.restore();
+}
+function petCrow(ctx, f, tier) {
+  birdRig(ctx, f, {
+    body: '#1a1a24', head: '#20202a', wing: '#24242e', tail: '#14141c', feet: '#3a3a40', eye: '#ff4a3a', span: 0.95,
+    beak: [38, -70, 56, -66, 38, -62], beakCol: '#3e3e46',
+    extra(c) {
+      if (tier >= 1) { c.strokeStyle = '#c8a24a'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(22, -56); c.lineTo(28, -46); c.stroke(); circle(c, 28, -44, 2.4, '#c8a24a', 1); } // relicario del poeta
+      if (tier >= 2) glow(c, 0, -56, 40, '#cfd8e6', 0.45);
+    },
+  });
+}
+function petHawk(ctx, f, tier) {
+  birdRig(ctx, f, {
+    body: '#9a6a3c', head: '#b88452', wing: '#8a5a30', tail: '#7a4a24', feet: '#e8c040', eye: '#ffd23a', span: 1.1, chest: '#e8d8b0', bars: true,
+    beak: [37, -71, 48, -67, 46, -60, 39, -62], beakCol: '#e8c040', mask: '#3a2010',
+    extra(c) {
+      if (tier >= 1) cel(c, [20, -74, 28, -76, 28, -70, 22, -68], '#9a140e', 1, 0); // capucha de cetrería
+      if (tier >= 2) glow(c, 0, -56, 44, '#ff8a3a', 0.45);
+    },
+  });
+}
+
+const PET_DRAW = { hound: petHound, cat: petCat, crow: petCrow, hawk: petHawk };
+function drawPet(ctx, kind, frame = 0, tier = 0) { PET_DRAW[kind](ctx, frame, tier); }
+
 // ---- src/art/worldArt.js
 // Mundo en tinta: suelos por mapa, atrezo, trampas, coberturas por fases y refugio a defender.
 
 
 
+// Los suelos se generan una sola vez por mapa/zona y se reutilizan en cada partida (caché).
+const GROUND_CACHE = new Map();
 function makeGround(mapId, T = MAPS[mapId]) {
+  const gk = mapId + '|' + T.ground + T.g2 + T.g3;
+  const cached = GROUND_CACHE.get(gk);
+  if (cached) return cached;
   const S = 512;
   const c = makeCanvas(S, S), ctx = c.getContext('2d');
   const r = makeRng(mapId.length * 977 + 31);
@@ -2710,6 +3052,7 @@ function makeGround(mapId, T = MAPS[mapId]) {
     for (let k = 0; k < w; k += 4) { ctx.moveTo(x + k, y); ctx.lineTo(x + k + 10, y + 10); }
     ctx.stroke();
   }
+  GROUND_CACHE.set(gk, c);
   return c;
 }
 
@@ -3217,7 +3560,7 @@ function renderPage(canvas, panels, hero, pal, opts = {}) {
   const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   // papel envejecido
   ctx.fillStyle = '#efe2c4'; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = 'rgba(120,80,30,0.08)'; for (let i = 0; i < 600; i++) ctx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+  ctx.fillStyle = grainPattern(ctx, 'rgba(120,80,30,0.08)', 14); ctx.fillRect(0, 0, W, H); // grano cacheado
   const m = Math.max(10, W * 0.02), gut = Math.max(5, W * 0.008);
   const portrait = H > W * 1.05;
   const lay = portrait ? layoutPortrait(panels.length) : LAYOUTS_L[Math.min(4, panels.length)];
@@ -3305,52 +3648,13 @@ function renderPulpCover(canvas, d, W, H) {
   });
   if (d.stamp) stamp(ctx, d.stamp, W * 0.74, H * 0.86, Math.min(W, H) * 0.06, '#f2d23a', -0.2);
   // desgaste del papel
-  ctx.fillStyle = 'rgba(240,220,180,0.08)'; for (let i = 0; i < 500; i++) ctx.fillRect(r() * W, r() * H, 2, 2);
+  ctx.fillStyle = grainPattern(ctx, 'rgba(240,220,180,0.08)', 28); ctx.fillRect(0, 0, W, H); // grano cacheado
   ctx.lineWidth = 6; ctx.strokeStyle = '#120a06'; ctx.strokeRect(3, 3, W - 6, H - 6);
 }
 
 // Pinta una escena suelta (portada, retratos de dossier).
 function paintScene(ctx, scene, x, y, w, h, hero, pal) {
   (SCENES[scene] || SCENES.town)(ctx, x, y, w, h, hero, pal);
-}
-
-// ---- src/data/poker.js
-// Naipes de tinta: la horda los suelta al morir. Al reunir 5 se evalúa la mano de póker y la jugada
-// desata una "ráfaga de furia" pasiva y temporal. Baraja corta (8 a As) para que las jugadas sean alcanzables.
-
-const RANKS = ['8', '9', '10', 'J', 'Q', 'K', 'A'];
-const SUITS = ['♠', '♥', '♦', '♣'];
-const RED = [false, true, true, false];
-
-// Efectos multiplicativos/aditivos de cada furia.
-const FURIES = {
-  PAREJA: { name: 'Pareja', label: 'FURIA DE LA PAREJA', time: 8, rate: 1.25, color: '#e8dcc0', desc: '+25% cadencia' },
-  DOBLE: { name: 'Doble Pareja', label: 'DOBLE FURIA', time: 10, rate: 1.25, dmg: 1.2, color: '#c8d8ff', desc: '+25% cadencia · +20% daño' },
-  TRIO: { name: 'Trío', label: 'FURIA DEL TRÍO', time: 10, dmg: 1.45, speed: 1.15, color: '#ffcf6a', desc: '+45% daño · +15% velocidad' },
-  ESCALERA: { name: 'Escalera', label: 'FURIA DE LA ESCALERA', time: 12, pierce: 3, range: 1.3, speed: 1.25, color: '#9dff6a', desc: '+3 perforación · +30% alcance · +25% velocidad' },
-  COLOR: { name: 'Color', label: 'FURIA DEL COLOR', time: 8, crit: 1, color: '#ff6a8a', desc: 'Todos los disparos son críticos' },
-  FULL: { name: 'Full', label: '¡FULL! FURIA TOTAL', time: 12, dmg: 1.5, rate: 1.4, reload: 0, color: '#ffb347', desc: '+50% daño · +40% cadencia · recarga instantánea' },
-  POKER: { name: 'Póker', label: '¡PÓKER DE MUERTOS!', time: 8, dmg: 2, invuln: true, explode: 70, color: '#d0a8ff', desc: 'Daño x2 · invulnerable · balas explosivas' },
-};
-
-function evaluateHand(hand) {
-  const counts = new Array(RANKS.length).fill(0), suits = new Array(4).fill(0);
-  for (const c of hand) { counts[c.r]++; suits[c.s]++; }
-  const groups = counts.filter((n) => n > 0).sort((a, b) => b - a);
-  const flush = hand.length === 5 && suits.some((n) => n === 5);
-  let straight = false;
-  if (hand.length === 5 && groups.length === 5) {
-    const rs = hand.map((c) => c.r).sort((a, b) => a - b);
-    straight = rs[4] - rs[0] === 4;
-  }
-  if (groups[0] === 4) return 'POKER';
-  if (groups[0] === 3 && groups[1] === 2) return 'FULL';
-  if (flush) return 'COLOR';
-  if (straight) return 'ESCALERA';
-  if (groups[0] === 3) return 'TRIO';
-  if (groups[0] === 2 && groups[1] === 2) return 'DOBLE';
-  if (groups[0] === 2) return 'PAREJA';
-  return null;
 }
 
 // ---- src/art/cardArt.js
@@ -3588,10 +3892,16 @@ function miniCard(card, size, dpr) {
   ctx.save(); rr(ctx, 0, 0, W, H, W * 0.08); ctx.clip(); material(ctx, W, H, card.r, rnd, 0); ctx.restore();
   const m = W * 0.1;
   ctx.save(); archPath(ctx, m, m, W - m * 2, H * 0.7); ctx.fillStyle = card.r === 4 ? '#050302' : '#140c08'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = card.r === 4 ? '#b86830' : INK; ctx.stroke(); ctx.restore();
-  ctx.font = `${Math.round(W * 0.48)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
-  ctx.fillText(card.icon, W / 2, m + H * 0.4);
-  ctx.font = `bold ${Math.round(W * 0.14)}px "${FB}", monospace`; ctx.fillStyle = card.r === 4 ? '#ff9a3a' : card.r === 1 || card.r === 2 ? '#1a0e06' : RARITY[card.r].text;
-  ctx.fillText(card.name.split(' ')[0].slice(0, 9), W / 2, H - m * 1.2);
+  ctx.font = `${Math.round(W * 0.5)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+  ctx.fillText(card.icon, W / 2, m + H * 0.36);
+  // banda inferior oscura con el nombre en el color de su rareza: legible sobre cualquier material
+  const bh = Math.round(H * 0.17), by = H - bh - m * 0.55;
+  ctx.fillStyle = 'rgba(10,6,5,0.86)'; ctx.fillRect(m * 0.55, by, W - m * 1.1, bh);
+  ctx.font = `bold ${Math.round(W * 0.15)}px "${FB}", monospace`; ctx.fillStyle = RARITY[card.r].glow;
+  const nm = card.name.replace(/^(El|La|Los|Las|De|Del) /, '').split(' ')[0].slice(0, 8).toUpperCase();
+  ctx.fillText(nm, W / 2, by + bh / 2 + 1);
+  // gema de rareza en lo alto del arco
+  ctx.save(); ctx.translate(W / 2, m * 0.9); ctx.rotate(Math.PI / 4); ctx.fillStyle = RARITY[card.r].glow; ctx.fillRect(-W * 0.06, -W * 0.06, W * 0.12, W * 0.12); ctx.lineWidth = 1.2; ctx.strokeStyle = INK; ctx.strokeRect(-W * 0.06, -W * 0.06, W * 0.12, W * 0.12); ctx.restore();
   penBorder(ctx, 1, 1, W - 2, H - 2, W * 0.08, card.id.length * 5, 2.2);
   mini.set(key, c);
   return c;
@@ -3615,67 +3925,6 @@ function pokerFace(c, w, dpr) {
   penBorder(x, 1, 1, w - 2, h - 2, 4, c.r * 7 + c.s, 1.8);
   faces.set(key, cv);
   return cv;
-}
-
-// ---- src/game/pool.js
-// Pool denso sin asignaciones en caliente: los vivos ocupan [0, n). kill(i) intercambia con el último.
-// Iterar SIEMPRE de n-1 a 0 cuando se pueda matar dentro del bucle.
-class Pool {
-  constructor(make, cap) {
-    this.items = new Array(cap);
-    for (let i = 0; i < cap; i++) this.items[i] = make();
-    this.n = 0;
-  }
-  get() {
-    if (this.n >= this.items.length) return null;
-    return this.items[this.n++];
-  }
-  kill(i) {
-    const last = --this.n;
-    if (i !== last) { const t = this.items[i]; this.items[i] = this.items[last]; this.items[last] = t; }
-  }
-  clear() { this.n = 0; }
-}
-
-// Rejilla espacial fija sobre el mundo para consultas de colisión (enemigos).
-class Grid {
-  constructor(half, cell) {
-    this.half = half; this.cell = cell;
-    this.cols = Math.ceil((half * 2) / cell) + 2;
-    this.cells = new Array(this.cols * this.cols);
-    for (let i = 0; i < this.cells.length; i++) this.cells[i] = [];
-    this.used = [];
-  }
-  clear() {
-    for (let i = 0; i < this.used.length; i++) this.cells[this.used[i]].length = 0;
-    this.used.length = 0;
-  }
-  idx(x, y) {
-    let cx = ((x + this.half) / this.cell) | 0, cy = ((y + this.half) / this.cell) | 0;
-    if (cx < 0) cx = 0; else if (cx >= this.cols) cx = this.cols - 1;
-    if (cy < 0) cy = 0; else if (cy >= this.cols) cy = this.cols - 1;
-    return cy * this.cols + cx;
-  }
-  insert(e) {
-    const i = this.idx(e.x, e.y);
-    const c = this.cells[i];
-    if (c.length === 0) this.used.push(i);
-    c.push(e);
-  }
-  // Llama fn(e) para cada entidad en celdas que tocan el círculo (x,y,r). Devuelve true para cortar.
-  query(x, y, r, fn) {
-    const h = this.half, cs = this.cell, cols = this.cols;
-    let x0 = ((x - r + h) / cs) | 0, x1 = ((x + r + h) / cs) | 0;
-    let y0 = ((y - r + h) / cs) | 0, y1 = ((y + r + h) / cs) | 0;
-    if (x0 < 0) x0 = 0; if (y0 < 0) y0 = 0; if (x1 >= cols) x1 = cols - 1; if (y1 >= cols) y1 = cols - 1;
-    for (let cy = y0; cy <= y1; cy++) {
-      for (let cx = x0; cx <= x1; cx++) {
-        const c = this.cells[cy * cols + cx];
-        for (let k = 0; k < c.length; k++) if (fn(c[k])) return true;
-      }
-    }
-    return false;
-  }
 }
 
 // ---- src/art/sprites.js
@@ -3761,7 +4010,7 @@ class Sprites {
   pet(kind, tier, frame, rim) {
     const key = 'pet' + kind + tier + frame;
     let s = this.map.get(key);
-    if (!s) { s = build(78, 54, 39, 48, 0.42, this.res, (c) => drawPet(c, kind, frame, tier), null, rim, 0.8); this.map.set(key, s); }
+    if (!s) { s = build(92, 56, 46, 50, 0.42, this.res, (c) => drawPet(c, kind, frame, tier), null, rim, 0.8); this.map.set(key, s); }
     return s;
   }
 
@@ -3825,6 +4074,71 @@ class Sprites {
   }
 }
 
+
+// ====================================================================================================
+// MOTOR Y LÓGICA
+// ====================================================================================================
+// ---- src/game/pool.js
+// Pool denso sin asignaciones en caliente: los vivos ocupan [0, n). kill(i) intercambia con el último.
+// Iterar SIEMPRE de n-1 a 0 cuando se pueda matar dentro del bucle.
+class Pool {
+  constructor(make, cap) {
+    this.items = new Array(cap);
+    for (let i = 0; i < cap; i++) this.items[i] = make();
+    this.n = 0;
+  }
+  get() {
+    if (this.n >= this.items.length) return null;
+    return this.items[this.n++];
+  }
+  kill(i) {
+    const last = --this.n;
+    if (i !== last) { const t = this.items[i]; this.items[i] = this.items[last]; this.items[last] = t; }
+  }
+  clear() { this.n = 0; }
+}
+
+// Rejilla espacial fija sobre el mundo para consultas de colisión (enemigos).
+class Grid {
+  constructor(half, cell) {
+    this.half = half; this.cell = cell;
+    this.cols = Math.ceil((half * 2) / cell) + 2;
+    this.cells = new Array(this.cols * this.cols);
+    for (let i = 0; i < this.cells.length; i++) this.cells[i] = [];
+    this.used = [];
+  }
+  clear() {
+    for (let i = 0; i < this.used.length; i++) this.cells[this.used[i]].length = 0;
+    this.used.length = 0;
+  }
+  idx(x, y) {
+    let cx = ((x + this.half) / this.cell) | 0, cy = ((y + this.half) / this.cell) | 0;
+    if (cx < 0) cx = 0; else if (cx >= this.cols) cx = this.cols - 1;
+    if (cy < 0) cy = 0; else if (cy >= this.cols) cy = this.cols - 1;
+    return cy * this.cols + cx;
+  }
+  insert(e) {
+    const i = this.idx(e.x, e.y);
+    const c = this.cells[i];
+    if (c.length === 0) this.used.push(i);
+    c.push(e);
+  }
+  // Llama fn(e) para cada entidad en celdas que tocan el círculo (x,y,r). Devuelve true para cortar.
+  query(x, y, r, fn) {
+    const h = this.half, cs = this.cell, cols = this.cols;
+    let x0 = ((x - r + h) / cs) | 0, x1 = ((x + r + h) / cs) | 0;
+    let y0 = ((y - r + h) / cs) | 0, y1 = ((y + r + h) / cs) | 0;
+    if (x0 < 0) x0 = 0; if (y0 < 0) y0 = 0; if (x1 >= cols) x1 = cols - 1; if (y1 >= cols) y1 = cols - 1;
+    for (let cy = y0; cy <= y1; cy++) {
+      for (let cx = x0; cx <= x1; cx++) {
+        const c = this.cells[cy * cols + cx];
+        for (let k = 0; k < c.length; k++) if (fn(c[k])) return true;
+      }
+    }
+    return false;
+  }
+}
+
 // ---- src/game/petAI.js
 // Mascota del forajido: le sigue con movimiento suave, detecta enemigos cercanos y los ataca sola
 // (embestida, picado o proyectil de tinta). Daño equilibrado: apoya, no limpia el nivel por sí misma.
@@ -3838,12 +4152,15 @@ const SHOTS = 6;
 function initPet(g, heroId, level) {
   const S = petStats(heroId, level);
   if (!g.pet) {
-    g.pet = { on: false, x: 0, y: 0, vx: 0, vy: 0, face: 1, mode: 0, t: 0, cd: 0, target: null, tUid: 0, kills: 0, hits: 0, size: 1, tier: 0, fly: false, lift: 0, def: null, dmg: 0, cdMax: 1, bite: 0 };
+    g.pet = { on: false, x: 0, y: 0, vx: 0, vy: 0, face: 1, mode: 0, t: 0, cd: 0, target: null, tUid: 0, kills: 0, hits: 0, size: 1, tier: 0, fly: false, lift: 0, def: null, dmg: 0, cdMax: 1, bite: 0,
+      powerT: 0, powerCd: 1, shield: 0, chk: 0, uses: 0, fxT: 0, fxMax: 0.5, fxKind: '', fxX: 0, fxY: 0, fxR: 0, fxN: 0, fxPts: new Float32Array(24) };
     g.petShots = [];
     for (let i = 0; i < SHOTS; i++) g.petShots.push({ on: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, uid: 0 });
   }
   const P = g.pet;
   P.on = true; P.def = S.def; P.tier = S.tier; P.size = S.size; P.dmg = S.dmg; P.cdMax = S.cd; P.fly = S.def.fly;
+  P.powerCd = S.powerCd; P.powerT = S.powerCd * 0.6; P.shield = S.shield; P.chk = 0; P.uses = 0; P.fxT = 0;
+  g.player.shield = 0; g.player.shieldT = 0; g.player.shieldMax = S.shield;
   P.x = g.player.x - 40; P.y = g.player.y + 10; P.vx = 0; P.vy = 0; P.mode = 0; P.t = 0; P.cd = 1.5; P.target = null; P.kills = 0; P.hits = 0; P.lift = P.fly ? 46 : 0; P.bite = 0;
   for (const s of g.petShots) s.on = false;
 }
@@ -3865,6 +4182,9 @@ function updatePet(g, dt) {
   if (!P || !P.on) return;
   const p = g.player, D = P.def;
   P.cd -= dt; P.t += dt; P.bite = Math.max(0, P.bite - dt);
+  if (P.fxT > 0) P.fxT -= dt;
+  if (p.shieldT > 0) { p.shieldT -= dt; if (p.shieldT <= 0) p.shield = 0; }
+  updatePetPower(g, P, dt);
   // objetivo: el enemigo más cercano al forajido dentro del radio de vigilancia
   if (P.target && (P.target.dead || P.target.uid !== P.tUid)) P.target = null;
   if (!P.target && P.cd <= 0) { const e = g.nearest(p.x, p.y, D.range, 0); if (e) { P.target = e; P.tUid = e.uid; } }
@@ -3917,33 +4237,71 @@ function updatePetShots(g, dt) {
   }
 }
 
-// ---- src/data/enemies.js
-// La Plaga: siluetas asimétricas, paleta fría y desaturada. Colosos de élite desde la Ronda 6.
-const ZOMBIES = {
-  walker: { name: 'Errante', hp: 22, speed: 62, r: 14, dmg: 9, xp: 1, soul: 1 },
-  runner: { name: 'Corredor', hp: 15, speed: 150, r: 12, dmg: 7, xp: 1, soul: 1 },
-  bloater: { name: 'Hinchado', hp: 55, speed: 48, r: 20, dmg: 12, xp: 2, soul: 2, gas: { r: 90, dps: 10, time: 5 } },
-  armored: { name: 'Acorazado', hp: 40, armor: 90, speed: 66, r: 16, dmg: 13, xp: 3, soul: 3 },
-  forker: { name: 'Horquero', hp: 38, speed: 92, r: 14, dmg: 14, xp: 2, soul: 2, lunge: true },
-  dynamiter: { name: 'Dinamitero', hp: 26, speed: 118, r: 14, dmg: 30, xp: 2, soul: 2, bomb: { r: 95 } },
-  // ---- bestiario ampliado
-  hound: { name: 'Sabueso de Tinta', hp: 18, speed: 178, r: 12, dmg: 6, xp: 1, soul: 1, pack: [3, 5], stun: 1 },
-  spider: { name: 'Araña de Cripta', hp: 8, speed: 118, r: 9, dmg: 4, xp: 1, soul: 1, pack: [7, 11], puddle: { r: 62, slow: 0.45, time: 5 } },
-  abomination: { name: 'Abominación', hp: 240, armor: 220, speed: 40, r: 30, dmg: 18, xp: 8, soul: 10, spit: { range: 330, cd: 3.4, count: 7, cone: 0.7, speed: 260 } },
-};
-
-const COLOSSI = {
-  foreman: { name: 'El Capataz de la Mina', hp: 2200, speed: 62, r: 40, dmg: 26, xp: 40, soul: 60,
-    taunts: ['¡A trabajar, carroña!', 'La mina no perdona.', 'Tu pico, tu tumba.'] },
-  faceless: { name: 'El Predicador sin Rostro', hp: 2600, speed: 74, r: 34, dmg: 24, xp: 45, soul: 70,
-    taunts: ['…', 'No hay rostro que juzgar.', 'Arrodíllate ante el silencio.'] },
-  plague: { name: 'El Predicador de la Peste', hp: 2300, speed: 58, r: 34, dmg: 22, xp: 45, soul: 70, lamp: 170,
-    taunts: ['¡Levantaos, hijos de la *peste*!', 'Mi *farol* nunca se apaga.', 'La fiebre es mi sermón.'] },
-  spawn: { name: 'El Engendro de la Mina', hp: 3300, speed: 52, r: 44, dmg: 30, xp: 55, soul: 85, turn: 0.75,
-    taunts: ['GRRRHHH… *DINAMITA*…', '*KRRRK*', 'HHHUUURRR'] },
-  beast: { name: 'La Bestia de la Ciénaga', hp: 3000, speed: 88, r: 44, dmg: 30, xp: 50, soul: 80,
-    taunts: ['GRRRAAAAOOOH', '*chapoteo*', 'HHHRRRRK'] },
-};
+// ---------------------------------------------------------------- PODER SECUNDARIO (automático, enfriamiento propio)
+// Se comprueba 4 veces por segundo cuando está listo y solo se lanza si la situación lo pide.
+function countNear(g, x, y, r) {
+  const Z = g.zombies.items, r2 = r * r; let n = 0, sx = 0, sy = 0;
+  for (let i = 0; i < g.zombies.n; i++) { const e = Z[i]; if (e.dead) continue; const dx = e.x - x, dy = e.y - y; if (dx * dx + dy * dy < r2) { n++; sx += e.x; sy += e.y; } }
+  g._cnt.n = n; g._cnt.x = n ? sx / n : x; g._cnt.y = n ? sy / n : y;
+  return g._cnt;
+}
+function updatePetPower(g, P, dt) {
+  P.powerT -= dt;
+  if (P.powerT > 0 || g.state !== 'play') return;
+  P.chk -= dt; if (P.chk > 0) return; P.chk = 0.25;
+  if (!g._cnt) g._cnt = { n: 0, x: 0, y: 0 };
+  const p = g.player, pw = P.def.power;
+  let fired = false;
+  if (pw.id === 'knock') {
+    if (countNear(g, p.x, p.y, pw.radius).n >= 3) {
+      const Z = g.zombies.items, r2 = pw.radius * pw.radius;
+      for (let i = 0; i < g.zombies.n; i++) {
+        const e = Z[i]; if (e.dead) continue;
+        const dx = e.x - p.x, dy = e.y - p.y, d2 = dx * dx + dy * dy; if (d2 > r2) continue;
+        const d = Math.sqrt(d2) || 1, k = e.colossus ? 0.25 : 1;
+        e.vx += (dx / d) * 460 * k; e.vy += (dy / d) * 460 * k; if (!e.colossus) e.stunT = Math.max(e.stunT, 0.6);
+        petHit(g, e, P.dmg * 1.2, dx / d, dy / d);
+      }
+      fx(P, 'knock', p.x, p.y, pw.radius, 0.5); g.ono(p.x, p.y - 110, '¡AUUUU!', '#cfe8ff', 26); Sfx.play('howl'); g.cam.shake = Math.max(g.cam.shake, 6);
+      fired = true;
+    }
+  } else if (pw.id === 'shield') {
+    if (p.hp < p.maxHp * 0.8 || p.hurt > 0 || countNear(g, p.x, p.y, 160).n >= 4) {
+      p.shield = p.shieldMax; p.shieldT = pw.time;
+      fx(P, 'shield', p.x, p.y, 70, 0.6); g.ono(p.x, p.y - 110, '¡SIETE VIDAS!', '#d8ff6a', 22); Sfx.play('power');
+      fired = true;
+    }
+  } else if (pw.id === 'loot') {
+    const I = g.items.items, r2 = pw.radius * pw.radius, pr = g.st.pickup;
+    let n = 0;
+    for (let i = 0; i < g.items.n && n < 12; i++) {
+      const it = I[i]; if (it.mag) continue;
+      const dx = it.x - p.x, dy = it.y - p.y, d2 = dx * dx + dy * dy;
+      if (d2 > r2 || d2 < pr * pr) continue;
+      P.fxPts[n * 2] = it.x; P.fxPts[n * 2 + 1] = it.y; n++;
+      it.mag = true;
+    }
+    if (n >= 2) {
+      const gold = Math.min(n, 6); P.fxN = n; g.gold += gold; fx(P, 'loot', p.x, p.y, pw.radius, 0.6);
+      g.addText(p.x, p.y - 96, '+' + gold + ' ⛀ RAPIÑA', '#ffd27a', 14, true); Sfx.play('power');
+      fired = true;
+    }
+  } else if (pw.id === 'slow') {
+    const c = countNear(g, p.x, p.y, 260);
+    if (c.n >= 4) {
+      const cx = c.x, cy = c.y, Z = g.zombies.items, r2 = pw.radius * pw.radius;
+      for (let i = 0; i < g.zombies.n; i++) {
+        const e = Z[i]; if (e.dead) continue;
+        const dx = e.x - cx, dy = e.y - cy; if (dx * dx + dy * dy > r2) continue;
+        e.slowT = Math.max(e.slowT, 3); petHit(g, e, P.dmg * 0.6, 0, 0);
+      }
+      fx(P, 'slow', cx, cy, pw.radius, 0.7); g.ono(cx, cy - 90, '¡SOMBRA!', '#ffb347', 22); Sfx.play('power');
+      fired = true;
+    }
+  }
+  if (fired) { P.powerT = P.powerCd; P.uses++; P.bite = 0.25; }
+}
+function fx(P, kind, x, y, r, t) { P.fxKind = kind; P.fxX = x; P.fxY = y; P.fxR = r; P.fxT = t; P.fxMax = t; }
 
 // ---- src/game/traps.js
 // Trampas ambientales y destructibles: cepos ocultos, faroles de gas que incendian el suelo al dispararles,
@@ -4020,6 +4378,7 @@ function snap(g, t, e) {
 
 function updateTraps(g, dt) {
   const p = g.player;
+  g.barrelsThisFrame = 0;
   for (let i = g.traps.length - 1; i >= 0; i--) {
     const t = g.traps[i];
     t.flash = Math.max(0, t.flash - dt);
@@ -4076,8 +4435,13 @@ function updateTraps(g, dt) {
   }
 }
 
+// Un barril solo estalla una vez (t.dead se marca ANTES de explotar, así ninguna cadena puede volver a él) y
+// las cadenas se propagan con mecha (fuse) en fotogramas siguientes, con un máximo de 4 estallidos por fotograma.
 function blowBarrel(g, t) {
-  t.dead = true;
+  if (t.dead) return;
+  if (g.barrelsThisFrame >= 4) { t.fuse = 0.05; return; }
+  g.barrelsThisFrame++;
+  t.dead = true; t.fuse = 0;
   g.explode(t.x, t.y - 14, 125, 170 * g.st.trapMult, '#ff8a2a', 1, 5, 420, false, true);
   g.explodeHitsPlayer(t.x, t.y, 125, 30, true);
   g.addZone(ZK.FIRE, t.x, t.y, 70, 3, 18, '#ff6a1a', 1);
@@ -4261,31 +4625,32 @@ function startReload(g) {
 }
 
 // ---------------------------------------------------------------- cartas de acción
-function playCard(g, card) {
+// lv: potencia de la carta = nivel de la partida (+4 %/NV) × mejora por duplicado (+25 % por nivel de carta).
+function playCard(g, card, lv = 1) {
   const p = g.player, pal = g.pal, st = g.st, aim = p.aim;
   const ax = p.x + Math.cos(aim) * Math.min(380, p.aimDist || 300), ay = p.y + Math.sin(aim) * Math.min(380, p.aimDist || 300);
   switch (card.id) {
     case 'rabia': {
-      for (let i = 0; i < 32; i++) g.addBullet(p.x, p.y - 22, (i / 32) * TAU, 760, 26, 4, 1, 0.34, pal.shot, pal.core, BK.PELLET, 520);
-      g.explode(p.x, p.y - 10, 160, 45 * st.dmg, pal.glow, 1, 0, 620, true);
+      for (let i = 0; i < 32; i++) g.addBullet(p.x, p.y - 22, (i / 32) * TAU, 760, 26 * lv, 4, 1, 0.34, pal.shot, pal.core, BK.PELLET, 520);
+      g.explode(p.x, p.y - 10, 160, 45 * st.dmg * lv, pal.glow, 1, 0, 620, true);
       g.cam.shake = 12; g.comicText(p.x, p.y - 96, '¡¿QUÉ MIRÁIS?!', '#ff6a3a', 28);
       Sfx.play('shotgun');
       break;
     }
     case 'verso': {
       const life = (g.range() * 2) / 1900;
-      const b = g.addBullet(p.x + Math.cos(aim) * 26, p.y - 26 + Math.sin(aim) * 18, aim, 1900, 190, 7, 99, life, '#ffe08a', '#ffffff', BK.HARPOON, 400);
+      const b = g.addBullet(p.x + Math.cos(aim) * 26, p.y - 26 + Math.sin(aim) * 18, aim, 1900, 190 * lv, 7, 99, life, '#ffe08a', '#ffffff', BK.HARPOON, 400);
       if (b) b.crit = true;
       g.cam.shake = 10; g.comicText(p.x, p.y - 96, '«…y la noche calló.»', '#ffd23a', 20);
       Sfx.play('rifle');
       break;
     }
     case 'deadhand':
-      for (let i = 0; i < 5; i++) { const b = g.addBullet(p.x, p.y - 26, aim + (i - 2) * 0.2, 720, 34, 6, 2, 0.6, '#f2e6cc', '#ff4a4a', BK.CARD, 120); if (b) { b.stun = 1.6; b.slow = 2; b.radius = 60; } }
+      for (let i = 0; i < 5; i++) { const b = g.addBullet(p.x, p.y - 26, aim + (i - 2) * 0.2, 720, 34 * lv, 6, 2, 0.6, '#f2e6cc', '#ff4a4a', BK.CARD, 120); if (b) { b.stun = 1.6; b.slow = 2; b.radius = 60; } }
       g.comicText(p.x, p.y - 96, '¡ASES Y OCHOS!', pal.glow, 26);
       break;
     case 'chiste':
-      g.tellJoke(320, 4);
+      g.tellJoke(320 * Math.min(1.5, lv), 4);
       g.comicText(p.x, p.y - 110, '¡JA, JA, JA!', '#ffcf6a', 30);
       break;
     case 'beartrap': case 'cepo': {
@@ -4300,7 +4665,7 @@ function playCard(g, card) {
         if (e.dead) return false;
         const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy);
         let da = Math.atan2(dy, dx) - aim; while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
-        if (d < 230 && Math.abs(da) < 0.75) { g.hurtZombie(e, 22 * st.dmg, false, dx / (d || 1), dy / (d || 1), 600, 0, 1.5, 1.2); n++; }
+        if (d < 230 && Math.abs(da) < 0.75) { g.hurtZombie(e, 22 * st.dmg * lv, false, dx / (d || 1), dy / (d || 1), 600, 0, 1.5, 1.2); n++; }
         return false;
       });
       for (let i = 0; i < 30; i++) { const a = aim + (Math.random() - 0.5) * 1.4, s = 200 + Math.random() * 400; g.addPart(p.x, p.y - 24, Math.cos(a) * s, Math.sin(a) * s, 0.5, 3, '#f2f2ea', PT.SPARK, false).drag = 3; }
@@ -4309,7 +4674,7 @@ function playCard(g, card) {
     }
     case 'dinamita': case 'farol': {
       const b = g.addBullet(p.x, p.y - 26, aim, 0, 150, 6, 0, Math.min(0.9, Math.hypot(ax - p.x, ay - p.y) / 500 + 0.25), '#ffd23a', '#fff', BK.LOB, 0);
-      if (b) { b.ox = p.x; b.oy = p.y - 10; b.vx = ax; b.vy = ay; b.spin = 0; b.radius = card.id === 'farol' ? 120 : 130; b.burn = card.id === 'farol' ? 26 * st.dmg : 0; b.dmg = 150 * st.dmg; b.color = card.id === 'farol' ? '#ffb040' : '#ff4a1a'; }
+      if (b) { b.ox = p.x; b.oy = p.y - 10; b.vx = ax; b.vy = ay; b.spin = 0; b.radius = card.id === 'farol' ? 120 : 130; b.burn = card.id === 'farol' ? 26 * st.dmg * lv : 0; b.dmg = 150 * st.dmg * lv; b.color = card.id === 'farol' ? '#ffb040' : '#ff4a1a'; }
       break;
     }
     case 'mina':
@@ -4332,21 +4697,21 @@ function playCard(g, card) {
       for (let i = 0; i < g.zombies.n && n < 6; i++) {
         const e = E[(i * 7 + (Math.random() * g.zombies.n | 0)) % g.zombies.n];
         if (e.dead || Math.abs(e.x - g.cam.x) > hw || Math.abs(e.y - g.cam.y) > hh) continue;
-        const z = g.addZone(ZK.STRIKE, e.x, e.y, 80, 0.35 + n * 0.12, 95 * st.dmg, '#cfe8ff', 1); if (z) z.elec = true; n++;
+        const z = g.addZone(ZK.STRIKE, e.x, e.y, 80, 0.35 + n * 0.12, 95 * st.dmg * lv, '#cfe8ff', 1); if (z) z.elec = true; n++;
       }
-      for (; n < 6; n++) { const a = Math.random() * TAU, r = 80 + Math.random() * 220; const z = g.addZone(ZK.STRIKE, p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 80, 0.35 + n * 0.12, 95 * st.dmg, '#cfe8ff', 1); if (z) z.elec = true; }
+      for (; n < 6; n++) { const a = Math.random() * TAU, r = 80 + Math.random() * 220; const z = g.addZone(ZK.STRIKE, p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 80, 0.35 + n * 0.12, 95 * st.dmg * lv, '#cfe8ff', 1); if (z) z.elec = true; }
       g.flash = 0.5;
       break;
     }
     case 'aguabendita':
-      g.heal(25);
-      g.addZone(ZK.RING, p.x, p.y - 10, 280, 0.6, 70 * st.dmg, '#c8e0ff', 1);
+      g.heal(25 * lv);
+      g.addZone(ZK.RING, p.x, p.y - 10, 280, 0.6, 70 * st.dmg * lv, '#c8e0ff', 1);
       g.comicText(p.x, p.y - 96, '¡AMÉN!', '#c8e0ff', 28);
       break;
     case 'caballeria':
       for (let i = 0; i < 6; i++) {
         const dir = i % 2 ? 1 : -1, y = p.y - g.viewH * 0.4 + (i / 5) * g.viewH * 0.8;
-        const z = g.addZone(ZK.RIDERS, p.x - dir * (g.viewW / 2 + 120), y, 46, 2.2, 120 * st.dmg, '#9ab8ff', 1);
+        const z = g.addZone(ZK.RIDERS, p.x - dir * (g.viewW / 2 + 120), y, 46, 2.2, 120 * st.dmg * lv, '#9ab8ff', 1);
         if (z) z.vx = dir * 900;
       }
       g.comicText(p.x, p.y - 96, '¡A LA CARGA!', '#9ab8ff', 30);
@@ -4445,7 +4810,7 @@ function updateZombies(g, dt) {
       if (e.colossus) { const k = g.colossi.indexOf(e); if (k !== -1) g.colossi.splice(k, 1); }
       g.zombies.kill(i); continue;
     }
-    e.flash -= dt;
+    e.flash -= dt; if (e.atkAnim > 0) e.atkAnim -= dt;
     if (e.burnT > 0) {
       e.burnT -= dt; e.burnTick -= dt;
       if (e.burnTick <= 0) {
@@ -4486,7 +4851,7 @@ function updateZombies(g, dt) {
         const S = e.def.spit, d = Math.hypot(tx - e.x, ty - e.y);
         e.atkT -= dt;
         if (e.state === 1) { // apunta y escupe bilis de tinta en cono
-          e.stateT -= dt;
+          e.stateT -= dt; e.atkAnim = 0.15;
           if (e.stateT <= 0) {
             e.state = 0; e.atkT = S.cd;
             for (let k = 0; k < S.count; k++) g.addEBullet(e.x + e.face * 20, e.y - 40, e.ang + (k - (S.count - 1) / 2) * (S.cone / (S.count - 1)), S.speed * (0.85 + Math.random() * 0.3), e.dmg * 0.6, 8, 1.6, '#3a2a6a', EK.INK);
@@ -4506,7 +4871,7 @@ function updateZombies(g, dt) {
         break;
       case 'forker':
         e.atkT -= dt;
-        if (e.state === 1) { if (!frozen) { e.x += e.ax * dt; e.y += e.ay * dt; } e.stateT -= dt; if (e.stateT <= 0) e.state = 0; }
+        if (e.state === 1) { e.atkAnim = 0.15; if (!frozen) { e.x += e.ax * dt; e.y += e.ay * dt; } e.stateT -= dt; if (e.stateT <= 0) e.state = 0; }
         else {
           const d = chase(e, tx, ty, sp, dt);
           if (d < 140 && e.atkT <= 0 && !frozen) { e.state = 1; e.stateT = 0.3; e.atkT = 2 + Math.random(); e.ax = ((tx - e.x) / d) * e.speed * 3.4; e.ay = ((ty - e.y) / d) * e.speed * 3.4; }
@@ -4514,7 +4879,7 @@ function updateZombies(g, dt) {
         break;
       case 'dynamiter':
         if (e.state === 1) {
-          e.stateT -= dt; e.flash = (g.realTime * 12) % 1 < 0.5 ? 0.05 : 0;
+          e.stateT -= dt; e.atkAnim = 0.15; e.flash = (g.realTime * 12) % 1 < 0.5 ? 0.05 : 0;
           if (e.stateT <= 0) { g.hurtZombie(e, 99999, false, 0, 0, 0, 0, 0, 0); continue; }
         } else {
           const d = chase(e, tx, ty, sp, dt);
@@ -4539,6 +4904,7 @@ function updateZombies(g, dt) {
     if (!e.colossus) g.grid.insert(e);
     if (e.stunT <= 0 && e.fearT <= 0) {
       const dx = p.x - e.x, dy = p.y - e.y, rr = e.r + p.r;
+      if (dx * dx + dy * dy < (rr + 26) * (rr + 26)) e.atkAnim = Math.max(e.atkAnim, 0.28); // zarpazo / mordisco visible al llegar
       if (dx * dx + dy * dy < rr * rr) { g.hurtPlayer(e.dmg); if (e.def.stun) g.stunPlayer(e.def.stun); }
     }
   }
@@ -4922,6 +5288,7 @@ function createMode(g, mode, mission) {
 
 
 
+
 const FONT = new Map();
 function f(size, face) { const k = face + size; let v = FONT.get(k); if (!v) { v = face === 'T' ? `${size}px "Holtwood One SC", Georgia, serif` : `bold ${size}px "Courier Prime", "Courier New", monospace`; FONT.set(k, v); } return v; }
 function text(ctx, s, x, y, size, color, face = 'T', align = 'left', stroke = 3) {
@@ -5000,7 +5367,7 @@ function metalBar(ctx, x, y, w, h, k, c1, c2) {
 const BTN = { c0: { id: 'c0', x: 0, y: 0, r: 0 }, c1: { id: 'c1', x: 0, y: 0, r: 0 }, c2: { id: 'c2', x: 0, y: 0, r: 0 }, pause: { id: 'pause', x: 0, y: 0, r: 0 } };
 
 const HUDCARDS = [BTN.c0, BTN.c1, BTN.c2];
-const FAN = [0, 1, 2].map(() => ({ id: '', cd: 0, playT: -9, drawT: -9 }));
+const FAN = [0, 1, 2].map(() => ({ id: '', cd: 0, playT: -9, drawT: -9, readyT: -9 }));
 
 function drawHud(g, ctx, t) {
   const W = g.w, H = g.h, p = g.player, inp = g.input, touch = inp.isTouch, small = W < 640, dpr = g.dpr;
@@ -5010,6 +5377,14 @@ function drawHud(g, ctx, t) {
   ctx.drawImage(plate(pw, ph, dpr), 10, 10, pw, ph);
   ctx.save(); ctx.beginPath(); ctx.arc(39, 39, 22, 0, TAU); ctx.fillStyle = '#0a0606'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#8a8a90'; ctx.stroke(); ctx.clip();
   const hs = g.spr.hero(g.hero.id, g.pal, g.skinIdx); ctx.drawImage(hs.canvas, 39 - 30, 14, 60, 60 * hs.h / hs.w); ctx.restore();
+  if (g.pet && g.pet.on) { // poder de la mascota: sello diminuto con su enfriamiento (no es un botón)
+    const P = g.pet, k = Math.max(0, P.powerT) / P.powerCd, ready = k <= 0;
+    ctx.beginPath(); ctx.arc(56, 56, 9, 0, TAU); ctx.fillStyle = '#140c08'; ctx.fill();
+    if (!ready) { ctx.beginPath(); ctx.moveTo(56, 56); ctx.arc(56, 56, 9, -Math.PI / 2 + TAU * (1 - k), -Math.PI / 2 + TAU); ctx.closePath(); ctx.fillStyle = 'rgba(232,220,192,0.25)'; ctx.fill(); }
+    ctx.beginPath(); ctx.arc(56, 56, 9, 0, TAU); ctx.lineWidth = 2; ctx.strokeStyle = ready ? '#ffd27a' : '#6a5a4a'; ctx.stroke();
+    text(ctx, P.fly ? '✦' : '❦', 56, 56.5, 10, ready ? '#ffd27a' : '#a89a82', 'B', 'center', 0);
+  }
+  if (p.shieldT > 0) { const k = p.shield / (p.shieldMax || 1); ctx.fillStyle = 'rgba(216,255,106,0.85)'; ctx.fillRect(68, 14, (pw - 70) * Math.min(1, k * 0.35), 3); }
   const bx = 68, bw = pw - 70;
   metalBar(ctx, bx, 18, bw, 15, p.hp / p.maxHp, p.hp / p.maxHp < 0.3 ? '#d8201a' : '#9a1a14', 'rgba(255,170,150,0.5)');
   text(ctx, txt('hp', Math.ceil(p.hp) * 10000 + p.maxHp, () => Math.ceil(p.hp) + ' / ' + Math.round(p.maxHp)), bx + 6, 26, 11, '#fff2dc', 'B', 'left', 2.5);
@@ -5116,16 +5491,18 @@ function drawHud(g, ctx, t) {
     const id = h ? h.card.id : '';
     if (id !== F.id) { F.id = id; if (id) F.drawT = now; }
     const cdNow = h ? h.cd : 0;
+    if (h && F.cd > 0 && cdNow <= 0) { F.readyT = now; Sfx.play('ready'); } // vuelve a estar lista
     if (h && cdNow > F.cd + 0.01) F.playT = now;
     F.cd = cdNow;
     const ang = (i - 1) * 0.17, off = (i - 1) * (size * 0.86);
     const pd = Math.min(1, (now - F.playT) / 0.45), dd = Math.min(1, (now - F.drawT) / 0.4);
     const lift = pd < 1 ? Math.sin(pd * Math.PI) * 26 : 0, flip = dd < 1 ? Math.abs(Math.cos(dd * Math.PI * 0.5 + Math.PI * 0.5)) : 1;
+    const rd = Math.min(1, (now - F.readyT) / 0.5), pop = rd < 1 ? 1 + Math.sin(rd * Math.PI) * 0.16 : 1;
     const hover = h && h.cd <= 0 ? 4 + Math.sin(t * 4 + i) * 1.5 : 0;
     const cx = fanCx + off, cy = fanBase - ch / 2 - Math.abs(i - 1) * 6 - lift - hover + (dd < 1 ? (1 - dd) * 60 : 0);
     const B = BTN['c' + i]; B.x = cx; B.y = cy; B.r = size * 0.66;
     if (touch) inp.buttons.push(B);
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang + (pd < 1 ? Math.sin(pd * Math.PI) * 0.1 : 0)); ctx.scale(Math.max(0.05, flip), 1);
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang + (pd < 1 ? Math.sin(pd * Math.PI) * 0.1 : 0)); ctx.scale(Math.max(0.05, flip) * pop, pop);
     // sombra dura desplazada
     ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(-size / 2 + 4, -ch / 2 + 5, size, ch);
     if (!h) {
@@ -5143,6 +5520,13 @@ function drawHud(g, ctx, t) {
       ctx.globalAlpha = 0.45 + Math.sin(t * 5 + i) * 0.25; ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 2.5; ctx.strokeRect(-size / 2 - 2, -ch / 2 - 2, size + 4, ch + 4); ctx.globalAlpha = 1;
     }
     if (pd < 1) { ctx.globalAlpha = 1 - pd; ctx.fillStyle = '#fff4d6'; ctx.fillRect(-size / 2, -ch / 2, size, ch); ctx.globalAlpha = 1; }
+    if (rd < 1) { // ¡lista! anillo dorado que se expande
+      ctx.globalAlpha = 1 - rd; ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 3; const e = 4 + rd * 14; ctx.strokeRect(-size / 2 - e, -ch / 2 - e, size + e * 2, ch + e * 2); ctx.globalAlpha = 1;
+    }
+    if ((h.lv || 1) > 1) { // nivel de mejora de la carta
+      ctx.fillStyle = '#9a140e'; ctx.beginPath(); ctx.arc(size / 2 - 3, -ch / 2 + 3, 9, 0, TAU); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = INK; ctx.stroke();
+      text(ctx, ['', 'I', 'II', 'III'][h.lv], size / 2 - 3, -ch / 2 + 3.5, 9, '#efe2c4', 'T', 'center', 0);
+    }
     if (!touch) { ctx.fillStyle = '#120a06'; ctx.fillRect(-9, -ch / 2 - 12, 18, 16); text(ctx, '' + (i + 1), 0, -ch / 2 - 4, 11, '#f2e2b8', 'T', 'center', 0); }
     ctx.restore();
   }
@@ -5351,7 +5735,7 @@ function drawDialogue(g, ctx, camX, camY) {
   const L = l.layout, W = g.w, H = g.h;
   const sx = (l.x - camX) * g.scale + W / 2, sy = (l.y - camY) * g.scale + H / 2;
   const bx = Math.max(10, Math.min(W - L.w - 10, sx - L.w / 2)), by = Math.max(84, Math.min(H - L.h - 90, sy - L.h - 30));
-  const fade = l.life < l.dur ? Math.min(1, l.life * 6) : Math.max(0, 1 - (l.life - l.dur) / 0.45);
+  const fade = l.life < l.dur ? Math.min(1, l.life * 8) : Math.max(0, 1 - (l.life - l.dur) / 0.3);
   const dark = !l.hero;
   const bg = dark ? '#140c0a' : '#efe2c4', fg = dark ? '#efe2c4' : '#140c08', key = dark ? '#ff6a3a' : (g.pal.rim || g.hero.rim || '#9a140e');
   ctx.save(); ctx.globalAlpha = fade;
@@ -5368,7 +5752,7 @@ function drawDialogue(g, ctx, camX, camY) {
   const who = l.hero ? g.hero.short.toUpperCase() : (l.follow && l.follow.def && l.follow.def.name ? l.follow.def.name.toUpperCase() : '');
   if (who) { ctx.font = font(10, 'T'); const ww = ctx.measureText(who).width + 12; ctx.fillStyle = '#0a0605'; ctx.fillRect(bx + 8, by - 10, ww, 14); ctx.fillStyle = key; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(who, bx + 14, by - 3); }
   // texto que corre como tinta (typewriter)
-  const shown = Math.floor(Math.min(l.len + 1, l.life * 34));
+  const shown = Math.floor(Math.min(l.len + 1, l.life * 46)); // la tinta corre rápido: réplicas ágiles
   ctx.font = DLG_FONT; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   for (let li = 0; li < L.lines.length; li++) {
     const line = L.lines[li], y = by + 11 + li * DLG_SIZE * 1.3;
@@ -5622,9 +6006,11 @@ function renderGame(g, dt) {
     const frozen = e.stunT > 0 || e.rootT > 0;
     const ph = t * (e.type === 'runner' ? 14 : e.type === 'spider' ? 18 : 7) + e.uid;
     const nf = Z_ANIM[e.type];
-    const s = nf ? sp.zombie(e.type, e.elite, frozen ? 0 : ((ph / TAU) * nf | 0) % nf) : e.spr;
+    const fr = e.atkAnim > 0 && Z_ATK[e.type] ? nf : frozen ? 0 : ((ph / TAU) * nf | 0) % nf;
+    const s = nf ? sp.zombie(e.type, e.elite, fr) : e.spr;
     const bob = frozen ? 0 : Math.abs(Math.sin(ph)) * (e.colossus ? 4 : 2.5);
-    const rot = frozen ? Math.sin(t * 30) * 0.03 : Math.sin(ph) * (e.colossus ? 0.03 : 0.09) + (e.type === 'walker' ? 0.05 : 0);
+    // vaivén suave del paso; al recibir un impacto, el cuerpo retrocede (contra la mirada)
+    const rot = frozen ? Math.sin(t * 30) * 0.03 : Math.sin(ph) * (e.colossus ? 0.02 : nf ? 0.03 : 0.09) - (e.flash > 0 ? 0.14 * (e.face < 0 ? -1 : 1) : 0);
     ctx.globalAlpha = e.alpha;
     if (e.colossus) {
       // jefe: respiración, y al preparar un ataque se hincha y su aura late (telegrafía clara)
@@ -5651,6 +6037,7 @@ function renderGame(g, dt) {
     ctx.fillStyle = '#0a0605'; ctx.strokeStyle = g.pal.glow; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.ellipse(sh.x, sh.y, 6, 4, Math.atan2(sh.vy, sh.vx), 0, TAU); ctx.fill(); ctx.stroke();
   }
+  drawPetPowerFx(g, ctx, t);
   // corazas
   for (let i = 0; i < n; i++) { const e = E[i]; if (e.dead || e.maxArmor <= 0 || e.armor <= 0 || e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1) continue; ctx.fillStyle = INK; ctx.fillRect(e.x - 15, e.y - e.spr.oy - 6, 30, 5); ctx.fillStyle = '#b8c0c8'; ctx.fillRect(e.x - 14, e.y - e.spr.oy - 5, 28 * (e.armor / e.maxArmor), 3); }
   // horda aterrada por los chistes
@@ -5893,12 +6280,48 @@ function renderGame(g, dt) {
   drawHud(g, ctx, t);
 }
 
+// Efecto visual del poder de la mascota (anillo expansivo, pulso, estela o sombra) y escudo activo.
+function drawPetPowerFx(g, ctx, t) {
+  const P = g.pet, p = g.player;
+  if (p.shieldT > 0) { // burbuja de tinta «Siete Vidas»
+    const a = Math.min(1, p.shieldT * 2) * (0.55 + Math.sin(t * 8) * 0.12), k = p.shield / (p.shieldMax || 1);
+    ctx.globalAlpha = a * 0.18; ctx.fillStyle = '#d8ff6a'; ctx.beginPath(); ctx.ellipse(p.x, p.y - 30, 34, 46, 0, 0, TAU); ctx.fill();
+    ctx.globalAlpha = a; ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.stroke();
+    ctx.strokeStyle = '#d8ff6a'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.lineDashOffset = -t * 20; ctx.beginPath(); ctx.ellipse(p.x, p.y - 30, 34, 46, 0, -Math.PI / 2, -Math.PI / 2 + TAU * k); ctx.stroke(); ctx.setLineDash([]);
+    addLight(g, p.x, p.y - 30, 120, 0.4);
+  }
+  if (!P || !P.on || P.fxT <= 0) { ctx.globalAlpha = 1; return; }
+  const k = 1 - P.fxT / P.fxMax, ease = 1 - (1 - k) * (1 - k), fade = 1 - k;
+  const r = P.fxR * (0.25 + 0.75 * ease);
+  if (P.fxKind === 'loot') { // estelas de botín hacia el forajido
+    ctx.globalAlpha = fade; ctx.lineCap = 'round';
+    for (let i = 0; i < P.fxN; i++) {
+      const x0 = P.fxPts[i * 2], y0 = P.fxPts[i * 2 + 1], mx = x0 + (p.x - x0) * ease, my = y0 + (p.y - 30 - y0) * ease;
+      ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(mx, my); ctx.stroke();
+      ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 1.8; ctx.stroke();
+      ctx.fillStyle = '#1a1a24'; ctx.beginPath(); ctx.ellipse(mx, my, 5, 2.4, Math.atan2(p.y - y0, p.x - x0), 0, TAU); ctx.fill();
+    }
+  }
+  if (P.fxKind === 'slow') { // la sombra del halcón cae sobre la horda
+    ctx.globalAlpha = 0.45 * fade; ctx.fillStyle = '#0a0605'; ctx.beginPath(); ctx.ellipse(P.fxX, P.fxY, r, r * 0.55, 0, 0, TAU); ctx.fill();
+  }
+  const col = P.fxKind === 'knock' ? '#cfe8ff' : P.fxKind === 'shield' ? '#d8ff6a' : P.fxKind === 'slow' ? '#ffb347' : '#ffd27a';
+  const cx = P.fxKind === 'slow' ? P.fxX : P.fxKind === 'knock' || P.fxKind === 'shield' ? p.x : P.fxX, cy = P.fxKind === 'slow' ? P.fxY : p.y;
+  ctx.globalAlpha = fade; ctx.strokeStyle = INK; ctx.lineWidth = 9 * fade + 2;
+  ctx.beginPath(); ctx.ellipse(cx, cy, r, r * 0.6, 0, 0, TAU); ctx.stroke();
+  ctx.strokeStyle = col; ctx.lineWidth = 4 * fade + 1; ctx.stroke();
+  ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.5 * fade;
+  ctx.drawImage(g.spr.glow(col), cx - r, cy - r * 0.6, r * 2, r * 1.2);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  addLight(g, cx, cy, r * 1.2, 0.6 * fade);
+}
+
 // Mascota: aura de tinta según su evolución, fotogramas de galope/aleteo y mordisco al atacar.
 function drawPetSprite(g, ctx, S, tx, ty, t) {
   const P = g.pet;
   if (!P || !P.on) return;
   const moving = Math.abs(P.vx) + Math.abs(P.vy) > 30;
-  const frame = P.fly ? ((t * 11) | 0) % 4 : moving ? ((t * 13) | 0) % 4 : 0;
+  const frame = P.bite > 0 ? 4 : P.fly ? ((t * 11) | 0) % 4 : moving ? ((t * 13) | 0) % 4 : 0;
   const s = g.spr.pet(P.def.id, P.tier, frame, g.hero.rim);
   const sc = P.size * (P.bite > 0 ? 1.12 : 1), y = P.y - P.lift - (P.fly ? 0 : moving ? Math.abs(Math.sin(t * 13)) * 2 : 0);
   ctx.setTransform(S, 0, 0, S, tx, ty);
@@ -5991,7 +6414,7 @@ function zoneAt(x) { const k = x / HX; for (let i = 0; i < ZONES.length; i++) if
 
 const mkZ = () => ({
   uid: 0, type: '', def: null, x: 0, y: 0, vx: 0, vy: 0, r: 10, hp: 1, maxHp: 1, armor: 0, maxArmor: 0, speed: 0, dmg: 0,
-  colossus: false, elite: false, spr: null, flash: 0, burnT: 0, burnDps: 0, burnTick: 0, slowT: 0, stunT: 0, rootT: 0,
+  colossus: false, elite: false, spr: null, flash: 0, atkAnim: 0, burnT: 0, burnDps: 0, burnTick: 0, slowT: 0, stunT: 0, rootT: 0,
   atkT: 0, state: 0, stateT: 0, ax: 0, ay: 0, face: 1, target: null, xp: 1, soul: 1, dead: false, alpha: 1, name: '',
   mode: '', modeT: 0, patIdx: 0, subT: 0, subN: 0, phase: 0, ang: 0, hitBy: 0, tauntT: 0, fearT: 0, flank: 1,
 });
@@ -6020,7 +6443,7 @@ class Game {
     this.texts = new Pool(mkT, 96); this.numT = 0;
     this.items = new Pool(mkI, 500);
     this.zones = new Pool(mkZn, 120);
-    this.dlg = { cur: null, next: null, cool: 0 };
+    this.dlg = { cur: null, next: null, cool: 0, lastText: '', lastT: -99 };
     this.uiParts = []; for (let i = 0; i < 160; i++) this.uiParts.push(mkU());
     this.fx = { dmg: 1, rate: 1, speed: 1, pierce: 0, range: 1, crit: 0, reload: 1, invuln: false, explode: 0 };
     this.grid = new Grid(Math.max(HX, HY) + 200, 80);
@@ -6073,7 +6496,7 @@ class Game {
     this.groundPatterns = this.zoned ? ZONES.map((z) => this.ctx.createPattern(makeGround(z.id, z), 'repeat')) : [this.ctx.createPattern(makeGround(this.mapId), 'repeat')];
     this.zoneIdx = -1;
     for (const P of [this.zombies, this.bullets, this.ebullets, this.parts, this.texts, this.items, this.zones]) P.clear();
-    this.dlg.cur = null; this.dlg.next = null; this.dlg.cool = 0;
+    this.dlg.cur = null; this.dlg.next = null; this.dlg.cool = 0; this.dlg.lastText = ''; this.dlg.lastT = -99;
     for (const u of this.uiParts) u.on = false;
     this.poker = []; this.furies = []; this.pokerShow = null; this.pokerCount = 0; this.pokerPartial = ''; this.bestHand = ''; this.bestHandRank = -1; this.dealt = 0;
     this.gold = 0; this.weather = null; this.coils = []; this.onoT = 0; this.synT = 0; this.zapT = 0; this.weakT = 0; this.fearT2 = 0;
@@ -6097,7 +6520,7 @@ class Game {
     p.x = this.zoned ? 0 : 0; p.y = 120; p.inv = 1.5; p.ammo = this.magSize(); p.reloadT = 0; p.burstN = 0; p.burstT = 0; p.stunT = 0; p.stunImmune = 0; p.inkT = 0; p.vx = 0; p.vy = 0; p.jokeT = 8; p.hurt = 0; p.fireT = 0.3; p.alt = 0; p.muzzle = 0; p.rootT = 0; p.regenT = 0; p.aim = -Math.PI / 2; p.spin = 0;
     this.cam.x = p.x; this.cam.y = p.y; this.cam.shake = 0;
     // mano: carta de firma + 2 huecos
-    this.hand = [{ card: SIGNATURE[hero.signature], cd: 0 }, null, null];
+    this.hand = [{ card: SIGNATURE[hero.signature], cd: 0, lv: 1 }, null, null];
     this.deck = 1;
     this.buildProps();
     this.traps.length = 0;
@@ -6115,9 +6538,9 @@ class Game {
     this.spr.hero(this.hero.id, this.pal, this.skinIdx, this.hero.rim);
     this.spr.heroLayers(this.hero.id, this.pal, this.skinIdx, this.hero.rim);
     this.spr.prop('plaguelamp');
-    for (let f = 0; f < 4; f++) this.spr.pet(this.pet.def.id, this.pet.tier, f, this.hero.rim);
+    for (let f = 0; f <= 4; f++) this.spr.pet(this.pet.def.id, this.pet.tier, f, this.hero.rim);
     for (const t of Object.keys(ZOMBIES)) this.spr.zombie(t);
-    for (const t of Object.keys(Z_ANIM)) for (let f = 1; f < Z_ANIM[t]; f++) this.spr.zombie(t, false, f);
+    for (const t of Object.keys(Z_ANIM)) for (let f = 1; f <= Z_ANIM[t]; f++) if (f < Z_ANIM[t] || Z_ATK[t]) this.spr.zombie(t, false, f);
     for (const t of Object.keys(COLOSSI)) this.spr.zombie(t);
     for (const c of [this.pal.shot, this.pal.glow, '#ff8a2a', '#ffd23a', '#ffffff', '#9dff3a', '#c8b8ff', '#7fa8ff', '#ff3a2a', '#d8e8b0', '#ffe08a', '#b8ff6a', '#c8d8ff', '#cfe8ff', '#eaf6ff', '#ff4a3a', '#ff6a3a'])
       this.spr.glow(c);
@@ -6160,8 +6583,8 @@ class Game {
 
   pause(v) {
     if (!this.running || this.state === 'over') return;
-    if (v && this.state === 'play') { this.state = 'paused'; this.cb.onPause(true); }
-    else if (!v && this.state === 'paused') { this.state = 'play'; this.last = performance.now(); this.cb.onPause(false); }
+    if (v && this.state === 'play') { this.state = 'paused'; this.input.reset(); this.cb.onPause(true); }
+    else if (!v && this.state === 'paused') { this.state = 'play'; this.input.reset(); this.last = performance.now(); this.cb.onPause(false); }
   }
 
   // ---------------------------------------------------------------- bucle
@@ -6196,10 +6619,12 @@ class Game {
     Sfx.setIntensity(Math.min(1, this.zombies.n / 90 + this.colossi.length * 0.35 + (this.objective.fever ? 0.35 : 0)));
     this.updatePlayer(dt);
     updateZombies(this, dt);
+    if (this.state !== 'play') return; // muerte durante el contacto: el resto espera al fin de partida
     this.updateBullets(dt);
     this.updateEBullets(dt);
     this.updateZones(dt);
     updateTraps(this, dt);
+    if (this.state !== 'play') return; // una trampa o un barril pueden acabar la partida en este fotograma
     updatePassives(this, dt);
     updatePet(this, dt); updatePetShots(this, dt);
     this.updateItems(dt);
@@ -6285,13 +6710,16 @@ class Game {
     if (p.hp / p.maxHp < 0.3) { this.lowBarkT -= dt; if (this.lowBarkT <= 0) { this.lowBarkT = 20; this.say(null, BARKS[this.hero.id].low, 0, false, 2); } }
   }
 
+  // Potencia de una carta de acción: crece con el nivel de la partida y con las mejoras por duplicado.
+  cardPower(h) { return (1 + (this.level - 1) * 0.04) * (1 + ((h.lv || 1) - 1) * 0.25); }
+
   useHand(i) {
     const h = this.hand[i];
     if (!h) return;
     if (h.cd > 0) { this.addText(this.player.x, this.player.y - 76, 'Recargando…', '#a8987a', 12, false); return; }
-    h.cd = h.card.cd * this.st.cardCd;
+    h.cd = h.card.cd * this.st.cardCd * (1 - 0.15 * ((h.lv || 1) - 1));
     Sfx.play('cardthrow');
-    playCard(this, h.card);
+    playCard(this, h.card, this.cardPower(h));
     this.dealPoker('carta');
     // partículas de tinta y pólvora al jugar la carta (desde su hueco en el HUD)
     const hb = this.hudCards ? this.hudCards[i] : null;
@@ -6425,7 +6853,11 @@ class Game {
     if (fromTrap && this.st.trapMaster) return;
     const vulnNoDodge = this.curses.some((c) => c.type === 'vuln');
     if (!vulnNoDodge && Math.random() < this.st.dodge) { p.inv = 0.25; this.addText(p.x, p.y - 70, '¡ESQUIVA!', '#c8b8ff', 13, false); return; }
-    const d = Math.max(1, dmg * this.objective.dmgMult * this.curseVuln - this.st.armor);
+    let d = Math.max(1, dmg * this.objective.dmgMult * this.curseVuln - this.st.armor);
+    if (p.shield > 0) { // escudo «Siete Vidas»
+      const a = Math.min(p.shield, d); p.shield -= a; d -= a; p.inv = 0.3;
+      if (d <= 0) { this.addText(p.x, p.y - 66, 'ABSORBIDO', '#d8ff6a', 12, false); Sfx.play('hit'); return; }
+    }
     p.hp -= d; p.inv = 0.45; p.hurt = 0.3;
     this.cam.shake = Math.max(this.cam.shake, 9);
     this.addText(p.x, p.y - 66, '-' + Math.round(d), '#ff4a3a', 15, false);
@@ -6442,7 +6874,7 @@ class Game {
     e.uid = this.uid++; e.type = type; e.def = d; e.x = x; e.y = y; e.vx = 0; e.vy = 0; e.r = d.r;
     e.maxHp = e.hp = Math.round(d.hp * hpMult); e.maxArmor = e.armor = (d.armor || 0) * hpMult;
     e.speed = d.speed * spdMult * (0.88 + Math.random() * 0.24); e.dmg = d.dmg;
-    e.colossus = false; e.elite = false; e.spr = this.spr.zombie(type); e.flash = 0; e.burnT = 0; e.burnDps = 0; e.burnTick = 0;
+    e.colossus = false; e.elite = false; e.spr = this.spr.zombie(type); e.flash = 0; e.atkAnim = 0; e.burnT = 0; e.burnDps = 0; e.burnTick = 0;
     e.slowT = 0; e.stunT = 0; e.rootT = 0; e.atkT = 0.5 + Math.random(); e.state = 0; e.stateT = 0; e.face = 1; e.target = null;
     e.xp = d.xp; e.soul = d.soul; e.dead = false; e.alpha = 1; e.name = ''; e.hitBy = 0; e.fearT = 0; e.flank = Math.random() < 0.5 ? 1 : -1;
     if (this.objective.assignTarget) this.objective.assignTarget(e);
@@ -6955,11 +7387,18 @@ class Game {
   takeCard(card) {
     this.deck++;
     if (card.t === 'action') {
+      const dup = this.hand.findIndex((h) => h && h.card.id === card.id);
+      if (dup !== -1) { // carta repetida: se mejora en vez de ocupar hueco (máx. nivel III)
+        const h = this.hand[dup]; h.lv = Math.min(3, (h.lv || 1) + 1); h.cd = 0;
+        this.comicText(this.player.x, this.player.y - 110, '¡' + card.name.toUpperCase() + ' ' + ['', 'I', 'II', 'III'][h.lv] + '!', RARITY[card.r].glow, 22);
+        this.state = 'play'; this.last = performance.now(); Sfx.play('combo');
+        return;
+      }
       let slot = this.hand.findIndex((h) => !h);
       if (slot === -1) { // sustituye la de menor rareza (nunca la carta de firma del espacio 1)
         slot = 1; if (this.hand[2].card.r < this.hand[1].card.r) slot = 2;
       }
-      this.hand[slot] = { card, cd: 0 };
+      this.hand[slot] = { card, cd: 0, lv: 1 };
     } else {
       card.apply(this);
       if (card.curse) this.addCurse(card.curse, card.name);
@@ -6975,10 +7414,14 @@ class Game {
     const text = Array.isArray(lines) ? lines[(Math.random() * lines.length) | 0] : lines;
     if (prio < 0) prio = scream ? 3 : entity ? 0 : 1;
     const d = this.dlg;
+    // sin repeticiones: la misma frase en pantalla, en cola o dicha hace menos de 8 s se descarta
+    if ((d.cur && d.cur.text === text) || (d.next && d.next.text === text) || (text === d.lastText && this.realTime - d.lastT < 8)) return;
     const line = { text, follow: entity, uid: entity ? entity.uid : 0, hero: !entity, scream, prio };
     if (d.cur || d.cool > 0) {
       if (prio === 0) return;                                  // los gruñidos no esperan turno
       if (!d.next || prio >= d.next.prio) d.next = line;       // una sola frase en espera (la más importante)
+      // réplica rápida: si la frase actual ya se ha podido leer, se despide enseguida para no bloquear
+      if (d.cur && prio >= d.cur.prio && d.cur.life > d.cur.minRead) d.cur.dur = Math.min(d.cur.dur, d.cur.life + 0.2);
       return;
     }
     this.startLine(line);
@@ -6986,7 +7429,9 @@ class Game {
   startLine(l) {
     const plain = l.text.replace(/\*/g, '');
     l.plain = plain; l.len = plain.length;
-    l.dur = Math.min(6, Math.max(4.5, 3.6 + plain.length * 0.03));
+    // duración adaptativa: réplicas cortas ágiles (≈3 s), frases largas hasta 6 s; tiempo mínimo de lectura
+    l.dur = Math.min(6, Math.max(2.6, 2.4 + plain.length * 0.045)); l.minRead = Math.min(1.6, 0.6 + plain.length * 0.02);
+    this.dlg.lastText = l.text; this.dlg.lastT = this.realTime;
     l.life = 0; l.layout = null; l.x = this.player.x; l.y = this.player.y - 80;
     this.dlg.cur = l;
     if (l.follow && !l.scream) Sfx.play('groan');
@@ -7001,7 +7446,8 @@ class Game {
       if (l.follow && (l.follow.dead || l.follow.uid !== l.uid)) { l.follow = null; if (!l.hero) l.life = Math.max(l.life, l.dur); }
       const src = l.follow || (l.hero ? this.player : null);
       if (src) { l.x = src.x; l.y = src.y - (src.spr ? src.spr.oy : 74); }
-      if (l.life >= l.dur + 0.45) { d.cur = null; d.cool = 0.9; }
+      if (d.next && l.life > l.minRead) l.dur = Math.min(l.dur, l.life + 0.2); // hay cola: acelera la salida
+      if (l.life >= l.dur + 0.3) { d.cur = null; d.cool = d.next ? 0.2 : 0.6; }
     } else if (d.next && d.cool <= 0) { const n = d.next; d.next = null; if (!n.follow || !n.follow.dead) this.startLine(n); }
     // gruñidos de la horda solo si el canal está libre
     this.groanT -= dt;
@@ -7026,6 +7472,9 @@ class Game {
     t.color = crit ? '#ff4a2a' : '#efe2c4'; t.size = crit ? 19 : Math.min(15, 10 + d / 25); t.big = false; t.num = crit ? 2 : 1; t.rot = (Math.random() - 0.5) * 0.3;
   }
   addText(x, y, str, color, size, big) {
+    // mismo texto flotante cerca y aún reciente (p. ej. «Recargando…» repetido): se refresca en vez de apilarse
+    const TX = this.texts.items;
+    for (let i = 0; i < this.texts.n; i++) { const q = TX[i]; if (q.str === str && !q.num && Math.abs(q.x - x) < 60 && Math.abs(q.y - y) < 60 && q.life < q.max * 0.7) { q.life = 0; q.y = Math.min(q.y, y); return; } }
     const t = this.texts.get(); if (!t) return;
     t.x = x; t.y = y; t.vy = -60; t.life = 0; t.max = big ? 1.1 : 0.75; t.str = str; t.color = color; t.size = size; t.big = big; t.num = 0;
   }
@@ -7054,9 +7503,14 @@ class Game {
   }
 }
 
+
+// ====================================================================================================
+// INTERFAZ
+// ====================================================================================================
 // ---- src/ui/main.js
 // Controlador de interfaz: portada, dossiers de forajidos, modos, capítulos con página de cómic, sorteo de
 // cartas, pausa, viñeta final / portada pulp y el Muro de los Condenados.
+
 
 
 
@@ -7191,7 +7645,8 @@ function petPreview(cv, h, level) {
 function petBlock(h, st) {
   const S = petStats(h.id, st.level), P = S.def;
   return `<div class="blk pet"><canvas data-pet="${h.id}"></canvas><div><b>Mascota · ${P.name}</b><small>${P.kind} · ${PET_TIER[S.tier]}</small>
-    <span class="petstats">Daño ${S.dmg} · ${P.attack === 'bolt' ? 'Tinta a distancia' : P.attack === 'swoop' ? 'Picado' : 'Embestida'}${st.petKills ? ' · ☠ ' + fmt(st.petKills) : ''}</span></div></div>`;
+    <span class="petstats">Daño ${S.dmg} · ${P.attack === 'bolt' ? 'Tinta a distancia' : P.attack === 'swoop' ? 'Picado' : 'Embestida'}${st.petKills ? ' · ☠ ' + fmt(st.petKills) : ''}</span>
+    <span class="petpower"><b>✦ ${P.power.name}</b> <i class="pcd">⟳ ${Math.round(S.powerCd)} s</i><br>${P.power.desc}</span></div></div>`;
 }
 
 function renderDossiers() {
@@ -7360,7 +7815,12 @@ const canvas = $('#game'), input = new Input(canvas);
 const game = new Game(canvas, input, {
   onEnd: (r) => endRun(r),
   onDraft: (choices, reason) => showDraft(choices, reason),
-  onPause: (v) => { $('#pause').classList.toggle('hidden', !v); applySettings(); },
+  onPause: (v) => {
+    $('#pause').classList.toggle('hidden', !v); applySettings();
+    $('#pause-help').textContent = input.isTouch
+      ? 'Arrastra en cualquier punto para moverte (joystick flotante) · disparo automático · toca una carta del abanico para jugarla · ❚❚ pausa'
+      : 'WASD/flechas mover · disparo automático · 1·2·3 (o Q·E·R) cartas · clic dcho. carta 1 · Esc pausa';
+  },
 });
 
 async function startRun(mode, mission) {
@@ -7386,14 +7846,16 @@ function showDraft(choices, reason) {
   const small = window.innerWidth < 640, box = $('#draft-cards'), d = dprOf();
   const W = small ? Math.min(118, Math.floor((window.innerWidth - 96) / 3)) : 200, H = Math.round(W * TAROT);
   $('#draft-title').textContent = reason === 'bonus' ? 'Recompensa: roba una carta' : '¡Nivel ' + game.level + '! Roba una carta';
-  box.innerHTML = choices.map((c, i) => `<div class="slot r${c.r}" style="--i:${i}"><canvas class="tarot" data-i="${i}" style="width:${W}px;height:${H}px"></canvas><span>[${i + 1}] ${RARITY[c.r].name}</span></div>`).join('');
+  const inHand = (c) => game.hand.find((hh) => hh && hh.card.id === c.id);
+  const tag = (c) => { const h = inHand(c); return c.t === 'action' ? (h ? `MEJORA → ${['', 'I', 'II', 'III'][Math.min(3, (h.lv || 1) + 1)]}` : `ACCIÓN · ${c.cd} s`) : c.curse ? 'PASIVA · MALDITA' : 'PASIVA'; };
+  box.innerHTML = choices.map((c, i) => `<div class="slot r${c.r}" style="--i:${i}"><canvas class="tarot" data-i="${i}" style="width:${W}px;height:${H}px"></canvas><span>[${i + 1}] ${RARITY[c.r].name}<small class="ctype">${tag(c)}</small></span></div>`).join('');
   const cvs = $$('canvas', box);
   cvs.forEach((cv) => { cv.width = W * d; cv.height = H * d; });
   const t0 = performance.now();
   const loop = () => {
     draftRaf = requestAnimationFrame(loop);
     const t = (performance.now() - t0) / 1000;
-    cvs.forEach((cv, i) => { const x = cv.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H); drawCard(x, choices[i], W, H, t, choices[i].t === 'action' && game.hand.every((hh) => hh) ? 'Mano llena: sustituirá tu carta de menor rareza.' : ''); });
+    cvs.forEach((cv, i) => { const x = cv.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H); drawCard(x, choices[i], W, H, t, choices[i].t === 'action' && inHand(choices[i]) ? 'Ya la tienes: se mejora (+25% de potencia, -15% de recarga).' : choices[i].t === 'action' && game.hand.every((hh) => hh) ? 'Mano llena: sustituirá tu carta de menor rareza.' : ''); });
     if (choices.every((c) => c.r < 2)) cancelAnimationFrame(draftRaf);
   };
   loop();
@@ -7521,7 +7983,7 @@ window.addEventListener('resize', () => { if (current === 'title') drawTitle(); 
 applySettings();
 fonts().then(() => { if (current === 'title') drawTitle(); });
 show('title');
-window.__tinta = { game, Save, HEROES, MISSIONS, CARDS, WEAPONS }; // gancho de depuración (pruebas automáticas)
+window.__tinta = { game, Save, HEROES, MISSIONS, CARDS, WEAPONS, art: { drawZombie, drawPet } }; // gancho de depuración (pruebas automáticas)
 
 })();
 </script>

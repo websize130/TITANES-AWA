@@ -7,6 +7,7 @@ import { HEROES, MAX_LEVEL, SKIN_RULES, SKIN_TIER } from '../data/heroes.js';
 import { WEAPONS, WEAPON_LIST, CATEGORIES, canEquip } from '../data/weapons.js';
 import { drawWeaponIcon } from '../art/weaponArt.js';
 import { drawPet } from '../art/petArt.js';
+import { drawZombie } from '../art/zombieArt.js';
 import { petStats, PET_TIER } from '../data/pets.js';
 import { MISSIONS } from '../data/story.js';
 import { SIGNATURE, RARITY, CARDS } from '../data/cards.js';
@@ -134,7 +135,8 @@ function petPreview(cv, h, level) {
 function petBlock(h, st) {
   const S = petStats(h.id, st.level), P = S.def;
   return `<div class="blk pet"><canvas data-pet="${h.id}"></canvas><div><b>Mascota · ${P.name}</b><small>${P.kind} · ${PET_TIER[S.tier]}</small>
-    <span class="petstats">Daño ${S.dmg} · ${P.attack === 'bolt' ? 'Tinta a distancia' : P.attack === 'swoop' ? 'Picado' : 'Embestida'}${st.petKills ? ' · ☠ ' + fmt(st.petKills) : ''}</span></div></div>`;
+    <span class="petstats">Daño ${S.dmg} · ${P.attack === 'bolt' ? 'Tinta a distancia' : P.attack === 'swoop' ? 'Picado' : 'Embestida'}${st.petKills ? ' · ☠ ' + fmt(st.petKills) : ''}</span>
+    <span class="petpower"><b>✦ ${P.power.name}</b> <i class="pcd">⟳ ${Math.round(S.powerCd)} s</i><br>${P.power.desc}</span></div></div>`;
 }
 
 function renderDossiers() {
@@ -303,7 +305,12 @@ const canvas = $('#game'), input = new Input(canvas);
 const game = new Game(canvas, input, {
   onEnd: (r) => endRun(r),
   onDraft: (choices, reason) => showDraft(choices, reason),
-  onPause: (v) => { $('#pause').classList.toggle('hidden', !v); applySettings(); },
+  onPause: (v) => {
+    $('#pause').classList.toggle('hidden', !v); applySettings();
+    $('#pause-help').textContent = input.isTouch
+      ? 'Arrastra en cualquier punto para moverte (joystick flotante) · disparo automático · toca una carta del abanico para jugarla · ❚❚ pausa'
+      : 'WASD/flechas mover · disparo automático · 1·2·3 (o Q·E·R) cartas · clic dcho. carta 1 · Esc pausa';
+  },
 });
 
 async function startRun(mode, mission) {
@@ -329,14 +336,16 @@ function showDraft(choices, reason) {
   const small = window.innerWidth < 640, box = $('#draft-cards'), d = dprOf();
   const W = small ? Math.min(118, Math.floor((window.innerWidth - 96) / 3)) : 200, H = Math.round(W * TAROT);
   $('#draft-title').textContent = reason === 'bonus' ? 'Recompensa: roba una carta' : '¡Nivel ' + game.level + '! Roba una carta';
-  box.innerHTML = choices.map((c, i) => `<div class="slot r${c.r}" style="--i:${i}"><canvas class="tarot" data-i="${i}" style="width:${W}px;height:${H}px"></canvas><span>[${i + 1}] ${RARITY[c.r].name}</span></div>`).join('');
+  const inHand = (c) => game.hand.find((hh) => hh && hh.card.id === c.id);
+  const tag = (c) => { const h = inHand(c); return c.t === 'action' ? (h ? `MEJORA → ${['', 'I', 'II', 'III'][Math.min(3, (h.lv || 1) + 1)]}` : `ACCIÓN · ${c.cd} s`) : c.curse ? 'PASIVA · MALDITA' : 'PASIVA'; };
+  box.innerHTML = choices.map((c, i) => `<div class="slot r${c.r}" style="--i:${i}"><canvas class="tarot" data-i="${i}" style="width:${W}px;height:${H}px"></canvas><span>[${i + 1}] ${RARITY[c.r].name}<small class="ctype">${tag(c)}</small></span></div>`).join('');
   const cvs = $$('canvas', box);
   cvs.forEach((cv) => { cv.width = W * d; cv.height = H * d; });
   const t0 = performance.now();
   const loop = () => {
     draftRaf = requestAnimationFrame(loop);
     const t = (performance.now() - t0) / 1000;
-    cvs.forEach((cv, i) => { const x = cv.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H); drawCard(x, choices[i], W, H, t, choices[i].t === 'action' && game.hand.every((hh) => hh) ? 'Mano llena: sustituirá tu carta de menor rareza.' : ''); });
+    cvs.forEach((cv, i) => { const x = cv.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H); drawCard(x, choices[i], W, H, t, choices[i].t === 'action' && inHand(choices[i]) ? 'Ya la tienes: se mejora (+25% de potencia, -15% de recarga).' : choices[i].t === 'action' && game.hand.every((hh) => hh) ? 'Mano llena: sustituirá tu carta de menor rareza.' : ''); });
     if (choices.every((c) => c.r < 2)) cancelAnimationFrame(draftRaf);
   };
   loop();
@@ -464,4 +473,4 @@ window.addEventListener('resize', () => { if (current === 'title') drawTitle(); 
 applySettings();
 fonts().then(() => { if (current === 'title') drawTitle(); });
 show('title');
-window.__tinta = { game, Save, HEROES, MISSIONS, CARDS, WEAPONS }; // gancho de depuración (pruebas automáticas)
+window.__tinta = { game, Save, HEROES, MISSIONS, CARDS, WEAPONS, art: { drawZombie, drawPet } }; // gancho de depuración (pruebas automáticas)

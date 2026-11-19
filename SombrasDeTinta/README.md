@@ -92,6 +92,17 @@ src/ui     index.html · style.css · main.js
   destello al golpear, números de daño con sombra dura y sonidos sintetizados (naipes, pólvora, mascota, imprenta).
 - **Modo Historia progresivo**: el Caso I es una dificultad media accesible (pocos enemigos a la vez, sube al final);
   del Caso II en adelante crece la frecuencia, el número simultáneo y llegan oleadas cada vez más exigentes.
+- **Anatomía 2D legible**: rig común con extremidades articuladas, cráneo con mandíbula móvil y sombreado plano de
+  cómic; cada zombi tiene silueta propia (errante encorvado, corredor descarnado, hinchado, acorazado con puerta de
+  horno, horquero con horca, dinamitero con mecha) y 4 fotogramas de paso + 1 de ataque; el impacto hace retroceder.
+- **Poderes de mascota** (automáticos, enfriamiento propio): *Aullido de Ultratumba* (empuje y aturdimiento),
+  *Siete Vidas* (escudo de tinta), *Rapiña del Cuervo* (atrae botín y suma oro) y *Sombra del Halcón* (ralentiza).
+- **Cartas**: las de acción escalan con el nivel de la partida y, si robas una repetida, sube a nivel II/III
+  (+25 % de potencia, −15 % de recarga). Destello y sonido al estar listas; minicartas con gema de rareza.
+- **Bocadillos ágiles**: sin repeticiones, la réplica nueva despide a la anterior en cuanto se ha podido leer y los
+  textos flotantes iguales se fusionan.
+- **Rendimiento**: semitono y grano precalculados como patrones, suelos cacheados entre partidas y joystick flotante
+  multipuntero recalibrado al soltar.
 - **Niveles 1–50 por forajido**.
 
 ## Controles

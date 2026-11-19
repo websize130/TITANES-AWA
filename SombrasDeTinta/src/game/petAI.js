@@ -10,12 +10,15 @@ const SHOTS = 6;
 export function initPet(g, heroId, level) {
   const S = petStats(heroId, level);
   if (!g.pet) {
-    g.pet = { on: false, x: 0, y: 0, vx: 0, vy: 0, face: 1, mode: 0, t: 0, cd: 0, target: null, tUid: 0, kills: 0, hits: 0, size: 1, tier: 0, fly: false, lift: 0, def: null, dmg: 0, cdMax: 1, bite: 0 };
+    g.pet = { on: false, x: 0, y: 0, vx: 0, vy: 0, face: 1, mode: 0, t: 0, cd: 0, target: null, tUid: 0, kills: 0, hits: 0, size: 1, tier: 0, fly: false, lift: 0, def: null, dmg: 0, cdMax: 1, bite: 0,
+      powerT: 0, powerCd: 1, shield: 0, chk: 0, uses: 0, fxT: 0, fxMax: 0.5, fxKind: '', fxX: 0, fxY: 0, fxR: 0, fxN: 0, fxPts: new Float32Array(24) };
     g.petShots = [];
     for (let i = 0; i < SHOTS; i++) g.petShots.push({ on: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, uid: 0 });
   }
   const P = g.pet;
   P.on = true; P.def = S.def; P.tier = S.tier; P.size = S.size; P.dmg = S.dmg; P.cdMax = S.cd; P.fly = S.def.fly;
+  P.powerCd = S.powerCd; P.powerT = S.powerCd * 0.6; P.shield = S.shield; P.chk = 0; P.uses = 0; P.fxT = 0;
+  g.player.shield = 0; g.player.shieldT = 0; g.player.shieldMax = S.shield;
   P.x = g.player.x - 40; P.y = g.player.y + 10; P.vx = 0; P.vy = 0; P.mode = 0; P.t = 0; P.cd = 1.5; P.target = null; P.kills = 0; P.hits = 0; P.lift = P.fly ? 46 : 0; P.bite = 0;
   for (const s of g.petShots) s.on = false;
 }
@@ -37,6 +40,9 @@ export function updatePet(g, dt) {
   if (!P || !P.on) return;
   const p = g.player, D = P.def;
   P.cd -= dt; P.t += dt; P.bite = Math.max(0, P.bite - dt);
+  if (P.fxT > 0) P.fxT -= dt;
+  if (p.shieldT > 0) { p.shieldT -= dt; if (p.shieldT <= 0) p.shield = 0; }
+  updatePetPower(g, P, dt);
   // objetivo: el enemigo más cercano al forajido dentro del radio de vigilancia
   if (P.target && (P.target.dead || P.target.uid !== P.tUid)) P.target = null;
   if (!P.target && P.cd <= 0) { const e = g.nearest(p.x, p.y, D.range, 0); if (e) { P.target = e; P.tUid = e.uid; } }
@@ -88,3 +94,69 @@ export function updatePetShots(g, dt) {
     if (e) { const d = Math.hypot(s.vx, s.vy) || 1; petHit(g, e, g.pet.dmg, s.vx / d, s.vy / d); s.on = false; }
   }
 }
+
+// ---------------------------------------------------------------- PODER SECUNDARIO (automático, enfriamiento propio)
+// Se comprueba 4 veces por segundo cuando está listo y solo se lanza si la situación lo pide.
+function countNear(g, x, y, r) {
+  const Z = g.zombies.items, r2 = r * r; let n = 0, sx = 0, sy = 0;
+  for (let i = 0; i < g.zombies.n; i++) { const e = Z[i]; if (e.dead) continue; const dx = e.x - x, dy = e.y - y; if (dx * dx + dy * dy < r2) { n++; sx += e.x; sy += e.y; } }
+  g._cnt.n = n; g._cnt.x = n ? sx / n : x; g._cnt.y = n ? sy / n : y;
+  return g._cnt;
+}
+function updatePetPower(g, P, dt) {
+  P.powerT -= dt;
+  if (P.powerT > 0 || g.state !== 'play') return;
+  P.chk -= dt; if (P.chk > 0) return; P.chk = 0.25;
+  if (!g._cnt) g._cnt = { n: 0, x: 0, y: 0 };
+  const p = g.player, pw = P.def.power;
+  let fired = false;
+  if (pw.id === 'knock') {
+    if (countNear(g, p.x, p.y, pw.radius).n >= 3) {
+      const Z = g.zombies.items, r2 = pw.radius * pw.radius;
+      for (let i = 0; i < g.zombies.n; i++) {
+        const e = Z[i]; if (e.dead) continue;
+        const dx = e.x - p.x, dy = e.y - p.y, d2 = dx * dx + dy * dy; if (d2 > r2) continue;
+        const d = Math.sqrt(d2) || 1, k = e.colossus ? 0.25 : 1;
+        e.vx += (dx / d) * 460 * k; e.vy += (dy / d) * 460 * k; if (!e.colossus) e.stunT = Math.max(e.stunT, 0.6);
+        petHit(g, e, P.dmg * 1.2, dx / d, dy / d);
+      }
+      fx(P, 'knock', p.x, p.y, pw.radius, 0.5); g.ono(p.x, p.y - 110, '¡AUUUU!', '#cfe8ff', 26); Sfx.play('howl'); g.cam.shake = Math.max(g.cam.shake, 6);
+      fired = true;
+    }
+  } else if (pw.id === 'shield') {
+    if (p.hp < p.maxHp * 0.8 || p.hurt > 0 || countNear(g, p.x, p.y, 160).n >= 4) {
+      p.shield = p.shieldMax; p.shieldT = pw.time;
+      fx(P, 'shield', p.x, p.y, 70, 0.6); g.ono(p.x, p.y - 110, '¡SIETE VIDAS!', '#d8ff6a', 22); Sfx.play('power');
+      fired = true;
+    }
+  } else if (pw.id === 'loot') {
+    const I = g.items.items, r2 = pw.radius * pw.radius, pr = g.st.pickup;
+    let n = 0;
+    for (let i = 0; i < g.items.n && n < 12; i++) {
+      const it = I[i]; if (it.mag) continue;
+      const dx = it.x - p.x, dy = it.y - p.y, d2 = dx * dx + dy * dy;
+      if (d2 > r2 || d2 < pr * pr) continue;
+      P.fxPts[n * 2] = it.x; P.fxPts[n * 2 + 1] = it.y; n++;
+      it.mag = true;
+    }
+    if (n >= 2) {
+      const gold = Math.min(n, 6); P.fxN = n; g.gold += gold; fx(P, 'loot', p.x, p.y, pw.radius, 0.6);
+      g.addText(p.x, p.y - 96, '+' + gold + ' ⛀ RAPIÑA', '#ffd27a', 14, true); Sfx.play('power');
+      fired = true;
+    }
+  } else if (pw.id === 'slow') {
+    const c = countNear(g, p.x, p.y, 260);
+    if (c.n >= 4) {
+      const cx = c.x, cy = c.y, Z = g.zombies.items, r2 = pw.radius * pw.radius;
+      for (let i = 0; i < g.zombies.n; i++) {
+        const e = Z[i]; if (e.dead) continue;
+        const dx = e.x - cx, dy = e.y - cy; if (dx * dx + dy * dy > r2) continue;
+        e.slowT = Math.max(e.slowT, 3); petHit(g, e, P.dmg * 0.6, 0, 0);
+      }
+      fx(P, 'slow', cx, cy, pw.radius, 0.7); g.ono(cx, cy - 90, '¡SOMBRA!', '#ffb347', 22); Sfx.play('power');
+      fired = true;
+    }
+  }
+  if (fired) { P.powerT = P.powerCd; P.uses++; P.bite = 0.25; }
+}
+function fx(P, kind, x, y, r, t) { P.fxKind = kind; P.fxX = x; P.fxY = y; P.fxR = r; P.fxT = t; P.fxMax = t; }

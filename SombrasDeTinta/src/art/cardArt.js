@@ -232,10 +232,16 @@ export function miniCard(card, size, dpr) {
   ctx.save(); rr(ctx, 0, 0, W, H, W * 0.08); ctx.clip(); material(ctx, W, H, card.r, rnd, 0); ctx.restore();
   const m = W * 0.1;
   ctx.save(); archPath(ctx, m, m, W - m * 2, H * 0.7); ctx.fillStyle = card.r === 4 ? '#050302' : '#140c08'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = card.r === 4 ? '#b86830' : INK; ctx.stroke(); ctx.restore();
-  ctx.font = `${Math.round(W * 0.48)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
-  ctx.fillText(card.icon, W / 2, m + H * 0.4);
-  ctx.font = `bold ${Math.round(W * 0.14)}px "${FB}", monospace`; ctx.fillStyle = card.r === 4 ? '#ff9a3a' : card.r === 1 || card.r === 2 ? '#1a0e06' : RARITY[card.r].text;
-  ctx.fillText(card.name.split(' ')[0].slice(0, 9), W / 2, H - m * 1.2);
+  ctx.font = `${Math.round(W * 0.5)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+  ctx.fillText(card.icon, W / 2, m + H * 0.36);
+  // banda inferior oscura con el nombre en el color de su rareza: legible sobre cualquier material
+  const bh = Math.round(H * 0.17), by = H - bh - m * 0.55;
+  ctx.fillStyle = 'rgba(10,6,5,0.86)'; ctx.fillRect(m * 0.55, by, W - m * 1.1, bh);
+  ctx.font = `bold ${Math.round(W * 0.15)}px "${FB}", monospace`; ctx.fillStyle = RARITY[card.r].glow;
+  const nm = card.name.replace(/^(El|La|Los|Las|De|Del) /, '').split(' ')[0].slice(0, 8).toUpperCase();
+  ctx.fillText(nm, W / 2, by + bh / 2 + 1);
+  // gema de rareza en lo alto del arco
+  ctx.save(); ctx.translate(W / 2, m * 0.9); ctx.rotate(Math.PI / 4); ctx.fillStyle = RARITY[card.r].glow; ctx.fillRect(-W * 0.06, -W * 0.06, W * 0.12, W * 0.12); ctx.lineWidth = 1.2; ctx.strokeStyle = INK; ctx.strokeRect(-W * 0.06, -W * 0.06, W * 0.12, W * 0.12); ctx.restore();
   penBorder(ctx, 1, 1, W - 2, H - 2, W * 0.08, card.id.length * 5, 2.2);
   mini.set(key, c);
   return c;

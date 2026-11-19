@@ -275,20 +275,48 @@ export function smoke(ctx, x, y, s, color, alpha, t, seed = 0) {
   ctx.restore();
 }
 
-// Trama de semitono: puntos cuyo radio crece hacia `dir` (gradiente comic).
-export function halftone(ctx, x, y, w, h, spacing, color, alpha, fromTop = false) {
-  ctx.save();
-  ctx.fillStyle = rgba(color, alpha);
+// Trama de semitono: puntos cuyo radio crece hacia abajo (o hacia arriba con fromTop), gradiente de cómic.
+// Rendimiento: en vez de cientos de arc() celda a celda, se pinta UNA VEZ una tira vertical de un periodo
+// horizontal (todas las filas) a la resolución del lienzo, se cachea y se rellena el área como patrón repetido.
+const HT_STRIPS = new Map();
+function halftoneStrip(spacing, color, alpha, fromTop, h, sc) {
+  const key = spacing + '|' + color + '|' + alpha + '|' + (fromTop ? 1 : 0) + '|' + h + '|' + sc;
+  let c = HT_STRIPS.get(key);
+  if (c) return c;
+  if (HT_STRIPS.size > 96) HT_STRIPS.clear();
+  const cw = Math.max(2, Math.round(spacing * sc)), ch = Math.max(1, Math.ceil(h * sc));
+  c = makeCanvas(cw, ch);
+  const x = c.getContext('2d'); x.fillStyle = rgba(color, alpha);
   for (let yy = 0; yy < h; yy += spacing) {
-    const row = Math.round(yy / spacing);
-    const f = fromTop ? 1 - yy / h : yy / h;
-    const r = spacing * 0.48 * f;
-    if (r < 0.3) continue;
-    for (let xx = (row % 2) * spacing / 2; xx < w; xx += spacing) {
-      ctx.beginPath(); ctx.arc(x + xx, y + yy, r, 0, TAU); ctx.fill();
-    }
+    const row = Math.round(yy / spacing), f = fromTop ? 1 - yy / h : yy / h, r = spacing * 0.48 * f * sc;
+    if (r < 0.3 * sc) continue;
+    x.beginPath();
+    if (row % 2) x.arc(cw / 2, yy * sc, r, 0, TAU);
+    else { x.arc(0, yy * sc, r, 0, TAU); x.moveTo(cw + r, yy * sc); x.arc(cw, yy * sc, r, 0, TAU); }
+    x.fill();
   }
-  ctx.restore();
+  HT_STRIPS.set(key, c);
+  return c;
+}
+export function halftone(ctx, x, y, w, h, spacing, color, alpha, fromTop = false) {
+  const tr = ctx.getTransform(), sc = Math.max(1, Math.round(Math.hypot(tr.a, tr.b) * 2) / 2);
+  const hh = Math.max(1, Math.round(h)), strip = halftoneStrip(spacing, color, alpha, fromTop, hh, sc);
+  const pat = ctx.createPattern(strip, 'repeat-x');
+  if (pat.setTransform) pat.setTransform(new DOMMatrix([1 / sc, 0, 0, 1 / sc, 0, 0]));
+  ctx.save(); ctx.translate(x, y); ctx.fillStyle = pat; ctx.fillRect(0, 0, w, hh); ctx.restore();
+}
+
+// Grano de papel precalculado (motas de tinta): una tesela de 128 px que se repite como patrón.
+const GRAIN = new Map();
+export function grainPattern(ctx, color, perTile = 14, size = 2) {
+  const key = color + '|' + perTile + '|' + size;
+  let c = GRAIN.get(key);
+  if (!c) {
+    c = makeCanvas(128, 128); const x = c.getContext('2d'), r = makeRng(perTile * 977 + size);
+    x.fillStyle = color; for (let i = 0; i < perTile; i++) x.fillRect(r() * 128, r() * 128, size, size);
+    GRAIN.set(key, c);
+  }
+  return ctx.createPattern(c, 'repeat');
 }
 
 export function hatch(ctx, x, y, w, h, spacing, color, lw = 1, angle = 0.8) {

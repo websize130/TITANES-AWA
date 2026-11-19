@@ -17,6 +17,18 @@ function visit(file) {
 }
 visit(path.join(src, 'ui/main.js'));
 
+// Capas sin dependencias hacia atrás: datos → núcleo → arte → motor → interfaz (orden estable dentro de cada capa).
+const RANK = { data: 0, core: 1, art: 2, game: 3, ui: 4 };
+const rankOf = (f) => RANK[path.relative(src, f).split(path.sep)[0]] ?? 5;
+order.sort((a, b) => rankOf(a) - rankOf(b));
+const SECTION = { data: 'DATOS', core: 'NÚCLEO (guardado, audio, entrada)', art: 'ARTE PROCEDURAL', game: 'MOTOR Y LÓGICA', ui: 'INTERFAZ' };
+const LABEL = {
+  'data/heroes.js': 'HEROES · forajidos, aspectos y frases', 'data/weapons.js': 'WEAPONS · armería', 'data/cards.js': 'CARDS · mazo y rarezas',
+  'data/story.js': 'MISSIONS · capítulos, mapas y zonas', 'data/pets.js': 'PETS · mascotas y poderes', 'data/enemies.js': 'ZOMBIES / COLOSSI · bestiario',
+  'data/poker.js': 'POKER · naipes y furias',
+};
+let lastSec = '';
+
 const owners = new Map();
 const parts = order.map((f) => {
   const rel = path.relative(root, f);
@@ -29,7 +41,10 @@ const parts = order.map((f) => {
     if (owners.has(m[1])) throw new Error(`Nombre duplicado "${m[1]}" en ${rel} y ${owners.get(m[1])}`);
     owners.set(m[1], rel);
   }
-  return `// ---- ${rel}\n${code}`;
+  const r2 = path.relative(src, f).split(path.sep).join('/'), sec = SECTION[r2.split('/')[0]] || 'OTROS';
+  let head = '';
+  if (sec !== lastSec) { lastSec = sec; head = `\n// ${'='.repeat(100)}\n// ${sec}\n// ${'='.repeat(100)}\n`; }
+  return `${head}// ---- ${rel}${LABEL[r2] ? '  ·  ' + LABEL[r2] : ''}\n${code}`;
 });
 
 const js = `(function () {\n'use strict';\n${parts.join('\n')}\n})();`.replace(/<\/script/gi, '<\\/script');

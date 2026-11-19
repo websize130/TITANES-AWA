@@ -5,6 +5,7 @@ import { miniCard, pokerFace } from '../art/cardArt.js';
 import { HX, HY } from './engine.js';
 import { ZONES } from '../data/story.js';
 import { FURIES } from '../data/poker.js';
+import { Sfx } from '../core/audio.js';
 
 const FONT = new Map();
 function f(size, face) { const k = face + size; let v = FONT.get(k); if (!v) { v = face === 'T' ? `${size}px "Holtwood One SC", Georgia, serif` : `bold ${size}px "Courier Prime", "Courier New", monospace`; FONT.set(k, v); } return v; }
@@ -84,7 +85,7 @@ function metalBar(ctx, x, y, w, h, k, c1, c2) {
 const BTN = { c0: { id: 'c0', x: 0, y: 0, r: 0 }, c1: { id: 'c1', x: 0, y: 0, r: 0 }, c2: { id: 'c2', x: 0, y: 0, r: 0 }, pause: { id: 'pause', x: 0, y: 0, r: 0 } };
 
 const HUDCARDS = [BTN.c0, BTN.c1, BTN.c2];
-const FAN = [0, 1, 2].map(() => ({ id: '', cd: 0, playT: -9, drawT: -9 }));
+const FAN = [0, 1, 2].map(() => ({ id: '', cd: 0, playT: -9, drawT: -9, readyT: -9 }));
 
 export function drawHud(g, ctx, t) {
   const W = g.w, H = g.h, p = g.player, inp = g.input, touch = inp.isTouch, small = W < 640, dpr = g.dpr;
@@ -94,6 +95,14 @@ export function drawHud(g, ctx, t) {
   ctx.drawImage(plate(pw, ph, dpr), 10, 10, pw, ph);
   ctx.save(); ctx.beginPath(); ctx.arc(39, 39, 22, 0, TAU); ctx.fillStyle = '#0a0606'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#8a8a90'; ctx.stroke(); ctx.clip();
   const hs = g.spr.hero(g.hero.id, g.pal, g.skinIdx); ctx.drawImage(hs.canvas, 39 - 30, 14, 60, 60 * hs.h / hs.w); ctx.restore();
+  if (g.pet && g.pet.on) { // poder de la mascota: sello diminuto con su enfriamiento (no es un botón)
+    const P = g.pet, k = Math.max(0, P.powerT) / P.powerCd, ready = k <= 0;
+    ctx.beginPath(); ctx.arc(56, 56, 9, 0, TAU); ctx.fillStyle = '#140c08'; ctx.fill();
+    if (!ready) { ctx.beginPath(); ctx.moveTo(56, 56); ctx.arc(56, 56, 9, -Math.PI / 2 + TAU * (1 - k), -Math.PI / 2 + TAU); ctx.closePath(); ctx.fillStyle = 'rgba(232,220,192,0.25)'; ctx.fill(); }
+    ctx.beginPath(); ctx.arc(56, 56, 9, 0, TAU); ctx.lineWidth = 2; ctx.strokeStyle = ready ? '#ffd27a' : '#6a5a4a'; ctx.stroke();
+    text(ctx, P.fly ? '✦' : '❦', 56, 56.5, 10, ready ? '#ffd27a' : '#a89a82', 'B', 'center', 0);
+  }
+  if (p.shieldT > 0) { const k = p.shield / (p.shieldMax || 1); ctx.fillStyle = 'rgba(216,255,106,0.85)'; ctx.fillRect(68, 14, (pw - 70) * Math.min(1, k * 0.35), 3); }
   const bx = 68, bw = pw - 70;
   metalBar(ctx, bx, 18, bw, 15, p.hp / p.maxHp, p.hp / p.maxHp < 0.3 ? '#d8201a' : '#9a1a14', 'rgba(255,170,150,0.5)');
   text(ctx, txt('hp', Math.ceil(p.hp) * 10000 + p.maxHp, () => Math.ceil(p.hp) + ' / ' + Math.round(p.maxHp)), bx + 6, 26, 11, '#fff2dc', 'B', 'left', 2.5);
@@ -200,16 +209,18 @@ export function drawHud(g, ctx, t) {
     const id = h ? h.card.id : '';
     if (id !== F.id) { F.id = id; if (id) F.drawT = now; }
     const cdNow = h ? h.cd : 0;
+    if (h && F.cd > 0 && cdNow <= 0) { F.readyT = now; Sfx.play('ready'); } // vuelve a estar lista
     if (h && cdNow > F.cd + 0.01) F.playT = now;
     F.cd = cdNow;
     const ang = (i - 1) * 0.17, off = (i - 1) * (size * 0.86);
     const pd = Math.min(1, (now - F.playT) / 0.45), dd = Math.min(1, (now - F.drawT) / 0.4);
     const lift = pd < 1 ? Math.sin(pd * Math.PI) * 26 : 0, flip = dd < 1 ? Math.abs(Math.cos(dd * Math.PI * 0.5 + Math.PI * 0.5)) : 1;
+    const rd = Math.min(1, (now - F.readyT) / 0.5), pop = rd < 1 ? 1 + Math.sin(rd * Math.PI) * 0.16 : 1;
     const hover = h && h.cd <= 0 ? 4 + Math.sin(t * 4 + i) * 1.5 : 0;
     const cx = fanCx + off, cy = fanBase - ch / 2 - Math.abs(i - 1) * 6 - lift - hover + (dd < 1 ? (1 - dd) * 60 : 0);
     const B = BTN['c' + i]; B.x = cx; B.y = cy; B.r = size * 0.66;
     if (touch) inp.buttons.push(B);
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang + (pd < 1 ? Math.sin(pd * Math.PI) * 0.1 : 0)); ctx.scale(Math.max(0.05, flip), 1);
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang + (pd < 1 ? Math.sin(pd * Math.PI) * 0.1 : 0)); ctx.scale(Math.max(0.05, flip) * pop, pop);
     // sombra dura desplazada
     ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(-size / 2 + 4, -ch / 2 + 5, size, ch);
     if (!h) {
@@ -227,6 +238,13 @@ export function drawHud(g, ctx, t) {
       ctx.globalAlpha = 0.45 + Math.sin(t * 5 + i) * 0.25; ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 2.5; ctx.strokeRect(-size / 2 - 2, -ch / 2 - 2, size + 4, ch + 4); ctx.globalAlpha = 1;
     }
     if (pd < 1) { ctx.globalAlpha = 1 - pd; ctx.fillStyle = '#fff4d6'; ctx.fillRect(-size / 2, -ch / 2, size, ch); ctx.globalAlpha = 1; }
+    if (rd < 1) { // ¡lista! anillo dorado que se expande
+      ctx.globalAlpha = 1 - rd; ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 3; const e = 4 + rd * 14; ctx.strokeRect(-size / 2 - e, -ch / 2 - e, size + e * 2, ch + e * 2); ctx.globalAlpha = 1;
+    }
+    if ((h.lv || 1) > 1) { // nivel de mejora de la carta
+      ctx.fillStyle = '#9a140e'; ctx.beginPath(); ctx.arc(size / 2 - 3, -ch / 2 + 3, 9, 0, TAU); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = INK; ctx.stroke();
+      text(ctx, ['', 'I', 'II', 'III'][h.lv], size / 2 - 3, -ch / 2 + 3.5, 9, '#efe2c4', 'T', 'center', 0);
+    }
     if (!touch) { ctx.fillStyle = '#120a06'; ctx.fillRect(-9, -ch / 2 - 12, 18, 16); text(ctx, '' + (i + 1), 0, -ch / 2 - 4, 11, '#f2e2b8', 'T', 'center', 0); }
     ctx.restore();
   }

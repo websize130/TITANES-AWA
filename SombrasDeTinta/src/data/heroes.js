@@ -1,5 +1,5 @@
 // La Cuadrilla de los 4 Condenados: dossier, personalidad (frases), pasiva, carta de firma, armas y aspectos.
-// Hitos cada 10 niveles alternando: 10 aspecto · 20 arma · 30 aspecto · 40 arma · 50 aspecto legendario.
+// Aspectos: Base (inicio) · Veterano (NV 10 o 3 casos) · Legendario (NV 30 o ronda 8). Armas en la Armería (data/weapons.js).
 
 export const MAX_LEVEL = 50;
 // 3 aspectos por forajido: Base · Veterano · Legendario/Condenado.
