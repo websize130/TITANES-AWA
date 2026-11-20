@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#050505">
+<meta name="description" content="BLOOD DEAD — survival horror en tercera persona con Three.js: Modo Historia en 5 capítulos con jefes únicos y Modo Supervivencia por rondas.">
+<title>BLOOD DEAD · Survival Horror</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/src/styles/fonts.css">
+<link rel="stylesheet" href="/src/styles/main.css">
+</head>
+<body data-state="boot">
+<canvas id="scene" aria-label="Escena 3D del juego"></canvas>
+
+<div id="boot" role="status" aria-live="polite">
+  <div class="boot-inner">
+    <div class="mark"><i data-icon="skull"></i></div>
+    <p class="eyebrow boot-eyebrow" id="bootEyebrow">Survival horror</p>
+    <h1 class="title-xl" id="bootTitle">BLOOD DEAD</h1>
+    <p id="bootStory"></p>
+    <div class="progress" id="bootBar"><i></i></div>
+    <p id="bootText">Iniciando motor gráfico…</p>
+    <p class="boot-tip" id="bootTip">Usa auriculares para una mejor experiencia</p>
+  </div>
+</div>
+
+<section id="title" hidden="" aria-label="Menú principal">
+  <div class="t-panel">
+    <div class="t-logo">
+      <span class="eyebrow">Survival horror · Tercera persona</span>
+      <h1 class="logo">BLOOD<em>DEAD<span class="drips" aria-hidden="true"><i style="left:8%;height:16px;animation-delay:-1s"></i><i style="left:31%;height:24px;animation-delay:-2.6s"></i><i style="left:57%;height:12px;animation-delay:-.4s"></i><i style="left:83%;height:20px;animation-delay:-3.8s"></i></span></em></h1>
+      <p class="t-tag">La infección empezó en un laboratorio. Esta noche termina contigo… o con ellos.</p>
+    </div>
+    <div class="t-modes" id="tModes">
+      <button class="mode-card" id="btnStory"><span class="mc-ic"><i data-icon="book"></i></span><span><b>Modo Historia</b><span id="storyInfo">5 capítulos · jefes únicos</span></span><i data-icon="chevron"></i></button>
+      <button class="mode-card" id="btnSurvival"><span class="mc-ic"><i data-icon="flame"></i></span><span><b>Modo Supervivencia</b><span id="survInfo">Rondas cada vez más duras · Récord: —</span></span><i data-icon="chevron"></i></button>
+    </div>
+    <div class="t-chapters" id="tChapters" hidden="">
+      <div class="tc-head"><button class="icon-btn" id="btnChBack" aria-label="Volver"><i data-icon="back"></i></button><div><span class="eyebrow">Modo Historia</span><h2>Elige capítulo</h2></div></div>
+      <div class="ch-list" id="chList" role="list"></div>
+    </div>
+    <div class="t-foot"><span class="ver">v2.0</span><button class="pad-pill" data-modal="pads"><i data-icon="gamepad"></i>Dúo · mandos y TV</button><nav class="legal-links"><button class="link-btn" data-modal="privacy">Privacidad</button><span>·</span><button class="link-btn" data-modal="legal">Aviso legal</button></nav></div>
+  </div>
+  <div class="t-stage" id="titleStage"></div>
+</section>
+
+<section id="select" hidden="" aria-label="Selección de personaje">
+  <div class="orb orb-a"></div><div class="orb orb-b"></div>
+  <header class="sel-head">
+    <button class="icon-btn sel-back" id="btnSelBack" aria-label="Volver al menú principal"><i data-icon="back"></i></button>
+    <div><h1>BLOOD <em>DEAD</em></h1><span class="mode-badge" id="modeBadge">Modo Historia</span></div>
+  </header>
+  <div class="sel-list" id="charList" role="listbox" aria-label="Personajes"></div>
+  <div class="sel-stage" id="selStage">
+    <span class="stage-hint" id="stageHint"><i data-icon="rotate"></i>Arrastra para girar</span>
+    <button class="stage-btn" id="faceBtn" aria-pressed="false"><i data-icon="scanFace"></i><span>Ver rostro</span></button>
+  </div>
+  <aside class="sel-detail glass" id="charDetail">
+    <div class="cd-top"><span class="tag" id="cdRole"></span><span class="stars" id="cdStars" role="img"></span></div>
+    <div><h2 id="cdName"></h2><p class="cd-arch" id="cdArch"></p></div>
+    <p class="cd-bio" id="cdBio"></p>
+    <div class="stats" id="cdStats"></div>
+    <div class="perk"><i data-icon="zap"></i><div><b id="cdPerkName"></b><span id="cdPerkText"></span></div></div>
+    <div class="glb-row">
+      <button class="btn btn-ghost btn-sm" id="btnGlb"><i data-icon="upload"></i>Cargar modelo .glb</button>
+      <span class="glb-status" id="glbStatus" role="status">Malla procedural</span>
+      <button class="link-btn" id="btnGlbClear" hidden="">Quitar</button>
+      <input type="file" id="glbInput" accept=".glb,model/gltf-binary" hidden="">
+    </div>
+    <div class="q-wrap"><span class="eyebrow">Calidad gráfica</span>
+      <div class="seg" id="qualitySeg" role="group" aria-label="Calidad gráfica">
+        <button data-q="auto">Auto</button><button data-q="alto">Alto</button><button data-q="medio">Medio</button><button data-q="bajo">Bajo</button>
+      </div>
+    </div>
+    <div class="cd-foot">
+      <button class="btn btn-primary btn-start" id="btnStart"><i data-icon="play"></i>Comenzar</button>
+      <nav class="legal-links"><button class="link-btn" data-modal="privacy">Privacidad</button><span>·</span><button class="link-btn" data-modal="legal">Aviso legal</button></nav>
+    </div>
+  </aside>
+</section>
+
+<div id="hud" hidden="">
+  <div class="fx" id="grain"></div>
+  <div class="fx" id="vignette"></div>
+  <div class="fx" id="damage"></div>
+  <div class="fx" id="spore"></div>
+  <div class="hud-freq hud-panel" role="img" aria-label="Frecuencia cardíaca y vida">
+    <div class="ecg"><canvas id="ecg"></canvas><div class="ecg-meta"><span id="ecgState">ESTABLE</span><span class="ecg-r"><b id="bpmText">72</b>LPM<i>·</i><span id="hpText">100</span></span></div></div>
+    <div class="hp-bar"><i id="hpBar"></i></div>
+  </div>
+  <section class="tracker hud-panel" id="tracker" aria-live="polite" aria-label="Objetivos">
+    <div class="tr-head"><span id="trMode"><i data-icon="target"></i><span id="trModeText">Objetivo</span></span><b id="trTime"></b></div>
+    <ul class="tr-list" id="trList"></ul>
+  </section>
+  <div id="bossBar" class="hud-panel" hidden=""><div class="bb-top"><b id="bbName"></b><span id="bbState"></span></div><div class="bb-track"><i id="bbLag"></i><i id="bbHp"></i><s id="bbShield"></s></div></div>
+  <div class="hud-tr"><span id="fps" hidden="">60 FPS</span><button class="icon-btn" id="btnPause" aria-label="Pausa"><i data-icon="pause"></i></button></div>
+  <div class="hud-status hud-panel">
+    <div class="hs-head"><span class="hs-avatar" id="hudAvatar"></span><div><b id="hudName"></b><small id="hudRole"></small></div></div>
+    <div class="hs-row">
+      <span class="hs-coin" title="Monedas"><i data-icon="coins"></i><b id="coinCount">0</b><em id="coinPop"></em></span>
+      <span class="hs-kills" title="Infectados abatidos"><i data-icon="skull"></i><b id="killCount">0</b></span>
+    </div>
+    <div class="hs-ammo" id="ammoBox"><span class="wn"><i data-icon="gun"></i><span id="ammoName">Pistola</span><span class="hs-slot" id="ammoSlot">1/1</span></span><span class="am"><b id="ammoMag">12</b> <small>/ <span id="ammoRes">∞</span></small></span><i class="rl" id="ammoRl"></i></div>
+    <div class="bar-row" title="Resistencia"><i data-icon="zap"></i><div class="bar" id="stamWrap"><i id="stamBar"></i></div></div>
+    <div class="bar-row" title="Batería de la linterna"><i data-icon="flashlight"></i><div class="bar gold" id="battWrap"><i id="battBar"></i></div></div>
+  </div>
+  <div id="crosshair"><i></i><i></i><i></i><i></i><b></b><s></s></div>
+  <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+  <div id="marker"><span class="m-dot"></span><span id="markerDist">0 m</span></div>
+  <div id="toast" role="alert"><span class="eyebrow t-sub" id="toastSub"></span><div class="t-title" id="toastTitle"></div><span class="t-desc" id="toastDesc"></span></div>
+  <div id="prompt"><span class="kbd" id="promptKey">E</span><span class="ring"><svg viewBox="0 0 26 26"><circle class="bg" cx="13" cy="13" r="10"></circle><circle class="fg" id="promptRing" cx="13" cy="13" r="10"></circle></svg></span><span id="promptText"></span></div>
+  <div id="hint" class="hud-panel"></div>
+  <div id="lockHint" hidden="">Haz clic para controlar la cámara</div>
+  <div class="respawn" id="respawn" hidden=""></div>
+</div>
+
+<div id="hud2" hidden="">
+  <div class="fx" id="damage2"></div>
+  <div class="h2-card hud-panel">
+    <span class="hs-avatar" id="h2Avatar"></span>
+    <div class="h2-body">
+      <div class="h2-top"><b id="h2Name"></b><span class="h2-tag">J2</span><span class="h2-in" id="h2Input">Mando</span></div>
+      <div class="hp-bar"><i id="h2Hp"></i></div>
+      <div class="h2-meta"><span><i data-icon="heart"></i><b id="h2HpText">100</b></span><span><i data-icon="gun"></i><span id="h2Weapon">Pistola</span><b id="h2Mag">12</b><small>/ <span id="h2Res">∞</span></small></span></div>
+      <div class="bar"><i id="h2Stam"></i></div>
+    </div>
+  </div>
+  <div id="crosshair2"><i></i><i></i><i></i><i></i><b></b><s></s></div>
+  <div id="hitmarker2"><i></i><i></i><i></i><i></i></div>
+  <div id="prompt2"><span class="kbd" id="prompt2Key">A</span><span class="ring"><svg viewBox="0 0 26 26"><circle class="bg" cx="13" cy="13" r="10"></circle><circle class="fg" id="prompt2Ring" cx="13" cy="13" r="10"></circle></svg></span><span id="prompt2Text"></span></div>
+  <div id="toast2" role="status"><div class="t-title" id="toast2Title"></div><span class="t-sub" id="toast2Sub"></span></div>
+  <div class="respawn" id="respawn2" hidden=""></div>
+</div>
+<div id="splitLine" aria-hidden="true"></div>
+
+<div id="cine" hidden="" aria-live="polite">
+  <div class="cine-bar top"></div><div class="cine-bar bot"></div>
+  <div class="cine-card"><span id="cineEyebrow"></span><h2 id="cineName"></h2><p id="cineSub"></p></div>
+  <span class="cine-skip" id="cineSkip">Pulsa cualquier botón para saltar</span>
+</div>
+
+<div id="touch" hidden="">
+  <div id="joyZone"></div>
+  <div id="lookZone"></div>
+  <div id="joy"><span class="joy-run" aria-hidden="true"><i data-icon="run"></i></span><div id="joyKnob"></div></div>
+  <div class="t-cluster">
+    <button class="t-btn" id="tFire" aria-label="Disparar"><i data-icon="crosshair"></i></button>
+    <button class="t-btn" id="tAim" aria-label="Apuntar (apuntado automático)"><i data-icon="scan"></i></button>
+    <button class="t-btn" id="tKnife" aria-label="Cuchillo"><i data-icon="knife"></i></button>
+    <button class="t-btn on" id="tLight" aria-label="Linterna"><i data-icon="flashlight"></i></button>
+    <button class="t-btn" id="tShoulder" aria-label="Cambiar hombro"><i data-icon="swap"></i></button>
+    <button class="t-btn" id="tReload" aria-label="Recargar"><i data-icon="reload"></i></button>
+    <button class="t-btn" id="tWeapon" aria-label="Cambiar de arma"><i data-icon="gun"></i></button>
+    <button class="t-btn" id="tSlide" aria-label="Agacharse (corriendo: deslizarse)"><i data-icon="slide"></i></button>
+    <button class="t-btn" id="tUse" aria-label="Usar" hidden=""><i data-icon="hand"></i></button>
+  </div>
+</div>
+
+<div id="pause" class="modal-wrap" hidden="">
+  <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+    <div class="m-head"><div><span class="eyebrow" id="pauseChar"></span><h2 id="pauseTitle">Pausa</h2><p id="pauseObj" style="margin:6px 0 0;font-size:13px;color:var(--muted)"></p></div></div>
+    <div class="m-actions">
+      <button class="btn btn-primary" id="btnResume"><i data-icon="play"></i>Reanudar</button>
+      <button class="btn btn-ghost" id="btnMenu"><i data-icon="back"></i>Abandonar</button>
+    </div>
+    <div class="set-row"><label for="rngBright"><i data-icon="sun"></i>Brillo</label><input type="range" id="rngBright" min="0.5" max="2" step="0.05"></div>
+    <div class="set-row"><label for="rngSens"><i data-icon="crosshair"></i>Sensibilidad</label><input type="range" id="rngSens" min="0.3" max="2.5" step="0.05"></div>
+    <div class="set-row"><span class="l"><i data-icon="target"></i>Apuntado automático</span><button class="switch" id="swAssist" role="switch" aria-label="Apuntado automático"></button></div>
+    <div class="set-row"><span class="l"><i data-icon="volume"></i>Sonido</span><button class="switch" id="swSound" role="switch" aria-label="Sonido"></button></div>
+    <div class="set-row"><span class="l"><i data-icon="gauge"></i>Mostrar FPS</span><button class="switch" id="swFps" role="switch" aria-label="Mostrar FPS"></button></div>
+    <div class="set-row"><span class="l"><i data-icon="expand"></i>Pantalla completa</span><button class="switch" id="swFull" role="switch" aria-label="Pantalla completa"></button></div>
+    <div class="set-row"><span class="l"><i data-icon="tv"></i>Modo TV</span><button class="switch" id="swTv" role="switch" aria-label="Modo TV: interfaz grande para jugar desde el sofá"></button></div>
+    <div class="set-row"><span class="l"><i data-icon="users"></i>Jugadores</span><span class="pl-status" id="plStatus">Solo</span></div>
+    <div class="pl-actions"><button class="btn btn-ghost" data-modal="pads"><i data-icon="gamepad"></i>Mandos y móvil</button><button class="btn btn-ghost" id="btnP2Leave" hidden=""><i data-icon="x"></i>Quitar jugador 2</button></div>
+    <p class="pl-hint">Dúo local: pulsa START en un segundo mando (PlayStation o Xbox) o conecta tu móvil como mando. La pantalla se divide al unirse el jugador 2.</p>
+    <div class="controls-help" id="controlsHelp"></div>
+    <nav class="legal-links" style="margin-top:14px"><button class="link-btn" data-modal="privacy">Privacidad</button><span>·</span><button class="link-btn" data-modal="legal">Aviso legal</button></nav>
+  </div>
+</div>
+
+<div id="death" class="modal-wrap death-wrap" hidden="">
+  <div class="modal glass death" role="dialog" aria-modal="true" aria-labelledby="deathTitle">
+    <span class="eyebrow" id="deathChar">Fin de la partida</span>
+    <h2 id="deathTitle">Has muerto</h2>
+    <div class="death-stats">
+      <div><b id="dKills">0</b><span>Infectados</span></div>
+      <div><b id="dCoins">0</b><span id="dMidLabel">Monedas</span></div>
+      <div><b id="dTime">0:00</b><span>Sobreviviste</span></div>
+    </div>
+    <p id="dNote" style="margin:-6px 0 16px;font-size:13px;color:var(--muted)"></p>
+    <div class="m-actions">
+      <button class="btn btn-primary" id="btnRetry"><i data-icon="rotate"></i>Reintentar</button>
+      <button class="btn btn-ghost" id="btnDeathMenu"><i data-icon="back"></i>Menú principal</button>
+    </div>
+  </div>
+</div>
+
+<div id="complete" class="modal-wrap death-wrap" hidden="">
+  <div class="modal glass complete" role="dialog" aria-modal="true" aria-labelledby="cmpTitle">
+    <span class="eyebrow" id="cmpEyebrow">Capítulo completado</span>
+    <h2 id="cmpTitle"></h2>
+    <p id="cmpText"></p>
+    <div class="death-stats">
+      <div><b id="cKills">0</b><span>Infectados</span></div>
+      <div><b id="cCoins">0</b><span>Monedas</span></div>
+      <div><b id="cTime">0:00</b><span>Tiempo</span></div>
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-primary" id="btnNext"><i data-icon="play"></i><span id="btnNextLabel">Siguiente capítulo</span></button>
+      <button class="btn btn-ghost" id="btnCmpMenu"><i data-icon="back"></i>Menú principal</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-privacy" class="modal-wrap" hidden="">
+  <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="privTitle">
+    <div class="m-head"><h2 id="privTitle">Política de privacidad</h2><button class="icon-btn" data-close="" aria-label="Cerrar"><i data-icon="x"></i></button></div>
+    <p>BLOOD DEAD es un videojuego que se ejecuta íntegramente en tu navegador. No pide registro ni recoge datos personales, y no usa cookies de seguimiento ni analítica.</p>
+    <p>Solo guarda en tu propio dispositivo (localStorage) tus ajustes (calidad gráfica, brillo, sensibilidad, sonido, contador de FPS) y tu progreso: capítulos desbloqueados y récord de rondas. Puedes borrarlos limpiando los datos del sitio en tu navegador.</p>
+    <p>El juego no carga recursos de terceros: el motor (Three.js), las tipografías y el resto de librerías vienen incluidos y funciona sin conexión.</p>
+    <p>Solo si usas tu móvil como mando, el juego se conecta al servidor público de PeerJS para emparejar ambos dispositivos (ese servicio puede registrar tu dirección IP según su propia política); después, los datos del mando viajan directamente entre ellos (WebRTC) y no se guardan.</p>
+    <p>Responsable y contacto para ejercer tus derechos de acceso, rectificación, supresión, oposición y portabilidad (RGPD): <a href="mailto:websize130@gmail.com">websize130@gmail.com</a>.</p>
+  </div>
+</div>
+
+<div id="modal-legal" class="modal-wrap" hidden="">
+  <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="legalTitle">
+    <div class="m-head"><h2 id="legalTitle">Aviso legal</h2><button class="icon-btn" data-close="" aria-label="Cerrar"><i data-icon="x"></i></button></div>
+    <p>BLOOD DEAD se ofrece «tal cual», sin garantías de funcionamiento. Personajes, escenarios, texturas y sonidos son originales y se generan por código.</p>
+    <p>Queda prohibida la reproducción o distribución comercial del código sin autorización del titular. Three.js se distribuye bajo licencia MIT.</p>
+    <p>Titular y contacto: <a href="mailto:websize130@gmail.com">websize130@gmail.com</a>.</p>
+  </div>
+</div>
+
+<div id="modal-pads" class="modal-wrap" hidden="">
+  <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="padTitle">
+    <div class="m-head"><div><span class="eyebrow">Multijugador local · Dúo</span><h2 id="padTitle">Mandos y móvil</h2></div><button class="icon-btn" data-close="" aria-label="Cerrar"><i data-icon="x"></i></button></div>
+    <div class="pad-list" id="padList"></div>
+    <div class="pad-phone">
+      <div class="pad-qr" id="padQr" aria-label="Código QR para conectar el móvil"></div>
+      <div><span class="eyebrow">Tu móvil como mando inalámbrico</span><b class="pad-code" id="padCode">····</b><p>Escanea el código o abre en el móvil:</p><code id="padUrl"></code><span class="pad-status" id="padStatus"></span>
+        <div class="seg pad-seg" id="padTarget" role="group" aria-label="El móvil controla a"><button data-t="p2" aria-pressed="true">Jugador 2</button><button data-t="p1" aria-pressed="false">Jugador 1</button></div>
+        <p id="padLocal" hidden="">Has abierto el juego como archivo local: para usar el móvil, publícalo en una web (https) y ábrelo desde allí.</p>
+      </div>
+    </div>
+    <p class="pad-note">Mando físico (USB o Bluetooth): pulsa cualquier botón para jugar como Jugador 1. Durante la partida, pulsa START en un segundo mando para unirte como Jugador 2: la pantalla se divide en horizontal. En el menú, LB/RB cambian de personaje.</p>
+  </div>
+</div>
+<div id="uiToast" role="status"><b></b><span></span></div>
+
+<button class="icon-btn" id="dlBtn" aria-label="Descargar index.html" title="Descargar index.html"><i data-icon="download"></i></button>
+
+<script type="module" src="/src/main.js"></script>
+</body></html>
