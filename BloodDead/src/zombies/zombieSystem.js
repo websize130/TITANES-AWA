@@ -111,7 +111,7 @@ export class ZombieSystem {
     const U = this.xmat.shield.uniforms, T = this.titan;
     U.uA.value = damp(U.uA.value, T && T.alive && T.shield ? 1 : 0, 3, dt); U.uT.value += dt; this.shieldFlash = Math.max(0, this.shieldFlash - dt * 4); U.uHit.value = this.shieldFlash;
     if (T && T.parts.shield) T.parts.shield[0].visible = U.uA.value > 0.01;
-    this.xmat.core.emissiveIntensity = T && T.alive && !T.shield ? 4.5 + 2.5 * Math.sin(this.time * (T.phase === 3 ? 16 : 9)) : 1.4;
+    this.xmat.core.emissiveIntensity = T && T.alive && !T.shield ? 4.5 + 2.5 * Math.sin(this.time * (T.phase >= 3 ? 16 : 9)) : 1.4;
     this.xmat.pod.emissiveIntensity = 1.4 + 1.1 * Math.sin(this.time * 5.5); this.xmat.egg.emissiveIntensity = 0.7 + 0.4 * Math.sin(this.time * 2.3);
     // Susurros: si un infectado se acerca por la espalda o por un lado, se le oye antes que verlo
     this.whT = (this.whT ?? rand(5, 10)) - dt;

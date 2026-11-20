@@ -35,6 +35,10 @@ export class MaterialLibrary {
     mat('thatch', 'thatch', T.wood, { color: 0xb59a62 });
     mat('palmTrunk', 'bark', T.wood, { color: 0x8a7458 }, { color: 0xb59a7e });
     std('palmLeaf', { color: 0xffffff, vertexColors: true, roughness: 0.62, metalness: 0, side: THREE.DoubleSide, normalMap: (T.leather || {}).normalMap || null, normalScale: V2(0.25) });
+    // Historia: carne viva (Zona Cero, cuarentena) y follaje mutante del invernadero
+    std('flesh', { color: 0x5e1d18, emissive: 0x260404, emissiveIntensity: 1, roughness: 0.38, metalness: 0.02, normalMap: (T.flesh || T.leather).normalMap, normalScale: V2(1.3) });
+    std('vein', { color: 0x2a0303, emissive: 0xff2a1a, emissiveIntensity: 1.6, roughness: 0.3 });
+    std('mutantLeaf', { color: 0xffffff, vertexColors: true, roughness: 0.5, side: THREE.DoubleSide, emissive: 0x1a0420, emissiveIntensity: 0.6 });
     std('tent', { color: 0x6f6a4c, roughness: 0.92, normalMap: (T.canvas || {}).normalMap || null, side: THREE.DoubleSide });
     std('hullPaint', { color: 0x2f5a6e, roughness: 0.6, metalness: 0.1, map: (ScannedTextures.get('wood') || T.wood).map });
     std('metal', { color: 0x2b2d2f, roughness: 0.42, metalness: 0.85 });

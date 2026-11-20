@@ -31,7 +31,7 @@ export class Zombie {
   }
   spawn(x, z, o = {}) {
     const T = this.T;
-    this.active = this.alive = true; this.mesh.visible = true; this.ext = null; this.noBlock = false;
+    this.active = this.alive = true; this.mesh.visible = true; this.ext = null; this.noBlock = false; this.abCdK = 1;
     this.mSpd = o.spd || 1; this.mDmg = o.dmg || 1; this.fury = !!o.fury;
     this.hp = this.maxHp = T.hp * (T.boss ? 1 : rand(0.9, 1.15)) * (o.hp || 1);
     this.anchor.set(x, 0, z); this.abT = T.ability ? rand(2.2, 3.6) : 0; this.stunT = 0; this.sinkT = 0; this.slammed = this.spat = this.chHit = this.swept = this.spawned = false;
@@ -127,7 +127,7 @@ export class Zombie {
       case 'slam': {
         const B = T.ability; if (this.stateT < B.windup * 0.7) face = Math.atan2(dx, dz);
         if (!this.slammed && this.stateT >= B.windup) { this.slammed = true; S.shockwave(this, B); }
-        if (this.stateT >= B.windup + B.recover) { this.setState('chase'); this.abT = rand(...B.cd) * (this.phase === 3 ? 0.6 : 1); }
+        if (this.stateT >= B.windup + B.recover) { this.setState('chase'); this.abT = (rand(...B.cd) * (this.abCdK || 1)) * (this.phase >= 3 ? 0.6 : 1); }
         break;
       }
       case 'chain': { // el Behemoth hace girar sus cadenas
@@ -145,7 +145,7 @@ export class Zombie {
       case 'spit': {
         const B = this.spitB || T.ability; face = Math.atan2(this.lastSeen.x - this.pos.x, this.lastSeen.z - this.pos.z);
         if (!this.spat && this.stateT >= B.windup) { this.spat = true; S.spit(this, this.sees ? P.position : this.lastSeen, B); }
-        if (this.stateT >= B.windup + 0.55) { this.setState('chase'); this.abT = rand(...B.cd) * (this.phase === 3 ? 0.6 : 1); }
+        if (this.stateT >= B.windup + 0.55) { this.setState('chase'); this.abT = (rand(...B.cd) * (this.abCdK || 1)) * (this.phase >= 3 ? 0.6 : 1); }
         break;
       }
       case 'kneel': break; // el Parásito sin escudo (fase 1): arrodillado y expuesto
@@ -163,7 +163,7 @@ export class Zombie {
       S.game.world.resolve(this.pos, T.radius * this.V.scale);
     }
     const goalFace = face !== null ? face : this.speed > 0.15 ? Math.atan2(this.vx, this.vz) : this.facing;
-    this.facing = dampAngle(this.facing, goalFace, T.turn * (this.phase === 3 ? 1.4 : 1), dt);
+    this.facing = dampAngle(this.facing, goalFace, T.turn * (this.phase >= 3 ? 1.4 : 1), dt);
     this.mesh.rotation.y = this.facing;
     // Voz: lamentos al vagar; gruñidos y rugidos al cazar (más seguidos cuanto más cerca)
     this.voiceT -= dt;
@@ -227,7 +227,7 @@ export class Zombie {
       this.setState('stunned'); this.stunT = B.stun; S.voice('boom', this); S.fx.shock(this.pos.x + Math.sin(a) * 0.8, this.pos.z + Math.cos(a) * 0.8, 2.2);
       S.shakeNear(this.pos, 0.08, 0.3); S.game.events.emit('boss:stunned', { z: this });
     } else if (B.pounce && (wall || this.stateT > B.dur || this.chHit)) { this.setState('exposed'); this.stunT = B.stun; this.vx = this.vz = 0; S.game.events.emit('boss:exposed', { z: this }); }
-    else if (this.stateT > B.dur || this.chHit) { this.setState('chase'); this.abT = rand(...B.cd) * (this.chHit ? 1.2 : 1); }
+    else if (this.stateT > B.dur || this.chHit) { this.setState('chase'); this.abT = (rand(...B.cd) * (this.abCdK || 1)) * (this.chHit ? 1.2 : 1); }
   }
   // Blindajes y puntos débiles por jefe. Devuelve el daño real y si el impacto rebota
   mitigate(a, zone, dir, idx = 0) {
@@ -251,8 +251,8 @@ export class Zombie {
         if (this.shield) { R.a = 0; R.block = 'shield'; break; }
         const pods = this.podsAlive();
         if (zone === 'pod') { if (this.podHp[idx] > 0) { this.podHp[idx] -= a; R.a = a * 0.15; if (this.podHp[idx] <= 0) { R.broke = true; this.popPod(idx, dir); } } else R.a = a * 0.15; }
-        else if (zone === 'core') R.a = a * (this.phase === 1 ? 2 : pods ? 0.35 : this.phase === 3 ? 1.6 : 1.3);
-        else { R.a = a * (this.phase === 3 ? 0.32 : 0.18); R.armor = true; }
+        else if (zone === 'core') R.a = a * (this.phase === 1 ? 2 : pods ? 0.35 : this.phase >= 3 ? 1.6 : 1.3);
+        else { R.a = a * (this.phase >= 3 ? 0.32 : 0.18); R.armor = true; }
         break;
       }
     }
@@ -281,6 +281,7 @@ export class Zombie {
     this.phase = n; this.shield = false;
     if (n === 2) { for (let i = 0; i < this.podHp.length; i++) for (const m of this.parts['pod' + i] || []) m.visible = true; this.sys.game.audio.shield(false); }
     if (n === 3) { this.mSpd *= 1.25; this.mDmg *= 1.15; }
+    if (n === 4) { this.mSpd *= 1.2; this.mDmg *= 1.25; if (this.T.ability && this.T.ability.cd) this.abCdK = 0.6; } // fase final: más rápido, más letal y ataques más seguidos
     this.setState('phase'); this.sys.voice('roar', this);
     this.sys.game.events.emit('boss:phase', { z: this, phase: n });
   }
@@ -369,6 +370,7 @@ export class Zombie {
     if (this.T.phases) { // el Parásito Alpha cambia de fase al 66 % y al 33 % (no baja del 33 % con vainas vivas)
       if (this.phase === 1 && this.hp <= this.maxHp * 0.66) { this.hp = this.maxHp * 0.66; this.enterPhase(2); return false; }
       if (this.phase === 2 && this.hp <= this.maxHp * 0.33) { if (this.podsAlive()) this.hp = this.maxHp * 0.33 + 1; else { this.hp = this.maxHp * 0.33; this.enterPhase(3); return false; } }
+      if (this.phase === 3 && this.T.final && this.hp <= this.maxHp * this.T.final) { this.hp = this.maxHp * this.T.final; this.enterPhase(4); return false; } // La Pesadilla Final
     }
     if (this.hp <= 0) { this.die(dir); return true; }
     if (this.T.boss) return false; // los jefes no se tambalean con cualquier impacto

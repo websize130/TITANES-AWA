@@ -23,6 +23,47 @@ Salidas de `npm run build`:
 Skypack o Google Fonts. La única conexión externa del juego es el servidor público de PeerJS, y solo al
 emparejar un móvil como mando (para eso, la TV y el móvil deben estar en la misma Wi-Fi).
 
+## Modo Historia (unas 2 horas)
+
+Los 5 capítulos están en `src/data/levels.js` (CHAPTERS). Las alas y los escenarios nuevos están en `src/world/storyLevels.js`.
+
+| Cap. | Escenario | Jefe (con cinemática) | Estimado |
+|---|---|---|---|
+| 1 | Criogenia → laboratorio → archivo y servidores | El Sujeto 0 (rediseñado) | ~22 min |
+| 2 | Túneles: andén, túnel de servicio, bombas, ventilación, colectores | El Carroñero, Acechador de Sombras | ~22 min |
+| 3 | Refinería → silos → torre de control y tren | El Coloso Blindado, Portador del Núcleo | ~22 min |
+| 4 | Invernadero: cuarentena, invernaderos, laboratorio botánico, gran cúpula | La Matriarca, Enjambre Mutante | ~22 min |
+| 5 | Zona Cero (restos que flotan, casas del revés, ojo en el cielo) → Núcleo | El Omega, La Pesadilla Final (4 fases) | ~30 min |
+
+Tipos de paso:
+- `reach`: llegar a un punto.
+- `use`: activar interactivos, con contador si son varios.
+- `hold`: aguantar N segundos a la horda.
+- `boss` y `alpha`: jefe con cinemática.
+
+Las duraciones son estimaciones de diseño (recorrido + combate + esperas fijas), no tiempos medidos jugando.
+
+## Multijugador
+
+- **Local:** dúo a pantalla dividida con mandos de PlayStation o Xbox, o con móviles como mando.
+- **Online con amigos** (*Amigos*):
+  - El anfitrión crea una sala con un código de 6 caracteres y la comparte por WhatsApp, con *Compartir…* o copiando el enlace `?unirse=CÓDIGO`.
+  - El invitado juega como Jugador 2 con pantalla táctil, teclado y ratón, o mando.
+  - Recibe su vista en vídeo con sonido y su HUD.
+  - El anfitrión es quien ejecuta la partida.
+- **Reanimación:** junto al compañero caído, mantén *Usar* para reanimarlo. Si nadie lo hace, reaparece solo a los 35 s.
+- **Supervivencia a dos:** el doble de infectados, más agresivos y con murciélagos desde el nivel 2.
+- **Emparejamiento:** usa el servidor público de PeerJS. Para usar un servidor propio, define `window.__PEER_OPTS__ = { host, port, path, secure }` antes de cargar el juego.
+
+## Modo TV
+
+- **Modo TV local** (interruptor en Ajustes o en *Mandos y TV*):
+  - Esta pantalla queda fija como TV y muestra un código y un QR.
+  - El móvil puede escanear el QR con la cámara, o abrir BLOOD DEAD → *Unirse · mando* → *Escanear QR* o escribir el código.
+- **Modo normal · TV real:**
+  - Proyectar con Chromecast o Google TV (API de presentación), con AirPlay o con el navegador de una Smart TV (`?tv=1`), o conectar por HDMI.
+  - La TV muestra su propio código para conectar los móviles.
+
 ## Modo Supervivencia
 
 - **Dos mapas exclusivos** (se eligen al pulsar *Modo Supervivencia*):

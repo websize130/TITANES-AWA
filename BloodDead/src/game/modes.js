@@ -26,6 +26,7 @@ export function bossStatus(z) {
     case 'alpha':
       if (z.phase === 1) return z.shield ? ['FASE 1 · ESCUDO ACTIVO', false] : ['FASE 1 · ¡VULNERABLE!', true];
       if (z.phase === 2) return z.podsAlive() ? [`FASE 2 · VAINAS ${z.podsAlive()}/3`, false] : ['FASE 2 · ¡NÚCLEO EXPUESTO!', true];
+      if (z.phase === 4) return ['FASE FINAL · LA PESADILLA', true];
       return ['FASE 3 · FURIA', true];
     case 'acolyte': return s === 'spit' ? ['¡ESPORAS!', true] : ['CIEGO · TE OYE', false];
   }
@@ -52,7 +53,7 @@ export class StoryMode {
   next() {
     const g = this.game; this.i++; const s = (this.step = this.ch.steps[this.i] || null);
     if (!s) return this.finish();
-    this.prog = 0; this.need = s.use ? s.use.length : 1; this.deadT = 0;
+    this.prog = 0; this.need = s.use ? s.use.length : 1; this.deadT = 0; this.holdT = s.hold || 0; // hold: aguantar N segundos
     if (s.dir) g.zombies.setDirector(s.dir, true);
     const B = s.boss || s.alpha;
     if (s.start && !B) this.act(s.start); // con jefe, el aviso llega al terminar su presentación
@@ -89,11 +90,16 @@ export class StoryMode {
     if (phase === 2) {
       if (this.TT) { for (const id of this.TT.nodes) g.interact.enable(id, false); g.hud.trackerRemove('tn'); g.hud.trackerRemove('tc'); this.TT = null; }
       g.hud.trackerAdd('pods', 'Revienta las vainas parasitarias', '0/3', true);
-      g.cine.phaseIntro(z, { eyebrow: 'El Parásito Alpha · Fase 2', title: 'Vainas parasitarias', sub: 'Lo regeneran y blindan su núcleo', onEnd: () => g.hud.alert('Fase 2', 'Revienta las tres vainas: mientras vivan, se regenera', 'danger', 3.6) });
+      g.cine.phaseIntro(z, { eyebrow: `${z.T.name} · Fase 2`, title: 'Vainas parasitarias', sub: 'Lo regeneran y blindan su núcleo', onEnd: () => g.hud.alert('Fase 2', 'Revienta las tres vainas: mientras vivan, se regenera', 'danger', 3.6) });
     } else if (phase === 3) {
       g.hud.trackerDone('pods'); g.hud.trackerAdd('core3', '¡Destruye el núcleo!', '', true);
       g.zombies.setDirector({ target: 6, every: [3, 5.5], fury: true }, true);
-      g.cine.phaseIntro(z, { eyebrow: 'El Parásito Alpha · Fase 3', title: 'Furia del núcleo', sub: 'Más rápido, más letal. El núcleo late al descubierto', onEnd: () => g.hud.alert('Fase final', 'Vacía el cargador en el núcleo del pecho', 'danger', 3.4) });
+      g.cine.phaseIntro(z, { eyebrow: `${z.T.name} · Fase 3`, title: 'Furia del núcleo', sub: 'Más rápido, más letal. El núcleo late al descubierto', onEnd: () => g.hud.alert('Fase 3', 'Vacía el cargador en el núcleo del pecho', 'danger', 3.4) });
+    } else if (phase === 4) { // La Pesadilla Final: el colosal se desata (más rápido, más letal, la horda no para)
+      g.hud.trackerRemove('core3'); g.hud.trackerAdd('core4', '¡Acaba con la Pesadilla!', '', true);
+      g.zombies.setDirector({ target: 9, every: [2, 4], fury: true, aggro: 1 }, true);
+      g.zombies.shakeNear(z.pos, 0.12, 1.2);
+      g.cine.phaseIntro(z, { eyebrow: `${z.T.name} · Fase final`, title: 'La Pesadilla Final', sub: 'El núcleo se desborda: todo lo que queda de la infección se lanza contra vosotros', onEnd: () => g.hud.alert('Fase final', 'Núcleo al rojo: dispara sin parar y no te quedes quieto', 'danger', 3.6) });
     }
   }
   onUse(id) {
@@ -122,7 +128,7 @@ export class StoryMode {
     g.hud.trackerDone('s' + this.i); g.audio.chime();
     if (s.done) this.act(s.done);
     if (s.boss || s.alpha) g.hud.bossHide();
-    for (const k of ['tn', 'tc', 'pods', 'core3']) g.hud.trackerRemove(k);
+    for (const k of ['tn', 'tc', 'pods', 'core3', 'core4']) g.hud.trackerRemove(k);
     this.TT = null;
     this.next();
   }
@@ -158,6 +164,11 @@ export class StoryMode {
     } else if (s.use) {
       let bd = Infinity;
       for (const id of s.use) { const it = g.interact.get(id); if (!it || !g.interact.available(it)) continue; const d = Math.hypot(P.x - it.x, P.z - it.z); if (d < bd) { bd = d; tgt = this.target.set(it.x, 1.2, it.z); } }
+    } else if (s.hold) { // aguantar: la cuenta atrás manda en el marcador
+      this.holdT -= dt; g.hud.trackerTime(fmtClock(Math.max(0, this.holdT)), this.holdT < 10);
+      if (s.at) { const p = g.world.poi[s.at]; tgt = this.target.set(p.x, 1.2, p.z); }
+      if (this.holdT <= 0) { this.complete(); return; }
+      this.hasTarget = !!tgt; return;
     } else if (s.boss || s.alpha) {
       const b = this.boss;
       if (b && b.alive && s.alpha) {

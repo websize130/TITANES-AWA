@@ -101,7 +101,7 @@ void main() {
 export class SceneExtras {
   constructor(game, L = {}, q = {}) {
     this.game = game; this.objs = []; this.disp = []; this.t = 0; this.on = !!L.day;
-    const W = game.world;
+    const W = game.world; this.floaters = W.floaters || [];
     if (!this.on) return;
     const sun = new THREE.Vector3(...(L.lightDir || [-0.5, -1, -0.3])).normalize().negate();
     this.sun = sun;
@@ -163,6 +163,10 @@ export class SceneExtras {
     this.m4 = new THREE.Matrix4(); this.q = new THREE.Quaternion(); this.e = new THREE.Euler(0, 0, 0, 'YXZ'); this.p = new THREE.Vector3(); this.s = new THREE.Vector3(1, 1, 1); this.w4 = new THREE.Matrix4();
   }
   update(dt, time) {
+    for (const f of this.floaters) { // Zona Cero: restos y edificios que flotan, giran y laten
+      f.ph += dt * f.sp; f.m.position.y = f.y + Math.sin(f.ph) * f.amp; f.m.rotation.y += f.spin * dt;
+      if (f.pulse) f.m.scale.setScalar(f.s0 * (1 + Math.max(0, Math.sin(f.ph * 4)) ** 6 * f.pulse));
+    }
     if (!this.on) return;
     this.t += dt; const cam = this.game.camera;
     if (cam) this.sky.position.copy(cam.position);

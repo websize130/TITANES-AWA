@@ -19,7 +19,7 @@ export class World {
     this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._e = new THREE.Euler(); this._p = new THREE.Vector3(); this._s = new THREE.Vector3();
     this.firePos = new THREE.Vector3(0, 0, 0); this.fires = [];
     this.lights = []; this.doors = new Map(); this.moving = []; this.uses = []; this.poi = {}; this.groups = {}; this.reserved = [];
-    this.ambushSpots = []; this.limit = null; // tarimas de emboscada · límite de forma libre (isla)
+    this.ambushSpots = []; this.limit = null; this.floaters = []; // piezas flotantes animadas (Zona Cero) // tarimas de emboscada · límite de forma libre (isla)
     this.bounds = { x0: -24.5, x1: 24.5, z0: -28.5, z1: 28.5 };
     this.spawn = { player: new THREE.Vector3(0, 0, 24), yaw: 0 };
   }
@@ -97,6 +97,33 @@ export class World {
   perimeter(x0, z0, x1, z1, h, mat, t = 0.6) {
     this.box((x0 + x1) / 2, 0, z0 - t / 2, x1 - x0 + 2 * t, h, t, mat); this.box((x0 + x1) / 2, 0, z1 + t / 2, x1 - x0 + 2 * t, h, t, mat);
     this.box(x0 - t / 2, 0, (z0 + z1) / 2, t, h, z1 - z0, mat); this.box(x1 + t / 2, 0, (z0 + z1) / 2, t, h, z1 - z0, mat);
+  }
+  // Perímetro con huecos por lado (n = borde z0, s = borde z1, w = x0, e = x1): conecta alas anexas
+  perimeterGaps(x0, z0, x1, z1, h, mat, t = 0.6, gaps = {}) {
+    this.wallX(x0 - t, x1 + t, z0 - t / 2, h, mat, t, gaps.n || []); this.wallX(x0 - t, x1 + t, z1 + t / 2, h, mat, t, gaps.s || []);
+    this.wallZ(z0, z1, x0 - t / 2, h, mat, t, gaps.w || []); this.wallZ(z0, z1, x1 + t / 2, h, mat, t, gaps.e || []);
+  }
+  // Ala anexa: tres muros (el lado abierto se une a la sala vecina por un hueco de su perímetro) y su suelo
+  annex(x0, z0, x1, z1, h, mat, open, floor, t = 0.6, seed = 300) {
+    const g = { n: [], s: [], w: [], e: [] }; delete g[open];
+    if (open !== 'n') this.wallX(x0 - t, x1 + t, z0 - t / 2, h, mat, t, g.n || []);
+    if (open !== 's') this.wallX(x0 - t, x1 + t, z1 + t / 2, h, mat, t, g.s || []);
+    if (open !== 'w') this.wallZ(z0, z1, x0 - t / 2, h, mat, t);
+    if (open !== 'e') this.wallZ(z0, z1, x1 + t / 2, h, mat, t);
+    if (floor) this.groundPlane(x1 - x0, z1 - z0, floor, (x0 + x1) / 2, (z0 + z1) / 2, seed);
+  }
+  // Panel de cristal con marco metálico (invernaderos)
+  glassWall(axis, a0, a1, k, h, step = 2.2) {
+    for (let a = a0; a <= a1 + 0.01; a += step) { if (axis === 'x') this.box(a, 0, k, 0.12, h, 0.12, 'metal'); else this.box(k, 0, a, 0.12, h, 0.12, 'metal'); }
+    const L = a1 - a0, c = (a0 + a1) / 2;
+    if (axis === 'x') { this.box(c, 0.05, k, L, h - 0.1, 0.04, 'glass', { collide: false, cast: false }); this.box(c, h - 0.08, k, L, 0.12, 0.14, 'metal', { collide: false }); this.box(c, 0, k, L, 0.45, 0.16, 'concrete'); this.addAABB({ min: { x: a0, y: 0, z: k - 0.1 }, max: { x: a1, y: h, z: k + 0.1 } }); }
+    else { this.box(k, 0.05, c, 0.04, h - 0.1, L, 'glass', { collide: false, cast: false }); this.box(k, h - 0.08, c, 0.14, 0.12, L, 'metal', { collide: false }); this.box(k, 0, c, 0.16, 0.45, L, 'concrete'); this.addAABB({ min: { x: k - 0.1, y: 0, z: a0 }, max: { x: k + 0.1, y: h, z: a1 } }); }
+  }
+  // Pieza flotante animada (no se fusiona): flota, gira y late (escenarios estrambóticos)
+  floater(geo, mat, x, y, z, o = {}) {
+    const m = new THREE.Mesh(geo, this.mats.get(mat)); m.position.set(x, y, z); m.rotation.set(o.rx || 0, o.ry || 0, o.rz || 0); m.castShadow = o.cast !== false; m.receiveShadow = true;
+    this.scene.add(m); this.meshes.push(m); this.floaters.push({ m, y, amp: o.amp ?? 0.4, sp: o.sp ?? rand(0.3, 0.8), spin: o.spin ?? rand(-0.2, 0.2), ph: rand(0, TAU), pulse: o.pulse || 0, s0: m.scale.x });
+    return m;
   }
   // Muro recto a lo largo de X (en z) o de Z (en x) con huecos {c, w, h?}: sobre cada hueco queda un dintel
   wallX(x0, x1, z, h, mat, t = 0.4, gaps = []) { this.wallRun('x', x0, x1, z, h, mat, t, gaps); }

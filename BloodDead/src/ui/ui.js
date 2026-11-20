@@ -158,7 +158,8 @@ export class UI {
   closeModal(w) { w.hidden = true; if (w.id === 'modal-join' && this.scanner) { this.scanner.stop(); $('#scanBox').hidden = true; } if (this.lastFocus && this.lastFocus.focus) this.lastFocus.focus({ preventScroll: true }); }
   renderTitleInfo() {
     const d = Settings.data, u = Math.min(CHAPTERS.length, d.unlocked || 1), done = (d.done || []).filter(Boolean).length;
-    $('#storyInfo').textContent = done >= CHAPTERS.length ? '5 capítulos · historia completada' : `5 capítulos · ${u} desbloqueado${u > 1 ? 's' : ''}`;
+    const mins = CHAPTERS.reduce((a, c) => a + (c.minutes || 0), 0);
+    $('#storyInfo').textContent = done >= CHAPTERS.length ? `5 capítulos · ~${Math.round(mins / 6) / 10} h · completada` : `5 capítulos · ~${Math.round(mins / 6) / 10} h · ${u} desbloqueado${u > 1 ? 's' : ''}`;
     const best = d.best || {}, rec = Object.keys(SURVIVAL.maps).filter((k) => best[k]).map((k) => `${SURVIVAL.maps[k].name.replace(/^(El|La) /, '').toLowerCase()} ${best[k]}/${SURVIVAL.total}`);
     $('#survInfo').textContent = `${SURVIVAL.total} niveles · 2 mapas · Récord: ${rec.length ? rec.join(' · ') : '—'}`;
   }
@@ -168,7 +169,7 @@ export class UI {
       const lock = i >= u, ok = d.done && d.done[i];
       return `<button class="ch-card" role="listitem" data-ch="${i}" ${lock ? 'disabled aria-disabled="true"' : ''} style="animation-delay:${60 + i * 60}ms">
         <span class="ch-num">${i + 1}</span>
-        <span class="ch-body"><b>${c.title}</b><span>${c.place} · <em>${lock ? 'Bloqueado' : c.boss}</em></span></span>
+        <span class="ch-body"><b>${c.title}</b><span>${c.place} · ~${c.minutes} min · <em>${lock ? 'Bloqueado' : c.boss}</em></span></span>
         <span class="ch-state ${ok ? 'ok' : ''}">${icon(lock ? 'lock' : ok ? 'check' : 'chevron')}</span>
       </button>`;
     }).join('');

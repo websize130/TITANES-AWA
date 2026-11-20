@@ -25,7 +25,7 @@ export function islandHeight(x, z) {
 const onPier = (x, z, m = 0) => { const P = ISLAND.pier; return Math.abs(x - P.x) < P.w / 2 - 0.25 + m && z > P.z0 - 4 && z < P.z1 - 0.4; };
 
 /* ---------- Palmera: tronco curvo por segmentos y frondas de hojuelas ---------- */
-function frondGeometry(len, droop, width, n = 16, hue = 0) {
+export function frondGeometry(len, droop, width, n = 16, hue = 0) {
   const pos = [], nor = [], uv = [], col = [], idx = [], c0 = new THREE.Color().setHSL(0.24 + hue, 0.55, 0.22), c1 = new THREE.Color().setHSL(0.2 + hue, 0.6, 0.42), c = new THREE.Color();
   const spine = (t) => [t * len, -droop * t * t + 0.25 * t, 0];
   let v = 0;

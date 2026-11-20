@@ -300,6 +300,7 @@ export const ZombieFactory = {
       X('chest', mergeGeometries([new THREE.BoxGeometry(0.34 * V.bw, 0.3, 0.06).translate(0, 0.3, -0.16), new THREE.CylinderGeometry(0.035, 0.035, 0.5, 8).translate(0.11 * V.bw, 0.42, -0.2), new THREE.CylinderGeometry(0.035, 0.035, 0.5, 8).translate(-0.11 * V.bw, 0.42, -0.2)], false), 'rust', 'back');
     }
     if (V.type === 'behemoth') { // placa pectoral (se rompe), máscara de acero y cadenas colgando de las muñecas
+      X('chest', mergeGeometries([new THREE.SphereGeometry(0.12, 16, 12).translate(0, 0.36, -0.24), new THREE.TorusGeometry(0.14, 0.022, 8, 24).translate(0, 0.36, -0.235)], false), 'core', 'backCore'); // el núcleo que porta
       const sh = Sculpt.shell(tg, tn, (x, y, z) => smooth(-0.02, 0.03, z) * smooth(0.05, 0.08, y) * smooth(0.52, 0.48, y), () => 0.035, 0.003);
       X('chest', GeoUtil.fromGrid(sh, sh.nor), 'rust', 'plateC');
       const mask = Sculpt.shell(hg, hn, (x, y, z) => smooth(0.02, 0.045, z) * smooth(-0.03, -0.015, y) * smooth(0.06, 0.045, y), () => 0.02, 0.002);
@@ -319,6 +320,9 @@ export const ZombieFactory = {
       X('chest', mergeGeometries([0.12, 0.2, 0.28].map((y) => new THREE.TorusGeometry(0.17 * V.bw, 0.012, 6, 20, Math.PI * 0.9).rotateX(Math.PI / 2).rotateZ(Math.PI * 0.55).translate(0, y, 0.02)), false), 'metal', 'ribs');
       T0.pods.forEach((p, i) => X(p.bone, new THREE.SphereGeometry(p.r, 16, 12).translate(...p.off), 'pod', 'pod' + i));
       for (const [x, y, ry, rz] of [[0.12, 0.46, 0.5, -0.5], [-0.12, 0.46, -0.5, 0.5], [0.09, 0.3, 0.9, -0.9], [-0.09, 0.3, -0.9, 0.9]]) tent('chest', [x, y, -0.14], [-1.3, ry, rz], 7, 1.0, 0.055, 0.012, 'flesh', 0.42, 1.6);
+      // El Omega: corona de seis tentáculos colosales a la espalda y espolones óseos sobre los hombros
+      for (const [x, y, ry, rz, L] of [[0.16, 0.56, 0.35, -0.8, 1.6], [-0.16, 0.56, -0.35, 0.8, 1.6], [0.1, 0.62, 0.15, -0.3, 1.9], [-0.1, 0.62, -0.15, 0.3, 1.9], [0.2, 0.4, 0.9, -1.2, 1.3], [-0.2, 0.4, -0.9, 1.2, 1.3]]) tent('chest', [x, y, -0.17], [-1.0, ry, rz], 9, L, 0.07, 0.012, 'flesh', 0.38, 1.3);
+      X('chest', mergeGeometries([1, -1].flatMap((s) => [0, 1, 2].map((i) => cone(0.035 - i * 0.006, 0.28 - i * 0.05, s * (0.16 + i * 0.05) * V.bw, 0.6 - i * 0.03, -0.04, -0.4, 0, -s * (0.5 + i * 0.25))))), 'bone', 'horns');
     }
     if (V.type === 'queen') { // abdomen de araña con sacos de huevos, ocho patas, corona ósea y tentáculos
       X('hips', new THREE.SphereGeometry(0.5, 22, 16).scale(1, 0.72, 1.25).translate(0, 0.02, -0.62), 'chitin', 'abdomen');

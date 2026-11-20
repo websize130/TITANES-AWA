@@ -1,5 +1,6 @@
 import { TAU, rand } from '../core/utils.js';
 import { buildIsland } from './island.js';
+import { labAnnexes, tunnels, silosAnnexes, greenhouse, zoneZero } from './storyLevels.js';
 
 /* =====================================================================
    ESCENARIOS: un constructor por nivel. Cada uno define límites, punto de inicio,
@@ -8,13 +9,15 @@ import { buildIsland } from './island.js';
 export const LEVEL_BUILDERS = {
   village(w) { w.buildVillage(); },
   island(w) { buildIsland(w); }, // Supervivencia · día
+  tunnels(w) { tunnels(w); }, // Historia · capítulo 2
+  greenhouse(w) { greenhouse(w); }, // Historia · capítulo 4
 
   /* Capítulo 1 · Instalación abandonada: vestíbulo → sala de tanques → generador → bahía de contención */
   lab(w) {
-    w.bounds = { x0: -21, x1: 21, z0: -31, z1: 29 };
-    w.spawn.player.set(0, 0, 25.5); w.spawn.yaw = 0;
+    w.bounds = { x0: -21, x1: 21, z0: -61, z1: 57 };
+    w.spawn.player.set(0, 0, 54); w.spawn.yaw = 0; // despiertas en la criogenia (ala sur)
     w.groundPlane(46, 66, 'tileFloor', 0, -1, 211);
-    w.perimeter(-22, -32, 22, 30, 4.4, 'concrete');
+    w.perimeterGaps(-22, -32, 22, 30, 4.4, 'concrete', 0.6, { n: [{ c: 0, w: 3.2, h: 3.3 }], s: [{ c: 0, w: 3.2, h: 3.3 }] });
     // Vestíbulo de entrada
     w.box(0, 0, 19.5, 6, 1.05, 1.1, 'concrete'); w.box(0, 1.05, 19.5, 6.2, 0.06, 1.3, 'metal', { collide: false });
     w.box(-1.6, 1.11, 19.4, 0.55, 0.38, 0.05, 'screen', { collide: false }); w.box(1.7, 1.11, 19.4, 0.55, 0.38, 0.05, 'screen', { collide: false, ry: 0.2 });
@@ -59,6 +62,7 @@ export const LEVEL_BUILDERS = {
     w.spawns('mid', [[-6.5, 12], [7, 11.5], [2, -5], [12, 4], [-6.5, -6], [18.5, 4], [0, 6]]);
     w.spawns('west', [[-18, 10], [-19, -5], [-12, -6], [-12, 11]]);
     w.spawns('north', [[-16, -11], [6, -12], [-8, -25], [-18, -24], [4, -29], [-5, -14]]);
+    labAnnexes(w); // criogenia (sur) y archivo/servidores (norte)
   },
 
   /* Capítulo 2 · Las calles en penumbra: calle principal → comisaría → barricada → metro */
@@ -107,10 +111,10 @@ export const LEVEL_BUILDERS = {
 
   /* Capítulo 3 · Zona de silos: paneles eléctricos → compuerta del silo central → muelle */
   silos(w) {
-    w.bounds = { x0: -24, x1: 24, z0: -30, z1: 28 };
-    w.spawn.player.set(0, 0, 25.5); w.spawn.yaw = 0;
+    w.bounds = { x0: -24, x1: 24, z0: -63, z1: 61 };
+    w.spawn.player.set(0, 0, 58); w.spawn.yaw = 0; // empiezas en el patio de la refinería (ala sur)
     w.groundPlane(56, 70, 'concreteFloor', 0, -2, 233);
-    w.perimeter(-26, -34, 26, 30, 3.4, 'concrete');
+    w.perimeterGaps(-26, -34, 26, 30, 3.4, 'concrete', 0.6, { n: [{ c: 0, w: 4, h: 3.0 }], s: [{ c: 0, w: 4, h: 3.0 }] });
     w.silo(-15, -2, 3.4, 13); w.silo(15, -16, 3.4, 13); w.silo(-15, -19, 3.0, 11); w.silo(16, 6, 2.8, 10);
     w.silo(0, -15, 4.2, 15);
     w.box(0, 0, -10.7, 2.5, 3.0, 0.04, 'void', { collide: false, cast: false });
@@ -140,6 +144,7 @@ export const LEVEL_BUILDERS = {
     w.spawns('south', [[-20, 24], [20, 24.5], [-10, 26.5], [13, 21]]);
     w.spawns('mid', [[-22.5, -2], [22.5, -7], [-8, 4], [8, -1], [-5, 10], [6, 8]]);
     w.spawns('north', [[-19, -23.5], [21, -21], [-8, -23], [8, -21.5], [-6, -11]]);
+    silosAnnexes(w); // refinería (sur) y torre de control (norte)
   },
 
   /* Capítulo 4 · Las catacumbas: tres braseros → altar del Acólito → salida */
@@ -174,7 +179,7 @@ export const LEVEL_BUILDERS = {
     w.bounds = { x0: -23, x1: 23, z0: -23, z1: 23 };
     w.spawn.player.set(0, 0, 25); w.spawn.yaw = 0;
     w.groundPlane(62, 62, 'concreteFloor', 0, 0, 251);
-    w.perimeter(-28, -28, 28, 28, 6, 'concrete');
+    w.perimeterGaps(-28, -28, 28, 28, 6, 'concrete', 0.6, { s: [{ c: 0, w: 5, h: 4.6 }] });
     for (let i = 0; i < 16; i++) {
       if (i === 4) continue; const a = (i / 16) * TAU, x = Math.cos(a) * 25.5, z = Math.sin(a) * 25.5;
       w.box(x, 0, z, 1.5, 6, 1.5, 'concrete'); w.box(x, 2.6, z, 1.56, 0.14, 1.56, 'lampRed', { collide: false, cast: false });
@@ -193,5 +198,6 @@ export const LEVEL_BUILDERS = {
     w.poiAt('arena', 0, 13); w.poiAt('bossSpawn', 0, -5);
     const ring = []; for (let i = 0; i < 16; i++) { const a = ((i + 0.5) / 16) * TAU; ring.push([Math.cos(a) * 23, Math.sin(a) * 23]); }
     w.spawns('ring', ring);
+    zoneZero(w); // la aproximación estrambótica de la Zona Cero
   },
 };
