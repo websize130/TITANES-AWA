@@ -195,7 +195,7 @@ export const ZombieFactory = {
       torsoCol = (x, y, z, wx, wy, wz) => (y < 0.38 || (Math.abs(Math.abs(x) - 0.075) < 0.018 && y < 0.5) ? top : sk)(x, y, z, wx, wy, wz);
     } else if (V.outfit === 'police') torsoCol = C(0x262b36, { tear: 1.25, bl: 0.46 });
     else if (V.outfit === 'riot') torsoCol = C(0x1b1f27, { tear: 1.05, bl: 0.4 });
-    else if (V.outfit === 'lab') torsoCol = C(0x8a9399, { tear: 1.75, bl: 0.62 });   // bata de paciente desgarrada
+    else if (V.outfit === 'lab') torsoCol = V.muscle ? surf(skin, { bl: 0.55, dirt: 0.25 }) : C(0x8a9399, { tear: 1.75, bl: 0.62 });   // Sujeto 0: torso desnudo y ensangrentado (antes, bata de paciente)
     else if (V.outfit === 'robe') torsoCol = C(0x35281f, { tear: 1.45, bl: 0.35, dirt: 0.5 });
     else if (V.outfit === 'shadow') { const dark = surf(skin, { bl: 0.18, dirt: 0.55 }); torsoCol = (x, y, z, wx, wy, wz) => { const c = dark(x, y, z, wx, wy, wz), k = 0.55 + 0.45 * smooth(0.35, 0.65, vnoise3(x * 30, y * 30, z * 30, seed + 7)); return [c[0] * k, c[1] * k, c[2] * k]; }; } // piel ennegrecida, casi sin brillo
     else if (V.outfit === 'queen') { const pale = surf(skin, { bl: 0.38, dirt: 0.15 }), plate = C(0x1e1816, { bl: 0.1 }); torsoCol = (x, y, z, wx, wy, wz) => (z < -0.02 && Math.sin(y * 70) > 0.2 && y > 0.08 ? plate : pale)(x, y, z, wx, wy, wz); } // placas de quitina en la espalda
@@ -210,9 +210,9 @@ export const ZombieFactory = {
       return [lerp(c[0], 0.16, les), lerp(c[1], 0.05, les), lerp(c[2], 0.07, les)];
     } : torsoCol, bellyW);
     if (V.outfit === 'lab') { // coraza médica: placa frontal de cerámica con juntas
-      const plate = C(0xcbc6bc, { bl: 0.32, dirt: 0.12 });
+      const plate = V.muscle ? C(0xd6c9ae, { bl: 0.38, dirt: 0.3 }) : C(0xcbc6bc, { bl: 0.32, dirt: 0.12 }); // placa de hueso
       const sh = Sculpt.shell(tg, tn, (x, y, z) => smooth(-0.01, 0.03, z) * smooth(0.06, 0.09, y) * smooth(0.5, 0.47, y) * smooth(0.17 * V.bw, 0.15 * V.bw, Math.abs(x)), () => 0.03, 0.003);
-      put('chest', GeoUtil.fromGrid(sh, sh.nor), (x, y, z, wx, wy, wz) => { const c = plate(x, y, z, wx, wy, wz), seam = Math.abs(y - 0.27) < 0.006 || Math.abs(x) < 0.004 ? 0.35 : 1; return [c[0] * seam, c[1] * seam, c[2] * seam]; });
+      put('chest', GeoUtil.fromGrid(sh, sh.nor), (x, y, z, wx, wy, wz) => { const c = plate(x, y, z, wx, wy, wz), seam = Math.abs(y - 0.27) < 0.006 || Math.abs(x) < 0.004 ? 0.35 : 1; const rib = V.muscle ? 0.82 + 0.18 * Math.abs(Math.sin(y * 64)) : 1; return [c[0] * seam * rib, c[1] * seam * rib, c[2] * seam * rib]; });
     }
     if (V.outfit === 'police' || V.outfit === 'riot') { // chaleco con bolsillos
       const sh = Sculpt.shell(tg, tn, (x, y) => smooth(0.08, 0.1, y) * smooth(0.46, 0.44, y) * (y < 0.36 ? smooth(0.16 * V.bw, 0.14 * V.bw, Math.abs(x)) : smooth(0.04, 0.055, Math.abs(x)) * smooth(0.115, 0.1, Math.abs(x))), () => 0.016, 0.003);
@@ -224,7 +224,7 @@ export const ZombieFactory = {
       if (t > 0) put('chest', new THREE.SphereGeometry(r, 8, 6).translate(dx * t * 0.97, y, dz * t * 0.97), C(0x8a5a3a, { bl: 0.5, dirt: 0 }), bellyW);
     }
     const ps = pelvisSDF(B), pg = Sculpt.cylinder(ps, { y0: -0.16, y1: 0.16, nY: 10, nA: 24 }), pn = Sculpt.normals(pg.pos, pg.index, pg.W, pg.H);
-    const pantsHex = { villager: 0x4a3a2a, casual: 0x2e3440, police: 0x22252c, rags: 0x4a3c34, bloater: 0x3a3026, lab: 0x7d858a, riot: 0x1a1d24, colossus: 0x2e2620, robe: 0x33271e, titan: 0x241c18, shadow: 0x141210, queen: 0x1c1614 }[V.outfit];
+    const pantsHex = { villager: 0x4a3a2a, casual: 0x2e3440, police: 0x22252c, rags: 0x4a3c34, bloater: 0x3a3026, lab: V.muscle ? 0x3b3f42 : 0x7d858a, riot: 0x1a1d24, colossus: 0x2e2620, robe: 0x33271e, titan: 0x241c18, shadow: 0x141210, queen: 0x1c1614 }[V.outfit];
     const pants = C(pantsHex, { tear: 1.35, bl: 0.42 }), belt = C(0x1c1612, { bl: 0.1 });
     put('hips', GeoUtil.scaleUV(GeoUtil.fromGrid(pg, pn), 3, 1), (x, y, z, wx, wy, wz) => (y > 0.075 && y < 0.115 && V.outfit !== 'rags' ? belt : pants)(x, y, z, wx, wy, wz), (x, y) => ['hips', 1 - smooth(0.06, 0.16, y) * 0.4, 'chest']);
 
@@ -234,8 +234,9 @@ export const ZombieFactory = {
     for (const s of [1, -1]) {
       const sd = s > 0 ? 'L' : 'R';
       put('shoulder' + sd, new THREE.SphereGeometry(0.05 * V.bw * (V.type === 'bloater' ? 0.82 : thin), 10, 8).translate(0, -0.025, 0), sleeve);
-      put('shoulder' + sd, GeoUtil.tube(V.upper + 0.02, (t) => V.bw * (0.047 - 0.011 * t) * thin, { seg: 10, rows: 8 }), ao(sleeve, V.upper + 0.02), (x, y) => ['shoulder' + sd, 1 - smooth(-(V.upper - 0.05), -(V.upper + 0.02), y) * 0.5, 'elbow' + sd]);
-      put('elbow' + sd, GeoUtil.tube(V.fore + 0.01, (t) => V.bw * (0.039 - 0.014 * t) * thin * (1 + 0.08 * Math.sin(t * 9)), { seg: 10, rows: 7 }), ao(V.type === 'bloater' ? sleeve : sk, V.fore + 0.01), (x, y) => ['elbow' + sd, 1 - smooth(-0.05, 0.01, y) * 0.5, 'shoulder' + sd]);
+      const bulge = (t, c, w) => Math.exp(-(((t - c) / w) ** 2)), mus = V.muscle || 0;
+      put('shoulder' + sd, GeoUtil.tube(V.upper + 0.02, (t, a) => V.bw * (0.047 - 0.011 * t) * thin * (1 + mus * (0.42 * bulge(t, 0.12, 0.16) + 0.3 * bulge(t, 0.55, 0.22) * (0.75 + 0.25 * Math.cos(a)))), { seg: mus ? 14 : 10, rows: mus ? 14 : 8 }), ao(sleeve, V.upper + 0.02), (x, y) => ['shoulder' + sd, 1 - smooth(-(V.upper - 0.05), -(V.upper + 0.02), y) * 0.5, 'elbow' + sd]);
+      put('elbow' + sd, GeoUtil.tube(V.fore + 0.01, (t, a) => V.bw * (0.039 - 0.014 * t) * thin * (mus ? 1.18 + 0.55 * bulge(t, 0.3, 0.26) * (0.8 + 0.2 * Math.sin(a * 2)) : 1 + 0.08 * Math.sin(t * 9)), { seg: mus ? 14 : 10, rows: mus ? 12 : 7 }), ao(V.type === 'bloater' ? sleeve : sk, V.fore + 0.01), (x, y) => ['elbow' + sd, 1 - smooth(-0.05, 0.01, y) * 0.5, 'shoulder' + sd]);
       const hk = V.bw ** 0.4 * (V.arm || 1) ** 0.5, hand = (s > 0 ? Sh.handL : Sh.handR).clone().scale(hk, V.type === 'runner' ? 1.3 : (V.arm || 1) ** 0.3, hk);
       put('hand' + sd, hand, surf(skin, { bl: 0.6, dirt: 0.1 }));
     }
@@ -268,11 +269,21 @@ export const ZombieFactory = {
       const tum = [];
       for (let i = 0; i < 9; i++) blob(tum, rand(-0.17, 0.17) * V.bw, rand(0.2, 0.5), -0.12 + rand(-0.02, 0.03), rand(0.035, 0.07));
       for (const s of [1, -1]) { blob(tum, s * 0.19 * V.bw, 0.47, 0.0, 0.07, 0.8); blob(tum, s * 0.21 * V.bw, 0.42, -0.05, 0.05); }
-      X('chest', mergeGeometries(tum, false), 'flesh', 'tumors');
+      X('chest', mergeGeometries(tum, false), 'pod', 'tumors'); // tumores incandescentes (laten)
       X('chest', mergeGeometries([0.08, 0.18, 0.28, 0.38, 0.48].map((y, i) => cone(0.022, 0.12 - i * 0.012, 0, y, -0.13, -1.25)), false), 'bone', 'spikes');
       X('chest', mergeGeometries([GeoUtil.taper([[-0.13, 0.44, -0.1], [-0.28, 0.52, -0.22], [-0.42, 0.33, -0.3], [-0.46, 0.06, -0.24]], 0.05, 0.022, 9, 16),
         cone(0.012, 0.14, -0.46, 0.06, -0.24, Math.PI), cone(0.012, 0.12, -0.43, 0.06, -0.21, Math.PI - 0.3), cone(0.012, 0.12, -0.49, 0.06, -0.26, Math.PI + 0.3)], false), 'flesh', 'arm3');
       X('head', new THREE.SphereGeometry(0.07, 14, 10).scale(1, 0.62, 1.15).translate(HEAD_OFFSET[0], HEAD_OFFSET[1] + 0.078, HEAD_OFFSET[2] - 0.01), 'brain', 'brain');
+      // Mandíbulas óseas que se abren a los lados de la boca y cuernos que nacen del cráneo abierto
+      X('head', mergeGeometries([1, -1].flatMap((s) => [cone(0.016, 0.11, HEAD_OFFSET[0] + s * 0.045, HEAD_OFFSET[1] - 0.06, HEAD_OFFSET[2] + 0.055, 2.5, 0, -s * 0.35),
+        cone(0.012, 0.08, HEAD_OFFSET[0] + s * 0.03, HEAD_OFFSET[1] - 0.075, HEAD_OFFSET[2] + 0.07, 2.7, 0, -s * 0.15),
+        cone(0.02, 0.16, HEAD_OFFSET[0] + s * 0.06, HEAD_OFFSET[1] + 0.06, HEAD_OFFSET[2] - 0.03, -0.55, 0, -s * 0.55)]), false), 'bone', 'mandibles');
+      for (const s of [1, -1]) { const sd = s > 0 ? 'L' : 'R';
+        X('elbow' + sd, mergeGeometries([0.12, 0.2, 0.28].map((t, i) => cone(0.018, 0.11 - i * 0.015, s * 0.035 * V.bw, -V.fore * t, -0.05 * V.bw, -2.2, 0, s * 0.5))), 'bone', 'spurs');
+        X('hand' + sd, mergeGeometries([-0.03, -0.01, 0.01, 0.03].map((x, i) => cone(0.011, 0.17 - Math.abs(i - 1.5) * 0.02, x, -0.09, 0.02, Math.PI + 0.25))), 'claw', 'claws');
+      }
+      X('elbowR', mergeGeometries([GeoUtil.taper([[-0.03, -V.fore * 0.15, -0.06], [-0.05, -V.fore * 0.55, -0.11], [-0.04, -V.fore * 1.05, -0.08], [-0.02, -V.fore * 1.35, -0.02]], 0.03, 0.004, 6, 14)]), 'bone', 'blade'); // cuchilla de hueso
+      X('chest', mergeGeometries([0.02, 0.1, 0.18, 0.26, 0.34, 0.42, 0.5, 0.58].map((y, i) => cone(0.03 - i * 0.002, 0.16 - Math.abs(i - 4) * 0.012, 0, y, -0.15 * V.bw, -1.15))), 'bone', 'ridge');
     }
     if (V.type === 'stalker') { // garras largas, cresta ósea y espinazo
       for (const sd of ['L', 'R']) X('hand' + sd, mergeGeometries([-0.022, 0, 0.022].map((x, i) => cone(0.008, 0.3 - i * 0.03, x, -0.1, 0.01, Math.PI + 0.12)), false), 'claw', 'claws');

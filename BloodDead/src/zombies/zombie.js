@@ -460,6 +460,12 @@ export class Zombie {
   // Poses de las habilidades de los jefes (sobre la animación base)
   animBoss(dt) {
     const b = this.b, s = this.state, k = this.stateT, B = this.T.ability || {};
+    if (this.type === 'subject' && (s === 'wander' || s === 'chase' || s === 'investigate')) { // mole: espalda arqueada, hombros abiertos, codos en guardia
+      const t = this.sys.time + this.seed, br = Math.sin(t * 2.2) * 0.04;
+      b.spine.rotation.x = Math.min(b.spine.rotation.x, 0.2) + br * 0.5; b.chest.rotation.x = 0.1 + br; b.head.rotation.x = -0.42 + br; // erguido, mirando al frente
+      b.shoulderL.rotation.set(-0.35 + br, 0, 0.26); b.shoulderR.rotation.set(-0.42 - br, 0, -0.26); // brazos en guardia, separados del tronco
+      b.elbowL.rotation.x = -0.75 - br; b.elbowR.rotation.x = -0.85 + br;
+    }
     if (s === 'intro' || s === 'phase') { // presentación: arquea la espalda, abre los brazos y ruge al cielo
       const p = smooth(0, 0.6, k), w = Math.sin(this.sys.time * 38) * 0.03 * p;
       b.spine.rotation.x = lerp(b.spine.rotation.x, -0.38, p); b.chest.rotation.x = -0.18 * p; b.head.rotation.set(lerp(b.head.rotation.x, -0.75, p) + w, w, 0);
