@@ -28,6 +28,15 @@ export class MaterialLibrary {
     mat('bark', 'bark', T.wood, { color: 0x4c4239, normalScale: V2(1.8) });
     mat('charred', 'wood', T.wood, { color: 0x2a221d }, { color: 0x2a221d });
     mat('roof', 'roof', T.roof);
+    mat('straw', 'wood', T.wood, { color: 0xc9a85a }, { color: 0xe0c27a, roughness: 1 }); // heno
+    // Isla (día): arena, hierba, paja, palmeras y lonas
+    mat('sand', 'sand', T.ground, { color: 0xd8c39a, vertexColors: true }, vc);
+    mat('grass', 'grass', T.ground, { color: 0x7c9a4a });
+    mat('thatch', 'thatch', T.wood, { color: 0xb59a62 });
+    mat('palmTrunk', 'bark', T.wood, { color: 0x8a7458 }, { color: 0xb59a7e });
+    std('palmLeaf', { color: 0xffffff, vertexColors: true, roughness: 0.62, metalness: 0, side: THREE.DoubleSide, normalMap: (T.leather || {}).normalMap || null, normalScale: V2(0.25) });
+    std('tent', { color: 0x6f6a4c, roughness: 0.92, normalMap: (T.canvas || {}).normalMap || null, side: THREE.DoubleSide });
+    std('hullPaint', { color: 0x2f5a6e, roughness: 0.6, metalness: 0.1, map: (ScannedTextures.get('wood') || T.wood).map });
     std('metal', { color: 0x2b2d2f, roughness: 0.42, metalness: 0.85 });
     std('void', { color: 0x020303, roughness: 1, metalness: 0 });
     std('ash', { color: 0x1d1b19, roughness: 1, metalness: 0 });

@@ -348,6 +348,8 @@ export class AudioSystem {
     o.start(); vib.start(); o.stop(t + 3); vib.stop(t + 3);
   }
   update(dt, game) {
+    if (this.seaWanted !== undefined && this.ctx) { const w = this.seaWanted; this.seaWanted = undefined; this.setSea(w); }
+    if (this.sea && (this.gullT -= dt) <= 0) { this.gullT = rand(5, 12); this.gull(rand(-0.9, 0.9), rand(0.08, 0.2)); }
     if (!this.ctx || game.state !== 'playing' || !game.player) return;
     this.timer -= dt;
     if (this.timer <= 0) { this.timer = rand(40, 80); this.groan(); } // gemido lejano de ambiente (los cercanos los emite cada zombi)
@@ -393,6 +395,43 @@ export class AudioSystem {
     [55, 58.3, 82.4, 116.5].forEach((f, i) => { const lp = this.bp(this.osc('sawtooth', f, f * 0.985, t + 0.05, L), 'lowpass', 180, 1.2); lp.frequency.exponentialRampToValueAtTime(1400, t + L * 0.55); lp.frequency.exponentialRampToValueAtTime(300, t + L); lp.connect(this.envG(out, t + 0.05, 0.085 - i * 0.012, 0.25, L - 0.3)); });
     this.bp(this.osc('sawtooth', 2400, 1700, t + 0.3, 1.4), 'bandpass', 2200, 8).connect(this.envG(out, t + 0.3, 0.025, 0.4, 1.0));
     if (this.ambGain) { const g = this.ambGain.gain; g.cancelScheduledValues(t); g.setTargetAtTime(0.05, t, 0.05); g.setTargetAtTime(0.32, t + L, 1); }
+  }
+  // Aleteo de un murciélago gigante: golpe sordo de cuero (ruido grave filtrado) con un leve chasquido de membrana
+  wingFlap(pan, vol = 0.4) {
+    if (!this.ctx) return; const t = this.ctx.currentTime, out = this.out(pan, vol, 0.25);
+    this.bp(this.nsrc(t, 0.16), 'lowpass', rand(260, 340), 0.9).connect(this.envG(out, t, 0.9, 0.012, 0.15));
+    this.bp(this.nsrc(t + 0.01, 0.05), 'bandpass', rand(1400, 1900), 1.2).connect(this.envG(out, t + 0.01, 0.12, 0.004, 0.05));
+  }
+  // Tablones que revientan desde abajo: crujido seco de madera, astillas y golpe grave
+  boardBreak(pos) {
+    if (!this.ctx) return; const t = this.ctx.currentTime, p = { x: pos.x, y: 0.3, z: pos.z }, out = this.out(p, 1, 0.35);
+    for (let i = 0; i < 5; i++) { const ti = t + i * rand(0.012, 0.03); this.bp(this.nsrc(ti, 0.06), 'bandpass', rand(900, 2600), 2.5).connect(this.envG(out, ti, rand(0.25, 0.45), 0.002, rand(0.04, 0.09))); }
+    this.osc('sine', 110, 45, t, 0.3).connect(this.envG(out, t, 0.7, 0.004, 0.26));
+    this.bp(this.nsrc(t, 0.3), 'lowpass', 600, 0.8).connect(this.envG(out, t, 0.45, 0.004, 0.28));
+  }
+  // Oleaje de la isla: dos capas de ruido marrón con vaivén lento (rompientes) y gaviotas de vez en cuando
+  setSea(on) {
+    if (!this.ctx) { this.seaWanted = on; return; }
+    if (!on) { if (this.sea) { const g = this.sea.g.gain, t = this.ctx.currentTime; g.cancelScheduledValues(t); g.setTargetAtTime(0, t, 0.4); const S = this.sea; setTimeout(() => S.nodes.forEach((n) => { try { n.stop(); } catch (e) { /* ya parado */ } }), 2000); this.sea = null; } return; }
+    if (this.sea) return;
+    const c = this.ctx, t = c.currentTime, g = c.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 3); g.connect(this.master);
+    const nodes = [];
+    for (const [f, rate, depth] of [[520, 0.11, 0.55], [1500, 0.071, 0.4]]) {
+      const src = c.createBufferSource(); src.buffer = this.brown; src.loop = true; src.playbackRate.value = f > 1000 ? 1.6 : 1;
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = f; lp.Q.value = 0.5;
+      const amp = c.createGain(); amp.gain.value = 0.5; const lfo = c.createOscillator(), lg = c.createGain(); lfo.frequency.value = rate; lg.gain.value = depth * 0.5; lfo.connect(lg); lg.connect(amp.gain);
+      src.connect(lp); lp.connect(amp); amp.connect(g); src.start(t, rand(0, 3)); lfo.start(t); nodes.push(src, lfo);
+    }
+    this.sea = { g, nodes }; this.gullT = rand(4, 9);
+  }
+  gull(pan, vol = 0.3) { // graznido de gaviota: tono que sube y cae con aspereza (FM)
+    if (!this.ctx) return; const t = this.ctx.currentTime, out = this.out(pan, vol, 0.5), n = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) {
+      const ti = t + i * rand(0.22, 0.32), f = rand(1500, 1900), o = this.ctx.createOscillator(), m = this.ctx.createOscillator(), mg = this.ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(f * 0.8, ti); o.frequency.linearRampToValueAtTime(f, ti + 0.05); o.frequency.exponentialRampToValueAtTime(f * 0.55, ti + 0.2);
+      m.frequency.value = 95; mg.gain.value = 260; m.connect(mg); mg.connect(o.frequency);
+      this.bp(o, 'bandpass', 2200, 1.4).connect(this.envG(out, ti, 0.16, 0.01, 0.18)); o.start(ti); m.start(ti); o.stop(ti + 0.25); m.stop(ti + 0.25);
+    }
   }
   setMuted(m) { if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.8, this.ctx.currentTime, 0.05); }
 }

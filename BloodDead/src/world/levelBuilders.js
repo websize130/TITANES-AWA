@@ -1,4 +1,5 @@
 import { TAU, rand } from '../core/utils.js';
+import { buildIsland } from './island.js';
 
 /* =====================================================================
    ESCENARIOS: un constructor por nivel. Cada uno define límites, punto de inicio,
@@ -6,6 +7,7 @@ import { TAU, rand } from '../core/utils.js';
    ===================================================================== */
 export const LEVEL_BUILDERS = {
   village(w) { w.buildVillage(); },
+  island(w) { buildIsland(w); }, // Supervivencia · día
 
   /* Capítulo 1 · Instalación abandonada: vestíbulo → sala de tanques → generador → bahía de contención */
   lab(w) {

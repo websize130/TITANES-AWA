@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { clamp } from '../core/utils.js';
 import { CONFIG, QUALITY } from '../data/config.js';
+import { LEVELS } from '../data/levels.js';
 import { Settings } from '../core/settings.js';
 import { TextureFactory } from './textures.js';
 
@@ -34,10 +35,12 @@ export class Engine {
     this.prScale = s; this.renderer.setPixelRatio(Math.max(0.5, this.prBase * s)); this.resize();
   }
   resize() { this.renderer.setSize(this.width, this.height, false); }
-  buildEnvironment() {
-    const pm = new THREE.PMREMGenerator(this.renderer), sc = new THREE.Scene();
+  // Entorno de iluminación (IBL): cielo nocturno con luna o, con kind = 'day', cielo azul con sol (isla)
+  buildEnvironment(kind = 'night') {
+    const day = kind === 'day', pm = new THREE.PMREMGenerator(this.renderer), sc = new THREE.Scene();
     const geo = new THREE.SphereGeometry(20, 32, 16), pos = geo.attributes.position, cols = new Float32Array(pos.count * 3);
-    const top = new THREE.Color(0.03, 0.042, 0.06), hor = new THREE.Color(0.014, 0.018, 0.022), bot = new THREE.Color(0.004, 0.004, 0.004), c = new THREE.Color();
+    const top = day ? new THREE.Color(0.06, 0.2, 0.6) : new THREE.Color(0.03, 0.042, 0.06), hor = day ? new THREE.Color(0.48, 0.64, 0.86) : new THREE.Color(0.014, 0.018, 0.022);
+    const bot = day ? new THREE.Color(0.28, 0.25, 0.19) : new THREE.Color(0.004, 0.004, 0.004), c = new THREE.Color();
     for (let i = 0; i < pos.count; i++) {
       const y = pos.getY(i) / 20;
       if (y > 0) c.copy(hor).lerp(top, Math.pow(y, 0.6)); else c.copy(hor).lerp(bot, Math.min(1, -y * 3));
@@ -46,9 +49,10 @@ export class Engine {
     geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
     const skyMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide });
     sc.add(new THREE.Mesh(geo, skyMat));
-    const moonGeo = new THREE.SphereGeometry(0.9, 16, 12), moonMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 3.4, 4.0) });
+    const LD = day ? LEVELS.island : null, dir = (LD && LD.lightDir) || CONFIG.lighting.moonDir;
+    const moonGeo = new THREE.SphereGeometry(day ? 1.4 : 0.9, 16, 12), moonMat = new THREE.MeshBasicMaterial({ color: day ? new THREE.Color(60, 54, 44) : new THREE.Color(3.2, 3.4, 4.0) });
     const moon = new THREE.Mesh(moonGeo, moonMat);
-    moon.position.copy(new THREE.Vector3(...CONFIG.lighting.moonDir).normalize().multiplyScalar(-18)); sc.add(moon);
+    moon.position.copy(new THREE.Vector3(...dir).normalize().multiplyScalar(-18)); sc.add(moon);
     const rt = pm.fromScene(sc, 0.03);
     geo.dispose(); skyMat.dispose(); moonGeo.dispose(); moonMat.dispose(); pm.dispose();
     return rt.texture;

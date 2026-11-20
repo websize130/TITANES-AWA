@@ -30,7 +30,7 @@ export class CameraRig {
   pickTarget(maxNdc) {
     const zs = this.game.zombies; if (!zs) return null;
     const cam = this.camera; let best = null, bs = Infinity;
-    for (const z of zs.pool) {
+    for (const z of zs.bats.list.length ? zs.pool.concat(zs.bats.list) : zs.pool) { // infectados y murciélagos en vuelo
       if (!z.alive || z.state === 'intro') continue;
       const d = Math.hypot(z.pos.x - cam.position.x, z.pos.z - cam.position.z); if (d > 30) continue;
       z.zones(); const tp = this.aimPoint(z, this._t), v = this._p.copy(tp).project(cam);

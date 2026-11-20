@@ -5,7 +5,10 @@ import { hydrateIcons } from '../ui/icons.js';
 import { CONFIG, QUALITY } from '../data/config.js';
 import { CHARACTERS } from '../data/characters.js';
 import { WEAPONS } from '../data/weapons.js';
-import { CHAPTERS, LEVELS, SURVIVAL } from '../data/levels.js';
+import { CHAPTERS, LEVELS } from '../data/levels.js';
+import { SURVIVAL } from '../data/survival.js';
+import { AmbushSystem } from './ambushSystem.js';
+import { SceneExtras } from '../world/sceneExtras.js';
 import { Settings } from '../core/settings.js';
 import { EventBus } from '../core/events.js';
 import { TextureFactory } from '../render/textures.js';
@@ -48,6 +51,7 @@ export class Game {
     this.menu = null; this.scene = null; this.camera = null; this.camera2 = null; this.world = null; this.mode = null; this.interact = null; this.lighting = null; this.hud = null; this.hud2 = null;
     this.players = []; this.split = false; this.p2Pad = null; this.remoteTarget = 'p2'; this.flash = null;
     this.modeKind = 'story'; this.chapterIdx = 0; this.fogBase = 0.05;
+    this.survivalMap = SURVIVAL.maps[Settings.data.survMap] ? Settings.data.survMap : 'village';
     this.systems = []; this.needsRender = false; this.fpsAcc = 0; this.fpsFrames = 0; this.pausedAt = 0; this.disableCSM = false;
     this.setState('boot');
     this.ui = new UI(this);
@@ -112,8 +116,12 @@ export class Game {
     requestAnimationFrame(() => this.layoutMenu());
   }
   chooseMode(kind, idx = 0) {
-    this.modeKind = kind; this.chapterIdx = clamp(idx, 0, CHAPTERS.length - 1);
-    $('#modeBadge').textContent = kind === 'survival' ? 'Modo Supervivencia' : `Historia · Capítulo ${this.chapterIdx + 1}: ${CHAPTERS[this.chapterIdx].title}`;
+    this.modeKind = kind;
+    if (kind === 'survival') { // idx = clave del mapa de supervivencia
+      if (SURVIVAL.maps[idx]) { this.survivalMap = idx; Settings.data.survMap = idx; Settings.save(); }
+    } else this.chapterIdx = clamp(idx, 0, CHAPTERS.length - 1);
+    const SM = SURVIVAL.maps[this.survivalMap];
+    $('#modeBadge').textContent = kind === 'survival' ? `Supervivencia · ${SM.name} (${SM.time.toLowerCase()})` : `Historia · Capítulo ${this.chapterIdx + 1}: ${CHAPTERS[this.chapterIdx].title}`;
     if (this.audio.ctx) this.audio.click();
     this.showMenu();
   }
@@ -124,9 +132,10 @@ export class Game {
   layoutMenu() { if (this.menu) this.menu.layout($(this.state === 'title' ? '#titleStage' : '#selStage').getBoundingClientRect()); }
   bootInfo() { // pantalla de carga con el título y la sinopsis del capítulo
     const story = this.modeKind === 'story', ch = CHAPTERS[this.chapterIdx];
-    $('#bootEyebrow').textContent = story ? `Capítulo ${this.chapterIdx + 1} · ${ch.place}` : 'Modo Supervivencia · El pueblo';
+    const SM = SURVIVAL.maps[this.survivalMap];
+    $('#bootEyebrow').textContent = story ? `Capítulo ${this.chapterIdx + 1} · ${ch.place}` : `Modo Supervivencia · ${SM.name} · ${SM.time}`;
     $('#bootTitle').textContent = story ? ch.title : 'Supervivencia';
-    $('#bootStory').textContent = story ? ch.intro : 'Rondas de dos a tres minutos. Cada ronda los infectados son más rápidos y letales, y aparecen infectados fuertes. Busca armas, munición y botiquines por el pueblo.';
+    $('#bootStory').textContent = story ? ch.intro : `${SURVIVAL.total} niveles de minuto y medio a tres minutos. Cada nivel los infectados son más rápidos y letales; desde el 4 llegan los murciélagos zombi y bajo los tablones de las cabañas acechan emboscadas. ${SM.desc}.`;
     $('#bootTip').textContent = this.input.pad ? 'B / ○ agacharse · corriendo, deslizarse · RB cuchillo · segundo mando: START para unirse' : this.input.usingTouch ? 'Botón de deslizar mientras corres: deslizamiento táctico · mantén la mano para activar objetos' : 'C o Ctrl corriendo: deslizamiento táctico · V cuchillo · mantén E para activar objetos';
   }
   async startGame() {
@@ -153,7 +162,8 @@ export class Game {
     const touchUI = this.input.usingTouch && !this.input.pad;
     this.hud.show(this.selected, touchUI); if (this.input.pad) this.hud.showHint(false, true);
     $('#touch').hidden = !touchUI;
-    $('#tLight').classList.add('on');
+    $('#tLight').classList.toggle('on', this.player.flashlight.on);
+    this.audio.setSea(!!this.levelDef.day);
     this.pads.clearEdges(); this.setState('playing'); this.clock.getDelta();
     if (this.p2Pad) { const k = this.p2Pad; this.p2Pad = null; this.addPlayer2(k, true); }
     this.mode.start();
@@ -161,18 +171,18 @@ export class Game {
     this.events.emit('game:start', { def: this.selected, stats: this.player.stats });
   }
   makeCamera() {
-    const c = new THREE.PerspectiveCamera(CONFIG.camera.fov, this.engine.width / this.engine.height, 0.05, CONFIG.render.far);
+    const c = new THREE.PerspectiveCamera(CONFIG.camera.fov, this.engine.width / this.engine.height, 0.05, (this.levelDef && this.levelDef.far) || CONFIG.render.far);
     c.layers.enable(1); return c; // capa 1: infectados (ver ZombieFactory.instance)
   }
   async buildGame() {
     const q = (this.quality = QUALITY[Settings.quality()]);
-    const story = this.modeKind === 'story', ch = CHAPTERS[this.chapterIdx], levelKey = story ? ch.level : SURVIVAL.level, L = (this.levelDef = LEVELS[levelKey]);
+    const story = this.modeKind === 'story', ch = CHAPTERS[this.chapterIdx], levelKey = story ? ch.level : SURVIVAL.maps[this.survivalMap].level, L = (this.levelDef = LEVELS[levelKey]);
     this.engine.setPixelRatio(q.pixelRatio);
     this.engine.shaderErrors = 0; this.engine.levelExposure = L.exposure; this.engine.applyBrightness();
     const sc = (this.scene = new THREE.Scene());
     sc.background = new THREE.Color(L.fog);
     sc.fog = new THREE.FogExp2(L.fog, L.density); this.fogBase = L.density;
-    sc.environment = this.envMap;
+    sc.environment = L.day ? this.dayEnv || (this.dayEnv = this.engine.buildEnvironment('day')) : this.envMap; // de día: cielo luminoso en los reflejos
     this.camera = this.makeCamera(); this.camera2 = this.makeCamera();
     this.lighting = new Lighting(this); await this.lighting.init(q);
     this.ui.setBoot(0.35, `Levantando ${L.name.toLowerCase()}…`); await nextFrame();
@@ -183,7 +193,8 @@ export class Game {
     this.ui.setBoot(0.55, 'Esculpiendo a los jefes…'); await nextFrame();
     ZombieFactory.ensure(story ? ch.steps.filter((s) => s.boss || s.alpha).map((s) => (s.boss || s.alpha).type) : SURVIVAL.strongTypes);
     this.ui.setBoot(0.7, 'Encendiendo luces…'); await nextFrame();
-    this.effects = new Effects(this); this.effects.build(q);
+    this.effects = new Effects(this); this.effects.build(q, L);
+    this.extras = new SceneExtras(this, L, q); // cielo, océano y fauna (isla) · se actualiza cada fotograma
     // Destello de boca compartido por los dos jugadores (una sola luz: el número de luces no cambia → sin recompilar)
     this.flash = { light: new THREE.PointLight(0xffb066, 0, 7, 2), t: 0 }; sc.add(this.flash.light);
     const model = await CharacterFactory.createAsync(this.selected, { csm: this.lighting.csm, onError: () => this.events.emit('model:error', { def: this.selected }) });
@@ -193,9 +204,11 @@ export class Game {
     for (const p of this.players) p.weapons = new WeaponSystem(this, p);
     this.interact = new InteractSystem(this);
     this.zombies = new ZombieSystem(this);
+    this.ambush = story ? null : new AmbushSystem(this); // emboscadas bajo los tablones (supervivencia)
     this.mode = story ? new StoryMode(this, this.chapterIdx) : new SurvivalMode(this);
     this.mode.prepare(); this.zombies.prewarm();
-    this.systems = [this.mode, this.interact, this.zombies];
+    this.systems = [this.mode, this.interact, this.zombies, this.ambush, this.extras].filter(Boolean);
+    if (L.day) for (const p of this.players) p.flashlight.on = false; // de día la linterna empieza apagada
     this.runTime = 0; this.deadT = 0; this.setSplit(false, true);
     const dt = 1 / 60;
     for (const p of this.players) { p.input.update(dt); p.update(dt); p.rig.update(dt); p.flashlight.update(dt, p.rig, p); p.input.endFrame(); }
@@ -303,11 +316,11 @@ export class Game {
     this.setState('dead'); for (const p of this.players) p.input.reset(); this.input.exitLock(); this.needsRender = true;
     const z = this.zombies, t = Math.floor(this.runTime), m = this.mode, surv = m && m.kind === 'survival', duo = this.activePlayers.length > 1;
     $('#dKills').textContent = z ? z.kills : 0;
-    $('#dCoins').textContent = surv ? m.round : z ? z.coins : 0; $('#dMidLabel').textContent = surv ? 'Ronda' : 'Monedas';
+    $('#dCoins').textContent = surv ? `${m.round}/${m.total}` : z ? z.coins : 0; $('#dMidLabel').textContent = surv ? 'Nivel' : 'Monedas';
     $('#dTime').textContent = fmtClock(t);
-    $('#deathChar').textContent = `${this.selected.name}${duo ? ' y ' + this.players[1].def.name : ''} · ${surv ? 'Supervivencia' : `Capítulo ${this.chapterIdx + 1}`}`;
+    $('#deathChar').textContent = `${this.selected.name}${duo ? ' y ' + this.players[1].def.name : ''} · ${surv ? `Supervivencia · ${m.map.name}` : `Capítulo ${this.chapterIdx + 1}`}`;
     $('#deathTitle').textContent = duo ? 'Habéis caído' : 'Has muerto';
-    $('#dNote').textContent = surv ? `Récord: ronda ${Settings.data.bestRound || m.round}` : m && m.currentText ? `Objetivo: ${m.currentText}` : '';
+    $('#dNote').textContent = surv ? `Récord en ${m.map.name.toLowerCase()}: nivel ${(Settings.data.best || {})[m.mapKey] || m.round} de ${m.total}` : m && m.currentText ? `Objetivo: ${m.currentText}` : '';
     $('#death').hidden = false; $('#btnRetry').focus({ preventScroll: true });
     this.events.emit('game:over', { kills: z ? z.kills : 0, coins: z ? z.coins : 0, time: this.runTime, round: surv ? m.round : 0 });
   }
@@ -327,6 +340,19 @@ export class Game {
     $('#complete').hidden = false; $('#btnNext').focus({ preventScroll: true });
     this.audio.sting(); this.events.emit('chapter:complete', { idx: m.idx, time: m.time, kills: z ? z.kills : 0 });
   }
+  // Supervivencia completada: los 15 niveles superados en un mapa
+  onSurvivalComplete(m) {
+    if (this.state !== 'playing' || !this.activePlayers.some((p) => p.alive)) return;
+    this.setState('complete'); for (const p of this.players) p.input.reset(); this.input.exitLock(); this.needsRender = true;
+    const z = this.zombies;
+    $('#cmpEyebrow').textContent = 'Supervivencia completada';
+    $('#cmpTitle').textContent = `${m.map.name} · ${m.total} niveles`;
+    $('#cmpText').textContent = `Has resistido los ${m.total} niveles de ${m.map.name.toLowerCase()}: murciélagos, emboscadas, el zombi araña y los infectados fuertes. Pocos llegan hasta aquí.`;
+    $('#cKills').textContent = z ? z.kills : 0; $('#cCoins').textContent = z ? z.coins : 0; $('#cTime').textContent = fmtClock(m.time);
+    $('#btnNextLabel').textContent = 'Jugar otra vez';
+    $('#complete').hidden = false; $('#btnNext').focus({ preventScroll: true });
+    this.audio.sting(); this.events.emit('survival:complete', { map: m.mapKey, time: m.time, kills: z ? z.kills : 0 });
+  }
   nextChapter() {
     this.keepP2(); $('#complete').hidden = true; this.hud.hide(); this.hud2.hide(); $('#touch').hidden = true;
     if (this.modeKind === 'story' && this.chapterIdx < CHAPTERS.length - 1) this.chapterIdx++; else this.modeKind = 'survival';
@@ -345,7 +371,8 @@ export class Game {
       this.engine.renderer.renderLists.dispose();
     } catch (e) { console.warn('Limpieza incompleta', e); }
     this.players = []; this.split = false; document.body.classList.remove('split', 'cine');
-    this.world = this.effects = this.materials = this.lighting = this.mode = this.interact = this.zombies = this.scene = this.camera = this.camera2 = this.flash = null;
+    this.world = this.effects = this.materials = this.lighting = this.mode = this.interact = this.zombies = this.scene = this.camera = this.camera2 = this.flash = this.ambush = this.extras = null;
+    this.audio.setSea(false);
     this.systems = [];
   }
   loop = () => {
@@ -363,7 +390,7 @@ export class Game {
     this.audio.ears = ps.map((p) => p.camera);
     if (this.cine.on) { // cinemática: solo se mueven el jefe, el escenario y los efectos
       this.cine.update(dt); this.zombies.cineUpdate(dt, this.cine.z);
-      this.world.update(dt); this.effects.update(dt, this.time, P1.flashlight, this.camera);
+      this.world.update(dt); this.effects.update(dt, this.time, P1.flashlight, this.camera); this.extras.update(dt, this.time);
       this.audio.update(dt, this);
       for (const p of ps) p.input.endFrame();
       return;
@@ -387,6 +414,8 @@ export class Game {
     this.mode.update(dt, this); this.interact.update(dt, this);
     for (const p of ps) p.weapons.update(dt);
     this.zombies.update(dt, this);
+    if (this.ambush) this.ambush.update(dt);
+    this.extras.update(dt, this.time);
     const f = this.flash; if (f.t > 0) f.t -= dt; else f.light.intensity = damp(f.light.intensity, 0, 30, dt);
     const sp = this.zombies ? this.zombies.fx.spore : 0; // nube de esporas o ácido: menos visibilidad
     this.hud.setSpore(sp); if (this.scene.fog) this.scene.fog.density = this.fogBase * (1 + 2.4 * sp);

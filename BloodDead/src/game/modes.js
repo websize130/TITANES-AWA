@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { WEAPONS } from '../data/weapons.js';
-import { CHAPTERS, SURVIVAL } from '../data/levels.js';
+import { CHAPTERS } from '../data/levels.js';
+import { SURVIVAL } from '../data/survival.js';
 import { Settings } from '../core/settings.js';
 
 /* =====================================================================
@@ -176,50 +177,60 @@ export class StoryMode {
 
 export class SurvivalMode {
   constructor(game) {
-    this.game = game; this.kind = 'survival'; this.round = 0; this.phase = 'prep'; this.t = 7; this.dur = 0; this.time = 0;
+    this.game = game; this.kind = 'survival'; this.round = 0; this.phase = 'prep'; this.t = 8; this.dur = 0; this.time = 0;
     this.hasTarget = false; this.target = new THREE.Vector3(); this.strong = []; this.focus = null; this.killsAt = 0;
+    this.mapKey = SURVIVAL.maps[game.survivalMap] ? game.survivalMap : 'village'; this.map = SURVIVAL.maps[this.mapKey];
   }
-  get currentText() { return this.phase === 'round' ? `Ronda ${this.round} · quedan ${fmtClock(this.t)}` : this.round ? `Descanso antes de la ronda ${this.round + 1}` : 'Prepárate'; }
+  get total() { return SURVIVAL.total; }
+  get level() { return SURVIVAL.levels[Math.max(0, this.round - 1)]; }
+  get currentText() { return this.phase === 'round' ? `Nivel ${this.round}/${this.total} · quedan ${fmtClock(this.t)}` : this.round ? `Descanso antes del nivel ${this.round + 1}` : 'Prepárate'; }
   prepare() {
     const g = this.game;
     g.zombies.setDirector({ paused: true, target: 0, groups: null });
-    g.interact.setLock('weapon', (it) => { const r = SURVIVAL.unlock[it.weapon] || 1; return this.round < r ? `${WEAPONS[it.weapon].short}: disponible en la ronda ${r}` : null; });
+    g.interact.setLock('weapon', (it) => { const r = SURVIVAL.unlock[it.weapon] || 1; return this.round < r ? `${WEAPONS[it.weapon].short}: disponible en el nivel ${r}` : null; });
   }
   start() {
     const g = this.game;
-    g.hud.trackerReset(); g.hud.trackerHead('Supervivencia');
-    g.hud.alert('Modo Supervivencia', 'Aguanta todas las rondas que puedas', 'chapter', 3.4);
-    g.hud.trackerAdd('prep', 'Prepárate: la ronda 1 está a punto de empezar', '');
+    g.hud.trackerReset(); g.hud.trackerHead(`Supervivencia · ${this.map.name}`);
+    g.hud.alert(`Supervivencia · ${this.map.name}`, `${this.total} niveles: sobrevive a todos`, 'chapter', 3.4);
+    g.hud.trackerAdd('prep', `Prepárate: el nivel 1 de ${this.total} está a punto de empezar`, '');
     g.audio.sting();
   }
   startRound(n) {
-    const g = this.game, Z = g.zombies; this.round = n; this.phase = 'round'; this.t = this.dur = SURVIVAL.duration(n);
-    const m = (this.m = SURVIVAL.mult(n));
-    Z.setDirector({ target: SURVIVAL.target(n), every: SURVIVAL.every(n), groups: null, minDist: 13, mult: m, fury: n >= 5, aggro: Math.min(1, 0.4 + n * 0.1), cull: false,
-      weights: { villager: 2, woman: 2, police: 1.5, runner: 0.6 + n * 0.3, bloater: n >= 3 ? 0.35 + n * 0.05 : 0 } });
-    const k = SURVIVAL.strong(n); this.strong = [];
-    for (let i = 0; i < k; i++) this.strong.push({ at: this.dur * (0.12 + (0.62 * i) / Math.max(1, k)), type: SURVIVAL.strongTypes[(n + i) % SURVIVAL.strongTypes.length], z: null, done: false });
+    const g = this.game, Z = g.zombies, L = SURVIVAL.levels[n - 1]; this.round = n; this.phase = 'round'; this.t = this.dur = L.dur;
+    const m = (this.m = L.mult);
+    Z.setDirector({ target: L.target, every: L.every, groups: null, minDist: 13, mult: m, fury: L.fury, aggro: L.aggro, cull: false, weights: L.weights, bats: L.bats });
+    if (g.ambush) g.ambush.setRate(L.ambush);
+    const k = L.strong.length; this.strong = [];
+    for (let i = 0; i < k; i++) this.strong.push({ at: this.dur * (0.15 + (0.6 * i) / Math.max(1, k)), type: L.strong[i], z: null, done: false });
     this.killsAt = Z.kills;
     g.interact.refresh(['ammo', 'med']);
-    const d = Settings.data; if (n > (d.bestRound || 0)) { d.bestRound = n; Settings.save(); }
-    g.hud.trackerReset(); g.hud.trackerHead(`Supervivencia · Ronda ${n}`);
-    g.hud.trackerAdd('r', `Sobrevive a la ronda ${n}`, '');
+    const d = Settings.data; d.best = d.best || {};
+    if (n > (d.best[this.mapKey] || 0)) d.best[this.mapKey] = n;
+    if (n > (d.bestRound || 0)) d.bestRound = n;
+    Settings.save();
+    g.hud.trackerReset(); g.hud.trackerHead(`Supervivencia · Nivel ${n}/${this.total}`);
+    g.hud.trackerAdd('r', `Sobrevive al nivel ${n}`, '');
     g.hud.trackerAdd('k', 'Infectados abatidos', '0', true);
     if (k) g.hud.trackerAdd('f', 'Infectados fuertes abatidos', `0/${k}`, true);
-    g.hud.alert(`Ronda ${n}`, n === 1 ? 'Busca armas y munición por el pueblo' : `${fmtClock(this.dur)} · más rápidos y más letales${k ? ` · ${k} fuerte${k > 1 ? 's' : ''}` : ''}`, 'danger', 3.2);
+    const news = n === 1 ? 'Busca armas y munición' : n === 4 ? '¡Murciélagos zombi en el cielo!' : n === 7 ? 'Cuidado con el zombi araña' : n === this.total ? 'Nivel final' : 'Más rápidos y más letales';
+    g.hud.alert(`Nivel ${n} de ${this.total}`, `${fmtClock(this.dur)} · ${news}${k ? ` · ${k} fuerte${k > 1 ? 's' : ''}` : ''}`, 'danger', 3.2);
     for (const w in SURVIVAL.unlock) if (SURVIVAL.unlock[w] === n && n > 1) g.hud.alert('Nueva arma disponible', `${WEAPONS[w].name} en el armero`, 'success', 2.4);
     g.audio.roundStart();
   }
   endRound() {
-    const g = this.game; this.phase = 'break'; this.t = SURVIVAL.intermission;
-    g.zombies.setDirector({ paused: true }, true);
-    g.hud.trackerDone('r'); g.hud.trackerAdd('b', 'Abastécete antes de la siguiente ronda', '');
-    g.hud.alert(`Ronda ${this.round} superada`, 'Respira: munición y botiquines repuestos (+20 de salud)', 'success', 3.2);
-    for (const p of g.activePlayers) { if (!p.alive) g.revivePlayer(p); p.heal(20); }
+    const g = this.game, L = this.level;
+    g.zombies.setDirector({ paused: true, bats: null }, true); g.zombies.bats.retreat();
+    if (g.ambush) g.ambush.setRate(null);
+    if (this.round >= this.total) { this.phase = 'won'; g.hud.trackerDone('r'); g.onSurvivalComplete(this); return; }
+    this.phase = 'break'; this.t = SURVIVAL.intermission;
+    g.hud.trackerDone('r'); g.hud.trackerAdd('b', 'Abastécete antes del siguiente nivel', '');
+    g.hud.alert(`Nivel ${this.round} superado`, `Respira: munición y botiquines repuestos (+${L.heal} de salud)`, 'success', 3.2);
+    for (const p of g.activePlayers) { if (!p.alive) g.revivePlayer(p); p.heal(L.heal); }
     g.interact.refresh(['ammo', 'med']); g.audio.roundEnd();
   }
   update(dt) {
-    const g = this.game, Z = g.zombies; if (!g.player) return;
+    const g = this.game, Z = g.zombies; if (!g.player || this.phase === 'won') return;
     this.time += dt; this.t -= dt;
     if (this.phase !== 'round') {
       g.hud.trackerTime(fmtClock(this.t), this.t < 4);
@@ -230,7 +241,7 @@ export class SurvivalMode {
     const el = this.dur - this.t;
     for (const s of this.strong) {
       if (s.done || el < s.at) continue;
-      const z = Z.spawnAt(s.type, 15, true, { spd: this.m.spd * 0.95, dmg: this.m.dmg, hp: (0.36 + this.round * 0.05) * (g.activePlayers.length > 1 ? 1.3 : 1), fury: true });
+      const z = Z.spawnAt(s.type, 15, true, { spd: this.m.spd * 0.95, dmg: this.m.dmg, hp: SURVIVAL.strongHp(this.round, g.activePlayers.length > 1), fury: true });
       if (z) { s.done = true; s.z = z; this.focus = z; g.hud.bossShow(z.T.name); g.hud.alert('¡Infectado fuerte!', z.T.name, 'danger', 2.2); g.audio.alarm(); }
     }
     g.hud.trackerProg('k', String(Z.kills - this.killsAt));

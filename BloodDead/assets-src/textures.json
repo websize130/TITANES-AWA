@@ -61,6 +61,18 @@
     "stoneFloor": {
       "id": "stone_tiles_02",
       "use": "losas del subsuelo antiguo"
+    },
+    "sand": {
+      "id": "sand_01",
+      "use": "arena de la playa (isla)"
+    },
+    "grass": {
+      "id": "forrest_ground_01",
+      "use": "hierba del interior de la isla"
+    },
+    "thatch": {
+      "id": "reed_roof_04",
+      "use": "techos de paja de las cabañas de la isla"
     }
   }
 }

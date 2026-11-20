@@ -649,3 +649,6 @@ body[data-state="mando"]{overflow:hidden;background:#070606}
   #mando{grid-template-columns:1fr 1fr;grid-template-rows:auto minmax(160px,1fr) auto}
   .md-btns{grid-column:1/-1;grid-auto-rows:64px}
 }
+/* Selector de mapa de Supervivencia: icono en lugar del número de capítulo */
+#mapList .ch-num .ic{width:21px;height:21px}
+#mapList .ch-card[data-map="island"] .ch-num{background:linear-gradient(135deg,#b07a1c,#4a2a06)}

@@ -6,6 +6,7 @@ import { DIRECTOR } from './zombieTypes.js';
 import { ZombieFactory } from './zombieFactory.js';
 import { Zombie } from './zombie.js';
 import { BossFX } from './bossFx.js';
+import { BatSystem } from './batSystem.js';
 import { GoreSystem } from '../fx/goreSystem.js';
 import { rayCapsule, raySphere } from '../weapons/rayHit.js';
 
@@ -19,7 +20,7 @@ export class ZombieSystem {
     this.material = ZombieFactory.material(game.lighting.csm);
     this.xmat = ZombieFactory.extraMats(game.lighting.csm);
     this.v = new THREE.Vector3(); this.m4 = new THREE.Matrix4(); this.q = new THREE.Quaternion(); this.e = new THREE.Euler(); this.sv = new THREE.Vector3();
-    this.initFX(); this.gore = new GoreSystem(this); this.fx = new BossFX(this);
+    this.initFX(); this.gore = new GoreSystem(this); this.fx = new BossFX(this); this.bats = new BatSystem(this); // murciélagos: solo si el director los pide
     this.unsub = game.events.on('player:step', (e) => { if (e.player && !e.crouch) this.noise(e.player.position, e.running ? 9 : e.speed > 2.2 ? 5 : 2.6); });
   }
   get players() { return this.game.players; }
@@ -101,7 +102,7 @@ export class ZombieSystem {
       this.cullT = 1.5;
       for (const z of this.pool) if (z.alive && !z.T.boss && z.state !== 'chase' && z.state !== 'attack' && ps.every((p) => Math.hypot(z.pos.x - p.position.x, z.pos.z - p.position.z) > 40)) { z.alive = false; z.active = false; z.mesh.visible = false; }
     }
-    this.updateFX(dt); this.gore.update(dt); this.updateCoins(dt); this.fx.update(dt);
+    this.updateFX(dt); this.gore.update(dt); this.updateCoins(dt); this.fx.update(dt); this.bats.update(dt);
     // Escudo y núcleo del Parásito Alpha; vainas que laten
     const U = this.xmat.shield.uniforms, T = this.titan;
     U.uA.value = damp(U.uA.value, T && T.alive && T.shield ? 1 : 0, 3, dt); U.uT.value += dt; this.shieldFlash = Math.max(0, this.shieldFlash - dt * 4); U.uHit.value = this.shieldFlash;
@@ -124,7 +125,7 @@ export class ZombieSystem {
     for (let i = 0; i < L.length; i++) {
       const a = L[i]; if (!a.alive) continue;
       for (let j = i + 1; j < L.length; j++) {
-        const b = L[j]; if (!b.alive) continue;
+        const b = L[j]; if (!b.alive || a.noBlock || b.noBlock) continue;
         const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z, r = a.T.radius * a.V.scale + b.T.radius * b.V.scale, d2 = dx * dx + dz * dz;
         if (d2 < r * r && d2 > 1e-6) { const ma = a.T.mass || 1, mb = b.T.mass || 1, d = Math.sqrt(d2), k = (r - d) / d, ka = (k * mb) / (ma + mb), kb = (k * ma) / (ma + mb); a.pos.x -= dx * ka; a.pos.z -= dz * ka; b.pos.x += dx * kb; b.pos.z += dz * kb; } // los pesados apartan a los demás
       }
@@ -134,7 +135,7 @@ export class ZombieSystem {
     const ps = this.game.activePlayers, R = CONFIG.player.radius;
     for (const P of ps) {
       for (const z of this.pool) {
-        if (!z.alive) continue;
+        if (!z.alive || z.noBlock) continue; // el que agarra desde el suelo no empuja
         const dx = P.position.x - z.pos.x, dz = P.position.z - z.pos.z, r = z.T.radius * z.V.scale + R + 0.06, d2 = dx * dx + dz * dz;
         if (d2 < r * r && d2 > 1e-6) { const d = Math.sqrt(d2), k = (r - d) / d, pk = z.T.mass > 2 ? 1 : 0.8; P.position.x += dx * k * pk; P.position.z += dz * k * pk; z.pos.x -= dx * k * (1 - pk); z.pos.z -= dz * k * (1 - pk); }
       }
@@ -247,7 +248,7 @@ export class ZombieSystem {
       const kd = new THREE.Vector3(z.pos.x - p.position.x, 0, z.pos.z - p.position.z).normalize();
       this.hit(z, { amount: dmg.amount, crit: dmg.crit, zone: 'body', dir: kd, point: tgt, origin: o, melee: true, slash, throat: dmg.crit, by: p });
     }
-    return Math.min(2, list.length) + this.fx.knifeSwarm(p, K);
+    return Math.min(2, list.length) + this.fx.knifeSwarm(p, K) + this.bats.knife(p, K);
   }
   onKill(z, zone, pop = false, by = null) {
     this.kills++;
@@ -430,6 +431,7 @@ export class ZombieSystem {
   }
   dispose() {
     if (this.unsub) this.unsub();
+    this.bats.dispose();
     for (const z of this.pool) { z.mesh.removeFromParent(); if (z.mesh.skeleton) z.mesh.skeleton.dispose(); if (z.cloakMat) z.cloakMat.dispose(); }
     this.objs.forEach((o) => { o.removeFromParent(); if (o.geometry && !o.isSprite && !o.userData.shared) o.geometry.dispose(); if (o.material) o.material.dispose(); if (o.isInstancedMesh) o.dispose(); }); // la geometría de Sprite es compartida
     this.material.dispose(); Object.values(this.xmat).forEach((m) => m.dispose()); this.pool = []; this.titan = null;

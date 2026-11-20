@@ -19,6 +19,7 @@ export class World {
     this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._e = new THREE.Euler(); this._p = new THREE.Vector3(); this._s = new THREE.Vector3();
     this.firePos = new THREE.Vector3(0, 0, 0); this.fires = [];
     this.lights = []; this.doors = new Map(); this.moving = []; this.uses = []; this.poi = {}; this.groups = {}; this.reserved = [];
+    this.ambushSpots = []; this.limit = null; // tarimas de emboscada · límite de forma libre (isla)
     this.bounds = { x0: -24.5, x1: 24.5, z0: -28.5, z1: 28.5 };
     this.spawn = { player: new THREE.Vector3(0, 0, 24), yaw: 0 };
   }
@@ -64,9 +65,11 @@ export class World {
     const g = new THREE.CylinderGeometry(1, 1, 1, 3, 1, !!o.open); g.rotateX(-Math.PI / 2);
     const s = this.mats.texScale[mat] || 2.5; uvScale(g, (w * 1.2) / s, len / s);
     const sy = h / 1.5;
-    this.pushM(g, mat, this.mtx(x, y + 0.5 * sy, z, 0, 0, 0, w / 1.732, sy, len));
+    this.pushM(g, mat, this.mtx(x, y + 0.5 * sy, z, 0, o.ry || 0, 0, w / 1.732, sy, len), o.cast !== false);
     if (o.collide !== false) this.addAABB({ min: { x: x - w / 2, y, z: z - len / 2 }, max: { x: x + w / 2, y: y + h, z: z + len / 2 } }, false);
   }
+  // Tarima suelta donde puede saltar una emboscada (y = altura del suelo de tablones; ry = orientación)
+  ambushSpot(x, z, y = 0.08, ry = 0) { this.ambushSpots.push({ x, z, y, ry }); }
   isFree(x, z, m = 0.6) { // ¿punto libre de colisionadores, puertas cerradas y puntos de interés?
     for (const b of this.boxes) if (!b.off && b.maxY > 0.3 && x > b.minX - m && x < b.maxX + m && z > b.minZ - m && z < b.maxZ + m) return false;
     for (const c of this.circles) if (c.maxY > 0.3 && Math.hypot(x - c.x, z - c.z) < c.r + m) return false;
@@ -271,7 +274,7 @@ export class World {
     if (roof !== 'none') {
       const over = 0.35, rw = w + over * 2, rh = o.roofH || Math.min(2.2, w * 0.32), full = d + over * 2;
       const len = roof === 'half' ? full * 0.5 : full, zc = roof === 'half' ? z - full / 2 + len / 2 : z;
-      this.prism(x, h, zc, rw, rh, len, 'roof', { open: true });
+      this.prism(x, h, zc, rw, rh, len, o.roofMat || 'roof', { open: true });
       // Frontones del mismo material que los muros, bajo el alero abierto
       const gLen = roof === 'half' ? len - over : d, gz = roof === 'half' ? z - d / 2 + gLen / 2 : z;
       this.prism(x, h, gz, w, rh * (w / rw), gLen, wall, { collide: false });
@@ -336,7 +339,7 @@ export class World {
   /* ---------- Nivel: pueblo en ruinas ---------- */
   pathX(z) { return Math.sin(z * 0.15) * 0.8; }
   buildGround() {
-    const S = 90, g = new THREE.PlaneGeometry(S, S, 90, 90); g.rotateX(-Math.PI / 2);
+    const S = 132, g = new THREE.PlaneGeometry(S, S, 132, 132); g.rotateX(-Math.PI / 2);
     const pos = g.attributes.position, cols = new Float32Array(pos.count * 3);
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i), z = pos.getZ(i), n = Noise.fbm((x + S / 2) / S, (z + S / 2) / S, 6, 6, 4, 101);
@@ -351,7 +354,7 @@ export class World {
     this.scene.add(mesh); this.meshes.push(mesh);
   }
   buildPerimeter() {
-    const X = 27, Z = 31;
+    const X = 40.5, Z = 44.5;
     for (let x = -X; x < X; x += 3.4) {
       this.box(x + 1.7, 0, -Z, 3.6, rand(2.8, 4.6), 1.2, 'stone', { ry: rand(-0.05, 0.05) });
       this.box(x + 1.7, 0, Z, 3.6, rand(2.8, 4.6), 1.2, 'stone', { ry: rand(-0.05, 0.05) });
@@ -360,8 +363,8 @@ export class World {
       this.box(-X, 0, z + 1.7, 1.2, rand(2.8, 4.6), 3.6, 'stone', { ry: rand(-0.05, 0.05) });
       this.box(X, 0, z + 1.7, 1.2, rand(2.8, 4.6), 3.6, 'stone', { ry: rand(-0.05, 0.05) });
     }
-    for (let i = 0; i < 44; i++) {
-      const a = rand(0, TAU), k = rand(1.08, 1.3);
+    for (let i = 0; i < 64; i++) {
+      const a = rand(0, TAU), k = rand(1.06, 1.25);
       this.tree(Math.cos(a) * X * k, Math.sin(a) * Z * k, false);
     }
   }
@@ -370,9 +373,10 @@ export class World {
     this.finalize();
   }
   buildVillage() {
-    this.bounds = { x0: -24.5, x1: 24.5, z0: -28.5, z1: 28.5 };
+    // Supervivencia · noche: el pueblo original en el centro, ampliado con cuatro zonas nuevas alrededor
+    this.bounds = { x0: -38.5, x1: 38.5, z0: -42.5, z1: 42.5 };
     this.spawn.player.set(0, 0, 24); this.spawn.yaw = 0;
-    this.spawns('all', ZOMBIE_SPAWNS);
+    this.spawns('all', ZOMBIE_SPAWNS.concat([[-34, -10], [-35, 14], [33, -6], [34, 13], [-12, -38], [14, -38], [-27, 37], [27, 37], [1, 40], [-35, -34], [35, -34], [-22, -30], [24, 28]]));
     // Puntos de suministro de supervivencia: armas (se desbloquean por rondas), munición y botiquines
     this.use('wShotgun', -11.4, 3.1, { kind: 'weapon', weapon: 'shotgun' });
     this.use('wSmg', 2.6, -9.4, { kind: 'weapon', weapon: 'smg' });
@@ -431,6 +435,52 @@ export class World {
       if ((Math.abs(x - this.pathX(z)) > 2.5 || z < 4) && this.isFree(x, z)) { this.rock(x, z, rand(0.1, 0.5)); n++; }
     }
     [[0.8, 14, 1.1, 0.6], [-0.4, 18.6, 0.8, 0.5], [1.1, 10.2, 0.7, 0.45], [3, -3, 1.3, 0.8], [-2.5, 4.5, 0.9, 0.5], [-1, -9, 1.2, 0.7], [9, -9, 1.0, 0.6]].forEach(([x, z, a, b]) => this.puddle(x, z, a, b, rand(0, 3)));
+    this.buildVillageOutskirts();
+  }
+  // Cabaña de madera con suelo de tablones y una tarima suelta (emboscada) dentro y otra en el porche
+  cabin(x, z, door = 'e', o = {}) {
+    const w = o.w || 5.2, d = o.d || 4.6, op = { e: [], w: [], n: [], s: [] };
+    op[door].push({ c: 0, w: 1.3, t: 'door' });
+    for (const side of ['n', 's', 'e', 'w']) if (side !== door && Math.random() < 0.8) op[side].push({ c: rand(-0.8, 0.8), w: 0.9, t: 'window', boarded: Math.random() < 0.6 });
+    this.house({ x, z, w, d, h: 2.7, wall: 'wood', roofH: 1.6, floor: true, open: op, ruined: !!o.ruined, roof: o.ruined ? 'half' : 'full' });
+    this.ambushSpot(x + rand(-0.6, 0.6), z + rand(-0.5, 0.5), 0.08, door === 'e' || door === 'w' ? Math.PI / 2 : 0);
+    // Porche de tablones delante de la puerta
+    const sx = door === 'e' ? 1 : door === 'w' ? -1 : 0, sz = door === 's' ? 1 : door === 'n' ? -1 : 0, px = x + sx * (w / 2 + 0.9), pz = z + sz * (d / 2 + 0.9);
+    this.box(px, 0, pz, sx ? 1.8 : 3.2, 0.1, sx ? 3.2 : 1.8, 'woodDark', { collide: false });
+    if (Math.random() < 0.7) this.ambushSpot(px, pz, 0.1, sx ? 0 : Math.PI / 2);
+    for (const k of [-1, 1]) { const qx = px + (sx ? sx * 0.8 : k * 1.5), qz = pz + (sz ? sz * 0.8 : k * 1.5); this.cyl(qx, 0, qz, 0.06, 0.07, 2.55, 6, 'woodDark', { collide: false }); }
+  }
+  hayBale(x, z, ry = 0) { this.cyl(x, 0, z, 0.55, 0.55, 1.1, 16, 'straw', { rx: Math.PI / 2, ry }); } // tumbada: el centro queda a la altura del radio
+  grave(x, z) { this.box(x, 0, z, 0.55, rand(0.6, 1.0), 0.14, 'rock', { rx: rand(-0.2, 0.2), rz: rand(-0.15, 0.15) }); this.box(x, 0, z + 0.9, 0.7, 0.06, 1.5, 'ground', { collide: false }); }
+  buildVillageOutskirts() {
+    // Oeste · barrio de cabañas (suelos de tablones: emboscadas)
+    this.cabin(-31, -17, 'e'); this.cabin(-33, -5, 'e', { ruined: true }); this.cabin(-31, 8, 'e'); this.cabin(-33, 21, 'e');
+    this.cabin(-22, 31, 'n', { w: 4.6 }); this.fence(-26.5, -24, -11); this.fence(-26.5, 13, 26);
+    [[-27.6, 1.5], [-28.4, 14.6], [-29, -11]].forEach(([x, z]) => this.barrel(x, z));
+    this.crate(-28, 2.4, 0.8, 0.3); this.crate(-27.6, -22, 0.7, 1.1); this.bonfire(-28.5, -28); this.lamppost(-26, 2, true, 1);
+    // Este · granja: granero con suelo de tablones, silo, heno, corral y carro
+    this.house({ x: 32, z: -1, w: 9, d: 12, h: 4.2, wall: 'wood', roofH: 3.2, floor: true, open: { w: [{ c: 0, w: 2.8, t: 'door' }], e: [{ c: 3, w: 1.0, t: 'window', boarded: true }], n: [{ c: 0, w: 1.4, t: 'door' }] } });
+    this.ambushSpot(31, 2.5, 0.08, 0); this.ambushSpot(33, -5, 0.08, Math.PI / 2);
+    this.silo(35, -15.5, 2.1, 8.5, 'rust');
+    for (const [x, z, r] of [[29, -9.5, 0.2], [30.3, -10.4, 1.1], [33.8, 9.6, 0.5], [29.6, 13, 1.4], [31, 13.4, 0.1]]) this.hayBale(x, z, r);
+    this.fence(26.6, 6, 18); this.cart(28.6, -13.5); this.lamppost(27, 6.5, 'flicker', -1);
+    [[36.5, 9.5], [27.5, 18.5], [36, 20]].forEach(([x, z]) => this.barrel(x, z));
+    // Norte · cementerio ampliado con cripta
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 7; c++) if (Math.random() < 0.85) this.grave(-14 + c * 2.4 + rand(-0.3, 0.3), -33 - r * 2.6 + rand(-0.3, 0.3));
+    this.house({ x: 13, z: -36, w: 5, d: 5, h: 3.2, wall: 'stone', roofH: 1.6, open: { s: [{ c: 0, w: 1.3, t: 'door', closed: true }] } });
+    [[-24, -36], [22, -30], [4, -40], [-6, -31]].forEach(([x, z]) => this.tree(x, z));
+    // Sur · entrada por carretera: coches abandonados, barricada y farolas
+    this.car(-7, 34, 0.35, 'carRed'); this.car(6.5, 37.5, -1.2); this.car(17, 33, 2.6);
+    for (let i = 0; i < 6; i++) this.crate(-2 + i * 0.9 + rand(-0.1, 0.1), 31.2 + rand(-0.2, 0.2), rand(0.7, 0.9), rand(0, 1));
+    this.lamppost(-11, 29, true, -1); this.lamppost(12, 40, 'flicker', 1);
+    [[-17, 36], [21, 38], [-30, 38], [30, 30]].forEach(([x, z]) => this.tree(x, z));
+    for (let i = 0, n = 0; i < 200 && n < 30; i++) { // rocas sueltas por las zonas nuevas
+      const x = rand(-37, 37), z = rand(-41, 41); if (Math.abs(x) < 25 && Math.abs(z) < 29) continue;
+      if (this.isFree(x, z, 1)) { this.rock(x, z, rand(0.1, 0.45)); n++; }
+    }
+    [[-29, -24, 1.4, 0.8], [30, 22, 1.2, 0.7], [-8, 37, 1.6, 0.9], [8, -31, 1.1, 0.6]].forEach(([x, z, a, b]) => this.puddle(x, z, a, b, rand(0, 3)));
+    // Suministros extra en las zonas nuevas
+    this.use('ammoD', -29, 3.5, { kind: 'ammo' }); this.use('ammoE', 30.5, 7.2, { kind: 'ammo' }); this.use('medC', 1, 33.2, { kind: 'med' }); this.use('medD', -5, -36.5, { kind: 'med' });
   }
   finalize() {
     for (const b of this.buckets.values()) {
@@ -479,6 +529,7 @@ export class World {
       }
       if (!moved) break;
     }
+    if (this.limit) this.limit(pos, r); // borde de forma libre (la orilla de la isla)
   }
   /* ---------- Rejilla espacial (4 m): rayos y colisiones solo prueban las cajas de las celdas que atraviesan ---------- */
   buildGrid(cell = 4) {

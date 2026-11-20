@@ -1,3 +1,4 @@
+import { SURVIVAL } from '../data/survival.js';
 import { $, clamp } from '../core/utils.js';
 import { icon } from './icons.js';
 import { QUALITY } from '../data/config.js';
@@ -124,7 +125,8 @@ export class UI {
   renderTitleInfo() {
     const d = Settings.data, u = Math.min(CHAPTERS.length, d.unlocked || 1), done = (d.done || []).filter(Boolean).length;
     $('#storyInfo').textContent = done >= CHAPTERS.length ? '5 capítulos · historia completada' : `5 capítulos · ${u} desbloqueado${u > 1 ? 's' : ''}`;
-    $('#survInfo').textContent = `Rondas cada vez más duras · Récord: ${d.bestRound ? 'ronda ' + d.bestRound : '—'}`;
+    const best = d.best || {}, rec = Object.keys(SURVIVAL.maps).filter((k) => best[k]).map((k) => `${SURVIVAL.maps[k].name.replace(/^(El|La) /, '').toLowerCase()} ${best[k]}/${SURVIVAL.total}`);
+    $('#survInfo').textContent = `${SURVIVAL.total} niveles · 2 mapas · Récord: ${rec.length ? rec.join(' · ') : '—'}`;
   }
   renderChapters() {
     const d = Settings.data, u = d.unlocked || 1;
@@ -137,8 +139,24 @@ export class UI {
       </button>`;
     }).join('');
   }
+  renderMaps() {
+    const best = Settings.data.best || {};
+    $('#mapList').innerHTML = Object.entries(SURVIVAL.maps).map(([k, m], i) => {
+      const b = best[k] || 0, done = b >= SURVIVAL.total;
+      return `<button class="ch-card" role="listitem" data-map="${k}" style="animation-delay:${60 + i * 60}ms">
+        <span class="ch-num">${icon(m.icon)}</span>
+        <span class="ch-body"><b>${m.name} · ${m.time}</b><span>${m.desc} · <em>${b ? `récord ${b}/${SURVIVAL.total}` : 'sin jugar'}</em></span></span>
+        <span class="ch-state ${done ? 'ok' : ''}">${icon(done ? 'check' : 'chevron')}</span>
+      </button>`;
+    }).join('');
+  }
+  showMaps(on) {
+    $('#tModes').hidden = on; $('#tMaps').hidden = !on;
+    if (on) { this.renderMaps(); const k = Settings.data.survMap, b = $(`#mapList .ch-card[data-map="${k}"]`) || $('#mapList .ch-card'); if (b) b.focus({ preventScroll: true }); }
+    else $('#btnSurvival').focus({ preventScroll: true });
+  }
   showChapters(on) {
-    $('#tModes').hidden = on; $('#tChapters').hidden = !on;
+    $('#tMaps').hidden = true; $('#tModes').hidden = on; $('#tChapters').hidden = !on;
     if (on) { this.renderChapters(); const b = $('#chList .ch-card:not([disabled])'); if (b) b.focus({ preventScroll: true }); }
     else $('#btnStory').focus({ preventScroll: true });
   }
@@ -165,6 +183,7 @@ export class UI {
         const open = document.querySelector('.modal-wrap[id^="modal-"]:not([hidden])');
         if (open) { this.closeModal(open); return; }
         if (g.state === 'title' && !$('#tChapters').hidden) { this.showChapters(false); return; }
+        if (g.state === 'title' && !$('#tMaps').hidden) { this.showMaps(false); return; }
         if (g.state === 'menu') { g.showTitle(); return; }
         // Ignora el mismo Esc que liberó el puntero y abrió la pausa
         if (g.state === 'paused' && performance.now() - g.pausedAt > 400) { g.resume(); return; }
@@ -177,7 +196,9 @@ export class UI {
     });
     $('#btnStart').addEventListener('click', () => g.startGame());
     $('#btnStory').addEventListener('click', () => { if (g.audio.ensure()) g.audio.startAmbience(); this.showChapters(true); });
-    $('#btnSurvival').addEventListener('click', () => { if (g.audio.ensure()) g.audio.startAmbience(); g.chooseMode('survival'); });
+    $('#btnSurvival').addEventListener('click', () => { if (g.audio.ensure()) g.audio.startAmbience(); this.showMaps(true); });
+    $('#btnMapBack').addEventListener('click', () => this.showMaps(false));
+    $('#mapList').addEventListener('click', (e) => { const b = e.target.closest('.ch-card'); if (b) g.chooseMode('survival', b.dataset.map); });
     $('#btnChBack').addEventListener('click', () => this.showChapters(false));
     $('#chList').addEventListener('click', (e) => { const b = e.target.closest('.ch-card'); if (b && !b.disabled) g.chooseMode('story', +b.dataset.ch); });
     $('#btnSelBack').addEventListener('click', () => g.showTitle());

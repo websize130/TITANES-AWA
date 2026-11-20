@@ -40,6 +40,10 @@ export class InteractSystem {
     ];
   }
   get(id) { return this.items.find((i) => i.id === id); }
+  // Acción contextual temporal para un jugador concreto (p. ej. «Zafarse» al ser agarrado): sigue su posición,
+  // tiene prioridad sobre el resto y usa el mismo aviso, anillo de progreso y botón de mano táctil
+  addAction(a) { const it = { kind: 'action', enabled: true, used: false, cd: 0, props: [], beacon: null, r: 1.5, hold: 1, x: 0, z: 0, ...a }; this.items.push(it); return it; }
+  removeAction(it) { const i = this.items.indexOf(it); if (i >= 0) this.items.splice(i, 1); for (const S of this.st) if (S.cur === it) { S.cur = null; S.holdT = 0; } }
   enable(id, on = true) { const it = this.get(id); if (it) { it.enabled = on; if (on) it.used = false; } }
   reset(id) { const it = this.get(id); if (it) { it.used = false; it.enabled = true; it.cd = 0; } }
   refresh(kinds) { for (const it of this.items) if (kinds.includes(it.kind)) { it.used = false; it.cd = 0; } }
@@ -47,6 +51,7 @@ export class InteractSystem {
   available(it) { return it.enabled && !it.used && it.cd <= 0; }
   activate(it, p = this.game.player) {
     const g = this.game, w = p.weapons, hud = p.idx ? g.hud2 : g.hud;
+    if (it.kind === 'action') { this.removeAction(it); if (it.onUse) it.onUse(p); g.events.emit('interact:used', { id: it.id, kind: it.kind, item: it, player: p }); return; }
     if (it.kind === 'ammo') { if (!w.refill()) { hud.alert('Munición completa', '', 'info', 1.4); return; } hud.alert('Munición', 'Reserva al máximo', 'info', 1.4); }
     else if (it.kind === 'med') { if (p.health >= p.stats.maxHealth) { hud.alert('Salud completa', '', 'info', 1.4); return; } p.heal(55); g.audio.heal(); hud.alert('Botiquín', '+55 de salud', 'info', 1.4); }
     else if (it.kind === 'weapon') { w.give(it.weapon); hud.alert(WEAPONS[it.weapon].name, 'Arma equipada · munición completa', 'success', 1.8); }
@@ -61,6 +66,7 @@ export class InteractSystem {
   update(dt, game) {
     for (const it of this.items) {
       if (it.cd > 0) { it.cd -= dt; if (it.cd <= 0 && (it.respawn || it.kind === 'ammo' || it.kind === 'med')) it.used = false; }
+      if (!it.beacon) { if (it.follow) { it.x = it.follow.position.x; it.z = it.follow.position.z; } continue; } // acción temporal
       const vis = this.available(it);
       it.beacon.visible = vis; const showProp = vis || (it.kind === 'weapon' && game.modeKind === 'survival'); for (const m of it.props) m.visible = showProp;
       if (vis) { const k = 0.75 + 0.25 * Math.sin(game.time * 4 + it.x); it.beacon.material.opacity = k; it.beacon.position.y = (it.kind === 'objective' ? 1.75 : 0.95) + Math.sin(game.time * 2 + it.z) * 0.06; }
@@ -71,8 +77,8 @@ export class InteractSystem {
     const S = this.st[i], E = this.el[i]; if (!E.box) return;
     let best = null, bd = Infinity;
     if (P && P.active && P.alive) for (const it of this.items) {
-      if (!this.available(it)) continue;
-      const d = Math.hypot(P.position.x - it.x, P.position.z - it.z);
+      if (!this.available(it) || (it.only && it.only !== P)) continue;
+      const d = it.kind === 'action' ? -1 : Math.hypot(P.position.x - it.x, P.position.z - it.z); // las acciones mandan
       if (d < it.r && d < bd) { bd = d; best = it; }
     }
     if (best !== S.cur) { S.cur = best; S.holdT = 0; }

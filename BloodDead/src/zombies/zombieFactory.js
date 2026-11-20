@@ -57,8 +57,10 @@ export const ZombieFactory = {
       flesh: s({ color: 0x5a1a14, emissive: 0x1a0202, roughness: 0.42, metalness: 0.05 }),
       brain: s({ color: 0x9a5a58, emissive: 0x2a0505, roughness: 0.32 }),
       claw: s({ color: 0x1a1715, roughness: 0.3, metalness: 0.2, transparent: true }),
-      chitin: s({ color: 0x1e1816, roughness: 0.36, metalness: 0.18 }),
-      egg: s({ color: 0xb89a70, emissive: 0x5a1a08, emissiveIntensity: 0.8, roughness: 0.22, transparent: true, opacity: 0.92 }),
+      // Zombi araña (la Reina) · retoque suave: quitina con lacado húmedo e irisación tenue y relieve fino; sacos de huevos más carnosos
+      chitin: (() => { const m = new THREE.MeshPhysicalMaterial({ color: 0x231b18, roughness: 0.42, metalness: 0.12, clearcoat: 0.65, clearcoatRoughness: 0.22, iridescence: 0.18, iridescenceIOR: 1.35,
+        normalMap: (TextureFactory.sets.leather || {}).normalMap || null, normalScale: new THREE.Vector2(0.45, 0.45) }); if (csm) csm.setupMaterial(m); return m; })(),
+      egg: s({ color: 0xc2a17a, emissive: 0x6a1e0a, emissiveIntensity: 0.85, roughness: 0.18, transparent: true, opacity: 0.9, normalMap: (TextureFactory.sets.flesh || {}).normalMap || null, normalScale: new THREE.Vector2(0.35, 0.35) }),
       pod: s({ color: 0x3a0505, emissive: 0xff3a1a, emissiveIntensity: 1.6, roughness: 0.25 }),
       bone: s({ color: 0xcfc4ac, roughness: 0.6 }),
       shield: new THREE.ShaderMaterial({ uniforms: { uA: { value: 1 }, uT: { value: 0 }, uHit: { value: 0 } }, vertexShader: SHIELD_VS, fragmentShader: SHIELD_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }),

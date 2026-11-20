@@ -1,6 +1,9 @@
 /* Escenarios: niebla, luz de luna y fondo por nivel (el constructor está en LEVEL_BUILDERS) */
 export const LEVELS = {
-  village: { name: 'El pueblo', fog: 0x0d1418, density: 0.052, moon: 0.55, moonColor: 0x9fb4d6, exposure: 1.05 },
+  // Supervivencia · noche: niebla más ligera que antes (el mapa es más grande y se lee mejor) y luna algo más intensa
+  village: { name: 'El pueblo', fog: 0x0e161b, density: 0.034, moon: 0.72, moonColor: 0xa6bbdc, exposure: 1.12 },
+  // Supervivencia · día: sol, cielo y océano (day: true activa cielo, agua y fauna); far amplía la distancia de dibujo
+  island: { name: 'La isla', day: true, fog: 0x9ec0de, density: 0.0034, moon: 3.1, moonColor: 0xfff0dc, exposure: 1.0, lightDir: [-0.55, -1, -0.35], far: 420 },
   lab: { name: 'Laboratorio', fog: 0x0a0b0d, density: 0.06, moon: 0.1, moonColor: 0x8fa0b8, exposure: 1.15 },
   city: { name: 'Ciudad muerta', fog: 0x0e1013, density: 0.045, moon: 0.42, moonColor: 0x9aa8c0, exposure: 1.08 },
   silos: { name: 'Complejo industrial', fog: 0x100e0c, density: 0.05, moon: 0.35, moonColor: 0xb0a090, exposure: 1.08 },
@@ -63,15 +66,4 @@ export const CHAPTERS = [
     ] },
 ];
 
-/* MODO SUPERVIVENCIA: rondas de 2–3 min en el pueblo; cada ronda los infectados son más rápidos y peligrosos
-   y aparecen más infectados fuertes (los jefes de la historia en versión reducida) */
-export const SURVIVAL = {
-  level: 'village', intermission: 14,
-  duration: (n) => Math.min(180, 120 + (n - 1) * 15),
-  target: (n) => 4 + Math.floor(n * 1.5),
-  every: (n) => [Math.max(1.6, 6 - n * 0.55), Math.max(3.2, 10 - n * 0.8)],
-  mult: (n) => ({ spd: Math.min(1.65, 1 + (n - 1) * 0.08), dmg: Math.min(2.4, 1 + (n - 1) * 0.12), hp: Math.min(2.2, 1 + (n - 1) * 0.09) }),
-  strong: (n) => (n < 2 ? 0 : Math.floor(n / 2)),
-  strongTypes: ['subject', 'stalker', 'behemoth', 'queen'],
-  unlock: { shotgun: 1, smg: 2, rifle: 3 },
-};
+/* El Modo Supervivencia (mapas y 15 niveles) está en data/survival.js */

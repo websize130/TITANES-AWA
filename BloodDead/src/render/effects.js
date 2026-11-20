@@ -63,7 +63,7 @@ export class Effects {
       vertexShader: FIRE_VS, fragmentShader: FIRE_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     });
   }
-  build(q) {
+  build(q, L = {}) {
     const W = this.game.world;
     this.fires = W.fires.map((f) => this.addFire(f));
     const box = 14, dg = this.points(q.dust, (pos, i) => { pos[i * 3] = rand(-box / 2, box / 2); pos[i * 3 + 1] = rand(-box / 2, box / 2); pos[i * 3 + 2] = rand(-box / 2, box / 2); },
@@ -73,7 +73,7 @@ export class Effects {
       }));
     this.dust = this.track(dg);
     const b = (this.bounds = W.bounds);
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < (L.day ? 0 : 14); i++) { // niebla baja nocturna (de día no hay)
       const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: TextureFactory.cloud, color: 0x4a565e, transparent: true, opacity: rand(0.05, 0.1), depthWrite: false }));
       const sc2 = rand(6, 10); s.position.set(rand(b.x0, b.x1), rand(0.4, 1.1), rand(b.z0, b.z1)); s.scale.set(sc2, sc2 * 0.45, 1); s.userData.v = rand(0.08, 0.25);
       this.fog.push(this.track(s));

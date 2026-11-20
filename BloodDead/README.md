@@ -23,6 +23,16 @@ Salidas de `npm run build`:
 Skypack o Google Fonts. La única conexión externa del juego es el servidor público de PeerJS, y solo al
 emparejar un móvil como mando (para eso, la TV y el móvil deben estar en la misma Wi-Fi).
 
+## Modo Supervivencia
+
+- **Dos mapas exclusivos** (se eligen al pulsar *Modo Supervivencia*):
+  - **El pueblo · noche**: el pueblo original, ampliado de 49×57 m a 77×85 m. Añade un barrio de cabañas, una granja con granero y silo, el cementerio con cripta y una entrada con coches abandonados.
+  - **La isla · día**: unos 90×95 m de tierra con playa, palmeras, faro, cabañas de paja, campamento, embarcadero transitable y océano con oleaje. Tiene gaviotas, cangrejos y peces que saltan.
+- **15 niveles** con escalada lineal, definidos en `src/data/survival.js` (una fila por nivel): duración, infectados a la vez, cadencia, velocidad, daño, vida, corredores, hinchados, fuertes, murciélagos, emboscadas y furia. Al superar el 15 aparece la pantalla de victoria. El récord se guarda por mapa.
+- **Murciélagos zombi gigantes** (`src/zombies/batSystem.js`), desde el nivel 4: siempre vuelan, rodean a su presa, atacan en picado y remontan. Se disparan (la cabeza recibe ×2), se acuchillan en el picado y el apuntado asistido los fija.
+- **Emboscadas bajo los tablones** (`src/game/ambushSystem.js`), desde el nivel 2: hay tarimas sueltas en cabañas, porches, granero y embarcadero. Un infectado real te agarra los pies. Para librarte, mantén *Usar* con el aviso contextual o el botón de mano táctil, o mátalo.
+- **Zombi araña** (la Reina): conserva su forma y su comportamiento, con quitina lacada y relieve fino.
+
 ## Texturas fotoescaneadas (Poly Haven, CC0)
 
 ```bash
@@ -78,6 +88,7 @@ Las versiones están fijadas (`--save-exact`) para que el juego no cambie al rei
 ## Hoja de ruta
 
 - [x] **Fase 0:** sin CDN (funciona sin conexión), código separado en módulos, build web y de un solo archivo.
+- [x] Supervivencia: 2 mapas, 15 niveles, murciélagos zombi y emboscadas.
 - [ ] Fase 1: audio híbrido con muestras CC0 y sin el efecto "tubo" en disparos y explosiones.
 - [ ] Fase 2: esqueleto con pies, andar natural de los zombis, simetría y proporciones.
 - [ ] Fase 3: salto y saltar obstáculos, HUD fijo (incluido el botón de granada), distribución de mandos.

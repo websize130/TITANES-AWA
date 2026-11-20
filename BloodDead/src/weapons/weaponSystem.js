@@ -103,6 +103,12 @@ export class WeaponSystem {
       let zh = zs ? zs.raycast(cam.position, this.dir, maxT, assist, W.pellets === 1) : null; // zonas ampliadas (más en táctil); también cadáveres
       if (zs && W.pellets === 1 && (!zh || zh.corpse)) { const ca = zs.closeAssist(cam.position, this.dir, maxT, p.position); if (ca && (!zh || ca.t < zh.t + 0.5)) zh = ca; } // a quemarropa no se falla
       const sw = zs ? zs.fx.raySwarm(cam.position, this.dir, zh ? zh.t : maxT) : Infinity; // una cría de la Reina se interpone
+      const bh = zs && zs.bats.list.length ? zs.bats.ray(cam.position, this.dir, zh ? zh.t : sw < Infinity ? sw : maxT, assist) : null; // murciélago en vuelo
+      if (bh) {
+        const point = cam.position.clone().addScaledVector(this.dir, bh.t); if (!first) first = { point, hitT: bh.t, zh: null };
+        const fall = W.falloff ? clamp(1.3 - bh.t / W.falloff, 0.3, 1) : 1, dmg = p.rollDamage(W.dmg * fall);
+        zs.bats.hit(bh.b, dmg.amount, point, this.dir, p, bh.zone, dmg.crit); continue;
+      }
       if (sw < Infinity) { const point = cam.position.clone().addScaledVector(this.dir, sw); if (!first) first = { point, hitT: sw, zh: null }; g.audio.hitTick('body'); g.events.emit('zombie:hit', { z: null, point, by: p, zone: 'body', killed: true }); continue; }
       const hitT = zh ? zh.t : wall, point = cam.position.clone().addScaledVector(this.dir, hitT === Infinity ? 60 : hitT);
       if (!first) first = { point, hitT, zh };

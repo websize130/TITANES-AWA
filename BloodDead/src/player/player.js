@@ -67,12 +67,12 @@ export class Player {
     if (dl > 1e-4) { dx /= dl; dz /= dl; }
     // Agacharse / deslizarse (C, Ctrl, botón táctil o B / Círculo)
     if (input.consume('crouch') && this.alive) {
-      if (this.slideT < 0 && this.running && this.speed > S.runSpeed * P.speedMult * 0.6 && this.slideCD <= 0) this.startSlide(dx, dz);
+      if (this.slideT < 0 && this.running && this.speed > S.runSpeed * P.speedMult * 0.6 && this.slideCD <= 0 && !this.rooted) this.startSlide(dx, dz);
       else if (this.slideT < 0) this.crouch = !this.crouch;
     }
     this.aiming = (input.aim || this.aimHold > 0) && this.alive;
     // Resistencia
-    this.running = input.run && !this.exhausted && this.stamina > 0 && mag > 0.2 && !this.aiming && this.alive && this.slideT < 0;
+    this.running = input.run && !this.exhausted && this.stamina > 0 && mag > 0.2 && !this.aiming && this.alive && this.slideT < 0 && !this.rooted;
     if (this.running) {
       this.crouch = false;
       this.stamina -= P.runDrain * dt; this.regenDelay = P.regenDelay;
@@ -95,7 +95,7 @@ export class Player {
       if (this.aiming) spd *= P.aimSpeedMult;
       if (this.crouch) spd *= P.crouchMult;
       if (this.knifeT >= 0) spd *= 0.95;
-      if (!this.alive) spd = 0;
+      if (!this.alive || this.rooted) spd = 0; // agarrado por los pies: no puede moverse
       const k = mag > 0.01 ? P.accel : P.decel;
       this.velocity.x = damp(this.velocity.x, dx * spd, k, dt);
       this.velocity.z = damp(this.velocity.z, dz * spd, k, dt);

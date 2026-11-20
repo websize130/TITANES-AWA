@@ -145,6 +145,36 @@
         "Charlotte Baglioni"
       ],
       "url": "https://polyhaven.com/a/stone_tiles_02"
+    },
+    "sand": {
+      "id": "sand_01",
+      "name": "Sand 01",
+      "use": "arena de la playa (isla)",
+      "size": 1.5,
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/sand_01"
+    },
+    "grass": {
+      "id": "forrest_ground_01",
+      "name": "Forest Ground 01",
+      "use": "hierba del interior de la isla",
+      "size": 2,
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/forrest_ground_01"
+    },
+    "thatch": {
+      "id": "reed_roof_04",
+      "name": "Reed Roof 04",
+      "use": "techos de paja de las cabañas de la isla",
+      "size": 2.5,
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/reed_roof_04"
     }
   }
 }

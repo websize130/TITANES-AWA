@@ -31,7 +31,7 @@ export class Zombie {
   }
   spawn(x, z, o = {}) {
     const T = this.T;
-    this.active = this.alive = true; this.mesh.visible = true;
+    this.active = this.alive = true; this.mesh.visible = true; this.ext = null; this.noBlock = false;
     this.mSpd = o.spd || 1; this.mDmg = o.dmg || 1; this.fury = !!o.fury;
     this.hp = this.maxHp = T.hp * (T.boss ? 1 : rand(0.9, 1.15)) * (o.hp || 1);
     this.anchor.set(x, 0, z); this.abT = T.ability ? rand(2.2, 3.6) : 0; this.stunT = 0; this.sinkT = 0; this.slammed = this.spat = this.chHit = this.swept = this.spawned = false;
@@ -69,6 +69,7 @@ export class Zombie {
   }
 
   update(dt) {
+    if (this.ext) return this.ext(this, dt); // control externo (p. ej. emboscada bajo los tablones): también decide su muerte
     if (!this.alive) return this.updateDeath(dt);
     const S = this.sys, T = this.T;
     if (!this.tgt || !this.tgt.active) this.tgt = this.pickTarget();

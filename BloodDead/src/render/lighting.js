@@ -13,7 +13,10 @@ export async function loadCSM() {
 }
 
 export class Lighting {
-  constructor(game) { this.game = game; this.csm = null; this.moon = null; this.moonDir = new THREE.Vector3(...CONFIG.lighting.moonDir).normalize(); }
+  constructor(game) {
+    this.game = game; this.csm = null; this.moon = null; this.hemi = null;
+    const LD = game.levelDef; this.moonDir = new THREE.Vector3(...((LD && LD.lightDir) || CONFIG.lighting.moonDir)).normalize(); // luna, o el sol de un nivel de día
+  }
   async init(q) {
     const { scene, camera } = this.game, LD = this.game.levelDef, L = { ...CONFIG.lighting, ...(LD ? { moon: LD.moon, moonColor: LD.moonColor } : {}) };
     if (q.csmCascades > 0 && !this.game.disableCSM) {
@@ -36,6 +39,9 @@ export class Lighting {
       }
       scene.add(m, m.target);
     }
+    if (LD && LD.day) { // relleno de cielo y rebote del suelo: de día las sombras no son negras
+      this.hemi = new THREE.HemisphereLight(0xcfe3ff, 0x9a8a68, 0.9); scene.add(this.hemi);
+    }
   }
   update(playerPos) {
     if (!this.moon) return;
@@ -48,5 +54,6 @@ export class Lighting {
   dispose() {
     if (this.csm) { try { this.csm.remove(); this.csm.dispose(); this.csm.lights.forEach((l) => l.dispose()); } catch (e) { /* ignorado */ } }
     if (this.moon) this.moon.dispose();
+    if (this.hemi) this.hemi.dispose();
   }
 }
