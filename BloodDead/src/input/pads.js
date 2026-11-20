@@ -15,6 +15,7 @@ export class Pads {
     const s = this.st.get(key) || this.make(key, 'remote'); s.connected = true;
     if (msg.a) { s.lx = msg.a[0]; s.ly = msg.a[1]; }
     if (msg.l) { s.look.x += msg.l[0]; s.look.y += msg.l[1]; }
+    if (msg.r) { s.rx = msg.r[0]; s.ry = msg.r[1]; } // stick derecho (amigo online con mando)
     if (msg.b !== undefined) for (let i = 0; i < 17; i++) s.b[i] = (msg.b >> i) & 1;
     if (msg.t) s.raw = msg.t;
   }
@@ -29,13 +30,14 @@ export class Pads {
     let any = null;
     for (const s of this.st.values()) {
       for (let i = 0; i < 17; i++) { const now = s.b[i] > 0.5 ? 1 : 0; s.down[i] = !!(now && !s.prev[i]); s.prev[i] = now; }
-      if (s.connected && s.down.some((v) => v)) { any = s; s.lastActive = performance.now(); if (this.game.onPadActivity) this.game.onPadActivity(s); }
+      if (s.connected && s.down.some((v) => v) && !s.key.startsWith('n:')) { any = s; /* el amigo online no navega los menús del anfitrión */ s.lastActive = performance.now(); if (this.game.onPadActivity) this.game.onPadActivity(s); }
     }
     if (this.game.state !== 'playing' || this.game.cine.on) this.menuNav(any);
   }
   rumble(player, strong = 0.5, weak = 0.3, ms = 120) {
     const key = player && player.input && player.input.pad; if (!key) return;
     const s = this.st.get(key); if (!s || !s.connected) return;
+    if (key.startsWith('n:')) { if (this.game.net) this.game.net.vibrate(Math.round(ms * (0.5 + strong))); return; }
     if (s.kind === 'remote') { this.game.remote && this.game.remote.send(key, { t: 'vib', ms: Math.round(ms * (0.5 + strong)) }); return; }
     const gp = navigator.getGamepads && navigator.getGamepads()[+key.slice(1)], va = gp && gp.vibrationActuator;
     if (va && va.playEffect) va.playEffect('dual-rumble', { duration: ms, strongMagnitude: clamp(strong, 0, 1), weakMagnitude: clamp(weak, 0, 1) }).catch(() => {});
@@ -46,7 +48,7 @@ export class Pads {
     if (g.cine && g.cine.on) { if (s) g.cine.skip(); return; }
     let dir = 0;
     for (const p of this.st.values()) {
-      if (!p.connected) continue;
+      if (!p.connected || p.key.startsWith('n:')) continue;
       if (p.down[12] || p.down[14]) dir = -1; if (p.down[13] || p.down[15]) dir = 1;
       if (!dir && (Math.abs(p.ly) > 0.6 || Math.abs(p.lx) > 0.6) && performance.now() - this.navT > 220) { dir = p.ly > 0.6 || p.lx > 0.6 ? 1 : -1; this.navT = performance.now(); }
     }

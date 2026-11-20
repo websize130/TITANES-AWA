@@ -8,6 +8,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { CHAPTERS, LEVELS } from '../data/levels.js';
 import { SURVIVAL } from '../data/survival.js';
 import { AmbushSystem } from './ambushSystem.js';
+import { NetHost } from '../net/online.js';
 import { SceneExtras } from '../world/sceneExtras.js';
 import { Settings } from '../core/settings.js';
 import { EventBus } from '../core/events.js';
@@ -56,7 +57,7 @@ export class Game {
     this.setState('boot');
     this.ui = new UI(this);
     this.input = new Input(this);
-    this.pads = new Pads(this); this.remote = new RemoteLink(this); this.cine = new Cinematic(this);
+    this.pads = new Pads(this); this.remote = new RemoteLink(this); this.net = new NetHost(this); this.cine = new Cinematic(this);
     this.applyTv();
     addEventListener('resize', () => this.onResize());
     document.addEventListener('visibilitychange', () => { if (document.hidden && this.state === 'playing') this.pause(); });
@@ -65,7 +66,7 @@ export class Game {
     this.events.on('player:step', (e) => this.audio.footstep(e.running));
     this.events.on('flashlight:toggle', () => { this.audio.click(); if (this.player) $('#tLight').classList.toggle('on', this.player.flashlight.on); });
     this.events.on('flashlight:flicker', () => this.audio.click());
-    this.events.on('player:died', (e) => { this.audio.hurt(); this.audio.thud(0, 0.8); if (e.player) { e.player.rig.shake(0.08, 0.5); e.player.respawnT = 0; this.pads.rumble(e.player, 1, 1, 500); } });
+    this.events.on('player:died', (e) => { this.audio.hurt(); this.audio.thud(0, 0.8); if (e.player) { e.player.rig.shake(0.08, 0.5); e.player.respawnT = 0; this.pads.rumble(e.player, 1, 1, 500); this.offerRevive(e.player); } });
     this.events.on('interact:used', (e) => { if (this.mode && e.kind === 'objective') this.mode.onUse && this.mode.onUse(e.id); });
   }
   // Atajos al jugador 1 (compatibilidad con los sistemas de un jugador)
@@ -89,6 +90,7 @@ export class Game {
       this.ui.setBoot(0.9, 'Preparando escenario…'); await nextFrame();
       this.envMap = this.engine.buildEnvironment();
       this.hud = new HUD(this); this.hud2 = new HudLite(this);
+      for (const [h, mine] of [[this.hud, false], [this.hud2, true]]) { const orig = h.alert.bind(h); h.alert = (t, sub, kind = 'info', dur) => { if (mine || kind !== 'info') this.net.alert(t, sub || '', kind); return orig(t, sub, kind, dur); }; }
       this.menu = new MenuStage(this);
       this.selectCharacter(Settings.data.lastChar || 'alex');
       this.ui.setBoot(1, 'Listo'); await nextFrame();
@@ -266,12 +268,24 @@ export class Game {
       const p1 = this.player; p2.setActive(true); p2.revive(this.spotNear(p1.position), 1); p2.health = p2.stats.maxHealth; p2.stamina = p2.stats.stamina;
       p2.rig.yaw = p1.rig.yaw; p2.rig.pitch = p1.rig.pitch; p2.facing = p1.facing; p2.kills = 0;
       for (const k of p1.weapons.inv) if (k !== 'pistol') p2.weapons.give(k); // llega con el mismo armamento
-      this.setSplit(true); this.audio.chime();
-      if (!silent) this.hud.alert('Jugador 2 se une', `${p2.def.name} · pantalla dividida`, 'success', 2.6);
+      const online = key.startsWith('n:'); // amigo online: ve su vista en su propio dispositivo (sin pantalla dividida)
+      this.setSplit(!online); this.audio.chime();
+      if (!silent) this.hud.alert(online ? `${this.net.name} se une online` : 'Jugador 2 se une', `${p2.def.name} · ${online ? 'juega desde su dispositivo' : 'pantalla dividida'}`, 'success', 2.6);
       this.hud2.alert('¡A jugar!', 'Mantente cerca de tu compañero', 'success', 2.4);
       this.events.emit('player:joined', { player: p2 });
     }
     this.ui.renderPads();
+  }
+  // Multijugador online: el amigo entra como Jugador 2 (ya en partida, o al empezar la siguiente)
+  onFriendJoined(key, name) {
+    if (this.state === 'playing' || this.state === 'paused') this.addPlayer2(key);
+    else { this.p2Pad = key; this.ui.renderPads(); }
+    this.notify(`${name} se ha unido`, this.state === 'playing' ? 'Juega como Jugador 2' : 'Jugará como Jugador 2 al empezar la partida');
+  }
+  onFriendLeft(key, name) {
+    const p2 = this.players[1];
+    if (p2 && p2.active && p2.input.pad === key) this.removePlayer2(); else if (this.p2Pad === key) this.p2Pad = null;
+    this.notify(`${name} se ha desconectado`, 'La partida sigue en solitario'); this.ui.renderPads();
   }
   removePlayer2() {
     const p2 = this.players[1]; if (!p2 || !p2.active) { this.p2Pad = null; this.ui.renderPads(); return; }
@@ -284,11 +298,22 @@ export class Game {
     if (this.hud2) { if (on) this.hud2.show(this.players[1].def); else this.hud2.hide(); }
     if (!quiet) this.onResize();
   }
-  revivePlayer(p) {
-    const mate = this.activePlayers.find((q) => q !== p && q.alive);
-    p.revive(mate ? this.spotNear(mate.position) : p.position.clone(), 0.6); p.respawnT = 0;
+  // Cooperativo: el compañero vivo puede reanimar al caído con la interacción contextual (mantener Usar junto a él)
+  offerRevive(p) {
+    if (!this.interact || this.activePlayers.length < 2) return;
+    const mate = this.activePlayers.find((q) => q !== p && q.alive); if (!mate) return;
+    if (p.reviveAct) this.interact.removeAction(p.reviveAct);
+    p.reviveAct = this.interact.addAction({ id: 'revive', label: `Reanimar a ${p.def.name.split(' ')[0]}`, hold: CONFIG.coop.revive, only: mate, x: p.position.x, z: p.position.z, r: 1.8,
+      onUse: (by) => { p.reviveAct = null; this.revivePlayer(p, by); } });
+    (mate.idx ? this.hud2 : this.hud).alert('¡Compañero caído!', 'Acércate y mantén USAR para reanimarlo', 'danger', 2.6);
+  }
+  revivePlayer(p, by = null) {
+    if (p.reviveAct && this.interact) { this.interact.removeAction(p.reviveAct); p.reviveAct = null; }
+    const mate = by || this.activePlayers.find((q) => q !== p && q.alive);
+    p.revive(by ? p.position.clone() : mate ? this.spotNear(mate.position) : p.position.clone(), by ? CONFIG.coop.reviveHp : 0.6); p.respawnT = 0;
     if (p.weapons) { const A = p.weapons.ammo.pistol; A.mag = WEAPONS.pistol.mag; }
-    (p.idx ? this.hud2 : this.hud).alert('¡De vuelta!', 'Tu compañero te ha cubierto', 'success', 1.8);
+    (p.idx ? this.hud2 : this.hud).alert('¡De vuelta!', by ? `${by.def.name.split(' ')[0]} te ha reanimado` : 'Tu compañero te ha cubierto', 'success', 1.8);
+    if (by) { this.audio.heal(); this.events.emit('player:revived-by', { player: p, by }); }
   }
   /* ---------- Estados ---------- */
   pause() {
@@ -378,7 +403,8 @@ export class Game {
   loop = () => {
     requestAnimationFrame(this.loop);
     const dt = Math.min(this.clock.getDelta(), 0.05);
-    this.time += dt; this.tickFps(dt);
+    this.time += dt; this.tickFps(dt); this.frameDt = dt;
+    this.net.update(dt);
     this.pads.poll();
     if ((this.state === 'menu' || this.state === 'title') && this.menu) { this.menu.update(dt); this.engine.renderer.render(this.menu.scene, this.menu.camera); }
     else if (this.state === 'playing') { this.update(dt); this.render(); }
@@ -430,6 +456,14 @@ export class Game {
   render() {
     if (!this.scene || !this.camera) return;
     const r = this.engine.renderer, ps = this.activePlayers, csm = this.lighting.csm;
+    // Amigo online: su vista se dibuja primero en una esquina y se copia a su vídeo; luego el jugador 1 ocupa toda la pantalla
+    const p2 = this.players[1];
+    if (this.net.connected && p2 && p2.active && p2.input.pad === this.net.key && !this.cine.on) {
+      for (const q of ps) q.model.root.visible = q !== p2 || p2.rig.modelVisible;
+      this.net.renderGuest(r, this.scene, p2, csm, this.lighting, this.frameDt || 1 / 60);
+      r.setViewport(0, 0, this.engine.width, this.engine.height);
+      if (csm) { csm.camera = this.camera; csm.updateFrustums(); }
+    }
     if (!this.split || ps.length < 2 || this.cine.on) {
       for (const p of this.players) p.model.root.visible = p.active && (this.cine.on || p !== this.player || p.rig.modelVisible);
       this.camera.updateMatrixWorld(); this.lighting.beforeRender();

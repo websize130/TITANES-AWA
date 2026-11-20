@@ -1,4 +1,5 @@
 import { SURVIVAL } from '../data/survival.js';
+import { QRScanner, parseJoin, baseUrl } from './qrScanner.js';
 import { $, clamp } from '../core/utils.js';
 import { icon } from './icons.js';
 import { QUALITY } from '../data/config.js';
@@ -87,7 +88,9 @@ export class UI {
   modalOpen() { return !!document.querySelector('.modal-wrap[id^="modal-"]:not([hidden])'); }
   openModal(name) {
     const w = $('#modal-' + name); if (!w) return; this.lastFocus = document.activeElement; w.hidden = false; const c = w.querySelector('[data-close]'); if (c) c.focus({ preventScroll: true });
-    if (name === 'pads') { this.renderPads(); this.game.remote.open().then(() => this.renderPads()); }
+    if (name === 'pads') { this.tvTab(this.tvTabName || 'local'); this.renderPads(); this.game.remote.open().then(() => this.renderPads()); $('#castUrl').textContent = baseUrl() + '?tv=1'; }
+    if (name === 'join') { $('#joinStatus').textContent = ''; $('#codeInput').value = ''; }
+    if (name === 'online' && this.game.net) this.game.net.openPanel();
   }
   // Capa interactiva visible (para navegar con el mando)
   activeLayer() {
@@ -100,6 +103,37 @@ export class UI {
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); clearTimeout(this.toastT); this.toastT = setTimeout(() => el.classList.remove('show'), 3200);
   }
   // Mandos conectados y a quién controlan (panel «Mandos y móvil»)
+  // Pestañas del panel de TV: «Modo TV local» (esta pantalla es la TV) o «Modo normal · TV real» (proyectar)
+  tvTab(name) {
+    this.tvTabName = name;
+    document.querySelectorAll('#tvTabs button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tab === name)));
+    $('#tvLocal').hidden = name !== 'local'; $('#tvCast').hidden = name !== 'cast';
+  }
+  // Proyectar en una TV real (Chromecast / Google TV) con la API de presentación; la TV abre el juego en modo TV con su propio código
+  async cast() {
+    const st = $('#castStatus'), url = baseUrl() + '?tv=1';
+    if (!('PresentationRequest' in window)) { st.textContent = 'Este navegador no puede proyectar directamente: usa una de las opciones de abajo.'; st.className = 'pad-status err'; return; }
+    try {
+      st.textContent = 'Buscando televisores…'; st.className = 'pad-status';
+      const req = new window.PresentationRequest([url]); const conn = await req.start();
+      st.textContent = 'Proyectando en la TV · conecta los móviles con el código que aparece en ella'; st.className = 'pad-status ok';
+      conn.addEventListener('terminate', () => { st.textContent = 'Proyección terminada'; st.className = 'pad-status'; });
+    } catch (e) { st.textContent = e && e.name === 'NotAllowedError' ? 'Proyección cancelada' : 'No se encontró ninguna TV compatible: usa una de las opciones de abajo.'; st.className = 'pad-status err'; }
+  }
+  // Unirse: abre el mando (?mando=) o la partida de un amigo (?unirse=)
+  joinWith(raw) {
+    const j = parseJoin(raw), st = $('#joinStatus');
+    if (!j) { st.textContent = 'Código no válido: 4 caracteres (mando de TV) o 6 (invitación)'; st.className = 'pad-status err'; return; }
+    st.textContent = j.kind === 'mando' ? 'Conectando como mando…' : 'Entrando en la partida de tu amigo…'; st.className = 'pad-status ok';
+    location.href = baseUrl() + (j.kind === 'mando' ? '?mando=' : '?unirse=') + j.code;
+  }
+  async startScan() {
+    const st = $('#joinStatus'), box = $('#scanBox');
+    this.scanner = this.scanner || new QRScanner($('#scanVideo'));
+    box.hidden = false; st.textContent = 'Apunta la cámara al código QR'; st.className = 'pad-status';
+    try { await this.scanner.start((text) => { box.hidden = true; this.joinWith(text); }); }
+    catch (e) { box.hidden = true; st.textContent = e && e.name === 'NotAllowedError' ? 'Sin permiso de cámara: escribe el código a mano' : (e.message || 'No se pudo abrir la cámara') + ' · escribe el código a mano'; st.className = 'pad-status err'; }
+  }
   renderPads() {
     const g = this.game, box = $('#padList'); if (!box) return;
     const rows = [...g.pads.st.values()].filter((s) => s.connected);
@@ -109,7 +143,7 @@ export class UI {
       const o = g.padOwner(s.key), row = document.createElement('div'); row.className = 'pad-row';
       row.innerHTML = `${icon(s.kind === 'remote' ? 'phone' : 'gamepad')}<span class="pr-name"></span><span class="pr-own ${o ? 'on' : ''}">${o ? 'Jugador ' + o : 'Libre'}</span>` +
         (o !== 1 ? `<button class="btn btn-ghost pr-btn" data-to="1" aria-label="Asignar al jugador 1">J1</button>` : '') + (o !== 2 ? `<button class="btn btn-ghost pr-btn" data-to="2" aria-label="Asignar al jugador 2">J2</button>` : '');
-      row.querySelector('.pr-name').textContent = s.kind === 'remote' ? 'Móvil' : padName(s.label);
+      row.querySelector('.pr-name').textContent = s.key.startsWith('n:') ? 'Amigo online' : s.kind === 'remote' ? 'Móvil' : padName(s.label);
       row.dataset.pk = s.key; box.appendChild(row);
     }
     document.querySelectorAll('#padTarget button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.t === g.remoteTarget)));
@@ -121,7 +155,7 @@ export class UI {
     el.textContent = duo ? `Dúo · J1 ${p1in} · J2 ${p2.input.pad ? (p2.input.pad.startsWith('r:') ? 'móvil' : 'mando') : 'sin mando'}` : g.p2Pad ? `J1 ${p1in} · J2 preparado` : `Solo · ${p1in}`;
     $('#btnP2Leave').hidden = !duo && !g.p2Pad;
   }
-  closeModal(w) { w.hidden = true; if (this.lastFocus && this.lastFocus.focus) this.lastFocus.focus({ preventScroll: true }); }
+  closeModal(w) { w.hidden = true; if (w.id === 'modal-join' && this.scanner) { this.scanner.stop(); $('#scanBox').hidden = true; } if (this.lastFocus && this.lastFocus.focus) this.lastFocus.focus({ preventScroll: true }); }
   renderTitleInfo() {
     const d = Settings.data, u = Math.min(CHAPTERS.length, d.unlocked || 1), done = (d.done || []).filter(Boolean).length;
     $('#storyInfo').textContent = done >= CHAPTERS.length ? '5 capítulos · historia completada' : `5 capítulos · ${u} desbloqueado${u > 1 ? 's' : ''}`;
@@ -250,6 +284,7 @@ export class UI {
       const d = Settings.data; d.tv = !d.tv; d.tvSet = true; Settings.save(); g.applyTv();
       if (d.tv && !document.fullscreenElement && !document.webkitFullscreenElement) this.toggleFullscreen(); // en la TV, un jugador a pantalla completa
       this.syncSettings(); g.onResize();
+      if (d.tv) { this.tvTabName = 'local'; this.openModal('pads'); } // al activar el Modo TV: sala con código y QR para los móviles
     });
     $('#btnP2Leave').addEventListener('click', () => { g.removePlayer2(); this.renderPlayers(); });
     $('#padList').addEventListener('click', (e) => {
@@ -260,6 +295,11 @@ export class UI {
     });
     $('#padTarget').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; g.remoteTarget = b.dataset.t; this.renderPads(); });
     document.addEventListener('fullscreenchange', () => this.syncSettings());
+    $('#tvTabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) this.tvTab(b.dataset.tab); });
+    $('#btnCast').addEventListener('click', () => this.cast());
+    $('#btnScan').addEventListener('click', () => this.startScan());
+    document.querySelectorAll('#modal-online [data-share]').forEach((b) => b.addEventListener('click', () => this.game.net.share(b.dataset.share)));
+    $('#codeForm').addEventListener('submit', (e) => { e.preventDefault(); this.joinWith($('#codeInput').value); });
     document.querySelectorAll('[data-modal]').forEach((b) => b.addEventListener('click', () => this.openModal(b.dataset.modal)));
     document.querySelectorAll('.modal-wrap[id^="modal-"]').forEach((w) => w.addEventListener('click', (e) => { if (e.target === w || e.target.closest('[data-close]')) this.closeModal(w); }));
     // Descarga la versión autónoma (un solo .html con todo dentro) que genera «npm run build»

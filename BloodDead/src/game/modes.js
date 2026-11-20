@@ -198,8 +198,12 @@ export class SurvivalMode {
   }
   startRound(n) {
     const g = this.game, Z = g.zombies, L = SURVIVAL.levels[n - 1]; this.round = n; this.phase = 'round'; this.t = this.dur = L.dur;
-    const m = (this.m = L.mult);
-    Z.setDirector({ target: L.target, every: L.every, groups: null, minDist: 13, mult: m, fury: L.fury, aggro: L.aggro, cull: false, weights: L.weights, bats: L.bats });
+    // Multijugador (local u online): el doble de infectados, más agresivos y murciélagos desde el nivel 2
+    const duo = g.activePlayers.length > 1, C = SURVIVAL.coop;
+    const m = (this.m = duo ? { ...L.mult, spd: L.mult.spd * C.spd } : L.mult);
+    const bats = !duo ? L.bats : L.bats ? { max: L.bats.max + 1, every: L.bats.every.map((v) => v * 0.85) } : n >= C.batsFrom ? { ...C.earlyBats } : null;
+    Z.setDirector({ target: L.target, every: L.every, groups: null, minDist: 13, mult: m, fury: L.fury || (duo && n >= C.furyFrom), aggro: Math.min(1, L.aggro + (duo ? C.aggro : 0)), cull: false, weights: L.weights, bats,
+      coopMult: C.zombies, coopCap: C.zombies });
     if (g.ambush) g.ambush.setRate(L.ambush);
     const k = L.strong.length; this.strong = [];
     for (let i = 0; i < k; i++) this.strong.push({ at: this.dur * (0.15 + (0.6 * i) / Math.max(1, k)), type: L.strong[i], z: null, done: false });

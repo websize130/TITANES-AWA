@@ -14,7 +14,7 @@ export const CONFIG = {
   weapon: { damage: 34 }, // daño base de la pistola (ver WEAPONS)
   knife: { damage: 60, range: 1.8, arc: 1.1, time: 0.3, hitAt: 0.38, cooldown: 0.28, cancel: 0.62 }, // tajo rápido sin recuperación rígida: a partir del 62 % se puede encadenar o disparar
   pad: { look: 2.9, deadzone: 0.16, aimSlow: 0.5 }, // mandos: velocidad de cámara (rad/s), zona muerta y ralentización al apuntar
-  coop: { respawn: 12 }, // dúo: segundos hasta reaparecer junto al compañero
+  coop: { respawn: 35, revive: 2.4, reviveHp: 0.5 }, // dúo: segundos hasta reaparecer junto al compañero
 };
 
 export const QUALITY = {

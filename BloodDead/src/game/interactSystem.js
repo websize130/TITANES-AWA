@@ -34,6 +34,7 @@ export class InteractSystem {
       }
       this.items.push(it);
     }
+    this.view = [{ show: false, text: '', ring: 0 }, { show: false, text: '', ring: 0 }]; // estado del aviso por jugador (lo lee el multijugador online)
     this.el = [
       { box: $('#prompt'), text: $('#promptText'), key: $('#promptKey'), ring: $('#promptRing'), use: $('#tUse') },
       { box: $('#prompt2'), text: $('#prompt2Text'), key: $('#prompt2Key'), ring: $('#prompt2Ring'), use: null },
@@ -78,8 +79,8 @@ export class InteractSystem {
     let best = null, bd = Infinity;
     if (P && P.active && P.alive) for (const it of this.items) {
       if (!this.available(it) || (it.only && it.only !== P)) continue;
-      const d = it.kind === 'action' ? -1 : Math.hypot(P.position.x - it.x, P.position.z - it.z); // las acciones mandan
-      if (d < it.r && d < bd) { bd = d; best = it; }
+      const d = it.follow ? 0 : Math.hypot(P.position.x - it.x, P.position.z - it.z), sc = it.kind === 'action' ? d - 100 : d; // las acciones mandan
+      if (d < it.r && sc < bd) { bd = sc; best = it; }
     }
     if (best !== S.cur) { S.cur = best; S.holdT = 0; }
     const it = S.cur, lock = it && this.locks[it.kind] ? this.locks[it.kind](it) : null, inp = P ? P.input : null;
@@ -89,6 +90,7 @@ export class InteractSystem {
     } else S.holdT = Math.max(0, S.holdT - dt * 3);
     // Indicador en pantalla (texto + anillo de progreso) y botón táctil contextual (solo jugador 1)
     const touch = !!(inp && inp.usingTouch && !inp.pad), show = !!it, text = it ? lock || (it.label || (it.kind === 'ammo' ? 'Coger munición' : it.kind === 'med' ? 'Usar botiquín' : it.kind === 'weapon' ? 'Coger ' + WEAPONS[it.weapon].short.toLowerCase() : 'Usar')) : '';
+    const V = this.view[i]; V.show = show; V.text = text; V.ring = it ? S.holdT / it.hold : 0;
     const set = (k, v, fn) => { k = i + k; if (this.cache[k] !== v) { this.cache[k] = v; fn(v); } };
     set('show', show, (v) => { E.box.classList.toggle('show', v); if (E.use) E.use.hidden = !v || !touch || !!lock; });
     set('lock', !!lock, (v) => { E.box.classList.toggle('lock', v); if (E.use) E.use.hidden = !show || !touch || v; });

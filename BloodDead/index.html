@@ -43,7 +43,7 @@
       <div class="tc-head"><button class="icon-btn" id="btnMapBack" aria-label="Volver"><i data-icon="back"></i></button><div><span class="eyebrow">Modo Supervivencia · 15 niveles</span><h2>Elige mapa</h2></div></div>
       <div class="ch-list" id="mapList" role="list"></div>
     </div>
-    <div class="t-foot"><span class="ver">v2.0</span><button class="pad-pill" data-modal="pads"><i data-icon="gamepad"></i>Dúo · mandos y TV</button><nav class="legal-links"><button class="link-btn" data-modal="privacy">Privacidad</button><span>·</span><button class="link-btn" data-modal="legal">Aviso legal</button></nav></div>
+    <div class="t-foot"><span class="ver">v2.0</span><button class="pad-pill" data-modal="pads"><i data-icon="gamepad"></i>Mandos y TV</button><button class="pad-pill" data-modal="online"><i data-icon="users"></i>Amigos</button><button class="pad-pill" data-modal="join"><i data-icon="phone"></i>Unirse · mando</button><nav class="legal-links"><button class="link-btn" data-modal="privacy">Privacidad</button><span>·</span><button class="link-btn" data-modal="legal">Aviso legal</button></nav></div>
   </div>
   <div class="t-stage" id="titleStage"></div>
 </section>
@@ -237,17 +237,63 @@
 </div>
 
 <div id="modal-pads" class="modal-wrap" hidden="">
-  <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="padTitle">
-    <div class="m-head"><div><span class="eyebrow">Multijugador local · Dúo</span><h2 id="padTitle">Mandos y móvil</h2></div><button class="icon-btn" data-close="" aria-label="Cerrar"><i data-icon="x"></i></button></div>
-    <div class="pad-list" id="padList"></div>
+  <div class="modal glass modal-tv" role="dialog" aria-modal="true" aria-labelledby="padTitle">
+    <div class="m-head"><div><span class="eyebrow">Multijugador local · Dúo</span><h2 id="padTitle">Mandos y TV</h2></div><button class="icon-btn" data-close="" aria-label="Cerrar"><i data-icon="x"></i></button></div>
+    <div class="seg tv-tabs" id="tvTabs" role="tablist" aria-label="Tipo de pantalla">
+      <button data-tab="local" aria-pressed="true"><i data-icon="tv"></i>Modo TV local</button><button data-tab="cast" aria-pressed="false"><i data-icon="expand"></i>Modo normal · TV real</button>
+    </div>
+    <section class="tv-pane" id="tvLocal">
+      <p class="tv-lead">Esta pantalla queda fija como «TV». Conecta móviles como mandos o mandos de PlayStation y Xbox: perfecto para jugar en una tablet usando el móvil.</p>
+      <div class="pad-phone">
+        <div class="pad-qr" id="padQr" aria-label="Código QR para conectar el móvil"></div>
+        <div><span class="eyebrow">Conecta tu móvil como mando</span><b class="pad-code" id="padCode">····</b>
+          <ol class="tv-steps"><li>Escanea el QR con la cámara del móvil: se abre directamente como mando.</li><li>O abre BLOOD DEAD en el móvil → <b>Unirse · mando</b> → <b>Escanear QR</b> o escribe el código.</li></ol>
+          <code id="padUrl"></code><span class="pad-status" id="padStatus"></span>
+          <div class="seg pad-seg" id="padTarget" role="group" aria-label="El móvil controla a"><button data-t="p2" aria-pressed="true">Jugador 2</button><button data-t="p1" aria-pressed="false">Jugador 1</button></div>
+          <p id="padLocal" hidden="">Has abierto el juego como archivo local: para usar el móvil, publícalo en una web (https) y ábrelo desde allí.</p>
+          <p class="pad-wifi">Consejo: el móvil y esta pantalla en la misma red Wi-Fi conectan antes y con menos retardo.</p>
+        </div>
+      </div>
+      <div class="pad-list" id="padList"></div>
+      <p class="pad-note">Mando físico (USB o Bluetooth): pulsa cualquier botón para jugar como Jugador 1. Durante la partida, pulsa START en un segundo mando para unirte como Jugador 2. En el menú, LB/RB cambian de personaje.</p>
+    </section>
+    <section class="tv-pane" id="tvCast" hidden="">
+      <p class="tv-lead">Para jugar en una televisión de verdad: proyecta el juego en la TV y conecta los móviles con el código que aparecerá en ella.</p>
+      <button class="btn btn-primary" id="btnCast"><i data-icon="tv"></i>Proyectar en la TV</button><span class="pad-status" id="castStatus"></span>
+      <ol class="tv-steps cast">
+        <li><b>Chromecast / Google TV:</b> «Proyectar en la TV» (o en Chrome: menú ⋮ → Enviar…).</li>
+        <li><b>AirPlay (iPhone, iPad, Mac):</b> Centro de control → Duplicar pantalla.</li>
+        <li><b>Smart TV con navegador:</b> abre <code id="castUrl"></code> en la TV; mostrará su código para los móviles.</li>
+        <li><b>Cable HDMI:</b> conecta el ordenador a la TV y usa el Modo TV local.</li>
+      </ol>
+    </section>
+  </div>
+</div>
+<div id="modal-online" class="modal-wrap" hidden="">
+  <div class="modal glass modal-tv" role="dialog" aria-modal="true" aria-labelledby="netTitle">
+    <div class="m-head"><div><span class="eyebrow">Multijugador online · Dúo</span><h2 id="netTitle">Jugar con amigos</h2></div><button class="icon-btn" data-close="" aria-label="Cerrar"><i data-icon="x"></i></button></div>
+    <p class="tv-lead">Invita a un amigo: con el enlace entra directamente en tu partida y juega como Jugador 2 desde su móvil, tablet u ordenador (táctil, teclado y ratón o mando).</p>
     <div class="pad-phone">
-      <div class="pad-qr" id="padQr" aria-label="Código QR para conectar el móvil"></div>
-      <div><span class="eyebrow">Tu móvil como mando inalámbrico</span><b class="pad-code" id="padCode">····</b><p>Escanea el código o abre en el móvil:</p><code id="padUrl"></code><span class="pad-status" id="padStatus"></span>
-        <div class="seg pad-seg" id="padTarget" role="group" aria-label="El móvil controla a"><button data-t="p2" aria-pressed="true">Jugador 2</button><button data-t="p1" aria-pressed="false">Jugador 1</button></div>
-        <p id="padLocal" hidden="">Has abierto el juego como archivo local: para usar el móvil, publícalo en una web (https) y ábrelo desde allí.</p>
+      <div class="pad-qr" id="netQr" aria-label="Código QR de la invitación"></div>
+      <div><span class="eyebrow">Código de invitación</span><b class="pad-code" id="netCode">······</b><code id="netLink"></code><span class="pad-status" id="netStatus"></span>
+        <div class="share-row">
+          <button class="btn btn-primary" data-share="whatsapp" disabled=""><i data-icon="phone"></i>WhatsApp</button>
+          <button class="btn btn-ghost" data-share="native" disabled=""><i data-icon="upload"></i>Compartir…</button>
+          <button class="btn btn-ghost" data-share="copy" disabled=""><i data-icon="check"></i>Copiar enlace</button>
+        </div>
       </div>
     </div>
-    <p class="pad-note">Mando físico (USB o Bluetooth): pulsa cualquier botón para jugar como Jugador 1. Durante la partida, pulsa START en un segundo mando para unirte como Jugador 2: la pantalla se divide en horizontal. En el menú, LB/RB cambian de personaje.</p>
+    <p class="pad-note">Tu amigo también puede abrir BLOOD DEAD → <b>Unirse · mando</b> y escribir el código. Tú eliges modo y personaje: él se une al empezar (o al momento si ya estáis jugando). Con conexiones móviles muy restrictivas puede no conectar: prueba con Wi-Fi.</p>
+  </div>
+</div>
+<div id="modal-join" class="modal-wrap" hidden="">
+  <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="joinTitle">
+    <div class="m-head"><div><span class="eyebrow">Mando o invitación</span><h2 id="joinTitle">Unirse con código</h2></div><button class="icon-btn" data-close="" aria-label="Cerrar"><i data-icon="x"></i></button></div>
+    <p class="tv-lead">Escanea el QR de la TV o escribe su código (4 caracteres) para usar este móvil como mando. ¿Te han invitado? Escribe el código de 6 caracteres de tu amigo.</p>
+    <div class="scan-box" id="scanBox" hidden=""><video id="scanVideo" playsinline="" muted=""></video><span class="scan-frame"></span></div>
+    <button class="btn btn-primary btn-block" id="btnScan"><i data-icon="scan"></i>Escanear QR</button>
+    <form class="code-form" id="codeForm" autocomplete="off"><input id="codeInput" maxlength="6" spellcheck="false" autocapitalize="characters" placeholder="CÓDIGO" aria-label="Código"><button class="btn btn-ghost" type="submit">Conectar</button></form>
+    <span class="pad-status" id="joinStatus"></span>
   </div>
 </div>
 <div id="uiToast" role="status"><b></b><span></span></div>

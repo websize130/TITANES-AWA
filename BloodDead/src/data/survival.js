@@ -50,6 +50,9 @@ export const SURVIVAL = {
   },
   strongTypes: ['subject', 'stalker', 'behemoth', 'queen'],
   unlock: { shotgun: 1, smg: 2, rifle: 4 }, // el fusil llega con los murciélagos
+  // Multijugador (2 jugadores, local u online): el doble de infectados (también el tope simultáneo), más agresivos,
+  // furia desde el nivel 5 y murciélagos zombi desde el nivel 2 (uno más en los niveles que ya los tienen)
+  coop: { zombies: 2, aggro: 0.3, spd: 1.06, furyFrom: 5, batsFrom: 2, earlyBats: { max: 1, every: [22, 32] } },
   // Vida de un infectado fuerte en supervivencia (relativa a su versión de jefe)
   strongHp: (n, duo) => (0.36 + n * 0.05) * (duo ? 1.3 : 1),
 };

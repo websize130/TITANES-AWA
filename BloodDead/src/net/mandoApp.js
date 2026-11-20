@@ -1,6 +1,6 @@
 import { $ } from '../core/utils.js';
 import { icon } from '../ui/icons.js';
-import { loadPeer } from './vendor.js';
+import { loadPeer, peerOpts } from './vendor.js';
 
 /* Página de mando (?mando=CÓDIGO): joystick, zona de cámara y botones; vibra cuando el juego lo pide */
 export const MandoApp = {
@@ -33,7 +33,7 @@ export const MandoApp = {
     const lend = (e) => { if (e.pointerId === lid) lid = null; }; lz.addEventListener('pointerup', lend); lz.addEventListener('pointercancel', lend);
     const status = (t, ok) => { const s = $('#mdStatus'); s.textContent = t; s.className = ok ? 'ok' : ''; };
     loadPeer().then((Peer) => {
-      const peer = new Peer();
+      const peer = peerOpts() ? new Peer(peerOpts()) : new Peer();
       peer.on('open', () => {
         const c = peer.connect('blooddead-' + code.toUpperCase(), { serialization: 'json', reliable: false });
         c.on('open', () => { status('Conectado · eres un mando del juego', true); vib([30, 60, 30]); setInterval(() => { c.send({ a: st.a, l: st.l, b: st.b }); st.l = [0, 0]; }, 33); });

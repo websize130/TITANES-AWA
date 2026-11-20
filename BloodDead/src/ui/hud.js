@@ -164,7 +164,7 @@ export class HUD {
     this.set('dmg', Math.round(Math.max(this.dmg, pulse) * 50) / 50, (v) => { el.damage.style.opacity = v; });
     // Caído en dúo: cuenta atrás para reaparecer junto al compañero
     const rs = !p.alive && g.activePlayers.length > 1 && g.activePlayers.some((q) => q.alive) ? Math.max(0, Math.ceil(CONFIG.coop.respawn - (p.respawnT || 0))) : -1;
-    this.set('resp', rs, (v) => { el.respawn.hidden = v < 0; if (v >= 0) el.respawn.textContent = `Caído · reapareces junto a tu compañero en ${v} s`; });
+    this.set('resp', rs, (v) => { el.respawn.hidden = v < 0; if (v >= 0) el.respawn.textContent = `Caído · tu compañero puede reanimarte · reapareces en ${v} s`; });
     const m = g.mode, vh = g.split ? innerHeight / 2 : innerHeight;
     if (m && m.hasTarget) {
       const v = this.v.copy(m.target).project(p.camera); let sx = v.x, sy = v.y; const behind = v.z > 1;
@@ -222,6 +222,6 @@ export class HudLite {
     const s = g.pads.state(p.input.pad);
     this.set('in', s ? (s.kind === 'remote' ? 'Móvil' : 'Mando') : 'Sin mando', (v) => { el.input.textContent = v; el.input.classList.toggle('off', v === 'Sin mando'); });
     const rs = !p.alive && g.activePlayers.some((q) => q.alive) ? Math.max(0, Math.ceil(CONFIG.coop.respawn - (p.respawnT || 0))) : -1;
-    this.set('resp', rs, (v) => { el.respawn.hidden = v < 0; if (v >= 0) el.respawn.textContent = `Caído · reapareces en ${v} s`; });
+    this.set('resp', rs, (v) => { el.respawn.hidden = v < 0; if (v >= 0) el.respawn.textContent = `Caído · espera la reanimación · ${v} s`; });
   }
 }

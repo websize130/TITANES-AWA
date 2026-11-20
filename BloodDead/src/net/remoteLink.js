@@ -1,4 +1,4 @@
-import { loadPeer, loadQR } from './vendor.js';
+import { loadPeer, loadQR, peerOpts } from './vendor.js';
 import { $ } from '../core/utils.js';
 
 /* El móvil como mando inalámbrico: el juego abre una sala (código de 4 caracteres) y el móvil se conecta
@@ -12,7 +12,7 @@ export class RemoteLink {
     const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const tryOpen = (n) => new Promise((res) => {
       this.code = Array.from({ length: 4 }, () => A[Math.floor(Math.random() * A.length)]).join('');
-      const peer = new Peer('blooddead-' + this.code);
+      const peer = new Peer('blooddead-' + this.code, peerOpts());
       peer.on('open', () => { this.peer = peer; this.status = 'ready'; res(true); });
       peer.on('error', (err) => { if (err.type === 'unavailable-id' && n < 4) { peer.destroy(); tryOpen(n + 1).then(res); } else { this.status = 'error'; this.err = 'Error de conexión: ' + (err.type || err.message); this.render(); res(false); } });
       peer.on('connection', (c) => this.accept(c));

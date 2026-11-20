@@ -96,7 +96,11 @@ export class ZombieSystem {
     this.separate(); this.blockPlayers();
     for (let i = this.drops.length - 1; i >= 0; i--) { const d = this.drops[i]; d.t -= dt; if (d.t <= 0) { this.drops.splice(i, 1); d.fn(); } }
     const D = this.dir, ps = this.game.activePlayers; this.spawnT -= dt;
-    if (this.spawnT <= 0) { this.spawnT = rand(...D.every); if (!D.paused && this.aliveRegular < Math.min(this.maxAlive, Math.round(D.target * (ps.length > 1 ? 1.4 : 1))) && this.anyAlive()) this.spawnAt(this.pickVariant(), D.minDist, true); }
+    if (this.spawnT <= 0) { // en dúo: más infectados (×1,4 en la historia; ×2 en supervivencia, con tope doble)
+      const duo = ps.length > 1, cap = this.maxAlive * (duo ? D.coopCap || 1 : 1), want = Math.round(D.target * (duo ? D.coopMult || 1.4 : 1));
+      this.spawnT = rand(...D.every) * (duo && D.coopMult >= 2 ? 0.7 : 1);
+      if (!D.paused && this.aliveRegular < Math.min(cap, want) && this.anyAlive()) this.spawnAt(this.pickVariant(), D.minDist, true);
+    }
     this.cullT -= dt;
     if (this.cullT <= 0 && D.cull) { // los rezagados que se quedaron atrás desaparecen (dejan sitio a los que vienen)
       this.cullT = 1.5;

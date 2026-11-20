@@ -106,7 +106,7 @@ export class BatSystem {
     const D = this.dir;
     if (D && D.max > 0 && this.sys.anyAlive()) {
       this.spawnT -= dt;
-      const cap = Math.round(D.max * (this.game.activePlayers.length > 1 ? 1.4 : 1));
+      const cap = D.max; // el modo ya ajusta la cantidad en dúo
       if (this.spawnT <= 0) { this.spawnT = rand(...D.every); if (this.alive < cap) this.spawn(); }
     }
     for (const b of this.list) if (b.active) this.step(b, dt);
