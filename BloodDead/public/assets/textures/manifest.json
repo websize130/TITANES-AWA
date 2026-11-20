@@ -1,0 +1,150 @@
+{
+  "generated": "2026-11-20",
+  "license": "CC0 1.0 (Poly Haven)",
+  "sets": {
+    "stone": {
+      "id": "rustic_stone_wall_02",
+      "name": "Rustic Stone Wall 02",
+      "use": "muros de piedra del pueblo",
+      "size": 1.5,
+      "authors": [
+        "Amal Kumar"
+      ],
+      "url": "https://polyhaven.com/a/rustic_stone_wall_02"
+    },
+    "rockScan": {
+      "id": "rock_wall_02",
+      "name": "Rock Wall 02",
+      "use": "rocas y paredes de roca",
+      "size": 2,
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/rock_wall_02"
+    },
+    "plaster": {
+      "id": "damaged_plaster",
+      "name": "Damaged Plaster",
+      "use": "fachadas encaladas en ruinas",
+      "size": 1.85,
+      "authors": [
+        "Amal Kumar"
+      ],
+      "url": "https://polyhaven.com/a/damaged_plaster"
+    },
+    "ground": {
+      "id": "brown_mud_02",
+      "name": "Brown Mud 02",
+      "use": "barro del pueblo",
+      "size": 1.3,
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/brown_mud_02"
+    },
+    "wood": {
+      "id": "weathered_brown_planks",
+      "name": "Weathered Brown Planks",
+      "use": "vallas, tablones, puertas",
+      "size": 1.8,
+      "authors": [
+        "Dimitrios Savva",
+        "Rico Cilliers"
+      ],
+      "url": "https://polyhaven.com/a/weathered_brown_planks"
+    },
+    "bark": {
+      "id": "bark_brown_02",
+      "name": "Bark Brown 02",
+      "use": "troncos y árboles muertos",
+      "size": 1,
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/bark_brown_02"
+    },
+    "roof": {
+      "id": "clay_roof_tiles_02",
+      "name": "Clay Roof Tiles 02",
+      "use": "tejados",
+      "size": 2.5,
+      "authors": [
+        "Amal Kumar"
+      ],
+      "url": "https://polyhaven.com/a/clay_roof_tiles_02"
+    },
+    "concrete": {
+      "id": "concrete_wall_008",
+      "name": "Concrete Wall 008",
+      "use": "muros de hormigón (laboratorio, ciudad, silos)",
+      "size": 2.71,
+      "authors": [
+        "Dario Barresi",
+        "Charlotte Baglioni"
+      ],
+      "url": "https://polyhaven.com/a/concrete_wall_008"
+    },
+    "concreteFloor": {
+      "id": "concrete_floor_worn_001",
+      "name": "Concrete Floor Worn 001",
+      "use": "suelos de hormigón",
+      "size": 3,
+      "authors": [
+        "Dimitrios Savva",
+        "Rico Cilliers"
+      ],
+      "url": "https://polyhaven.com/a/concrete_floor_worn_001"
+    },
+    "asphalt": {
+      "id": "asphalt_02",
+      "name": "Asphalt 02",
+      "use": "calzada de la ciudad",
+      "size": 3,
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/asphalt_02"
+    },
+    "tiles": {
+      "id": "long_white_tiles",
+      "name": "Long White Tiles",
+      "use": "azulejo clínico de pared del laboratorio",
+      "size": 1.27,
+      "authors": [
+        "Jenelle van Heerden",
+        "Sergej Majboroda"
+      ],
+      "url": "https://polyhaven.com/a/long_white_tiles"
+    },
+    "rust": {
+      "id": "rusty_metal_04",
+      "name": "Rusty Metal 04",
+      "use": "metal oxidado y pintado",
+      "size": 2,
+      "authors": [
+        "Amal Kumar"
+      ],
+      "url": "https://polyhaven.com/a/rusty_metal_04"
+    },
+    "brick": {
+      "id": "red_bricks_04",
+      "name": "Red Bricks 04",
+      "use": "ladrillo",
+      "size": 2.5,
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/red_bricks_04"
+    },
+    "stoneFloor": {
+      "id": "stone_tiles_02",
+      "name": "Stone Tiles 02",
+      "use": "losas del subsuelo antiguo",
+      "size": 2,
+      "authors": [
+        "Charlotte Baglioni"
+      ],
+      "url": "https://polyhaven.com/a/stone_tiles_02"
+    }
+  }
+}

@@ -23,6 +23,19 @@ Salidas de `npm run build`:
 Skypack o Google Fonts. La única conexión externa del juego es el servidor público de PeerJS, y solo al
 emparejar un móvil como mando (para eso, la TV y el móvil deben estar en la misma Wi-Fi).
 
+## Texturas fotoescaneadas (Poly Haven, CC0)
+
+```bash
+npm run assets:textures   # descarga y convierte a WebP lo que lista assets-src/textures.json
+```
+
+- Calidad **Alto** usa 2K, **Medio** 1K y **Bajo** las texturas procedurales, que no descargan nada.
+- Si faltan los archivos (por ejemplo, en `blood-dead.html`), el juego usa las procedurales.
+- La escala de cada textura es la real del escaneo, en metros.
+- Autores y enlaces: `public/assets/textures/manifest.json`.
+- Las imágenes (~37 MB) no se suben a git, se regeneran con el comando de arriba. En el repositorio propio irán con Git LFS.
+- Detrás de un proxy corporativo: `NODE_USE_ENV_PROXY=1 npm run assets:textures`.
+
 ## Estructura
 
 Cada módulo se corresponde con una sección del archivo original (v2.0). Los imports y exports se calcularon

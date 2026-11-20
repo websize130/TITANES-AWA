@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --mode single && vite build && node scripts/check-offline.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "assets:textures": "node scripts/fetch-textures.mjs"
   },
   "license": "UNLICENSED",
   "dependencies": {
@@ -18,6 +19,7 @@
     "three": "0.160.0"
   },
   "devDependencies": {
+    "sharp": "0.35.5",
     "vite": "8.3.8",
     "vite-plugin-singlefile": "2.3.4"
   }

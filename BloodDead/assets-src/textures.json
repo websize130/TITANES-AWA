@@ -1,0 +1,66 @@
+{
+  "_doc": "Texturas PBR fotoescaneadas (Poly Haven, CC0). Clave = conjunto que usa MaterialLibrary. Regenerar con: npm run assets:textures · tileFloor se deja procedural a propósito: el granito escaneado sin juntas se leía plano en el laboratorio.",
+  "source": "polyhaven",
+  "resolutions": [
+    "1k",
+    "2k"
+  ],
+  "sets": {
+    "stone": {
+      "id": "rustic_stone_wall_02",
+      "use": "muros de piedra del pueblo"
+    },
+    "rockScan": {
+      "id": "rock_wall_02",
+      "use": "rocas y paredes de roca"
+    },
+    "plaster": {
+      "id": "damaged_plaster",
+      "use": "fachadas encaladas en ruinas"
+    },
+    "ground": {
+      "id": "brown_mud_02",
+      "use": "barro del pueblo"
+    },
+    "wood": {
+      "id": "weathered_brown_planks",
+      "use": "vallas, tablones, puertas"
+    },
+    "bark": {
+      "id": "bark_brown_02",
+      "use": "troncos y árboles muertos"
+    },
+    "roof": {
+      "id": "clay_roof_tiles_02",
+      "use": "tejados"
+    },
+    "concrete": {
+      "id": "concrete_wall_008",
+      "use": "muros de hormigón (laboratorio, ciudad, silos)"
+    },
+    "concreteFloor": {
+      "id": "concrete_floor_worn_001",
+      "use": "suelos de hormigón"
+    },
+    "asphalt": {
+      "id": "asphalt_02",
+      "use": "calzada de la ciudad"
+    },
+    "tiles": {
+      "id": "long_white_tiles",
+      "use": "azulejo clínico de pared del laboratorio"
+    },
+    "rust": {
+      "id": "rusty_metal_04",
+      "use": "metal oxidado y pintado"
+    },
+    "brick": {
+      "id": "red_bricks_04",
+      "use": "ladrillo"
+    },
+    "stoneFloor": {
+      "id": "stone_tiles_02",
+      "use": "losas del subsuelo antiguo"
+    }
+  }
+}

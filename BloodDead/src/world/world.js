@@ -88,7 +88,7 @@ export class World {
       const n = Noise.fbm((pos.getX(i) + 200) / 60, (pos.getZ(i) + 200) / 60, 6, 6, 4, seed), c = 0.62 + 0.5 * n;
       cols[i * 3] = c; cols[i * 3 + 1] = c * 0.985; cols[i * 3 + 2] = c * 0.96; pos.setY(i, -0.005);
     }
-    g.setAttribute('color', new THREE.BufferAttribute(cols, 3)); g.computeVertexNormals(); uvScale(g, w / 4, d / 4);
+    g.setAttribute('color', new THREE.BufferAttribute(cols, 3)); g.computeVertexNormals(); const ts = this.mats.texScale[mat] || 4; uvScale(g, w / ts, d / ts);
     const mesh = new THREE.Mesh(g, this.mats.get(mat)); mesh.receiveShadow = true; this.scene.add(mesh); this.meshes.push(mesh);
   }
   perimeter(x0, z0, x1, z1, h, mat, t = 0.6) {
@@ -346,7 +346,7 @@ export class World {
       cols[i * 3] = c; cols[i * 3 + 1] = c * 0.97; cols[i * 3 + 2] = c * 0.93;
       pos.setY(i, (1 - m) * n * 0.08 - 0.02);
     }
-    g.setAttribute('color', new THREE.BufferAttribute(cols, 3)); g.computeVertexNormals(); uvScale(g, S / 4, S / 4);
+    g.setAttribute('color', new THREE.BufferAttribute(cols, 3)); g.computeVertexNormals(); const ts = this.mats.texScale.ground || 4; uvScale(g, S / ts, S / ts);
     const mesh = new THREE.Mesh(g, this.mats.get('ground')); mesh.receiveShadow = true;
     this.scene.add(mesh); this.meshes.push(mesh);
   }

@@ -1,3 +1,4 @@
+import { ScannedTextures } from '../render/scannedTextures.js';
 import * as THREE from 'three';
 import { $, IS_TOUCH, TAU, clamp, damp, nextFrame } from '../core/utils.js';
 import { hydrateIcons } from '../ui/icons.js';
@@ -175,6 +176,8 @@ export class Game {
     this.camera = this.makeCamera(); this.camera2 = this.makeCamera();
     this.lighting = new Lighting(this); await this.lighting.init(q);
     this.ui.setBoot(0.35, `Levantando ${L.name.toLowerCase()}…`); await nextFrame();
+    // Texturas fotoescaneadas según la calidad (Bajo: procedurales). Se reutilizan entre niveles.
+    await ScannedTextures.load(Settings.quality(), (k) => this.ui.setBoot(0.35 + k * 0.15, 'Cargando texturas del escenario…'));
     this.materials = new MaterialLibrary(this.lighting.csm);
     this.world = new World(this, this.materials); this.world.build(levelKey);
     this.ui.setBoot(0.55, 'Esculpiendo a los jefes…'); await nextFrame();
